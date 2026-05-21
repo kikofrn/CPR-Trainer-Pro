@@ -1,0 +1,14 @@
+node_modules/
+dist/
+public/
+public-essential/
+src-tauri/target/
+*.log
+
+# Large media files (distribute separately)
+# These are NOT tracked in git due to their 6GB size
+
+# Local environment variables
+.env
+.env.local
+

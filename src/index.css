@@ -1,0 +1,44 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,700;1,700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Futura", "Calibri", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Futura", "Calibri", "Playfair Display", serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  --color-eh-peach: #fedeca;
+  --color-eh-red: #f5394e;
+  --color-eh-red-dark: #cc2e40;
+  --color-eh-blue: #acdeff;
+  --color-eh-blue-light: #022c7c;
+  --color-medical-gray: #151619;
+  --color-medical-dark: #000000;
+}
+
+@layer base {
+  body {
+    @apply bg-medical-dark text-eh-peach font-sans;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.medical-gradient {
+  background: radial-gradient(circle at top right, rgba(200, 16, 46, 0.05) 0%, transparent 40%);
+}

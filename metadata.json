@@ -1,0 +1,6 @@
+{
+  "name": "EHA Professional Training Portal",
+  "description": "Multi-course medical training platform featuring CPR, First Aid, and Pediatric modules with interactive flipbook manuals and segmented video playback.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
