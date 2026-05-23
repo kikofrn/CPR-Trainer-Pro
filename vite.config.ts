@@ -17,9 +17,8 @@ export default defineConfig(({mode}) => {
         '@': path.resolve(__dirname, '.'),
       },
     },
-    // When building for Tauri, use a separate publicDir that only has small essential assets
-    // The large media files will be bundled as Tauri resources instead
-    publicDir: isTauri ? 'public-essential' : 'public',
+    // Use the standard public directory so UI assets are bundled correctly
+    publicDir: 'public',
     server: {
       hmr: process.env.DISABLE_HMR !== 'true',
       watch: process.env.DISABLE_HMR === 'true' ? null : {},

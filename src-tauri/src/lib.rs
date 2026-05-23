@@ -2,7 +2,8 @@ use http::{header::*, response::Builder as ResponseBuilder, status::StatusCode};
 use http_range::HttpRange;
 use std::io::{Read, Seek, SeekFrom};
 use std::path::PathBuf;
-use tauri::Manager;
+use tauri::{Manager, Emitter};
+use futures_util::StreamExt;
 
 /// Strip the Windows extended-length path prefix (\\?\) from a path string.
 fn clean_path(path: PathBuf) -> PathBuf {
@@ -19,26 +20,20 @@ fn clean_path(path: PathBuf) -> PathBuf {
 /// 2. Installer resource directory (standard installer deployment)
 /// 3. CWD directory (development mode)
 fn find_media_dir(app: &tauri::AppHandle) -> PathBuf {
-    // 1. Check exe_dir/media (portable standalone mode)
+    // 1. Return exe_dir/media (portable standalone mode) proactively
     if let Ok(exe_path) = std::env::current_exe() {
         let exe_path = clean_path(exe_path);
         if let Some(exe_dir) = exe_path.parent() {
-            let media_dir = exe_dir.join("media");
-            if media_dir.exists() && media_dir.is_dir() {
-                return media_dir;
-            }
+            return exe_dir.join("media");
         }
     }
 
-    // 2. Check resource_dir/media (installer bundle mode)
+    // 2. Fallback to resource_dir/media
     if let Ok(resource_dir) = app.path().resource_dir() {
-        let media_dir = clean_path(resource_dir).join("media");
-        if media_dir.exists() && media_dir.is_dir() {
-            return media_dir;
-        }
+        return clean_path(resource_dir).join("media");
     }
 
-    // 3. Fallback to CWD media/ (development mode)
+    // 3. Fallback to CWD media/
     PathBuf::from("media")
 }
 
@@ -238,6 +233,129 @@ fn read_subtitle_file(app: tauri::AppHandle, filename: String) -> Result<String,
         .map_err(|e| format!("Failed to read subtitle file: {}", e))
 }
 
+#[tauri::command]
+async fn download_media_file(
+    app: tauri::AppHandle,
+    base_url: String,
+    filename: String,
+) -> Result<(), String> {
+    if filename.contains("..") {
+        return Err("Invalid filename: directory traversal detected".to_string());
+    }
+
+    let media_dir = find_media_dir(&app);
+    // Ensure media directory exists
+    std::fs::create_dir_all(&media_dir)
+        .map_err(|e| format!("Failed to create media directory: {}", e))?;
+
+    let clean = filename.trim_start_matches('/');
+    let dest_path = media_dir.join(clean);
+
+    // Create parent directories if needed (e.g., subtitles/)
+    if let Some(parent) = dest_path.parent() {
+        std::fs::create_dir_all(parent)
+            .map_err(|e| format!("Failed to create parent directory: {}", e))?;
+    }
+
+    // Build the full download URL
+    let encoded_filename = clean
+        .split('/')
+        .map(|part| percent_encoding::percent_encode(
+            part.as_bytes(),
+            percent_encoding::NON_ALPHANUMERIC,
+        ).to_string())
+        .collect::<Vec<_>>()
+        .join("/");
+    let url = format!("{}{}", base_url, encoded_filename);
+
+    eprintln!("[download] Starting download: {} -> {:?}", url, dest_path);
+
+    let client = reqwest::Client::new();
+    let response = client.get(&url).send().await.map_err(|e| format!("HTTP request failed: {}", e))?;
+
+    if !response.status().is_success() {
+        return Err(format!("HTTP {} for {}", response.status(), url));
+    }
+
+    let total_bytes = response.content_length().unwrap_or(0);
+    let mut bytes_written: u64 = 0;
+
+    // Write to a temp file first, then rename (atomic-ish)
+    let temp_path = dest_path.with_extension("tmp");
+    let mut file = tokio::fs::File::create(&temp_path)
+        .await
+        .map_err(|e| format!("Failed to create temp file: {}", e))?;
+
+    let mut stream = response.bytes_stream();
+    let mut last_emit = std::time::Instant::now();
+
+    while let Some(chunk_result) = stream.next().await {
+        let chunk = chunk_result.map_err(|e| format!("Download stream error: {}", e))?;
+        tokio::io::AsyncWriteExt::write_all(&mut file, &chunk)
+            .await
+            .map_err(|e| format!("Write failed: {}", e))?;
+        bytes_written += chunk.len() as u64;
+
+        // Emit progress events throttled to ~10Hz
+        if last_emit.elapsed().as_millis() >= 100 {
+            let _ = app.emit("download-progress", serde_json::json!({
+                "filename": clean,
+                "bytes_written": bytes_written,
+                "total_bytes": total_bytes
+            }));
+            last_emit = std::time::Instant::now();
+        }
+    }
+
+    // Flush and close
+    tokio::io::AsyncWriteExt::flush(&mut file)
+        .await
+        .map_err(|e| format!("Flush failed: {}", e))?;
+    drop(file);
+
+    // Rename temp to final
+    tokio::fs::rename(&temp_path, &dest_path)
+        .await
+        .map_err(|e| format!("Rename failed: {}", e))?;
+
+    eprintln!("[download] ✅ Completed: {} ({} bytes)", clean, bytes_written);
+
+    // Emit completion event
+    let _ = app.emit("download-complete", serde_json::json!({
+        "filename": clean,
+        "bytes_written": bytes_written,
+        "total_bytes": total_bytes
+    }));
+
+    Ok(())
+}
+
+#[tauri::command]
+fn check_media_file_exists(app: tauri::AppHandle, filename: String) -> Result<bool, String> {
+    if filename.contains("..") {
+        return Err("Invalid filename".to_string());
+    }
+    let media_dir = find_media_dir(&app);
+    let clean = filename.trim_start_matches('/');
+    let file_path = media_dir.join(clean);
+    Ok(file_path.exists() && file_path.is_file())
+}
+
+#[tauri::command]
+fn check_media_files_status(
+    app: tauri::AppHandle,
+    filenames: Vec<String>,
+) -> Result<std::collections::HashMap<String, bool>, String> {
+    let media_dir = find_media_dir(&app);
+    let mut result = std::collections::HashMap::new();
+    for filename in filenames {
+        let clean = filename.trim_start_matches('/').to_string();
+        let file_path = media_dir.join(&clean);
+        result.insert(clean, file_path.exists() && file_path.is_file());
+    }
+    Ok(result)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -246,6 +364,9 @@ pub fn run() {
             list_media_files,
             open_browser,
             read_subtitle_file,
+            download_media_file,
+            check_media_file_exists,
+            check_media_files_status,
         ])
         // Register custom "media" protocol to serve files from media directory
         // On Windows: accessible via http://media.localhost/<filename>
@@ -273,14 +394,7 @@ pub fn run() {
             let resolved_media = find_media_dir(&handle);
             eprintln!("[CPR Trainer Pro] Resolved media directory: {:?}", resolved_media);
 
-            // Enable OS-level screen capture protection (DRM)
-            // Makes window content appear black in screenshots, recordings, and screen shares.
-            if let Some(window) = app.get_webview_window("main") {
-                match window.set_content_protected(true) {
-                    Ok(_) => eprintln!("[CPR Trainer Pro] ✅ Screen capture protection enabled"),
-                    Err(e) => eprintln!("[CPR Trainer Pro] ⚠️ Could not enable screen capture protection: {}", e),
-                }
-            }
+
 
             #[cfg(debug_assertions)]
             {

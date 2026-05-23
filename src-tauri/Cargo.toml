@@ -24,6 +24,9 @@ tauri-plugin-log = "2"
 http = "1"
 http-range = "0.1"
 percent-encoding = "2"
+reqwest = { version = "0.12", features = ["stream"] }
+tokio = { version = "1", features = ["fs", "io-util"] }
+futures-util = "0.3"
 
 [profile.release]
 opt-level = 3

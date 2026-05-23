@@ -34,9 +34,10 @@ interface ManualFlipbookProps {
   onClose: () => void;
   title: string;
   onOutlineLoaded?: (outline: any[]) => void;
+  showEasterEgg?: boolean;
 }
 
-const PageContent = React.forwardRef<HTMLDivElement, { pageNumber: number; width: number; height: number; scale: number }>((props, ref) => {
+const PageContent = React.forwardRef<HTMLDivElement, { pageNumber: number; width: number; height: number; scale: number; showEasterEgg?: boolean }>((props, ref) => {
   return (
     <div className="bg-white shadow-2xl relative overflow-hidden w-full h-full flex items-center justify-center" ref={ref} data-density="hard">
       <Page 
@@ -46,7 +47,11 @@ const PageContent = React.forwardRef<HTMLDivElement, { pageNumber: number; width
         className="w-full h-full flex items-center justify-center [&>.react-pdf__Page__canvas]:!w-full [&>.react-pdf__Page__canvas]:!h-full [&>.react-pdf__Page__canvas]:!object-fill"
         renderTextLayer={false}
         renderAnnotationLayer={false}
-        loading={<div className="flex items-center justify-center h-full"><Loader2 className="animate-spin text-eh-red" /></div>}
+        loading={
+          <div className="flex items-center justify-center h-full">
+            {props.showEasterEgg ? <video src="/CPR-Dummies.mp4" autoPlay loop muted playsInline className="w-16 h-16 object-cover" /> : <Loader2 className="animate-spin text-eh-red" />}
+          </div>
+        }
       />
       <div className="absolute bottom-2 right-2 text-[10px] text-gray-400 font-mono bg-white/80 px-1 rounded z-10">
         Page {props.pageNumber}
@@ -57,7 +62,7 @@ const PageContent = React.forwardRef<HTMLDivElement, { pageNumber: number; width
 
 PageContent.displayName = 'PageContent';
 
-const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(({ pdfUrl, onClose, title, onOutlineLoaded }, ref) => {
+const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(({ pdfUrl, onClose, title, onOutlineLoaded, showEasterEgg }, ref) => {
   const [numPages, setNumPages] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState(0);
   const [scale, setScale] = useState(1);
@@ -243,7 +248,9 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
                 </button>
               )}
               <button type="submit" disabled={isSearching} className="absolute right-3 text-white/40 hover:text-white transition-colors">
-                {isSearching ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
+                {isSearching ? (
+                  showEasterEgg ? <video src="/CPR-Dummies.mp4" autoPlay loop muted playsInline className="w-4 h-4 object-cover" /> : <Loader2 size={14} className="animate-spin" />
+                ) : <Search size={14} />}
               </button>
             </form>
             
@@ -309,7 +316,11 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
           onLoadSuccess={onDocumentLoadSuccess}
           loading={
             <div className="flex flex-col items-center gap-4">
-              <Loader2 className="animate-spin text-eh-red" size={48} />
+              {showEasterEgg ? (
+                <video src="/CPR-Dummies.mp4" autoPlay loop muted playsInline className="w-24 h-24 object-cover rounded-xl shadow-2xl" />
+              ) : (
+                <Loader2 className="animate-spin text-eh-red" size={48} />
+              )}
               <p className="text-eh-peach/40 text-xs font-mono uppercase tracking-[0.2em]">Decrypting Training Manual...</p>
             </div>
           }
@@ -349,6 +360,7 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
                   width={pageWidth}
                   height={pageHeight}
                   scale={scale}
+                  showEasterEgg={showEasterEgg}
                 />
               ))}
             </HTMLFlipBook>

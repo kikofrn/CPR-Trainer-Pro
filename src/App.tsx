@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, memo, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Play, 
@@ -21,18 +21,22 @@ import {
   MonitorPlay,
   Projector,
   Award,
-  HelpCircle
+  HelpCircle,
+  Download,
+  Loader2,
+  Settings
 } from 'lucide-react';
 import { COURSES, MANUALS, Manual, SLIDESHOWS } from './chapters';
 import ManualFlipbook, { ManualFlipbookRef } from './components/ManualFlipbook';
 import { mediaUrl as m, waitForMediaResolver, isTauri } from './media-resolver';
 import { CprIcon, FirstAidIcon } from './components/Icons';
+import { downloadManager, DownloadState, formatSpeed, formatTimeRemaining } from './download-manager';
 
 function EHLogo({ className }: { className?: string }) {
   return (
     <div className={`relative flex items-center justify-center bg-transparent overflow-hidden ${className}`}>
       <img 
-        src={m("/eha-icon.png")} 
+        src="/eha-icon.png" 
         alt="EH Academy" 
         className="w-full h-full object-contain"
       />
@@ -45,124 +49,6 @@ interface SubtitleCue {
   end: number;
   text: string;
 }
-
-type MenuDropdownCategory = {
-  title: string;
-  headerText?: string;
-  subtitle?: string;
-  layout: 'grid' | 'list';
-  items: {
-    type: 'video' | 'slideshow' | 'drilldown';
-    index?: number;
-    title: string;
-    titleColor?: string;
-    description: string;
-    badge?: string;
-    badges?: string[];
-    supertitle?: string;
-    iconTheme?: 'red' | 'gray';
-  }[];
-};
-
-const DropdownContent = memo(function DropdownContent({ categories, activeTab, activeCourseIndex, activeSlideshowIndex, onItemClick, onDrilldown }: {
-  categories: MenuDropdownCategory[];
-  activeTab: string;
-  activeCourseIndex: number | null;
-  activeSlideshowIndex: number | null;
-  onItemClick: (type: string, index: number) => void;
-  onDrilldown: () => void;
-}) {
-  return (
-    <div 
-      className="p-6 bg-[#0a0a0a] rounded-[24px] border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.8)] overflow-y-auto max-h-[85vh] w-[560px] custom-scrollbar relative z-[9999]"
-    >
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={categories[0]?.headerText || categories[0]?.title || 'cat'}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
-        >
-          {categories.map((category, catIdx) => (
-            <div key={catIdx} className={catIdx > 0 ? "mt-4" : ""}>
-              {category.headerText && (
-                <h2 className="text-xl font-bold text-center text-white mb-6 mt-2">{category.headerText}</h2>
-              )}
-              {category.title && (
-                <div className="mb-4 text-center">
-                  <h3 className="text-2xl font-black text-[#ff4b4b] uppercase tracking-tight leading-none">{category.title}</h3>
-                  {category.subtitle && <p className="text-[#a0a0a0] text-lg font-medium mt-2">{category.subtitle}</p>}
-                </div>
-              )}
-              
-              <div className={category.layout === 'grid' ? "grid grid-cols-2 gap-4" : "flex flex-col gap-3"}>
-                {category.items.map((item, itemIdx) => (
-                  <button
-                    key={itemIdx}
-                    onClick={() => {
-                      if (item.type === 'drilldown') {
-                        onDrilldown();
-                      } else if (item.index !== undefined) {
-                        onItemClick(item.type, item.index);
-                      }
-                    }}
-                    className="group relative text-left bg-[#131313] hover:bg-[#1a1a1a] transition-all duration-300 rounded-[20px] border border-white/5 hover:border-white/10 p-5 flex flex-col justify-start overflow-hidden h-full"
-                  >
-                    {category.layout === 'grid' ? (
-                      <>
-                        <div className="flex justify-between items-start w-full mb-5 shrink-0">
-                          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${item.iconTheme === 'red' ? 'bg-[#3a1a1e] text-[#ff6b6b]' : 'bg-[#222] text-[#888]'}`}>
-                            {item.type === 'video' ? <MonitorPlay size={28} strokeWidth={1.5} /> : (item.type === 'drilldown' ? <BookOpen size={28} strokeWidth={1.5} /> : <Projector size={28} strokeWidth={1.5} />)}
-                          </div>
-                          <ChevronRight size={20} className="text-white/20 group-hover:text-white/50 transition-colors mt-2" />
-                        </div>
-                        <div className="flex flex-col flex-1 w-full">
-                          <h4 className={`text-xl font-bold mb-2 ${item.titleColor ? item.titleColor : 'text-white'}`}>{item.title}</h4>
-                          <p className="text-[#888] text-xs tracking-tight leading-snug mb-5 flex-1 whitespace-normal">{item.description}</p>
-                          
-                          <div className="flex flex-wrap gap-2 mt-auto">
-                            {item.badge && (
-                              <span className="inline-block px-3 py-1.5 bg-[#3a1a1e] text-[#ff6b6b] text-[10px] font-bold uppercase tracking-wider rounded-full">
-                                {item.badge}
-                              </span>
-                            )}
-                            {item.badges && item.badges.map((b, i) => (
-                              <span key={i} className="inline-block px-3 py-1.5 bg-[#3a1a1e] text-[#ff6b6b] text-[10px] font-bold uppercase tracking-wider rounded-full">
-                                {b}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="flex items-center gap-5 w-full">
-                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${item.iconTheme === 'red' ? 'bg-[#3a1a1e] text-[#ff6b6b]' : 'bg-[#222] text-[#888]'}`}>
-                          {item.type === 'video' ? <MonitorPlay size={28} strokeWidth={1.5} /> : <Projector size={28} strokeWidth={1.5} />}
-                        </div>
-                        <div className="flex-1">
-                          {item.supertitle && <h5 className="text-[#ff4b4b] text-[10px] font-bold uppercase tracking-widest mb-1">{item.supertitle}</h5>}
-                          <h4 className={`text-xl font-bold mb-1 ${item.titleColor ? item.titleColor : 'text-white'}`}>{item.title}</h4>
-                          <p className="text-[#888] text-sm leading-snug">{item.description}</p>
-                        </div>
-                        <ChevronRight size={20} className="text-white/20 group-hover:text-white/50 transition-colors shrink-0" />
-                      </div>
-                    )}
-                    
-                    {/* Active Indicator Overlay */}
-                    {(activeTab === item.type && item.index !== undefined && (item.type === 'video' ? activeCourseIndex === item.index : activeSlideshowIndex === item.index)) && (
-                      <div className="absolute inset-0 border-2 border-[#ff4b4b] rounded-[20px] pointer-events-none" />
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
-        </motion.div>
-      </AnimatePresence>
-    </div>
-  );
-});
 
 export default function App() {
   const [mediaReady, setMediaReady] = useState(false);
@@ -193,6 +79,12 @@ export default function App() {
   const [showCprSelector, setShowCprSelector] = useState(false);
   const [showFaSelector, setShowFaSelector] = useState(false);
   const [faDrilldown, setFaDrilldown] = useState(false);
+  
+  // Elite Toggles
+  const [cprVaEnabled, setCprVaEnabled] = useState(false);
+  const [faVaEnabled, setFaVaEnabled] = useState(false);
+  const [faPediatric, setFaPediatric] = useState(false);
+  
   const [activeSlideshowIndex, setActiveSlideshowIndex] = useState<number | null>(null);
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
   const [slideshowIsPlaying, setSlideshowIsPlaying] = useState(true);
@@ -203,6 +95,45 @@ export default function App() {
   const [activeGuidePath, setActiveGuidePath] = useState<'menu' | 'app' | 'teaching' | 'portal'>('menu');
   const [portalStep, setPortalStep] = useState(1);
   
+  // Easter egg
+  const [clickTimestamps, setClickTimestamps] = useState<number[]>([]);
+  const [easterEggLevel, setEasterEggLevel] = useState<0 | 1 | 2>(0);
+
+  const handleInfoClick = () => {
+    const now = Date.now();
+    setClickTimestamps(prev => {
+      const recent = prev.filter(t => now - t <= 12000);
+      recent.push(now);
+      
+      const clicksIn12s = recent.length;
+      const clicksIn6s = recent.filter(t => now - t <= 6000).length;
+
+      if (clicksIn12s >= 20) {
+        setEasterEggLevel(2);
+      } else if (clicksIn6s >= 10 && easterEggLevel < 1) {
+        setEasterEggLevel(1);
+      }
+      
+      return recent;
+    });
+  };
+
+  const easterEggHoldTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleInfoPointerDown = () => {
+    easterEggHoldTimeoutRef.current = setTimeout(() => {
+      setEasterEggLevel(0);
+      setClickTimestamps([]);
+    }, 6000);
+  };
+
+  const handleInfoPointerUp = () => {
+    if (easterEggHoldTimeoutRef.current) {
+      clearTimeout(easterEggHoldTimeoutRef.current);
+      easterEggHoldTimeoutRef.current = null;
+    }
+  };
+
   // Subtitle & Double-Buffering States/Refs
   const [activePlayer, setActivePlayer] = useState<'A' | 'B'>('A');
   const [showSubtitles, setShowSubtitles] = useState(() => {
@@ -219,6 +150,22 @@ export default function App() {
   const slideshowContainerRef = useRef<HTMLDivElement>(null);
   const flipbookRef = useRef<ManualFlipbookRef>(null);
   
+  // Download manager state
+  const [dlState, setDlState] = useState<DownloadState>(downloadManager.getActiveState());
+  const [isSettingsExpanded, setIsSettingsExpanded] = useState(false);
+  useEffect(() => {
+    const unsub = downloadManager.subscribe(setDlState);
+    return unsub;
+  }, []);
+
+  // First-launch download prompt
+  const [showDownloadPrompt, setShowDownloadPrompt] = useState(false);
+  useEffect(() => {
+    if (isTauri && !localStorage.getItem('eh_download_prompted')) {
+      const timer = setTimeout(() => setShowDownloadPrompt(true), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, []);
   const activeCourse = activeCourseIndex !== null ? COURSES[activeCourseIndex] : null;
   const activeChapter = activeCourse ? activeCourse.chapters[activeChapterIndex] : null;
   
@@ -248,93 +195,6 @@ export default function App() {
   const isFaActive = 
     (activeTab === 'video' && (activeCourseIndex === 1 || activeCourseIndex === 2)) ||
     (activeTab === 'slideshow' && (activeSlideshowIndex === 1 || activeSlideshowIndex === 3 || activeSlideshowIndex === 4));
-
-  const stableHandleItemClick = useCallback((type: string, index: number) => {
-    handleItemClick(type, index);
-  }, []);
-
-  const stableSetFaDrilldown = useCallback(() => {
-    setFaDrilldown(true);
-  }, []);
-
-  const cprCategories: MenuDropdownCategory[] = [
-    {
-      title: "CPR & AED FOR ALL AGES",
-      subtitle: "Choose how you want to teach this course.",
-      layout: 'grid',
-      items: [
-        {
-          type: 'slideshow',
-          index: 0,
-          title: 'Teach using Slideshow',
-          description: 'PowerPoint-style course. Teach at your own pace.',
-          badge: 'SELF-PACED TEACHING',
-          iconTheme: 'red'
-        },
-        {
-          type: 'video',
-          index: 0,
-          title: 'Teach using Video',
-          description: 'Slides with a virtual assistant narrating each section.',
-          badge: 'NARRATED COURSE',
-          iconTheme: 'red'
-        }
-      ]
-    }
-  ];
-
-  const faInitialCategories: MenuDropdownCategory[] = [
-    {
-      title: "",
-      headerText: "Which course would you like to teach?",
-      layout: 'grid',
-      items: [
-        {
-          type: 'drilldown',
-          title: 'FIRST AID FOR ALL AGES',
-          titleColor: 'text-[#ff4b4b] uppercase',
-          description: "EHAcademy's Full Certification Course covering First Aid for adults, children, and infants.",
-          badges: ['MEETS AHA AND OSHA GUIDELINES', 'OPTIONAL VIRTUAL ASSISTANT'],
-          iconTheme: 'red'
-        },
-        {
-          type: 'slideshow',
-          index: 4,
-          title: 'PEDIATRIC FIRST AID',
-          titleColor: 'text-[#ff4b4b] uppercase',
-          description: "EHAcademy's Full Certification Course with a focus on pediatric care (i.e. children or infants). Teach at your own pace.",
-          badges: ['IDEAL FOR CHILDCARE FACILITIES', 'SELF-PACED COURSE'],
-          iconTheme: 'red'
-        }
-      ]
-    }
-  ];
-
-  const faDrilldownCategories: MenuDropdownCategory[] = [
-    {
-      title: "FIRST AID FOR ALL AGES",
-      subtitle: "Choose how you want to teach this course.",
-      layout: 'grid',
-      items: [
-        {
-          type: 'slideshow',
-          index: 1,
-          title: 'Teach using Slideshow',
-          description: 'PowerPoint-style course. Teach at your own pace.',
-          badge: 'SELF-PACED TEACHING',
-          iconTheme: 'red'
-        },
-        {
-          type: 'video',
-          index: 1,
-          title: 'Teach using Video',
-          description: 'Slides with a virtual assistant narrating each section.',
-          badge: 'NARRATED COURSE',
-          iconTheme: 'red'
-        }
-      ]
-    }
-  ];
 
 
 
@@ -501,12 +361,20 @@ export default function App() {
     ? activeCourse.chapters[activeChapterIndex + 1] 
     : null;
 
+  const isTargetDownloaded = isTauri && activeChapter ? !!dlState.fileStatuses[activeChapter.filename.replace(/^\//, '')] : false;
+  const isNextDownloaded = isTauri && nextChapter ? !!dlState.fileStatuses[nextChapter.filename.replace(/^\//, '')] : false;
+
   // Manage double-buffered preloading for Video Players A & B
   useEffect(() => {
     if (!activeChapter) return;
 
-    const activeUrl = m(activeChapter.filename);
-    const nextUrl = nextChapter ? m(nextChapter.filename) : "";
+    const getUrl = (chapter: any, downloaded: boolean) => {
+      const url = m(chapter.filename);
+      return isTauri ? url + (downloaded ? "?t=ready" : "?t=loading") : url;
+    };
+
+    const activeUrl = getUrl(activeChapter, isTargetDownloaded);
+    const nextUrl = nextChapter ? getUrl(nextChapter, isNextDownloaded) : "";
 
     // Load active player immediately
     if (activePlayer === 'A') {
@@ -538,7 +406,7 @@ export default function App() {
     }, 800);
 
     return () => clearTimeout(timer);
-  }, [activeChapterIndex, activeCourseIndex, activePlayer]);
+  }, [activeChapterIndex, activeCourseIndex, activePlayer, isTargetDownloaded, isNextDownloaded]);
 
   // Synchronize playing state, volume cross-fading, and legacy ref when active player swaps
   useEffect(() => {
@@ -692,6 +560,12 @@ export default function App() {
     setShowFaSelector(false);
     setShowNextOverlay(false);
     setShowSidebar(true);
+    // Auto-download course media
+    if (isTauri && COURSES[index]) {
+      const courseId = COURSES[index].id;
+      const category = courseId === 'cpr-aed' ? 'cpr-aed' : 'first-aid';
+      downloadManager.startBulkDownload(category as any);
+    }
   };
 
   const switchSlideshow = (index: number) => {
@@ -701,6 +575,10 @@ export default function App() {
     setShowCprSelector(false);
     setShowFaSelector(false);
     setShowSidebar(true);
+    // Auto-download slideshow media
+    if (isTauri && SLIDESHOWS[index]) {
+      downloadManager.startSlideshowDownload(SLIDESHOWS[index].id);
+    }
   };
 
   const nextSlide = () => {
@@ -1003,7 +881,7 @@ export default function App() {
                           >
                             <div className="w-14 h-18 rounded-lg overflow-hidden border border-white/10 shrink-0 shadow-lg relative group-hover:scale-[1.03] transition-transform duration-300">
                               <img 
-                                src={m(details.thumb)} 
+                                src={details.thumb} 
                                 alt={manual.title} 
                                 className="w-full h-full object-cover"
                               />
@@ -1191,7 +1069,33 @@ export default function App() {
                                 <Play size={14} className="text-eh-red ml-0.5" fill="currentColor" />
                               )}
                             </button>
-                          ) : null}
+                          ) : (
+                            /* Download status / button for non-active, non-header chapters */
+                            isTauri ? (
+                              dlState.fileStatuses[chapter.filename?.trim().replace(/^\//, '') || ''] ? (
+                                <CheckCircle2 size={16} className="text-green-500 shrink-0" title="Downloaded" />
+                              ) : dlState.isDownloading && dlState.currentFile === chapter.filename?.trim().replace(/^\//, '') ? (
+                                easterEggLevel > 0 ? (
+                                  <video src="/CPR-Dummies.mp4" autoPlay loop muted playsInline className="w-6 h-6 shrink-0 rounded-md object-cover" title="Downloading..." />
+                                ) : (
+                                  <Loader2 size={16} className="text-eh-blue animate-spin shrink-0" title="Downloading..." />
+                                )
+                              ) : (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (chapter.filename) {
+                                      downloadManager.startSingleDownload(chapter.filename);
+                                    }
+                                  }}
+                                  className="p-1 hover:bg-eh-blue/10 rounded-full transition-colors cursor-pointer"
+                                  title="Download this chapter"
+                                >
+                                  <Download size={14} className="text-eh-blue/50 hover:text-eh-blue" />
+                                </button>
+                              )
+                            ) : null
+                          )}
                         </div>
                       </div>
                     );
@@ -1205,42 +1109,91 @@ export default function App() {
               )}
             </div>
 
-            <div className="p-6 bg-black border-t border-eh-peach/10 space-y-4">
-              <div className="flex items-center justify-between px-2">
+            {/* Settings Collapsible Section */}
+            <div className="bg-black border-t border-eh-peach/10 pt-4 pb-2">
+              <button
+                onClick={() => setIsSettingsExpanded(!isSettingsExpanded)}
+                className="w-[calc(100%-32px)] mx-4 flex items-center justify-between px-5 py-3 border border-white/20 rounded-xl hover:bg-white/5 transition-colors group cursor-pointer"
+              >
                 <div className="flex items-center gap-3">
-                  <div className={`w-2 h-2 rounded-full ${isContinuousPlay ? 'bg-eh-red animate-pulse' : 'bg-eh-blue opacity-50'}`} />
-                  <span className="text-[11px] font-bold uppercase tracking-widest text-eh-peach/80">Continuous Play</span>
+                  <Settings size={20} className="text-white group-hover:rotate-90 transition-transform duration-500" />
+                  <span className="text-sm font-bold uppercase tracking-widest text-white">Settings</span>
                 </div>
-                <button 
-                  onClick={() => setIsContinuousPlay(!isContinuousPlay)}
-                  className={`w-10 h-5 rounded-full relative transition-colors duration-300 ${isContinuousPlay ? 'bg-eh-red' : 'bg-eh-peach/10'}`}
-                  title={isContinuousPlay ? "Disable Continuous Play (Auto-Advance Chapters)" : "Enable Continuous Play (Auto-Advance Chapters)"}
-                >
-                  <motion.div 
-                    animate={{ x: isContinuousPlay ? 22 : 2 }}
-                    className="absolute top-1 left-0 w-3 h-3 bg-eh-peach rounded-full shadow-lg"
-                  />
-                </button>
-              </div>
+                <ChevronDown size={20} className={`text-white transition-transform duration-300 ${isSettingsExpanded ? 'rotate-180' : ''}`} />
+              </button>
+              
+              <AnimatePresence>
+                {isSettingsExpanded && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="px-6 py-6 space-y-6">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-3 h-3 rounded-full ${isContinuousPlay ? 'bg-white' : 'bg-white/30'}`} />
+                          <span className="text-sm font-bold uppercase tracking-widest text-white">Continuous Play</span>
+                        </div>
+                        <button 
+                          onClick={() => setIsContinuousPlay(!isContinuousPlay)}
+                          className={`w-12 h-6 rounded-full relative transition-colors duration-300 ${isContinuousPlay ? 'bg-white/30' : 'bg-white/10'}`}
+                        >
+                          <motion.div 
+                            animate={{ x: isContinuousPlay ? 26 : 2 }}
+                            className="absolute top-1 left-0 w-4 h-4 bg-white rounded-full shadow-lg"
+                          />
+                        </button>
+                      </div>
 
-              <div className="flex items-center justify-between text-xs px-2 font-medium">
-                <div className="flex items-center gap-2 text-eh-peach/40">
-                  <Info size={14} />
-                  <span>Offline Training Mode</span>
-                </div>
-                <button
-                  onClick={() => {
-                    setActiveGuidePath('menu');
-                    setPortalStep(1);
-                    setShowHowTo(true);
-                  }}
-                  className="flex items-center gap-1 text-eh-blue hover:text-eh-blue-light font-bold uppercase tracking-wider transition-colors duration-200"
-                  title="Open How-To Guide"
-                >
-                  <HelpCircle size={14} />
-                  <span>Guide</span>
-                </button>
-              </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-white select-none">
+                          <button 
+                            type="button" 
+                            onClick={handleInfoClick} 
+                            onPointerDown={handleInfoPointerDown}
+                            onPointerUp={handleInfoPointerUp}
+                            onPointerLeave={handleInfoPointerUp}
+                            className="cursor-pointer hover:scale-110 transition-transform focus:outline-none"
+                          >
+                            <Info size={18} />
+                          </button>
+                          <span className="text-sm font-bold">Offline Training Mode</span>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setActiveGuidePath('menu');
+                            setPortalStep(1);
+                            setShowHowTo(true);
+                          }}
+                          className="flex items-center gap-2 text-[#4ae5bd] font-bold uppercase tracking-widest hover:text-white transition-colors"
+                        >
+                          <HelpCircle size={18} />
+                          Guide
+                        </button>
+                      </div>
+                      
+                      <div className="flex items-center gap-2 pt-2">
+                        {dlState.globalTotalCount === dlState.globalDownloadedCount ? (
+                          <>
+                            <CheckCircle2 size={18} className="text-green-500" />
+                            <span className="text-sm font-bold text-green-500">All Offline Media Downloaded</span>
+                          </>
+                        ) : (
+                          <button
+                            onClick={() => downloadManager.startBulkDownload('everything')}
+                            className="flex items-center gap-2 text-[#ff4b4b] hover:text-[#ff3333] transition-colors"
+                          >
+                            <Download size={18} />
+                            <span className="text-sm font-bold">Download All Offline Media ({dlState.globalTotalCount - dlState.globalDownloadedCount} left)</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
             </div>
           </motion.aside>
@@ -1285,7 +1238,13 @@ export default function App() {
               <div className="relative h-full flex items-end">
                 <button 
                   onClick={() => {
-                    setShowCprSelector(!showCprSelector);
+                    // If a CPR course is active but user is on another tab, return to it
+                    if (isCprActive && activeTab !== 'video' && activeTab !== 'slideshow') {
+                      setActiveTab(activeCourseIndex === 0 ? 'video' : 'slideshow');
+                      setShowCprSelector(false);
+                    } else {
+                      setShowCprSelector(!showCprSelector);
+                    }
                     setShowFaSelector(false);
                     setShowManualSelector(false);
                   }}
@@ -1304,13 +1263,76 @@ export default function App() {
                 <AnimatePresence>
                   {showCprSelector && (
                     <motion.div
-                      initial={{ opacity: 0, y: -10, z: 0 }}
-                      animate={{ opacity: 1, y: 0, z: 0 }}
-                      exit={{ opacity: 0, y: -10, z: 0 }}
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
                       className="absolute top-full left-0 mt-2 z-50 origin-top-left"
                       style={{ willChange: "transform, opacity", backfaceVisibility: "hidden" }}
                     >
-                      <DropdownContent categories={cprCategories} activeTab={activeTab} activeCourseIndex={activeCourseIndex} activeSlideshowIndex={activeSlideshowIndex} onItemClick={stableHandleItemClick} onDrilldown={stableSetFaDrilldown} />
+                      <div className="p-6 bg-[#0a0a0a] rounded-[24px] border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.8)] w-[560px] relative z-[9999]">
+                        <h3 className="text-2xl font-black text-[#ff4b4b] uppercase tracking-tight leading-none text-center mb-5">CPR & AED FOR ALL AGES</h3>
+                        <div className="flex gap-6">
+                          {/* Left: Description */}
+                          <div className="flex-1 flex flex-col justify-between">
+                            <AnimatePresence mode="popLayout">
+                              <motion.ul 
+                                key={cprVaEnabled ? 'cpr-va-list' : 'cpr-std-list'}
+                                initial={{ opacity: 0, scale: 0.98, filter: 'blur(4px)' }}
+                                animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+                                exit={{ opacity: 0, scale: 1.02, filter: 'blur(4px)' }}
+                                transition={{ duration: 0.5, ease: "easeOut" }}
+                                className="space-y-4 text-sm text-white font-bold w-full"
+                              >
+                                {cprVaEnabled ? (
+                                  <>
+                                    <li className="flex items-center gap-3"><CheckCircle2 size={18} className="text-[#ff4b4b] shrink-0"/><span><strong className="text-white">Narrated Course</strong> — Virtual Assistant guides each section</span></li>
+                                    <li className="flex items-center gap-3"><CheckCircle2 size={18} className="text-[#ff4b4b] shrink-0"/><span>Hands-free automation for classroom delivery</span></li>
+                                    <li className="flex items-center gap-3"><CheckCircle2 size={18} className="text-[#ff4b4b] shrink-0"/><span>Full AHA & OSHA compliant certification</span></li>
+                                    <li className="flex items-center gap-3"><CheckCircle2 size={18} className="text-[#ff4b4b] shrink-0"/><span>Adults, children & infants</span></li>
+                                  </>
+                                ) : (
+                                  <>
+                                    <li className="flex items-center gap-3"><CheckCircle2 size={18} className="text-[#ff4b4b] shrink-0"/><span>Full CPR & AED Certification Course</span></li>
+                                    <li className="flex items-center gap-3"><CheckCircle2 size={18} className="text-[#ff4b4b] shrink-0"/><span>Teach at your own pace</span></li>
+                                    <li className="flex items-center gap-3"><CheckCircle2 size={18} className="text-[#ff4b4b] shrink-0"/><span>Covers Adult, Child & Infant CPR</span></li>
+                                    <li className="flex items-center gap-3"><CheckCircle2 size={18} className="text-[#ff4b4b] shrink-0"/><span>Interactive slides with practice cues</span></li>
+                                  </>
+                                )}
+                              </motion.ul>
+                            </AnimatePresence>
+                          </div>
+                          {/* Right: Cover Image + Toggle */}
+                          <div className="w-[260px] flex flex-col items-center gap-4 shrink-0">
+                            <div className="w-full aspect-video rounded-2xl overflow-hidden border border-white/10 relative bg-[#0a0a0a]">
+                              <AnimatePresence mode="popLayout">
+                                <motion.img 
+                                  key={cprVaEnabled ? 'cpr-va' : 'cpr-std'}
+                                  src={cprVaEnabled ? "/CPR AED for All Ages with VA.png" : "/CPR AED for All Ages Cover.png"} 
+                                  alt="CPR AED Course Cover" 
+                                  className="w-full h-full object-cover absolute inset-0"
+                                  initial={{ opacity: 0, scale: 0.98, filter: 'blur(4px)' }}
+                                  animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+                                  exit={{ opacity: 0, scale: 1.02, filter: 'blur(4px)' }}
+                                  transition={{ duration: 0.5, ease: "easeOut" }}
+                                />
+                              </AnimatePresence>
+                            </div>
+                            <div className="flex items-center justify-between w-full">
+                              <span className="text-xs text-[#aaa] font-medium">Enable Virtual Assistant?</span>
+                              <button onClick={() => setCprVaEnabled(!cprVaEnabled)} className={`shrink-0 relative w-10 h-5 rounded-full transition-colors duration-300 cursor-pointer ${cprVaEnabled ? 'bg-[#ff4b4b]' : 'bg-[#333]'}`}>
+                                <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-300 ${cprVaEnabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                              </button>
+                            </div>
+                            <div className="group relative w-full text-center">
+                              <button className="text-[10px] text-[#666] hover:text-[#aaa] transition-colors flex items-center gap-1 mx-auto cursor-pointer"><HelpCircle size={12} /><span>What is this?</span></button>
+                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-[#1a1a1a] border border-white/10 rounded-xl text-[10px] text-[#aaa] w-48 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">When enabled, a virtual assistant narrates each section of the course automatically, allowing hands-free teaching.</div>
+                            </div>
+                          </div>
+                        </div>
+                        <button onClick={() => { if (cprVaEnabled) { handleItemClick('video', 0); } else { handleItemClick('slideshow', 0); } }} className="w-full mt-5 py-3 bg-[#ff4b4b] hover:bg-[#ff3333] text-white font-black text-sm uppercase tracking-wider rounded-2xl transition-all duration-300 cursor-pointer active:scale-[0.98] shadow-[0_0_20px_rgba(255,75,75,0.3)]">
+                          START COURSE
+                        </button>
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -1319,8 +1341,13 @@ export default function App() {
               <div className="relative h-full flex items-end">
                 <button 
                   onClick={() => {
-                    if (!showFaSelector) setFaDrilldown(false);
-                    setShowFaSelector(!showFaSelector);
+                    // If a FA course is active but user is on another tab, return to it
+                    if (isFaActive && activeTab !== 'video' && activeTab !== 'slideshow') {
+                      setActiveTab(activeCourseIndex === 1 || activeCourseIndex === 2 ? 'video' : 'slideshow');
+                      setShowFaSelector(false);
+                    } else {
+                      setShowFaSelector(!showFaSelector);
+                    }
                     setShowCprSelector(false);
                     setShowManualSelector(false);
                   }}
@@ -1339,13 +1366,88 @@ export default function App() {
                 <AnimatePresence>
                   {showFaSelector && (
                     <motion.div
-                      initial={{ opacity: 0, y: -10, z: 0 }}
-                      animate={{ opacity: 1, y: 0, z: 0 }}
-                      exit={{ opacity: 0, y: -10, z: 0 }}
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
                       className="absolute top-full left-0 mt-2 z-50 origin-top-left"
                       style={{ willChange: "transform, opacity", backfaceVisibility: "hidden" }}
                     >
-                       <DropdownContent categories={faDrilldown ? faDrilldownCategories : faInitialCategories} activeTab={activeTab} activeCourseIndex={activeCourseIndex} activeSlideshowIndex={activeSlideshowIndex} onItemClick={stableHandleItemClick} onDrilldown={stableSetFaDrilldown} />
+                      <div className="p-6 bg-[#0a0a0a] rounded-[24px] border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.8)] w-[560px] relative z-[9999]">
+                        <h3 className="text-2xl font-black text-[#ff4b4b] uppercase tracking-tight leading-none text-center mb-5">{faPediatric ? 'PEDIATRIC FIRST AID' : 'FIRST AID FOR ALL AGES'}</h3>
+                        <div className="flex gap-6">
+                          <div className="flex-1 flex flex-col justify-between">
+                            <AnimatePresence mode="popLayout">
+                              <motion.ul 
+                                key={faPediatric ? 'fa-pedi-list' : faVaEnabled ? 'fa-va-list' : 'fa-std-list'}
+                                initial={{ opacity: 0, scale: 0.98, filter: 'blur(4px)' }}
+                                animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+                                exit={{ opacity: 0, scale: 1.02, filter: 'blur(4px)' }}
+                                transition={{ duration: 0.5, ease: "easeOut" }}
+                                className="space-y-4 text-sm text-white font-bold w-full"
+                              >
+                                {faPediatric ? (
+                                  <>
+                                    <li className="flex items-center gap-3"><CheckCircle2 size={18} className="text-[#ff4b4b] shrink-0"/><span><strong className="text-white">Pediatric-Focused Course</strong></span></li>
+                                    <li className="flex items-center gap-3"><CheckCircle2 size={18} className="text-[#ff4b4b] shrink-0"/><span>Ideal for childcare & school staff</span></li>
+                                    <li className="flex items-center gap-3"><CheckCircle2 size={18} className="text-[#ff4b4b] shrink-0"/><span>Children & infants focus</span></li>
+                                    <li className="flex items-center gap-3"><CheckCircle2 size={18} className="text-[#ff4b4b] shrink-0"/><span>Self-paced slideshow format</span></li>
+                                  </>
+                                ) : faVaEnabled ? (
+                                  <>
+                                    <li className="flex items-center gap-3"><CheckCircle2 size={18} className="text-[#ff4b4b] shrink-0"/><span><strong className="text-white">Narrated Course</strong> — Virtual Assistant guides each section</span></li>
+                                    <li className="flex items-center gap-3"><CheckCircle2 size={18} className="text-[#ff4b4b] shrink-0"/><span>Hands-free automation for classroom delivery</span></li>
+                                    <li className="flex items-center gap-3"><CheckCircle2 size={18} className="text-[#ff4b4b] shrink-0"/><span>Full AHA & OSHA compliant certification</span></li>
+                                    <li className="flex items-center gap-3"><CheckCircle2 size={18} className="text-[#ff4b4b] shrink-0"/><span>Adults, children & infants</span></li>
+                                  </>
+                                ) : (
+                                  <>
+                                    <li className="flex items-center gap-3"><CheckCircle2 size={18} className="text-[#ff4b4b] shrink-0"/><span>Full First Aid Certification Course</span></li>
+                                    <li className="flex items-center gap-3"><CheckCircle2 size={18} className="text-[#ff4b4b] shrink-0"/><span>Teach at your own pace</span></li>
+                                    <li className="flex items-center gap-3"><CheckCircle2 size={18} className="text-[#ff4b4b] shrink-0"/><span>Covers all age groups & scenarios</span></li>
+                                    <li className="flex items-center gap-3"><CheckCircle2 size={18} className="text-[#ff4b4b] shrink-0"/><span>Interactive slides with practice cues</span></li>
+                                  </>
+                                )}
+                              </motion.ul>
+                            </AnimatePresence>
+                          </div>
+                          <div className="w-[260px] flex flex-col items-center gap-4 shrink-0">
+                            <div className="w-full aspect-video rounded-2xl overflow-hidden border border-white/10 relative bg-[#0a0a0a]">
+                              <AnimatePresence mode="popLayout">
+                                <motion.img 
+                                  key={faPediatric ? 'fa-pedi' : faVaEnabled ? 'fa-va' : 'fa-std'}
+                                  src={faPediatric ? "/Pediatric First Aid Cover.png" : faVaEnabled ? "/First Aid for All Ages with VA.png" : "/First Aid for All Ages Cover.png"} 
+                                  alt="First Aid Course Cover" 
+                                  className="w-full h-full object-cover absolute inset-0"
+                                  initial={{ opacity: 0, scale: 0.98, filter: 'blur(4px)' }}
+                                  animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+                                  exit={{ opacity: 0, scale: 1.02, filter: 'blur(4px)' }}
+                                  transition={{ duration: 0.5, ease: "easeOut" }}
+                                />
+                              </AnimatePresence>
+                            </div>
+                            <div className="flex items-center justify-between w-full group/va relative">
+                              <span className={`text-xs font-medium ${faPediatric ? 'text-[#555]' : 'text-[#aaa]'}`}>Enable Virtual Assistant?</span>
+                              <button onClick={() => { if (!faPediatric) setFaVaEnabled(!faVaEnabled); }} className={`shrink-0 relative w-10 h-5 rounded-full transition-colors duration-300 ${faPediatric ? 'bg-[#222] cursor-not-allowed' : faVaEnabled ? 'bg-[#ff4b4b] cursor-pointer' : 'bg-[#333] cursor-pointer'}`} disabled={faPediatric}>
+                                <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-300 ${faVaEnabled && !faPediatric ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                              </button>
+                              {faPediatric && <div className="absolute bottom-full left-0 mb-2 px-3 py-2 bg-[#1a1a1a] border border-white/10 rounded-xl text-[10px] text-[#aaa] w-56 opacity-0 group-hover/va:opacity-100 transition-opacity pointer-events-none z-50">Not available for Pediatric First Aid Course</div>}
+                            </div>
+                            <div className="flex items-center justify-between w-full">
+                              <span className="text-xs text-[#aaa] font-medium">Pediatric Focused?</span>
+                              <button onClick={() => { const next = !faPediatric; setFaPediatric(next); if (next) { setFaVaEnabled(false); } }} className={`shrink-0 relative w-10 h-5 rounded-full transition-colors duration-300 cursor-pointer ${faPediatric ? 'bg-[#ff4b4b]' : 'bg-[#333]'}`}>
+                                <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-300 ${faPediatric ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                              </button>
+                            </div>
+                            <div className="group relative w-full text-center">
+                              <button className="text-[10px] text-[#666] hover:text-[#aaa] transition-colors flex items-center gap-1 mx-auto cursor-pointer"><HelpCircle size={12} /><span>What is this?</span></button>
+                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-[#1a1a1a] border border-white/10 rounded-xl text-[10px] text-[#aaa] w-48 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">When enabled, a virtual assistant narrates each section of the course automatically, allowing hands-free teaching.</div>
+                            </div>
+                          </div>
+                        </div>
+                        <button onClick={() => { if (faPediatric) { handleItemClick('slideshow', 4); } else if (faVaEnabled) { handleItemClick('video', 1); } else { handleItemClick('slideshow', 1); } }} className="w-full mt-5 py-3 bg-[#ff4b4b] hover:bg-[#ff3333] text-white font-black text-sm uppercase tracking-wider rounded-2xl transition-all duration-300 cursor-pointer active:scale-[0.98] shadow-[0_0_20px_rgba(255,75,75,0.3)]">
+                          START COURSE
+                        </button>
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -1430,6 +1532,25 @@ export default function App() {
                   </div>
                 </button>
               </div>
+              {easterEggLevel > 0 && (
+                <div className="hidden sm:flex relative items-center justify-center self-center ml-2 h-10 w-14">
+                  <div 
+                    className={`absolute h-8 w-auto rounded overflow-hidden transition-all duration-1000 ease-in-out ${easterEggLevel === 1 ? 'opacity-100 scale-100' : 'opacity-0 scale-75 pointer-events-none'}`}
+                  >
+                    <video src="/CPR-Dummies.mp4" autoPlay loop muted playsInline className="h-full w-auto object-cover" />
+                  </div>
+                  
+                  <div 
+                    className={`absolute h-10 w-10 overflow-hidden transition-all duration-1000 ease-in-out ${easterEggLevel === 2 ? 'opacity-100 scale-100' : 'opacity-0 scale-75 pointer-events-none'}`}
+                    style={{ 
+                      WebkitMaskImage: 'radial-gradient(circle, black 40%, transparent 70%)', 
+                      maskImage: 'radial-gradient(circle, black 40%, transparent 70%)' 
+                    }}
+                  >
+                    <video src="/WakeUp-Friends-SpaceStars.mp4" autoPlay loop muted playsInline className="h-full w-full object-cover" />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -1450,7 +1571,7 @@ export default function App() {
           <div className={`absolute inset-0 flex flex-col items-center justify-center p-8 transition-opacity duration-1000 pointer-events-none ${
             (((!activeCourse && activeTab === 'video') || (!selectedManual && activeTab === 'manual') || (!activeSlideshow && activeTab === 'slideshow')) && activeTab !== 'send-certs') ? 'opacity-100' : 'opacity-0'
           }`}>
-             <img src={m("/eha-idle-screen.png")} alt="EH Academy" className="w-full max-w-3xl object-contain mb-auto mt-auto" />
+             <img src="/eha-idle-screen.png" alt="EH Academy" className="w-full max-w-3xl object-contain mb-auto mt-auto" />
              
              {/* Copyright Banner on Idle Screen */}
              <div className="mt-auto pt-8 w-full max-w-4xl text-center">
@@ -1460,21 +1581,6 @@ export default function App() {
              </div>
           </div>
 
-          {/* Startup DRM Banner */}
-          <AnimatePresence>
-            {showStartupBanner && (
-              <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.5 }}
-                className="absolute top-6 left-1/2 -translate-x-1/2 z-50 bg-black/80 backdrop-blur-md border border-white/10 rounded-full px-6 py-2 shadow-2xl flex items-center gap-3 pointer-events-none"
-              >
-                <div className="w-2 h-2 rounded-full bg-eh-red animate-pulse" />
-                <span className="text-xs font-medium text-white/90">Screen capture is disabled to protect copyrighted materials</span>
-              </motion.div>
-            )}
-          </AnimatePresence>
 
           {/* Send Certs Tab Container */}
           <div className={`w-full h-full relative z-10 ${activeTab === 'send-certs' ? 'block' : 'hidden'}`}>
@@ -1567,7 +1673,7 @@ export default function App() {
                     <span className="text-xs font-bold text-eh-peach/40 uppercase tracking-widest font-mono">Sample Student Certification Card</span>
                     <div className="relative group rounded-xl overflow-hidden border border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.4)] transition-all duration-300 hover:border-eh-red/30 hover:shadow-[0_4px_30px_rgba(245,57,78,0.15)] max-w-md w-full">
                       <img 
-                        src={m("/sample-cert.png")} 
+                        src="/sample-cert.png" 
                         alt="Everyday Hero Academy Sample Certification Card" 
                         className="w-full h-auto object-cover"
                       />
@@ -1626,7 +1732,7 @@ export default function App() {
                     <span className="text-[10px] font-bold text-eh-peach/40 uppercase tracking-widest font-mono">Sample Student Certification Card</span>
                     <div className="relative group rounded-xl overflow-hidden border border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.4)] transition-all duration-300 hover:border-eh-red/30 hover:shadow-[0_4px_30px_rgba(245,57,78,0.15)] max-w-sm w-full mx-auto">
                       <img 
-                        src={m("/sample-cert.png")} 
+                        src="/sample-cert.png" 
                         alt="Everyday Hero Academy Sample Certification Card" 
                         className="w-full h-auto object-cover"
                       />
@@ -1662,6 +1768,7 @@ export default function App() {
                   setActiveTab('video');
                 }}
                 onOutlineLoaded={(outline) => setManualOutline(outline)}
+                showEasterEgg={easterEggLevel > 0}
               />
             )}
           </div>
@@ -2595,7 +2702,7 @@ export default function App() {
                                   <span className="text-[10px] text-eh-peach/60 uppercase tracking-widest font-mono">Clean screenshot with Claude overlays neutralized</span>
                                 </div>
                                 <img
-                                  src={m(s.image)}
+                                  src={s.image}
                                   alt={s.title}
                                   className="w-full h-auto rounded-xl object-contain border border-white/5 bg-[#151515]"
                                 />
@@ -2637,6 +2744,76 @@ export default function App() {
         </AnimatePresence>
 
       </main>
+
+      {/* First-Launch Download All Prompt */}
+      <AnimatePresence>
+        {showDownloadPrompt && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-[#131313] border border-white/10 rounded-3xl p-8 md:p-10 shadow-2xl max-w-md w-full mx-4 relative overflow-hidden"
+            >
+              <div className="absolute top-0 left-0 right-0 h-1.5 bg-eh-blue" />
+              
+              <div className="w-16 h-16 bg-eh-blue/10 rounded-full flex items-center justify-center mx-auto mb-5">
+                <Download size={32} className="text-eh-blue" />
+              </div>
+              
+              <h2 className="text-2xl font-bold text-eh-peach text-center mb-3 tracking-tight">
+                Download Course Media
+              </h2>
+              <p className="text-sm text-eh-peach/70 text-center leading-relaxed mb-6">
+                Would you like to download all course materials now? This includes videos, slideshows, and training manuals for offline use.
+              </p>
+
+              <div className="bg-black/40 border border-white/5 rounded-xl p-4 mb-6">
+                <div className="flex items-center justify-between text-xs text-eh-peach/50 mb-2">
+                  <span>Files available</span>
+                  <span className="font-mono">{dlState.globalTotalCount} files</span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-eh-peach/50">
+                  <span>Already downloaded</span>
+                  <span className="font-mono text-green-500">{dlState.globalDownloadedCount} files</span>
+                </div>
+              </div>
+              
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={() => {
+                    localStorage.setItem('eh_download_prompted', 'true');
+                    setShowDownloadPrompt(false);
+                    downloadManager.startBulkDownload('everything');
+                  }}
+                  className="w-full py-3.5 bg-eh-blue hover:bg-eh-blue-light text-white font-bold rounded-xl text-sm shadow-xl transition-all active:scale-[0.98] cursor-pointer"
+                >
+                  Download Everything
+                </button>
+                <button
+                  onClick={() => {
+                    localStorage.setItem('eh_download_prompted', 'true');
+                    setShowDownloadPrompt(false);
+                  }}
+                  className="w-full py-3 bg-white/5 hover:bg-white/10 text-eh-peach/60 font-bold rounded-xl text-sm transition-all cursor-pointer border border-white/5"
+                >
+                  Download Later
+                </button>
+              </div>
+              
+              <p className="text-[10px] text-eh-peach/30 text-center mt-4">
+                You can download individual chapters anytime from the sidebar.
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 }

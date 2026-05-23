@@ -7,25 +7,16 @@
 
 const isTauri = typeof window !== 'undefined' && !!(window as any).__TAURI_INTERNALS__;
 
-let mediaBase = '';
-let initialized = false;
+// On Windows Tauri, the media protocol base URL is always deterministic.
+// Set it eagerly so mediaUrl() works synchronously from the very first render.
+let mediaBase = isTauri ? 'http://media.localhost/' : '';
+let initialized = isTauri; // If Tauri, we already know the base URL
 
 async function init() {
-  if (!isTauri || initialized) return;
+  if (!isTauri) return;
   
   try {
-    const { invoke } = await import('@tauri-apps/api/core');
-    
-    // The backend returns the protocol base URL
-    mediaBase = await invoke('get_media_base_path');
-    
-    // Ensure trailing slash
-    if (!mediaBase.endsWith('/')) mediaBase += '/';
-    
-    initialized = true;
-    console.log('[MediaResolver] ✅ Ready. Base URL:', mediaBase);
-    
-    // Quick test: verify the protocol works
+    // Verify the protocol is working
     try {
       const testUrl = mediaBase + 'eha-icon.png';
       const resp = await fetch(testUrl, { method: 'HEAD' });
@@ -33,6 +24,8 @@ async function init() {
     } catch (e) {
       console.warn('[MediaResolver] Protocol test failed:', e);
     }
+    
+    console.log('[MediaResolver] ✅ Ready. Base URL:', mediaBase);
   } catch (e) {
     console.error('[MediaResolver] ❌ Init failed:', e);
   }
@@ -41,7 +34,7 @@ async function init() {
 const initPromise = init();
 
 /**
- * Convert a public-directory filename to a URL that works in both web and Tauri.
+ * Convert a media-directory filename to a URL that works in both web and Tauri.
  * 
  * Web:   "/01_EHAcademy - CPR AED Course Video-Introduction.mp4"
  *     -> "/01_EHAcademy - CPR AED Course Video-Introduction.mp4"
@@ -50,7 +43,7 @@ const initPromise = init();
  *     -> "http://media.localhost/01_EHAcademy%20-%20CPR%20AED%20Course%20Video-Introduction.mp4"
  */
 export function mediaUrl(filename: string): string {
-  if (!isTauri || !initialized || !mediaBase) return filename;
+  if (!isTauri || !mediaBase) return filename;
   
   // Strip leading slash if present
   const clean = filename.startsWith('/') ? filename.slice(1) : filename;
