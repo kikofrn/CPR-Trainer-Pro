@@ -65,14 +65,21 @@ export default function App() {
     waitForMediaResolver().then(() => setMediaReady(true));
   }, []);
 
+  const appStartTime = useRef(Date.now());
+
   // Hide splashscreen and show main window when media is ready
   useEffect(() => {
     if (mediaReady && isTauri) {
-      import('@tauri-apps/api/core').then(({ invoke }) => {
-        invoke('close_splashscreen').catch(e => 
-          console.error('[Tauri] Splashscreen transition failed:', e)
-        );
-      });
+      const elapsed = Date.now() - appStartTime.current;
+      const delay = Math.max(0, 3500 - elapsed); // Minimum 3.5 seconds display time
+
+      setTimeout(() => {
+        import('@tauri-apps/api/core').then(({ invoke }) => {
+          invoke('close_splashscreen').catch(e => 
+            console.error('[Tauri] Splashscreen transition failed:', e)
+          );
+        });
+      }, delay);
     }
   }, [mediaReady]);
   const [activeCourseIndex, setActiveCourseIndex] = useState<number | null>(null);

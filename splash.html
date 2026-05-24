@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>EH Academy — CPR Trainer Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
       body, html {
         margin: 0;
@@ -13,19 +14,104 @@
         background-color: #000000;
         overflow: hidden;
         display: flex;
+        flex-direction: column;
         justify-content: center;
         align-items: center;
+        font-family: 'Inter', sans-serif;
+      }
+
+      .splash-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 40px;
+      }
+
+      /* Logo Styles */
+      .logo-container {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      .logo-image {
+        width: 64px;
+        height: 64px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .logo-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
+      .logo-text {
+        display: flex;
+        flex-direction: column;
+      }
+      .text-everyday {
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: 0.3em;
+        color: #f5394e;
+        line-height: 1;
+        margin-bottom: 4px;
+      }
+      .text-hero-wrapper {
+        display: flex;
+        flex-direction: column;
+      }
+      .text-hero {
+        font-size: 30px;
+        font-weight: 900;
+        line-height: 1;
+        letter-spacing: -0.05em;
+        color: #fedeca;
+      }
+      .text-academy {
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.25em;
+        color: rgba(172, 222, 255, 0.7);
+        line-height: 1;
+        margin-top: 4px;
+      }
+
+      /* Video Styles */
+      .video-container {
+        width: 380px; /* Small size */
+        border-radius: 16px;
+        overflow: hidden;
+        background: transparent;
       }
       video {
         width: 100%;
-        height: 100%;
+        display: block;
         object-fit: contain;
       }
     </style>
   </head>
   <body>
-    <video autoplay loop muted playsinline>
-      <source src="/CPR-Dummies.mp4" type="video/mp4" />
-    </video>
+    <div class="splash-container">
+      <div class="logo-container">
+        <div class="logo-image">
+          <img src="/eha-icon.png" alt="EH Academy" />
+        </div>
+        <div class="logo-text">
+          <div class="text-everyday">EVERYDAY</div>
+          <div class="text-hero-wrapper">
+            <div class="text-hero">HERO</div>
+            <div class="text-academy">ACADEMY</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="video-container">
+        <video autoplay loop muted playsinline>
+          <source src="/CPR-Dummies.mp4" type="video/mp4" />
+        </video>
+      </div>
+    </div>
   </body>
 </html>
