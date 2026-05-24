@@ -19,6 +19,14 @@ export default defineConfig(({mode}) => {
     },
     // Use the standard public directory so UI assets are bundled correctly
     publicDir: 'public',
+    build: {
+      rollupOptions: {
+        input: {
+          main: path.resolve(__dirname, 'index.html'),
+          splash: path.resolve(__dirname, 'splash.html'),
+        },
+      },
+    },
     server: {
       hmr: process.env.DISABLE_HMR !== 'true',
       watch: process.env.DISABLE_HMR === 'true' ? null : {},

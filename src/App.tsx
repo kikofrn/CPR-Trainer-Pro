@@ -64,6 +64,28 @@ export default function App() {
   useEffect(() => {
     waitForMediaResolver().then(() => setMediaReady(true));
   }, []);
+
+  // Hide splashscreen and show main window when media is ready
+  useEffect(() => {
+    if (mediaReady && isTauri) {
+      Promise.all([
+        import('@tauri-apps/api/webviewWindow'),
+        import('@tauri-apps/api/window')
+      ]).then(async ([{ WebviewWindow }, { getCurrentWindow }]) => {
+        try {
+          const splash = await WebviewWindow.getByLabel('splashscreen');
+          if (splash) {
+            await splash.close();
+          }
+          const main = getCurrentWindow();
+          await main.show();
+          await main.setFocus();
+        } catch (e) {
+          console.error('[Tauri] Splashscreen transition failed:', e);
+        }
+      });
+    }
+  }, [mediaReady]);
   const [activeCourseIndex, setActiveCourseIndex] = useState<number | null>(null);
   const [activeChapterIndex, setActiveChapterIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
