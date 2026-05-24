@@ -23,6 +23,8 @@ export interface Manual {
   id: string;
   title: string;
   filename: string;
+  description: string;
+  thumbnail: string;
 }
 
 export interface Slide {
@@ -1460,18 +1462,24 @@ export const SLIDESHOWS: Slideshow[] = [
 export const MANUALS: Manual[] = [
   {
     id: "instructor",
-    title: "EHA Instructor Manual",
-    filename: "instructor_manual.pdf"
+    title: "Instructor Manual",
+    filename: "instructor_manual.pdf",
+    description: "Comprehensive guide for instructors covering core curriculums, lesson plans, and testing guidelines.",
+    thumbnail: "/manual-instructor-thumb.png"
   },
   {
     id: "student",
-    title: "EHA Student Manual",
-    filename: "student_manual.pdf"
+    title: "Student Manual",
+    filename: "student_manual.pdf",
+    description: "Complete training handbook for students covering CPR, AED usage, and basic first aid.",
+    thumbnail: "/manual-student-thumb.png"
   },
   {
     id: "pediatric",
-    title: "EHA Pediatric Student Manual",
-    filename: "pediatric_student_manual.pdf"
+    title: "Pediatric Student Manual",
+    filename: "pediatric_student_manual.pdf",
+    description: "Specialized student guide focused on infant, child, and pediatric emergency response.",
+    thumbnail: "/manual-pediatric-thumb.png"
   }
 ];
 

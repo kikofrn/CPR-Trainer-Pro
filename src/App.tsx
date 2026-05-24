@@ -16,6 +16,9 @@ import {
   ChevronRight,
   ChevronLeft,
   BookOpen,
+  GraduationCap,
+  Book,
+  Baby,
   ChevronDown,
   Maximize2,
   MonitorPlay,
@@ -95,6 +98,11 @@ export default function App() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [showSidebar, setShowSidebar] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
+  const [volume, setVolume] = useState(1);
+  const volumeRef = useRef(volume);
+  useEffect(() => { volumeRef.current = volume; }, [volume]);
+  
+
   const [isContinuousPlay, setIsContinuousPlay] = useState(false);
   const [progress, setProgress] = useState(0);
   const [showNextOverlay, setShowNextOverlay] = useState(false);
@@ -102,6 +110,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'video' | 'manual' | 'slideshow' | 'send-certs'>('video');
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [showManualSelector, setShowManualSelector] = useState(false);
+  const [previewManualIndex, setPreviewManualIndex] = useState(0);
   const [showCprSelector, setShowCprSelector] = useState(false);
   const [showFaSelector, setShowFaSelector] = useState(false);
   const [faDrilldown, setFaDrilldown] = useState(false);
@@ -162,16 +171,26 @@ export default function App() {
 
   // Subtitle & Double-Buffering States/Refs
   const [activePlayer, setActivePlayer] = useState<'A' | 'B'>('A');
+  
+  // Real-time volume updates for active players
+  useEffect(() => {
+    const active = activePlayer === 'A' ? videoRefA.current : videoRefB.current;
+    if (active) active.volume = isMuted ? 0 : volume;
+    if (slideVideoRef.current) slideVideoRef.current.volume = isMuted ? 0 : volume;
+  }, [volume, isMuted, activePlayer]);
+
   const [showSubtitles, setShowSubtitles] = useState(() => {
     const saved = localStorage.getItem('eh_show_subtitles');
     return saved === null ? true : saved === 'true';
   });
+  const [isUiVisible, setIsUiVisible] = useState(true);
   const [subtitleCues, setSubtitleCues] = useState<SubtitleCue[]>([]);
   const [activeCue, setActiveCue] = useState<SubtitleCue | null>(null);
   const [lastCprView, setLastCprView] = useState<'video' | 'slideshow' | null>(null);
   const [lastFaView, setLastFaView] = useState<'video' | 'slideshow' | null>(null);
   
   const videoRef = useRef<HTMLVideoElement>(null);
+  const videoContainerRef = useRef<HTMLDivElement>(null);
   const videoRefA = useRef<HTMLVideoElement>(null);
   const videoRefB = useRef<HTMLVideoElement>(null);
   const slideVideoRef = useRef<HTMLVideoElement>(null);
@@ -464,9 +483,11 @@ export default function App() {
               const increment = step / duration;
               let currentVolume = 0.0;
               activeInterval = setInterval(() => {
-                currentVolume = Math.min(1.0, currentVolume + increment);
+                const target = volumeRef.current;
+                const dynamicIncrement = (step / duration) * target;
+                currentVolume = Math.min(target, currentVolume + dynamicIncrement);
                 if (active) active.volume = currentVolume;
-                if (currentVolume >= 1.0) {
+                if (currentVolume >= target) {
                   clearInterval(activeInterval);
                 }
               }, step);
@@ -666,26 +687,117 @@ export default function App() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (activeTab === 'slideshow' && activeSlideshow) {
-        if (e.key === 'ArrowRight') {
+      // Spacebar to play/pause video
+      if (e.key === ' ') {
+        if (activeTab === 'video' && activeCourse && videoRef.current) {
+          e.preventDefault();
+          if (isPlaying) {
+            videoRef.current.pause();
+            setIsPlaying(false);
+          } else {
+            videoRef.current.play().then(() => setIsPlaying(true)).catch(console.error);
+          }
+        } else if (activeTab === 'slideshow' && activeSlideshow && slideVideoRef.current && activeSlide?.type === 'video') {
+          e.preventDefault();
+          if (slideshowIsPlaying) {
+            slideVideoRef.current.pause();
+          } else {
+            slideVideoRef.current.play().catch(console.error);
+          }
+          setSlideshowIsPlaying(!slideshowIsPlaying);
+        }
+      } else if (e.key === 'ArrowRight') {
+        if (activeTab === 'slideshow' && activeSlideshow) {
           if (activeSlideIndex < activeSlideshow.slides.length - 1) {
             if (slideVideoRef.current) slideVideoRef.current.pause();
             setActiveSlideIndex(prev => prev + 1);
             setSlideshowIsPlaying(true);
           }
-        } else if (e.key === 'ArrowLeft') {
+        } else if (activeTab === 'video' && activeCourse) {
+          if (activeChapterIndex < activeCourse.chapters.length - 1) {
+            setActivePlayer(prev => prev === 'A' ? 'B' : 'A');
+            setActiveChapterIndex(prev => prev + 1);
+            setShowNextOverlay(false);
+            setIsPlaying(true);
+          }
+        } else if (activeTab === 'manual') {
+          if (flipbookRef.current) flipbookRef.current.flipNext();
+        }
+      } else if (e.key === 'ArrowLeft') {
+        if (activeTab === 'slideshow' && activeSlideshow) {
           if (activeSlideIndex > 0) {
             if (slideVideoRef.current) slideVideoRef.current.pause();
             setActiveSlideIndex(prev => prev - 1);
             setSlideshowIsPlaying(true);
           }
+        } else if (activeTab === 'video' && activeCourse) {
+          if (activeChapterIndex > 0) {
+            setActivePlayer(prev => prev === 'A' ? 'B' : 'A');
+            setActiveChapterIndex(prev => prev - 1);
+            setShowNextOverlay(false);
+            setIsPlaying(true);
+          }
+        } else if (activeTab === 'manual') {
+          if (flipbookRef.current) flipbookRef.current.flipPrev();
+        }
+      } else if (e.key === 'Escape') {
+        if (document.fullscreenElement) {
+          document.exitFullscreen().catch(console.error);
         }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeTab, activeSlideshow, activeSlideIndex]);
+  }, [activeTab, activeSlideshow, activeSlideIndex, activeCourse, activeSlide, isPlaying, slideshowIsPlaying, activeChapterIndex]);
+
+  // UI Fade effect
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+    
+    const handleActivity = () => {
+      setIsUiVisible(true);
+      clearTimeout(timer);
+      if (isPlaying || slideshowIsPlaying) {
+        timer = setTimeout(() => {
+          setIsUiVisible(false);
+        }, 3000);
+      }
+    };
+
+    if ((activeTab === 'video' && !isPlaying) || (activeTab === 'slideshow' && !slideshowIsPlaying)) {
+      setIsUiVisible(true);
+      return;
+    }
+
+    handleActivity();
+    
+    const container1 = videoContainerRef.current;
+    const container2 = slideshowContainerRef.current;
+    
+    if (container1) {
+      container1.addEventListener('mousemove', handleActivity);
+      container1.addEventListener('click', handleActivity);
+    }
+    if (container2) {
+      container2.addEventListener('mousemove', handleActivity);
+      container2.addEventListener('click', handleActivity);
+    }
+    window.addEventListener('mousemove', handleActivity);
+
+    return () => {
+      if (container1) {
+        container1.removeEventListener('mousemove', handleActivity);
+        container1.removeEventListener('click', handleActivity);
+      }
+      if (container2) {
+        container2.removeEventListener('mousemove', handleActivity);
+        container2.removeEventListener('click', handleActivity);
+      }
+      window.removeEventListener('mousemove', handleActivity);
+      clearTimeout(timer);
+    };
+  }, [isPlaying, slideshowIsPlaying, activeTab]);
 
   // Close all dropdowns when clicking outside the header area
   useEffect(() => {
@@ -748,7 +860,16 @@ export default function App() {
             <div className="w-80 h-full flex flex-col shrink-0">
               <div className="p-8 border-b border-eh-peach/10">
                 <div className="flex items-center justify-between gap-2 w-full">
-                  <div className="flex items-center gap-4">
+                  <div 
+                    className="flex items-center gap-4 cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={() => {
+                      setActiveCourseIndex(null);
+                      setActiveSlideshowIndex(null);
+                      setSelectedManual(null);
+                      setActiveTab('video');
+                    }}
+                    title="Return to Main Menu"
+                  >
                     <EHLogo className="h-16 w-16" />
                     <div className="flex flex-col">
                       <span className="text-[14px] font-bold tracking-[0.3em] text-eh-red leading-none mb-1" style={{ fontFamily: "'Inter', sans-serif" }}>EVERYDAY</span>
@@ -1195,9 +1316,13 @@ export default function App() {
                         </div>
                         <button
                           onClick={() => {
-                            setActiveGuidePath('menu');
-                            setPortalStep(1);
-                            setShowHowTo(true);
+                            if (showHowTo) {
+                              setShowHowTo(false);
+                            } else {
+                              setActiveGuidePath('menu');
+                              setPortalStep(1);
+                              setShowHowTo(true);
+                            }
                           }}
                           className="flex items-center gap-2 text-[#4ae5bd] font-bold uppercase tracking-widest hover:text-white transition-colors"
                         >
@@ -1256,12 +1381,23 @@ export default function App() {
                 <Menu size={18} />
               </button>
               
-              <EHLogo className="h-11 w-11 shrink-0 ml-1" />
-              <div className="flex flex-col shrink-0 select-none">
-                <span className="text-[9.5px] font-bold tracking-[0.3em] text-eh-red leading-none mb-0.5" style={{ fontFamily: "'Inter', sans-serif" }}>EVERYDAY</span>
-                <div className="flex flex-col">
-                  <span className="text-xl font-black leading-none tracking-tighter text-eh-peach" style={{ fontFamily: "'Inter', sans-serif" }}>HERO</span>
-                  <span className="text-[8px] font-bold tracking-[0.25em] text-eh-blue leading-none mt-0.5 opacity-70" style={{ fontFamily: "'Inter', sans-serif" }}>ACADEMY</span>
+              <div 
+                className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => {
+                  setActiveCourseIndex(null);
+                  setActiveSlideshowIndex(null);
+                  setSelectedManual(null);
+                  setActiveTab('video');
+                }}
+                title="Return to Main Menu"
+              >
+                <EHLogo className="h-11 w-11 shrink-0 ml-1" />
+                <div className="flex flex-col shrink-0 select-none">
+                  <span className="text-[9.5px] font-bold tracking-[0.3em] text-eh-red leading-none mb-0.5" style={{ fontFamily: "'Inter', sans-serif" }}>EVERYDAY</span>
+                  <div className="flex flex-col">
+                    <span className="text-xl font-black leading-none tracking-tighter text-eh-peach" style={{ fontFamily: "'Inter', sans-serif" }}>HERO</span>
+                    <span className="text-[8px] font-bold tracking-[0.25em] text-eh-blue leading-none mt-0.5 opacity-70" style={{ fontFamily: "'Inter', sans-serif" }}>ACADEMY</span>
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -1490,12 +1626,12 @@ export default function App() {
               <div className="relative h-full flex items-end">
                 <button 
                   onClick={() => {
-                    if (activeTab === 'manual') {
-                      setShowManualSelector(!showManualSelector);
-                    } else {
+                    if (selectedManual && activeTab !== 'manual') {
                       setActiveTab('manual');
-                      setShowManualSelector(true);
                       setShowSidebar(true);
+                      setShowManualSelector(false);
+                    } else {
+                      setShowManualSelector(!showManualSelector);
                     }
                     setShowCprSelector(false);
                     setShowFaSelector(false);
@@ -1508,12 +1644,12 @@ export default function App() {
                     {selectedManual ? (
                       <>
                         <h2 className="font-serif text-xl font-bold leading-tight text-eh-peach tracking-tight">{selectedManual.title}</h2>
-                        {activeTab === 'manual' && <ChevronDown size={16} className={`text-eh-red transition-transform ${showManualSelector ? 'rotate-180' : ''}`} />}
+                        <ChevronDown size={16} className={`text-eh-red transition-transform ${showManualSelector ? 'rotate-180' : ''}`} />
                       </>
                     ) : (
                       <>
                         <h2 className="font-serif text-xl font-bold leading-tight text-eh-red tracking-tight uppercase">TRAINING MANUALS</h2>
-                        {activeTab === 'manual' && <ChevronDown size={16} className={`text-eh-red transition-transform ${showManualSelector ? 'rotate-180' : ''}`} />}
+                        <ChevronDown size={16} className={`text-eh-red transition-transform ${showManualSelector ? 'rotate-180' : ''}`} />
                       </>
                     )}
                   </div>
@@ -1521,29 +1657,76 @@ export default function App() {
                 </button>
 
                 <AnimatePresence>
-                  {showManualSelector && activeTab === 'manual' && (
+                  {showManualSelector && (
                     <motion.div
-                      initial={{ opacity: 0, y: -10, z: 0 }}
-                      animate={{ opacity: 1, y: 0, z: 0 }}
-                      exit={{ opacity: 0, y: -10, z: 0 }}
-                      className="absolute top-full left-0 mt-2 w-72 bg-black/95 border border-eh-peach/20 rounded-xl overflow-hidden z-50 backdrop-blur-xl shadow-2xl"
-                      style={{ willChange: "transform, opacity", backfaceVisibility: "hidden", transform: 'translateZ(0)', isolation: 'isolate' }}
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="absolute top-full right-0 mt-2 z-50 origin-top-right"
+                      style={{ willChange: "transform, opacity", backfaceVisibility: "hidden" }}
                     >
-                      {MANUALS.map((manual) => (
-                        <button
-                          key={manual.id}
-                          onClick={() => {
-                            setSelectedManual(manual);
-                            setShowManualSelector(false);
-                            setShowSidebar(true);
-                          }}
-                          className={`w-full text-left p-4 hover:bg-eh-peach/10 transition-colors border-b border-white/5 last:border-0 flex items-center justify-between group ${selectedManual?.id === manual.id ? 'bg-eh-red/10' : ''}`}
-                          style={{ backfaceVisibility: 'hidden', transform: 'translateZ(0)', willChange: 'transform' }}
-                        >
-                          <span className={`text-base font-bold ${selectedManual?.id === manual.id ? 'text-eh-red' : 'text-eh-peach/80 group-hover:text-eh-peach'}`}>{manual.title}</span>
-                          <ExternalLink size={12} className="opacity-20 group-hover:opacity-100" />
-                        </button>
-                      ))}
+                      <div className="p-6 bg-[#0a0a0a]/85 backdrop-blur-3xl rounded-[24px] border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.8)] w-[560px] relative z-[9999]">
+                        <h3 className="text-2xl font-black text-[#ff4b4b] uppercase tracking-tight leading-none text-center mb-5">CHOOSE TRAINING MANUAL</h3>
+                        <div className="flex gap-6">
+                          {/* Left: Manual List */}
+                          <div className="flex-1 flex flex-col justify-start">
+                            <div className="space-y-3">
+                              {MANUALS.map((manual, index) => (
+                                <button
+                                  key={manual.id}
+                                  onClick={() => setPreviewManualIndex(index)}
+                                  className={`w-full text-left p-4 rounded-xl transition-all duration-500 border flex items-center justify-between group relative overflow-hidden ${previewManualIndex === index ? 'bg-gradient-to-r from-eh-red/20 to-transparent border-eh-red/50 shadow-[0_0_30px_rgba(255,75,75,0.2)] scale-[1.02]' : 'border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/30 hover:scale-[1.01]'}`}
+                                >
+                                  {previewManualIndex === index && <div className="absolute left-0 top-0 bottom-0 w-1 bg-eh-red rounded-l-xl shadow-[0_0_10px_rgba(255,75,75,0.8)]" />}
+                                  <div className="flex items-center gap-4 z-10 relative">
+                                    <div className={`p-2 rounded-lg transition-colors duration-300 ${previewManualIndex === index ? 'bg-eh-red/20 text-eh-red shadow-[0_0_15px_rgba(255,75,75,0.3)]' : 'bg-black/40 text-white/50 group-hover:text-white/90 group-hover:bg-black/60'}`}>
+                                      {manual.id === 'instructor' ? <GraduationCap size={20} /> : manual.id === 'pediatric' ? <Baby size={20} /> : <Book size={20} />}
+                                    </div>
+                                    <span className={`text-base font-black tracking-wide transition-colors duration-300 ${previewManualIndex === index ? 'text-white drop-shadow-[0_2px_4px_rgba(255,75,75,0.4)]' : 'text-white/70 group-hover:text-white'}`}>{manual.title}</span>
+                                  </div>
+                                  <div className={`transition-all duration-300 z-10 relative ${previewManualIndex === index ? 'translate-x-0 opacity-100' : '-translate-x-4 opacity-0 group-hover:opacity-50 group-hover:translate-x-0'}`}>
+                                    <ChevronRight size={20} className={previewManualIndex === index ? "text-eh-red" : "text-white"} />
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          
+                          {/* Right: Cover Image + Description + Open Button */}
+                          <div className="w-[260px] flex flex-col items-center gap-4 shrink-0">
+                            <div className="w-full aspect-[3/4] rounded-2xl overflow-hidden border border-white/10 relative bg-black/40 shadow-xl">
+                              <AnimatePresence mode="popLayout">
+                                <motion.img 
+                                  key={previewManualIndex}
+                                  src={MANUALS[previewManualIndex].thumbnail} 
+                                  alt={MANUALS[previewManualIndex].title} 
+                                  className="w-full h-full object-cover absolute inset-0"
+                                  initial={{ opacity: 0, scale: 0.98, filter: 'blur(4px)' }}
+                                  animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+                                  exit={{ opacity: 0, scale: 1.02, filter: 'blur(4px)' }}
+                                  transition={{ duration: 0.5, ease: "easeOut" }}
+                                />
+                              </AnimatePresence>
+                            </div>
+                            
+                            <p className="text-xs text-white/70 text-center leading-relaxed font-medium min-h-[48px]">
+                              {MANUALS[previewManualIndex].description}
+                            </p>
+                            
+                            <button 
+                              onClick={() => {
+                                setSelectedManual(MANUALS[previewManualIndex]);
+                                setShowManualSelector(false);
+                                setShowSidebar(true);
+                                setActiveTab('manual');
+                              }}
+                              className="w-full py-3 bg-[#ff4b4b] hover:bg-[#ff3333] text-white font-bold rounded-xl transition-all duration-300 tracking-wide mt-auto hover:shadow-[0_0_20px_rgba(255,75,75,0.4)] hover:scale-[1.02] active:scale-95"
+                            >
+                              OPEN {MANUALS[previewManualIndex].title.toUpperCase()}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -1609,7 +1792,7 @@ export default function App() {
              
              {/* Copyright Banner on Idle Screen */}
              <div className="mt-auto pt-8 w-full max-w-4xl text-center">
-                <p className="text-[10px] md:text-xs leading-relaxed text-white/15 hover:text-white/40 transition-colors duration-500 select-none font-medium tracking-wide">
+                <p className="text-[10px] md:text-xs leading-relaxed text-white/40 hover:text-white/60 transition-colors duration-500 select-none font-medium tracking-wide">
                   © 2025 Everyday Hero Academy Inc. All rights reserved. This software and all course materials are proprietary and protected by copyright law. Unauthorized reproduction, distribution, or use outside of EHA‑approved training is strictly prohibited.
                 </p>
              </div>
@@ -1627,6 +1810,20 @@ export default function App() {
                   {/* Glowing background circles for visual depth */}
                   <div className="absolute -top-32 -left-32 w-64 h-64 bg-eh-red/5 rounded-full blur-3xl pointer-events-none" />
                   <div className="absolute -bottom-32 -right-32 w-64 h-64 bg-eh-blue/5 rounded-full blur-3xl pointer-events-none" />
+                  
+                  {/* Close button */}
+                  <button 
+                    onClick={() => {
+                      setActiveCourseIndex(null);
+                      setActiveSlideshowIndex(null);
+                      setSelectedManual(null);
+                      setActiveTab('video');
+                    }}
+                    className="absolute top-6 right-6 p-2 text-white/40 hover:text-white hover:bg-white/10 rounded-full transition-colors cursor-pointer z-50"
+                    title="Return to Main Menu"
+                  >
+                    <X size={24} />
+                  </button>
                   
                   {/* Icon / Brand badge */}
                   <div className="w-20 h-20 bg-eh-red/10 rounded-full flex items-center justify-center mb-8 relative border border-eh-red/20 shadow-[0_0_20px_rgba(245,57,78,0.15)]">
@@ -1833,9 +2030,9 @@ export default function App() {
                   </div>
                 </div>
               ) : (
-                <div className="w-full h-full relative">
+                <div ref={videoContainerRef} className={`w-full h-full relative bg-black ${!isUiVisible ? 'cursor-none' : ''}`}>
                   {/* Close Video Button */}
-                  <div className="absolute top-6 right-6 z-50 flex items-center gap-4">
+                  <div className={`absolute top-6 right-6 z-50 flex items-center gap-4 transition-opacity duration-500 ${!isUiVisible ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
                     <button 
                       onClick={() => setActiveCourseIndex(null)}
                       className="p-3 bg-eh-red/20 hover:bg-eh-red/30 rounded-full transition-colors text-eh-red shadow-lg backdrop-blur-md"
@@ -1954,7 +2151,7 @@ export default function App() {
                   </AnimatePresence>
 
                   {/* Player Controls Bar */}
-                  <div className="absolute bottom-0 left-0 right-0 p-8 pt-20 bg-gradient-to-t from-black via-black/60 to-transparent z-20 pointer-events-none">
+                  <div className={`absolute bottom-0 left-0 right-0 p-8 pt-20 bg-gradient-to-t from-black via-black/60 to-transparent z-20 pointer-events-none transition-opacity duration-500 ${!isUiVisible ? 'opacity-0' : 'opacity-100'}`}>
                     <div className="max-w-4xl mx-auto pointer-events-auto">
                       {/* Progress Slider */}
                       <div 
@@ -2012,13 +2209,39 @@ export default function App() {
                         </div>
 
                         <div className="flex items-center gap-6">
-                          <button 
-                            onClick={() => setIsMuted(!isMuted)}
-                            className="p-3 hover:bg-eh-peach/10 rounded-full text-eh-peach/80 transition-all"
-                            title={isMuted ? "Unmute Sound" : "Mute Sound"}
-                          >
-                            {isMuted ? <VolumeX size={24} /> : <Volume2 size={24} />}
-                          </button>
+                          <div className="relative group flex items-center">
+                            <button 
+                              onClick={() => {
+                                if (volume === 0 || isMuted) {
+                                  setIsMuted(false);
+                                  if (volume === 0) setVolume(1);
+                                } else {
+                                  setIsMuted(true);
+                                }
+                              }}
+                              className="p-3 hover:bg-eh-peach/10 rounded-full text-eh-peach/80 transition-all z-10"
+                              title={isMuted || volume === 0 ? "Unmute Sound" : "Mute Sound"}
+                            >
+                              {isMuted || volume === 0 ? <VolumeX size={24} /> : <Volume2 size={24} />}
+                            </button>
+                            
+                            <div className="w-0 overflow-hidden group-hover:w-24 transition-all duration-300 ease-out flex items-center opacity-0 group-hover:opacity-100 pl-2">
+                              <input 
+                                type="range" 
+                                min="0" 
+                                max="1" 
+                                step="0.01" 
+                                value={isMuted ? 0 : volume}
+                                onChange={(e) => {
+                                  const val = parseFloat(e.target.value);
+                                  setVolume(val);
+                                  if (val > 0 && isMuted) setIsMuted(false);
+                                  if (val === 0 && !isMuted) setIsMuted(true);
+                                }}
+                                className="w-20 h-1.5 bg-eh-peach/20 rounded-full appearance-none cursor-pointer accent-eh-red [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full"
+                              />
+                            </div>
+                          </div>
                           <button 
                             onClick={() => {
                               const nextVal = !showSubtitles;
@@ -2037,7 +2260,7 @@ export default function App() {
                           <button 
                             onClick={() => {
                               if (!document.fullscreenElement) {
-                                videoRef.current?.requestFullscreen().catch(console.error);
+                                videoContainerRef.current?.requestFullscreen().catch(console.error);
                               } else {
                                 document.exitFullscreen().catch(console.error);
                               }
@@ -2060,8 +2283,8 @@ export default function App() {
           <div ref={slideshowContainerRef} className={`w-full h-full relative z-10 ${activeTab === 'slideshow' && activeSlideshow ? 'block' : 'hidden'}`}>
             {activeSlideshow && (
               activeSlide && (
-                <div className="absolute inset-0 flex items-center justify-center overflow-hidden bg-black">
-                  <div className="absolute top-6 right-6 z-50 flex items-center gap-4">
+                <div ref={slideshowContainerRef} className={`w-full h-full relative bg-black flex flex-col items-center justify-center ${!isUiVisible ? 'cursor-none' : ''}`}>
+                  <div className={`absolute top-6 right-6 z-50 flex items-center gap-4 transition-opacity duration-500 ${!isUiVisible ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
                     <button 
                       onClick={() => {
                         if (slideVideoRef.current) slideVideoRef.current.pause();
@@ -2116,8 +2339,8 @@ export default function App() {
                     </div>
                   )}
 
-                  {/* Player Controls Bar */}
-                  <div className="absolute bottom-0 left-0 right-0 p-8 pt-20 bg-gradient-to-t from-black via-black/60 to-transparent z-20 pointer-events-none">
+                  {/* Controls Overlay */}
+                  <div className={`absolute bottom-0 left-0 right-0 p-8 pt-20 bg-gradient-to-t from-black via-black/60 to-transparent z-20 pointer-events-none transition-opacity duration-500 ${!isUiVisible ? 'opacity-0' : 'opacity-100'}`}>
                     <div className="max-w-4xl mx-auto pointer-events-auto">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3 sm:gap-8">
@@ -2166,13 +2389,39 @@ export default function App() {
 
                         <div className="flex items-center gap-6">
                           {activeSlide.type === 'video' && (
-                            <button 
-                              onClick={() => setIsMuted(!isMuted)}
-                              className="p-3 hover:bg-eh-peach/10 rounded-full text-eh-peach/80 transition-all"
-                              title={isMuted ? "Unmute Sound" : "Mute Sound"}
-                            >
-                              {isMuted ? <VolumeX size={24} /> : <Volume2 size={24} />}
-                            </button>
+                            <div className="relative group flex items-center">
+                              <button 
+                                onClick={() => {
+                                  if (volume === 0 || isMuted) {
+                                    setIsMuted(false);
+                                    if (volume === 0) setVolume(1);
+                                  } else {
+                                    setIsMuted(true);
+                                  }
+                                }}
+                                className="p-3 hover:bg-eh-peach/10 rounded-full text-eh-peach/80 transition-all z-10"
+                                title={isMuted || volume === 0 ? "Unmute Sound" : "Mute Sound"}
+                              >
+                                {isMuted || volume === 0 ? <VolumeX size={24} /> : <Volume2 size={24} />}
+                              </button>
+                              
+                              <div className="w-0 overflow-hidden group-hover:w-24 transition-all duration-300 ease-out flex items-center opacity-0 group-hover:opacity-100 pl-2">
+                                <input 
+                                  type="range" 
+                                  min="0" 
+                                  max="1" 
+                                  step="0.01" 
+                                  value={isMuted ? 0 : volume}
+                                  onChange={(e) => {
+                                    const val = parseFloat(e.target.value);
+                                    setVolume(val);
+                                    if (val > 0 && isMuted) setIsMuted(false);
+                                    if (val === 0 && !isMuted) setIsMuted(true);
+                                  }}
+                                  className="w-20 h-1.5 bg-eh-peach/20 rounded-full appearance-none cursor-pointer accent-eh-red [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full"
+                                />
+                              </div>
+                            </div>
                           )}
                           <button 
                             onClick={() => {

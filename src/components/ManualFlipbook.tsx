@@ -25,6 +25,8 @@ pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 export interface ManualFlipbookRef {
   resolveDestination: (dest: any) => Promise<void>;
   goToPage: (pageIndex: number) => void;
+  flipNext: () => void;
+  flipPrev: () => void;
 }
 
 interface ManualFlipbookProps {
@@ -47,7 +49,7 @@ const PageContent = React.forwardRef<HTMLDivElement, { pageNumber: number; width
         renderAnnotationLayer={false}
         loading={
           <div className="flex items-center justify-center h-full">
-            {props.showEasterEgg ? <video src="/CPR-Dummies.mp4" autoPlay loop muted playsInline className="w-16 h-16 object-cover" /> : <Loader2 className="animate-spin text-eh-red" />}
+            <Loader2 className="animate-spin text-eh-red/30" />
           </div>
         }
       />
@@ -63,7 +65,8 @@ PageContent.displayName = 'PageContent';
 const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(({ pdfUrl, onClose, title, onOutlineLoaded, showEasterEgg }, ref) => {
   const [numPages, setNumPages] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState(0);
-  const [scale, setScale] = useState(1);
+  const [zoomScale, setZoomScale] = useState(1);
+  const [mousePos, setMousePos] = useState({ x: 50, y: 50 });
   const [containerWidth, setContainerWidth] = useState(0);
   const [containerHeight, setContainerHeight] = useState(0);
   const [isFullScreen, setIsFullScreen] = useState(false);
@@ -92,7 +95,15 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
 
   React.useImperativeHandle(ref, () => ({
     resolveDestination,
-    goToPage
+    goToPage,
+    flipNext: () => {
+      const pageFlip = flipbookRef.current?.pageFlip();
+      if (pageFlip) pageFlip.flipNext();
+    },
+    flipPrev: () => {
+      const pageFlip = flipbookRef.current?.pageFlip();
+      if (pageFlip) pageFlip.flipPrev();
+    }
   }));
 
   async function onDocumentLoadSuccess(pdf: any) {
@@ -181,8 +192,26 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
     }
   };
 
-  const zoomIn = () => setScale(prev => Math.min(prev + 0.25, 3));
-  const zoomOut = () => setScale(prev => Math.max(prev - 0.25, 0.5));
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (zoomScale <= 1) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    setMousePos({ x, y });
+  };
+
+  const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    if (e.ctrlKey || e.metaKey || zoomScale > 1) {
+      e.preventDefault();
+      // Adjust zoom speed to be pleasant
+      const zoomFactor = e.deltaY > 0 ? -0.15 : 0.15;
+      setZoomScale(prev => {
+        const newScale = Math.max(1, Math.min(prev + zoomFactor, 4));
+        if (newScale === 1) setMousePos({ x: 50, y: 50 });
+        return newScale;
+      });
+    }
+  };
   
   const toggleFullScreen = () => {
     if (!document.fullscreenElement) {
@@ -283,12 +312,12 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
           </div>
 
           <div className="flex items-center gap-2 bg-white/5 p-1 rounded-full border border-white/5">
-            <button onClick={zoomOut} className="p-2 hover:bg-white/10 rounded-full transition-colors text-white/60 hover:text-white">
-              <ZoomOut size={18} />
-            </button>
-            <span className="text-[10px] font-mono text-white/40 w-12 text-center uppercase tracking-widest">{Math.round(scale * 100)}%</span>
-            <button onClick={zoomIn} className="p-2 hover:bg-white/10 rounded-full transition-colors text-white/60 hover:text-white">
-              <ZoomIn size={18} />
+            <button 
+              onClick={() => setZoomScale(prev => prev > 1 ? 1 : 2.2)} 
+              className={`px-4 py-2 rounded-full transition-colors flex items-center gap-2 ${zoomScale > 1 ? 'bg-eh-red text-white shadow-[0_0_15px_rgba(255,75,75,0.4)]' : 'hover:bg-white/10 text-white/60 hover:text-white'}`}
+            >
+              <Search size={16} />
+              <span className="text-[10px] font-bold tracking-widest uppercase">Magnify</span>
             </button>
           </div>
         </div>
@@ -308,18 +337,26 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
 
       <div className="flex-1 flex relative overflow-hidden">
         {/* Flipbook Container */}
-        <div className="flex-1 flex items-center justify-center p-4 relative bg-eh-peach/5">
-        <Document
+        <div 
+          className="flex-1 flex items-center justify-center p-4 relative bg-eh-peach/5 overflow-hidden"
+          onMouseMove={handleMouseMove}
+          onWheel={handleWheel}
+          style={{ cursor: zoomScale > 1 ? 'zoom-in' : 'default' }}
+        >
+          <div
+            className="transition-transform duration-75 ease-out flex items-center justify-center w-full h-full"
+            style={{ 
+              transform: `scale(${zoomScale})`,
+              transformOrigin: zoomScale > 1 ? `${mousePos.x}% ${mousePos.y}%` : 'center center'
+            }}
+          >
+          <Document
           file={pdfUrl}
           onLoadSuccess={onDocumentLoadSuccess}
           loading={
             <div className="flex flex-col items-center gap-4">
-              {showEasterEgg ? (
-                <video src="/CPR-Dummies.mp4" autoPlay loop muted playsInline className="w-24 h-24 object-cover rounded-xl shadow-2xl" />
-              ) : (
-                <Loader2 className="animate-spin text-eh-red" size={48} />
-              )}
-              <p className="text-eh-peach/40 text-xs font-mono uppercase tracking-[0.2em]">Decrypting Training Manual...</p>
+              <video src="/CPR-Dummies.mp4" autoPlay loop muted playsInline className="w-32 h-32 object-cover rounded-2xl shadow-2xl" />
+              <p className="text-white/40 text-xs font-mono uppercase tracking-[0.2em] font-bold">Loading Training Manual...</p>
             </div>
           }
         >
@@ -357,16 +394,15 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
                   pageNumber={index + 1} 
                   width={pageWidth}
                   height={pageHeight}
-                  scale={scale}
+                  scale={1}
                   showEasterEgg={showEasterEgg}
                 />
               ))}
             </HTMLFlipBook>
           )}
         </Document>
-
-      </div>
-
+          </div>
+        </div>
       </div>
 
       {/* Footer / Progress */}
