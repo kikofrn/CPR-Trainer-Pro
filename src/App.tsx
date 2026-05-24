@@ -1295,7 +1295,7 @@ export default function App() {
                       className="absolute top-full left-0 mt-2 z-50 origin-top-left"
                       style={{ willChange: "transform, opacity", backfaceVisibility: "hidden" }}
                     >
-                      <div className="p-6 bg-[#0a0a0a] rounded-[24px] border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.8)] w-[560px] relative z-[9999]">
+                      <div className="p-6 bg-[#0a0a0a]/70 backdrop-blur-2xl rounded-[24px] border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.8)] w-[560px] relative z-[9999]">
                         <h3 className="text-2xl font-black text-[#ff4b4b] uppercase tracking-tight leading-none text-center mb-5">CPR & AED FOR ALL AGES</h3>
                         <div className="flex gap-6">
                           {/* Left: Description */}
@@ -1329,7 +1329,7 @@ export default function App() {
                           </div>
                           {/* Right: Cover Image + Toggle */}
                           <div className="w-[260px] flex flex-col items-center gap-4 shrink-0">
-                            <div className="w-full aspect-video rounded-2xl overflow-hidden border border-white/10 relative bg-[#0a0a0a]">
+                            <div className="w-full aspect-video rounded-2xl overflow-hidden border border-white/10 relative bg-black/40">
                               <AnimatePresence mode="popLayout">
                                 <motion.img 
                                   key={cprVaEnabled ? 'cpr-va' : 'cpr-std'}
@@ -1398,7 +1398,7 @@ export default function App() {
                       className="absolute top-full left-0 mt-2 z-50 origin-top-left"
                       style={{ willChange: "transform, opacity", backfaceVisibility: "hidden" }}
                     >
-                      <div className="p-6 bg-[#0a0a0a] rounded-[24px] border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.8)] w-[560px] relative z-[9999]">
+                      <div className="p-6 bg-[#0a0a0a]/70 backdrop-blur-2xl rounded-[24px] border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.8)] w-[560px] relative z-[9999]">
                         <h3 className="text-2xl font-black text-[#ff4b4b] uppercase tracking-tight leading-none text-center mb-5">{faPediatric ? 'PEDIATRIC FIRST AID' : 'FIRST AID FOR ALL AGES'}</h3>
                         <div className="flex gap-6">
                           <div className="flex-1 flex flex-col justify-between">
@@ -1437,7 +1437,7 @@ export default function App() {
                             </AnimatePresence>
                           </div>
                           <div className="w-[260px] flex flex-col items-center gap-4 shrink-0">
-                            <div className="w-full aspect-video rounded-2xl overflow-hidden border border-white/10 relative bg-[#0a0a0a]">
+                            <div className="w-full aspect-video rounded-2xl overflow-hidden border border-white/10 relative bg-black/40">
                               <AnimatePresence mode="popLayout">
                                 <motion.img 
                                   key={faPediatric ? 'fa-pedi' : faVaEnabled ? 'fa-va' : 'fa-std'}
