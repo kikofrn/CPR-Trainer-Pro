@@ -356,6 +356,17 @@ fn check_media_files_status(
     Ok(result)
 }
 
+#[tauri::command]
+async fn close_splashscreen(window: tauri::Window) {
+    // Close splashscreen
+    if let Some(splashscreen) = window.get_webview_window("splashscreen") {
+        let _ = splashscreen.close();
+    }
+    // Show main window
+    let _ = window.show();
+    let _ = window.set_focus();
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -367,6 +378,7 @@ pub fn run() {
             download_media_file,
             check_media_file_exists,
             check_media_files_status,
+            close_splashscreen,
         ])
         // Register custom "media" protocol to serve files from media directory
         // On Windows: accessible via http://media.localhost/<filename>
