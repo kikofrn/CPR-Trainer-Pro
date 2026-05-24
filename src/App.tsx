@@ -71,15 +71,23 @@ export default function App() {
   useEffect(() => {
     if (mediaReady && isTauri) {
       const elapsed = Date.now() - appStartTime.current;
-      const delay = Math.max(0, 3500 - elapsed); // Minimum 3.5 seconds display time
+      // We want the total minimum display time to be ~3.5s.
+      // We wait `delayToReady` to hit ~3.2s, then show "READY" for 300ms.
+      const delayToReady = Math.max(0, 3200 - elapsed);
 
       setTimeout(() => {
-        import('@tauri-apps/api/core').then(({ invoke }) => {
-          invoke('close_splashscreen').catch(e => 
-            console.error('[Tauri] Splashscreen transition failed:', e)
-          );
-        });
-      }, delay);
+        // Signal splashscreen to jump to 100% READY
+        localStorage.setItem('splash_status', 'ready');
+        
+        // Wait 300ms for the user to see "READY", then close it
+        setTimeout(() => {
+          import('@tauri-apps/api/core').then(({ invoke }) => {
+            invoke('close_splashscreen').catch(e => 
+              console.error('[Tauri] Splashscreen transition failed:', e)
+            );
+          });
+        }, 300);
+      }, delayToReady);
     }
   }, [mediaReady]);
   const [activeCourseIndex, setActiveCourseIndex] = useState<number | null>(null);

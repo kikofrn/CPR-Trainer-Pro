@@ -161,24 +161,30 @@
     </div>
 
     <script>
-      // Animate the progress bar to 100% over exactly 3.5 seconds
-      const duration = 3500; 
+      // The progress bar animates asymptotically so it never fakes 100%. 
+      // It listens to localStorage for the actual 'ready' signal from the main app.
       const start = performance.now();
       const progressFill = document.getElementById('progressFill');
       const progressText = document.getElementById('progressText');
+      localStorage.removeItem('splash_status');
 
       function updateProgress(time) {
+        let isReady = localStorage.getItem('splash_status') === 'ready';
+
+        if (isReady) {
+          progressFill.style.width = '100%';
+          progressText.innerText = 'READY';
+          return; // Stop animating
+        }
+
         let elapsed = time - start;
-        let percentage = Math.min((elapsed / duration) * 100, 100);
+        // Asymptotic curve: reaches ~92% around 3.2 seconds, then crawls slowly
+        let percentage = 95 * (1 - Math.exp(-0.0008 * elapsed));
         
         progressFill.style.width = percentage + '%';
         progressText.innerText = 'LOADING ' + Math.floor(percentage) + '%';
-
-        if (percentage < 100) {
-          requestAnimationFrame(updateProgress);
-        } else {
-          progressText.innerText = 'READY';
-        }
+        
+        requestAnimationFrame(updateProgress);
       }
 
       requestAnimationFrame(updateProgress);
