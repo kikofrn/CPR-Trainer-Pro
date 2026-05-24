@@ -168,6 +168,8 @@ export default function App() {
   });
   const [subtitleCues, setSubtitleCues] = useState<SubtitleCue[]>([]);
   const [activeCue, setActiveCue] = useState<SubtitleCue | null>(null);
+  const [lastCprView, setLastCprView] = useState<'video' | 'slideshow' | null>(null);
+  const [lastFaView, setLastFaView] = useState<'video' | 'slideshow' | null>(null);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const videoRefA = useRef<HTMLVideoElement>(null);
@@ -201,6 +203,10 @@ export default function App() {
   const activeSlide = activeSlideshow ? activeSlideshow.slides[activeSlideIndex] : null;
 
   const handleItemClick = (type: string, index: number) => {
+    const isCpr = (type === 'video' && index === 0) || (type === 'slideshow' && (index === 0 || index === 2));
+    if (isCpr) setLastCprView(type as 'video' | 'slideshow');
+    else setLastFaView(type as 'video' | 'slideshow');
+
     if (type === 'video') {
       switchCourse(index);
       setActiveTab('video');
@@ -1264,9 +1270,10 @@ export default function App() {
               <div className="relative h-full flex items-end">
                 <button 
                   onClick={() => {
-                    // If a CPR course is active but user is on another tab, return to it
-                    if (isCprActive && activeTab !== 'video' && activeTab !== 'slideshow') {
-                      setActiveTab(activeCourseIndex === 0 ? 'video' : 'slideshow');
+                    if (lastCprView && (activeTab === 'manual' || activeTab === 'send-certs')) {
+                      // Return to the last loaded CPR course view
+                      setActiveTab(lastCprView);
+                      setShowSidebar(true);
                       setShowCprSelector(false);
                     } else {
                       setShowCprSelector(!showCprSelector);
@@ -1295,7 +1302,7 @@ export default function App() {
                       className="absolute top-full left-0 mt-2 z-50 origin-top-left"
                       style={{ willChange: "transform, opacity", backfaceVisibility: "hidden" }}
                     >
-                      <div className="p-6 bg-[#0a0a0a]/70 backdrop-blur-2xl rounded-[24px] border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.8)] w-[560px] relative z-[9999]">
+                      <div className="p-6 bg-[#0a0a0a]/85 backdrop-blur-3xl rounded-[24px] border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.8)] w-[560px] relative z-[9999]">
                         <h3 className="text-2xl font-black text-[#ff4b4b] uppercase tracking-tight leading-none text-center mb-5">CPR & AED FOR ALL AGES</h3>
                         <div className="flex gap-6">
                           {/* Left: Description */}
@@ -1344,13 +1351,13 @@ export default function App() {
                               </AnimatePresence>
                             </div>
                             <div className="flex items-center justify-between w-full">
-                              <span className="text-xs text-[#aaa] font-medium">Enable Virtual Assistant?</span>
+                              <span className="text-[13px] text-white/90 font-bold tracking-wide">Enable Virtual Assistant?</span>
                               <button onClick={() => setCprVaEnabled(!cprVaEnabled)} className={`shrink-0 relative w-10 h-5 rounded-full transition-colors duration-300 cursor-pointer ${cprVaEnabled ? 'bg-[#ff4b4b]' : 'bg-[#333]'}`}>
                                 <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-300 ${cprVaEnabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
                               </button>
                             </div>
                             <div className="group relative w-full text-center">
-                              <button className="text-[10px] text-[#666] hover:text-[#aaa] transition-colors flex items-center gap-1 mx-auto cursor-pointer"><HelpCircle size={12} /><span>What is this?</span></button>
+                              <button className="text-xs font-bold tracking-wider text-white/70 hover:text-white transition-colors flex items-center gap-1 mx-auto cursor-pointer"><HelpCircle size={12} /><span>What is this?</span></button>
                               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-[#1a1a1a] border border-white/10 rounded-xl text-[10px] text-[#aaa] w-48 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">When enabled, a virtual assistant narrates each section of the course automatically, allowing hands-free teaching.</div>
                             </div>
                           </div>
@@ -1367,9 +1374,10 @@ export default function App() {
               <div className="relative h-full flex items-end">
                 <button 
                   onClick={() => {
-                    // If a FA course is active but user is on another tab, return to it
-                    if (isFaActive && activeTab !== 'video' && activeTab !== 'slideshow') {
-                      setActiveTab(activeCourseIndex === 1 || activeCourseIndex === 2 ? 'video' : 'slideshow');
+                    if (lastFaView && (activeTab === 'manual' || activeTab === 'send-certs')) {
+                      // Return to the last loaded FA course view
+                      setActiveTab(lastFaView);
+                      setShowSidebar(true);
                       setShowFaSelector(false);
                     } else {
                       setShowFaSelector(!showFaSelector);
@@ -1398,7 +1406,7 @@ export default function App() {
                       className="absolute top-full left-0 mt-2 z-50 origin-top-left"
                       style={{ willChange: "transform, opacity", backfaceVisibility: "hidden" }}
                     >
-                      <div className="p-6 bg-[#0a0a0a]/70 backdrop-blur-2xl rounded-[24px] border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.8)] w-[560px] relative z-[9999]">
+                      <div className="p-6 bg-[#0a0a0a]/85 backdrop-blur-3xl rounded-[24px] border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.8)] w-[560px] relative z-[9999]">
                         <h3 className="text-2xl font-black text-[#ff4b4b] uppercase tracking-tight leading-none text-center mb-5">{faPediatric ? 'PEDIATRIC FIRST AID' : 'FIRST AID FOR ALL AGES'}</h3>
                         <div className="flex gap-6">
                           <div className="flex-1 flex flex-col justify-between">
@@ -1452,20 +1460,20 @@ export default function App() {
                               </AnimatePresence>
                             </div>
                             <div className="flex items-center justify-between w-full group/va relative">
-                              <span className={`text-xs font-medium ${faPediatric ? 'text-[#555]' : 'text-[#aaa]'}`}>Enable Virtual Assistant?</span>
+                              <span className={`text-[13px] font-bold tracking-wide ${faPediatric ? 'text-white/30' : 'text-white/90'}`}>Enable Virtual Assistant?</span>
                               <button onClick={() => { if (!faPediatric) setFaVaEnabled(!faVaEnabled); }} className={`shrink-0 relative w-10 h-5 rounded-full transition-colors duration-300 ${faPediatric ? 'bg-[#222] cursor-not-allowed' : faVaEnabled ? 'bg-[#ff4b4b] cursor-pointer' : 'bg-[#333] cursor-pointer'}`} disabled={faPediatric}>
                                 <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-300 ${faVaEnabled && !faPediatric ? 'translate-x-5' : 'translate-x-0.5'}`} />
                               </button>
                               {faPediatric && <div className="absolute bottom-full left-0 mb-2 px-3 py-2 bg-[#1a1a1a] border border-white/10 rounded-xl text-[10px] text-[#aaa] w-56 opacity-0 group-hover/va:opacity-100 transition-opacity pointer-events-none z-50">Not available for Pediatric First Aid Course</div>}
                             </div>
                             <div className="flex items-center justify-between w-full">
-                              <span className="text-xs text-[#aaa] font-medium">Pediatric Focused?</span>
+                              <span className="text-[13px] text-white/90 font-bold tracking-wide">Pediatric Focused?</span>
                               <button onClick={() => { const next = !faPediatric; setFaPediatric(next); if (next) { setFaVaEnabled(false); } }} className={`shrink-0 relative w-10 h-5 rounded-full transition-colors duration-300 cursor-pointer ${faPediatric ? 'bg-[#ff4b4b]' : 'bg-[#333]'}`}>
                                 <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-300 ${faPediatric ? 'translate-x-5' : 'translate-x-0.5'}`} />
                               </button>
                             </div>
                             <div className="group relative w-full text-center">
-                              <button className="text-[10px] text-[#666] hover:text-[#aaa] transition-colors flex items-center gap-1 mx-auto cursor-pointer"><HelpCircle size={12} /><span>What is this?</span></button>
+                              <button className="text-xs font-bold tracking-wider text-white/70 hover:text-white transition-colors flex items-center gap-1 mx-auto cursor-pointer"><HelpCircle size={12} /><span>What is this?</span></button>
                               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-[#1a1a1a] border border-white/10 rounded-xl text-[10px] text-[#aaa] w-48 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">When enabled, a virtual assistant narrates each section of the course automatically, allowing hands-free teaching.</div>
                             </div>
                           </div>
@@ -1787,7 +1795,7 @@ export default function App() {
             {selectedManual && (
               <ManualFlipbook 
                 ref={flipbookRef}
-                pdfUrl={m(`/${selectedManual.filename}`)}
+                pdfUrl={`/${selectedManual.filename}`}
                 title={selectedManual.title}
                 onClose={() => {
                   setSelectedManual(null);

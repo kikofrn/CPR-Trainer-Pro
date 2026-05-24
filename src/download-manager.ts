@@ -261,14 +261,8 @@ class DownloadManager {
       }
     });
 
-    // 3. Manuals
-    if (category === 'everything' || category === 'cpr-aed' || category === 'first-aid' || category === 'manuals') {
-      MANUALS.forEach((manual) => {
-        if (manual.filename && manual.filename.trim()) {
-          files.push(manual.filename.trim());
-        }
-      });
-    }
+    // 3. Manuals are now bundled statically into the executable.
+    // We do NOT download them via cloudlink anymore.
 
     // Deduplicate
     return Array.from(new Set(files));
@@ -388,10 +382,6 @@ class DownloadManager {
       });
     });
 
-    MANUALS.forEach((manual) => {
-      if (manual.filename) allFiles.push(manual.filename);
-    });
-
     const deduplicated = Array.from(new Set(allFiles));
     await this.checkStatusesForFiles(deduplicated);
   }
@@ -423,8 +413,9 @@ class DownloadManager {
   }
 
   // Check if all manuals are completely downloaded
+  // Since manuals are bundled, they are ALWAYS considered downloaded.
   public isManualsDownloaded(): boolean {
-    return MANUALS.every(m => !m.filename || this.isFileDownloaded(m.filename));
+    return true;
   }
 
   // Helper to trigger download for a specific slideshow
@@ -437,10 +428,7 @@ class DownloadManager {
       .filter(Boolean)
       .map((f) => (f.trim().startsWith('/') ? f.trim().slice(1) : f.trim()));
 
-    // Also include manuals with the slideshow download as requested
-    MANUALS.forEach((m) => {
-      if (m.filename) files.push(m.filename.trim());
-    });
+    // Manuals are bundled statically, so we do NOT include them in the download queue.
 
     const statusMap = await this.checkStatusesForFiles(files);
     const pending = files.filter((f) => !statusMap[f]);
@@ -472,33 +460,8 @@ class DownloadManager {
 
   // Helper to trigger download for all training manuals at once
   public async startManualsDownload() {
-    const files = MANUALS.map((m) => m.filename).filter(Boolean);
-    const statusMap = await this.checkStatusesForFiles(files);
-    const pending = files.filter((f) => !statusMap[f]);
-
-    if (pending.length === 0) {
-      console.log('[DownloadManager] All manuals are already downloaded!');
-      this.notify();
-      return;
-    }
-
-    if (this.state.isDownloading) {
-      pending.forEach((f) => {
-        if (!this.state.queue.includes(f) && this.state.currentFile !== f) {
-          this.state.queue.push(f);
-          this.state.totalQueueSize += 1;
-        }
-      });
-      this.notify();
-    } else {
-      this.state.isDownloading = true;
-      this.state.activeCategory = 'manuals';
-      this.state.queue = pending;
-      this.state.totalQueueSize = pending.length;
-      this.state.completedQueueCount = 0;
-      this.notify();
-      this.downloadNext();
-    }
+    console.log('[DownloadManager] Manuals are statically bundled. No download required!');
+    this.notify();
   }
 }
 
