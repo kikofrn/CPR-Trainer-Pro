@@ -1795,7 +1795,7 @@ export default function App() {
             {selectedManual && (
               <ManualFlipbook 
                 ref={flipbookRef}
-                pdfUrl={`/${selectedManual.filename}`}
+                pdfUrl={m(`/${selectedManual.filename}`)}
                 title={selectedManual.title}
                 onClose={() => {
                   setSelectedManual(null);
