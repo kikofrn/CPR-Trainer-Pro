@@ -42,7 +42,7 @@ export interface Slideshow {
   slides: Slide[];
 }
 
-export const SLIDESHOWS: Slideshow[] = [
+export let SLIDESHOWS: Slideshow[] = [
   {
     "id": "cpr-aed-course",
     "title": "CPR & AED for All Ages",
@@ -1459,7 +1459,7 @@ export const SLIDESHOWS: Slideshow[] = [
 }
 ];
 
-export const MANUALS: Manual[] = [
+export let MANUALS: Manual[] = [
   {
     id: "instructor",
     title: "Instructor Manual",
@@ -1483,7 +1483,7 @@ export const MANUALS: Manual[] = [
   }
 ];
 
-export const COURSES: Course[] = [
+export let COURSES: Course[] = [
   {
     id: "cpr-aed",
     title: "CPR & AED for All Ages",
@@ -1584,3 +1584,32 @@ export const COURSES: Course[] = [
     chapters: []
   }
 ];
+
+type Listener = () => void;
+const listeners: Listener[] = [];
+export const subscribeToManifest = (l: Listener) => {
+  listeners.push(l);
+  return () => {
+    const idx = listeners.indexOf(l);
+    if (idx > -1) listeners.splice(idx, 1);
+  };
+};
+
+export async function fetchRemoteManifest() {
+  try {
+    const url = localStorage.getItem('eh_download_base_url') || 'https://media.ehacademy.com/';
+    const res = await fetch(`${url}manifest.json`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.courses) COURSES = data.courses;
+      if (data.manuals) MANUALS = data.manuals;
+      if (data.slideshows) SLIDESHOWS = data.slideshows;
+      listeners.forEach(l => l());
+      console.log('[Manifest] Successfully loaded remote content manifest');
+      return true;
+    }
+  } catch (err) {
+    console.warn('[Manifest] Failed to fetch remote manifest, using local fallback', err);
+  }
+  return false;
+}

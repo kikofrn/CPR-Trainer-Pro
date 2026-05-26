@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
+import { isTauri } from '../media-resolver';
 
 // Set up worker for react-pdf to work offline in both dev and prod
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
@@ -37,22 +38,28 @@ interface ManualFlipbookProps {
   showEasterEgg?: boolean;
 }
 
-const PageContent = React.forwardRef<HTMLDivElement, { pageNumber: number; width: number; height: number; scale: number; showEasterEgg?: boolean }>((props, ref) => {
+const PageContent = React.forwardRef<HTMLDivElement, { pageNumber: number; width: number; height: number; scale: number; showEasterEgg?: boolean; renderPDF?: boolean }>((props, ref) => {
   return (
     <div className="bg-white shadow-2xl relative overflow-hidden w-full h-full flex items-center justify-center" ref={ref} data-density="hard">
-      <Page 
-        pageNumber={props.pageNumber} 
-        width={props.width}
-        scale={props.scale}
-        className="w-full h-full flex items-center justify-center [&>.react-pdf__Page__canvas]:!w-full [&>.react-pdf__Page__canvas]:!h-full [&>.react-pdf__Page__canvas]:!object-fill"
-        renderTextLayer={false}
-        renderAnnotationLayer={false}
-        loading={
-          <div className="flex items-center justify-center h-full">
-            <Loader2 className="animate-spin text-eh-red/30" />
-          </div>
-        }
-      />
+      {props.renderPDF !== false ? (
+        <Page 
+          pageNumber={props.pageNumber} 
+          width={props.width}
+          scale={props.scale}
+          className="w-full h-full flex items-center justify-center [&>.react-pdf__Page__canvas]:!w-full [&>.react-pdf__Page__canvas]:!h-full [&>.react-pdf__Page__canvas]:!object-fill"
+          renderTextLayer={false}
+          renderAnnotationLayer={false}
+          loading={
+            <div className="flex items-center justify-center h-full">
+              <Loader2 className="animate-spin text-eh-red/30" />
+            </div>
+          }
+        />
+      ) : (
+        <div className="flex items-center justify-center h-full text-eh-red/30 font-mono text-sm opacity-50">
+          Loading Page {props.pageNumber}...
+        </div>
+      )}
       <div className="absolute bottom-2 right-2 text-[10px] text-gray-400 font-mono bg-white/80 px-1 rounded z-10">
         Page {props.pageNumber}
       </div>
@@ -79,6 +86,9 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
   
   const flipbookRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const progressBarRef = useRef<HTMLDivElement>(null);
+  const [hoverPage, setHoverPage] = useState<number | null>(null);
+  const [hoverX, setHoverX] = useState<number>(0);
 
   useEffect(() => {
     const updateSize = () => {
@@ -213,13 +223,21 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
     }
   };
   
-  const toggleFullScreen = () => {
-    if (!document.fullscreenElement) {
-      containerRef.current?.requestFullscreen();
-      setIsFullScreen(true);
+  const toggleFullScreen = async () => {
+    if (isTauri) {
+      const { getCurrentWindow } = await import('@tauri-apps/api/window');
+      const window = getCurrentWindow();
+      const isFs = await window.isFullscreen();
+      await window.setFullscreen(!isFs);
+      setIsFullScreen(!isFs);
     } else {
-      document.exitFullscreen();
-      setIsFullScreen(false);
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(console.error);
+        setIsFullScreen(true);
+      } else {
+        document.exitFullscreen().catch(console.error);
+        setIsFullScreen(false);
+      }
     }
   };
 
@@ -388,16 +406,20 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
               showPageCorners={true}
               disableFlipByClick={false}
             >
-              {Array.from(new Array(numPages), (el, index) => (
-                <PageContent 
-                  key={`page_${index + 1}`} 
-                  pageNumber={index + 1} 
-                  width={pageWidth}
-                  height={pageHeight}
-                  scale={1}
-                  showEasterEgg={showEasterEgg}
-                />
-              ))}
+              {Array.from(new Array(numPages), (el, index) => {
+                const isClose = Math.abs(index - currentPage) <= 4;
+                return (
+                  <PageContent 
+                    key={`page_${index + 1}`} 
+                    pageNumber={index + 1} 
+                    width={pageWidth}
+                    height={pageHeight}
+                    scale={1}
+                    showEasterEgg={showEasterEgg}
+                    renderPDF={isClose}
+                  />
+                );
+              })}
             </HTMLFlipBook>
           )}
         </Document>
@@ -420,12 +442,46 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
             {Math.min(currentPage + 1, numPages).toString().padStart(2, '0')}
           </span>
           
-          <div className="flex-1 h-1 bg-white/10 rounded-full overflow-hidden relative cursor-pointer group">
-            <div 
-              className="h-full bg-eh-red transition-all duration-500"
-              style={{ width: `${((currentPage + (isMobile ? 1 : 2)) / numPages) * 100}%` }}
-            />
-            <div className="absolute top-0 bottom-0 w-1 bg-white opacity-0 group-hover:opacity-100 transition-opacity" style={{ left: '50%' }} />
+          <div 
+            ref={progressBarRef}
+            className="flex-1 h-8 -my-3 py-3 bg-transparent flex items-center relative cursor-pointer group"
+            onMouseMove={(e) => {
+              if (!progressBarRef.current || numPages === 0) return;
+              const rect = progressBarRef.current.getBoundingClientRect();
+              const x = e.clientX - rect.left;
+              const percentage = Math.max(0, Math.min(1, x / rect.width));
+              setHoverPage(Math.max(0, Math.min(numPages - 1, Math.floor(percentage * numPages))));
+              setHoverX(percentage * 100);
+            }}
+            onMouseLeave={() => setHoverPage(null)}
+            onClick={(e) => {
+              if (!progressBarRef.current || numPages === 0 || !flipbookRef.current) return;
+              const rect = progressBarRef.current.getBoundingClientRect();
+              const x = e.clientX - rect.left;
+              const percentage = Math.max(0, Math.min(1, x / rect.width));
+              const targetPage = Math.floor(percentage * numPages);
+              // Ensure we flip to an even page if in double page mode so it aligns correctly
+              const adjustedPage = (!isMobile && targetPage % 2 !== 0) ? targetPage - 1 : targetPage;
+              flipbookRef.current.pageFlip().flip(Math.max(0, adjustedPage));
+            }}
+          >
+            <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden relative">
+              <div 
+                className="h-full bg-eh-red transition-all duration-300"
+                style={{ width: `${((currentPage + (isMobile ? 1 : 2)) / numPages) * 100}%` }}
+              />
+            </div>
+            {/* Hover Indicator */}
+            {hoverPage !== null && (
+              <div 
+                className="absolute top-0 bottom-0 w-1 bg-white transition-opacity z-10" 
+                style={{ left: `${hoverX}%`, transform: 'translateX(-50%)' }} 
+              >
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black text-white text-[10px] font-mono px-2 py-1 rounded border border-white/20 whitespace-nowrap">
+                  Page {hoverPage + 1}
+                </div>
+              </div>
+            )}
           </div>
           
           <span className="text-[9px] font-mono text-white/40 w-8 text-center">

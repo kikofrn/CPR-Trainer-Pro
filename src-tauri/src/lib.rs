@@ -1,9 +1,9 @@
+use futures_util::StreamExt;
 use http::{header::*, response::Builder as ResponseBuilder, status::StatusCode};
 use http_range::HttpRange;
 use std::io::{Read, Seek, SeekFrom};
 use std::path::PathBuf;
-use tauri::{Manager, Emitter};
-use futures_util::StreamExt;
+use tauri::{Emitter, Manager};
 
 /// Strip the Windows extended-length path prefix (\\?\) from a path string.
 fn clean_path(path: PathBuf) -> PathBuf {
@@ -87,7 +87,7 @@ fn handle_media_request(
     }
 
     let file_path = media_dir.join(&decoded);
-    
+
     if !file_path.exists() {
         eprintln!("[media-protocol] File not found: {:?}", file_path);
         return Ok(ResponseBuilder::new()
@@ -219,18 +219,17 @@ fn read_subtitle_file(app: tauri::AppHandle, filename: String) -> Result<String,
     if filename.contains("..") {
         return Err("Invalid filename: directory traversal detected".to_string());
     }
-    
+
     let media_dir = find_media_dir(&app);
     // Clean filename and join with media/subtitles/
     let clean_name = filename.trim_start_matches('/');
     let file_path = media_dir.join("subtitles").join(clean_name);
-    
+
     if !file_path.exists() {
         return Err(format!("Subtitle file not found: {:?}", file_path));
     }
-    
-    std::fs::read_to_string(&file_path)
-        .map_err(|e| format!("Failed to read subtitle file: {}", e))
+
+    std::fs::read_to_string(&file_path).map_err(|e| format!("Failed to read subtitle file: {}", e))
 }
 
 #[tauri::command]
@@ -260,31 +259,51 @@ async fn download_media_file(
     // Build the full download URL
     let encoded_filename = clean
         .split('/')
-        .map(|part| percent_encoding::percent_encode(
-            part.as_bytes(),
-            percent_encoding::NON_ALPHANUMERIC,
-        ).to_string())
+        .map(|part| {
+            percent_encoding::percent_encode(part.as_bytes(), percent_encoding::NON_ALPHANUMERIC)
+                .to_string()
+        })
         .collect::<Vec<_>>()
         .join("/");
     let url = format!("{}{}", base_url, encoded_filename);
 
     eprintln!("[download] Starting download: {} -> {:?}", url, dest_path);
 
+    let temp_path = dest_path.with_extension("tmp");
+    let existing_size = tokio::fs::metadata(&temp_path).await.map(|m| m.len()).unwrap_or(0);
+
     let client = reqwest::Client::new();
-    let response = client.get(&url).send().await.map_err(|e| format!("HTTP request failed: {}", e))?;
+    let mut req = client.get(&url);
+    if existing_size > 0 {
+        req = req.header("Range", format!("bytes={}-", existing_size));
+    }
+
+    let response = req
+        .send()
+        .await
+        .map_err(|e| format!("HTTP request failed: {}", e))?;
 
     if !response.status().is_success() {
         return Err(format!("HTTP {} for {}", response.status(), url));
     }
 
-    let total_bytes = response.content_length().unwrap_or(0);
-    let mut bytes_written: u64 = 0;
+    let is_partial = response.status() == reqwest::StatusCode::PARTIAL_CONTENT;
+    let bytes_already_written = if is_partial { existing_size } else { 0 };
+    let mut bytes_written: u64 = bytes_already_written;
+    let total_bytes = bytes_already_written + response.content_length().unwrap_or(0);
 
     // Write to a temp file first, then rename (atomic-ish)
-    let temp_path = dest_path.with_extension("tmp");
-    let mut file = tokio::fs::File::create(&temp_path)
-        .await
-        .map_err(|e| format!("Failed to create temp file: {}", e))?;
+    let mut file = if is_partial {
+        tokio::fs::OpenOptions::new()
+            .append(true)
+            .open(&temp_path)
+            .await
+            .map_err(|e| format!("Failed to open temp file for appending: {}", e))?
+    } else {
+        tokio::fs::File::create(&temp_path)
+            .await
+            .map_err(|e| format!("Failed to create temp file: {}", e))?
+    };
 
     let mut stream = response.bytes_stream();
     let mut last_emit = std::time::Instant::now();
@@ -298,11 +317,14 @@ async fn download_media_file(
 
         // Emit progress events throttled to ~10Hz
         if last_emit.elapsed().as_millis() >= 100 {
-            let _ = app.emit("download-progress", serde_json::json!({
-                "filename": clean,
-                "bytes_written": bytes_written,
-                "total_bytes": total_bytes
-            }));
+            let _ = app.emit(
+                "download-progress",
+                serde_json::json!({
+                    "filename": clean,
+                    "bytes_written": bytes_written,
+                    "total_bytes": total_bytes
+                }),
+            );
             last_emit = std::time::Instant::now();
         }
     }
@@ -313,19 +335,34 @@ async fn download_media_file(
         .map_err(|e| format!("Flush failed: {}", e))?;
     drop(file);
 
+    // Verify integrity (Content-Length matching)
+    if total_bytes > 0 && bytes_written != total_bytes {
+        let _ = tokio::fs::remove_file(&temp_path).await; // Clean up broken file
+        return Err(format!(
+            "Download corrupted: Expected {} bytes but got {}",
+            total_bytes, bytes_written
+        ));
+    }
+
     // Rename temp to final
     tokio::fs::rename(&temp_path, &dest_path)
         .await
         .map_err(|e| format!("Rename failed: {}", e))?;
 
-    eprintln!("[download] ✅ Completed: {} ({} bytes)", clean, bytes_written);
+    eprintln!(
+        "[download] ✅ Completed: {} ({} bytes)",
+        clean, bytes_written
+    );
 
     // Emit completion event
-    let _ = app.emit("download-complete", serde_json::json!({
-        "filename": clean,
-        "bytes_written": bytes_written,
-        "total_bytes": total_bytes
-    }));
+    let _ = app.emit(
+        "download-complete",
+        serde_json::json!({
+            "filename": clean,
+            "bytes_written": bytes_written,
+            "total_bytes": total_bytes
+        }),
+    );
 
     Ok(())
 }
@@ -367,9 +404,43 @@ async fn close_splashscreen(window: tauri::Window) {
     let _ = window.set_focus();
 }
 
+#[tauri::command]
+fn check_disk_space(app: tauri::AppHandle) -> Result<u64, String> {
+    use sysinfo::Disks;
+    let media_dir = find_media_dir(&app);
+    let disks = Disks::new_with_refreshed_list();
+    
+    let mut max_prefix_len = 0;
+    let mut available_space = 0;
+
+    let abs_media_dir = std::fs::canonicalize(&media_dir).unwrap_or_else(|_| media_dir.clone());
+    let media_dir_str = abs_media_dir.to_string_lossy().to_lowercase();
+
+    for disk in disks.list() {
+        let mount_point = disk.mount_point().to_string_lossy().to_lowercase();
+        if media_dir_str.starts_with(&mount_point) {
+            if mount_point.len() > max_prefix_len {
+                max_prefix_len = mount_point.len();
+                available_space = disk.available_space();
+            }
+        }
+    }
+
+    // Fallback if we somehow can't match a disk
+    if max_prefix_len == 0 {
+        if let Some(first_disk) = disks.list().first() {
+            available_space = first_disk.available_space();
+        }
+    }
+
+    Ok(available_space)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .invoke_handler(tauri::generate_handler![
             get_media_base_path,
             list_media_files,
@@ -379,6 +450,7 @@ pub fn run() {
             check_media_file_exists,
             check_media_files_status,
             close_splashscreen,
+            check_disk_space,
         ])
         // Register custom "media" protocol to serve files from media directory
         // On Windows: accessible via http://media.localhost/<filename>
@@ -401,21 +473,20 @@ pub fn run() {
         })
         .setup(move |app| {
             let handle = app.handle().clone();
-            
+
             // Log resolved media directory for tracking
             let resolved_media = find_media_dir(&handle);
-            eprintln!("[CPR Trainer Pro] Resolved media directory: {:?}", resolved_media);
+            eprintln!(
+                "[CPR Trainer Pro] Resolved media directory: {:?}",
+                resolved_media
+            );
 
-
-
-            #[cfg(debug_assertions)]
-            {
-                app.handle().plugin(
-                    tauri_plugin_log::Builder::default()
-                        .level(log::LevelFilter::Info)
-                        .build(),
-                )?;
-            }
+            // Enable logging in production to persist errors to AppData/logs
+            app.handle().plugin(
+                tauri_plugin_log::Builder::default()
+                    .level(log::LevelFilter::Info)
+                    .build(),
+            )?;
 
             Ok(())
         })

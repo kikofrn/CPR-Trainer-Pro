@@ -34,6 +34,8 @@ import ManualFlipbook, { ManualFlipbookRef } from './components/ManualFlipbook';
 import { mediaUrl as m, waitForMediaResolver, isTauri } from './media-resolver';
 import { CprIcon, FirstAidIcon } from './components/Icons';
 import { downloadManager, DownloadState, formatSpeed, formatTimeRemaining } from './download-manager';
+import { check } from '@tauri-apps/plugin-updater';
+import { relaunch } from '@tauri-apps/plugin-process';
 
 function EHLogo({ className }: { className?: string }) {
   return (
@@ -56,6 +58,55 @@ interface SubtitleCue {
 export default function App() {
   const [mediaReady, setMediaReady] = useState(false);
   const [showStartupBanner, setShowStartupBanner] = useState(true);
+  
+  // Updater State
+  const [updateAvailable, setUpdateAvailable] = useState<any>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  // Fullscreen State
+  const [isFullscreenActive, setIsFullscreenActive] = useState(false);
+
+  // Helper to exit fullscreen from anywhere
+  const exitFullscreen = async () => {
+    setIsFullscreenActive(false);
+    if (isTauri) {
+      try {
+        const { getCurrentWindow } = await import('@tauri-apps/api/window');
+        await getCurrentWindow().setFullscreen(false);
+      } catch (e) { console.error(e); }
+    } else if (document.fullscreenElement) {
+      document.exitFullscreen().catch(console.error);
+    }
+  };
+
+  // Manifest State
+  const [manifestLoaded, setManifestLoaded] = useState(0);
+
+  useEffect(() => {
+    import('./chapters').then(({ fetchRemoteManifest, subscribeToManifest }) => {
+      fetchRemoteManifest();
+      const unsub = subscribeToManifest(() => {
+        setManifestLoaded(prev => prev + 1);
+      });
+      return unsub;
+    });
+  }, []);
+
+  useEffect(() => {
+    async function checkForUpdates() {
+      if (!isTauri) return;
+      try {
+        const update = await check();
+        if (update) {
+          console.log(`Update available: ${update.version}`);
+          setUpdateAvailable(update);
+        }
+      } catch (e) {
+        console.error("Failed to check for updates:", e);
+      }
+    }
+    checkForUpdates();
+  }, []);
 
   // Hide startup banner after 8 seconds
   useEffect(() => {
@@ -100,7 +151,11 @@ export default function App() {
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(1);
   const volumeRef = useRef(volume);
+  const [playbackRate, setPlaybackRate] = useState(1);
+
   useEffect(() => { volumeRef.current = volume; }, [volume]);
+
+
   
 
   const [isContinuousPlay, setIsContinuousPlay] = useState(false);
@@ -196,6 +251,17 @@ export default function App() {
   const slideVideoRef = useRef<HTMLVideoElement>(null);
   const slideshowContainerRef = useRef<HTMLDivElement>(null);
   const flipbookRef = useRef<ManualFlipbookRef>(null);
+
+  useEffect(() => {
+    if (videoRefA.current) {
+      videoRefA.current.playbackRate = playbackRate;
+      videoRefA.current.defaultPlaybackRate = playbackRate;
+    }
+    if (videoRefB.current) {
+      videoRefB.current.playbackRate = playbackRate;
+      videoRefB.current.defaultPlaybackRate = playbackRate;
+    }
+  }, [playbackRate, activePlayer, activeChapterIndex]);
   
   // Download manager state
   const [dlState, setDlState] = useState<DownloadState>(downloadManager.getActiveState());
@@ -530,6 +596,46 @@ export default function App() {
     };
   }, [activePlayer, isPlaying, isMuted, activeCourseIndex, activeChapterIndex]);
 
+  const saveProgress = (courseIndex: number, chapterIndex: number) => {
+    if (courseIndex !== null && COURSES[courseIndex]) {
+      localStorage.setItem(`course_progress_${COURSES[courseIndex].id}`, chapterIndex.toString());
+    }
+  };
+
+  const selectChapter = (index: number) => {
+    if (index !== activeChapterIndex) {
+      setActivePlayer(prev => prev === 'A' ? 'B' : 'A');
+      setActiveChapterIndex(index);
+      if (activeCourseIndex !== null) saveProgress(activeCourseIndex, index);
+    }
+    setShowNextOverlay(false);
+    setIsPlaying(true);
+    setActiveTab('video'); // Switch view tab to show the playing video
+    if (window.innerWidth < 1024) setShowSidebar(false);
+  };
+
+  const switchCourse = (index: number) => {
+    setActivePlayer('A');
+    setActiveCourseIndex(index);
+    let savedChapter = 0;
+    if (COURSES[index]) {
+      const saved = localStorage.getItem(`course_progress_${COURSES[index].id}`);
+      if (saved) savedChapter = parseInt(saved, 10) || 0;
+    }
+    setActiveChapterIndex(savedChapter);
+    setIsPlaying(false);
+    setShowCprSelector(false);
+    setShowFaSelector(false);
+    setShowNextOverlay(false);
+    setShowSidebar(true);
+    // Auto-download course media
+    if (isTauri && COURSES[index]) {
+      const courseId = COURSES[index].id;
+      const category = courseId === 'cpr-aed' ? 'cpr-aed' : 'first-aid';
+      downloadManager.startBulkDownload(category as any);
+    }
+  };
+
   const handleEnded = () => {
     setIsPlaying(false);
     if (isContinuousPlay && activeCourse && activeChapterIndex < activeCourse.chapters.length - 1) {
@@ -578,7 +684,9 @@ export default function App() {
   const handleNext = () => {
     if (activeCourse && activeChapterIndex < activeCourse.chapters.length - 1) {
       setActivePlayer(prev => prev === 'A' ? 'B' : 'A');
-      setActiveChapterIndex(prev => prev + 1);
+      const nextIndex = activeChapterIndex + 1;
+      setActiveChapterIndex(nextIndex);
+      if (activeCourseIndex !== null) saveProgress(activeCourseIndex, nextIndex);
       setShowNextOverlay(false);
       setIsPlaying(true);
     }
@@ -587,37 +695,11 @@ export default function App() {
   const handlePrev = () => {
     if (activeChapterIndex > 0) {
       setActivePlayer(prev => prev === 'A' ? 'B' : 'A');
-      setActiveChapterIndex(prev => prev - 1);
+      const prevIndex = activeChapterIndex - 1;
+      setActiveChapterIndex(prevIndex);
+      if (activeCourseIndex !== null) saveProgress(activeCourseIndex, prevIndex);
       setShowNextOverlay(false);
       setIsPlaying(true);
-    }
-  };
-
-  const selectChapter = (index: number) => {
-    if (index !== activeChapterIndex) {
-      setActivePlayer(prev => prev === 'A' ? 'B' : 'A');
-      setActiveChapterIndex(index);
-    }
-    setShowNextOverlay(false);
-    setIsPlaying(true);
-    setActiveTab('video'); // Switch view tab to show the playing video
-    if (window.innerWidth < 1024) setShowSidebar(false);
-  };
-
-  const switchCourse = (index: number) => {
-    setActivePlayer('A');
-    setActiveCourseIndex(index);
-    setActiveChapterIndex(0);
-    setIsPlaying(false);
-    setShowCprSelector(false);
-    setShowFaSelector(false);
-    setShowNextOverlay(false);
-    setShowSidebar(true);
-    // Auto-download course media
-    if (isTauri && COURSES[index]) {
-      const courseId = COURSES[index].id;
-      const category = courseId === 'cpr-aed' ? 'cpr-aed' : 'first-aid';
-      downloadManager.startBulkDownload(category as any);
     }
   };
 
@@ -741,15 +823,15 @@ export default function App() {
           if (flipbookRef.current) flipbookRef.current.flipPrev();
         }
       } else if (e.key === 'Escape') {
-        if (document.fullscreenElement) {
-          document.exitFullscreen().catch(console.error);
+        if (isFullscreenActive) {
+          exitFullscreen();
         }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeTab, activeSlideshow, activeSlideIndex, activeCourse, activeSlide, isPlaying, slideshowIsPlaying, activeChapterIndex]);
+  }, [activeTab, activeSlideshow, activeSlideIndex, activeCourse, activeSlide, isPlaying, slideshowIsPlaying, activeChapterIndex, isFullscreenActive]);
 
   // UI Fade effect
   useEffect(() => {
@@ -845,7 +927,41 @@ export default function App() {
   }, [activeTab]);
 
   return (
-    <div className="flex h-screen bg-black text-eh-peach overflow-hidden medical-gradient">
+    <div className="flex h-screen bg-black text-eh-peach overflow-hidden medical-gradient relative">
+      {/* Auto-Updater Banner */}
+      <AnimatePresence>
+        {updateAvailable && (
+          <motion.div
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -50 }}
+            className="absolute top-4 right-4 z-[9999] bg-[#ff4b4b] text-white px-6 py-4 rounded-2xl shadow-[0_10px_40px_rgba(255,75,75,0.4)] flex items-center gap-6 border border-white/20"
+          >
+            <div>
+              <h3 className="font-bold text-lg leading-tight uppercase tracking-wide">Update Available!</h3>
+              <p className="text-sm opacity-90">Version {updateAvailable.version} is ready to install.</p>
+            </div>
+            <button 
+              onClick={async () => {
+                setIsUpdating(true);
+                try {
+                  await updateAvailable.downloadAndInstall();
+                  await relaunch();
+                } catch (e) {
+                  console.error("Failed to update", e);
+                  setIsUpdating(false);
+                }
+              }}
+              disabled={isUpdating}
+              className="bg-white text-[#ff4b4b] px-4 py-2 rounded-lg font-bold uppercase tracking-wider text-sm hover:scale-105 transition-transform flex items-center gap-2"
+            >
+              {isUpdating ? <Loader2 className="animate-spin" size={16} /> : <Download size={16} />}
+              {isUpdating ? 'Updating...' : 'Restart & Update'}
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Sidebar Navigation */}
       <AnimatePresence>
         {showSidebar && (
@@ -1838,6 +1954,22 @@ export default function App() {
                     Done teaching? Ready to certify your students? Access the secure EH Academy Instructor Portal to issue training cards and finalize your class.
                   </p>
                   
+                  {/* Sample Certification Card */}
+                  <div className="mt-2 mb-10 flex flex-col items-center gap-2">
+                    <span className="text-xs font-bold text-eh-peach/40 uppercase tracking-widest font-mono">Sample Student Certification Card</span>
+                    <div 
+                      className="relative group rounded-xl overflow-hidden border border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.4)] transition-all duration-300 hover:border-eh-red/30 hover:shadow-[0_4px_30px_rgba(245,57,78,0.15)] max-w-md w-full cursor-pointer"
+                      onClick={handleOpenPortal}
+                      title="Open Instructor Portal"
+                    >
+                      <img 
+                        src="/sample-cert.png" 
+                        alt="Everyday Hero Academy Sample Certification Card" 
+                        className="w-full h-auto object-cover"
+                      />
+                    </div>
+                  </div>
+                  
                   {/* Process details */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full text-left mb-10">
                     <div className="bg-black/30 border border-white/5 rounded-2xl p-5 space-y-2 hover:border-eh-red/20 transition-colors duration-300">
@@ -1899,17 +2031,6 @@ export default function App() {
                     <span>View Step-by-Step Roster Guide</span>
                   </button>
 
-                  {/* Sample Certification Card */}
-                  <div className="mt-8 mb-4 flex flex-col items-center gap-2">
-                    <span className="text-xs font-bold text-eh-peach/40 uppercase tracking-widest font-mono">Sample Student Certification Card</span>
-                    <div className="relative group rounded-xl overflow-hidden border border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.4)] transition-all duration-300 hover:border-eh-red/30 hover:shadow-[0_4px_30px_rgba(245,57,78,0.15)] max-w-md w-full">
-                      <img 
-                        src="/sample-cert.png" 
-                        alt="Everyday Hero Academy Sample Certification Card" 
-                        className="w-full h-auto object-cover"
-                      />
-                    </div>
-                  </div>
 
                   {/* Compliance Disclaimer */}
                   <div className="mt-6 pt-6 border-t border-white/10 w-full text-center">
@@ -1991,6 +2112,7 @@ export default function App() {
           <div className={`w-full h-full relative z-10 ${activeTab === 'manual' && selectedManual ? 'block' : 'hidden'}`}>
             {selectedManual && (
               <ManualFlipbook 
+                key={selectedManual.id}
                 ref={flipbookRef}
                 pdfUrl={m(`/${selectedManual.filename}`)}
                 title={selectedManual.title}
@@ -2005,7 +2127,7 @@ export default function App() {
           </div>
 
           {/* Video Tab Container */}
-          <div className={`w-full h-full relative z-10 flex items-center justify-center ${activeTab === 'video' && activeCourse ? 'block' : 'hidden'}`}>
+          <div className={`w-full h-full relative flex items-center justify-center ${isFullscreenActive && activeTab === 'video' ? 'fixed inset-0 z-[100]' : 'z-10'} ${activeTab === 'video' && activeCourse ? 'block' : 'hidden'}`}>
             {activeCourse && (
               activeCourse.isComingSoon ? (
                 <div className="flex flex-col items-center justify-center text-center p-12 w-full h-full bg-black/80">
@@ -2034,7 +2156,7 @@ export default function App() {
                   {/* Close Video Button */}
                   <div className={`absolute top-6 right-6 z-50 flex items-center gap-4 transition-opacity duration-500 ${!isUiVisible ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
                     <button 
-                      onClick={() => setActiveCourseIndex(null)}
+                      onClick={() => { if (isFullscreenActive) exitFullscreen(); setActiveCourseIndex(null); }}
                       className="p-3 bg-eh-red/20 hover:bg-eh-red/30 rounded-full transition-colors text-eh-red shadow-lg backdrop-blur-md"
                     >
                       <X size={24} />
@@ -2242,6 +2364,19 @@ export default function App() {
                               />
                             </div>
                           </div>
+
+                          <button 
+                            onClick={() => {
+                              const rates = [1, 1.25, 1.5, 2];
+                              const nextRate = rates[(rates.indexOf(playbackRate) + 1) % rates.length];
+                              setPlaybackRate(nextRate);
+                            }}
+                            className="p-2 hover:bg-eh-peach/10 rounded-full text-eh-peach/80 transition-all font-mono font-bold text-xs w-10 h-10 flex items-center justify-center border border-transparent hover:border-eh-peach/20"
+                            title="Playback Speed"
+                          >
+                            {playbackRate}x
+                          </button>
+
                           <button 
                             onClick={() => {
                               const nextVal = !showSubtitles;
@@ -2258,11 +2393,18 @@ export default function App() {
                             </span>
                           </button>
                           <button 
-                            onClick={() => {
-                              if (!document.fullscreenElement) {
-                                videoContainerRef.current?.requestFullscreen().catch(console.error);
+                            onClick={async () => {
+                              const nextFs = !isFullscreenActive;
+                              if (!nextFs) {
+                                exitFullscreen();
                               } else {
-                                document.exitFullscreen().catch(console.error);
+                                setIsFullscreenActive(true);
+                                if (isTauri) {
+                                  const { getCurrentWindow } = await import('@tauri-apps/api/window');
+                                  await getCurrentWindow().setFullscreen(true);
+                                } else if (!document.fullscreenElement) {
+                                  document.documentElement.requestFullscreen().catch(console.error);
+                                }
                               }
                             }}
                             className="p-3 hover:bg-eh-peach/10 rounded-full text-eh-peach/80 transition-all"
@@ -2280,10 +2422,10 @@ export default function App() {
           </div>
 
           {/* Slideshow Tab Container */}
-          <div ref={slideshowContainerRef} className={`w-full h-full relative z-10 ${activeTab === 'slideshow' && activeSlideshow ? 'block' : 'hidden'}`}>
+          <div ref={slideshowContainerRef} className={`w-full h-full relative ${isFullscreenActive && activeTab === 'slideshow' ? 'fixed inset-0 z-[100]' : 'z-10'} ${activeTab === 'slideshow' && activeSlideshow ? 'block' : 'hidden'}`}>
             {activeSlideshow && (
               activeSlide && (
-                <div ref={slideshowContainerRef} className={`w-full h-full relative bg-black flex flex-col items-center justify-center ${!isUiVisible ? 'cursor-none' : ''}`}>
+                <div className={`w-full h-full relative bg-black flex flex-col items-center justify-center ${!isUiVisible ? 'cursor-none' : ''}`}>
                   <div className={`absolute top-6 right-6 z-50 flex items-center gap-4 transition-opacity duration-500 ${!isUiVisible ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
                     <button 
                       onClick={() => {
@@ -2424,11 +2566,18 @@ export default function App() {
                             </div>
                           )}
                           <button 
-                            onClick={() => {
-                              if (!document.fullscreenElement) {
-                                slideshowContainerRef.current?.requestFullscreen().catch(console.error);
+                            onClick={async () => {
+                              const nextFs = !isFullscreenActive;
+                              if (!nextFs) {
+                                exitFullscreen();
                               } else {
-                                document.exitFullscreen().catch(console.error);
+                                setIsFullscreenActive(true);
+                                if (isTauri) {
+                                  const { getCurrentWindow } = await import('@tauri-apps/api/window');
+                                  await getCurrentWindow().setFullscreen(true);
+                                } else if (!document.fullscreenElement) {
+                                  document.documentElement.requestFullscreen().catch(console.error);
+                                }
                               }
                             }}
                             className="p-3 hover:bg-eh-peach/10 rounded-full text-eh-peach/80 transition-all"

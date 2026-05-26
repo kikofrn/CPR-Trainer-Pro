@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "CPR Trainer Pro",
-  "version": "1.0.0",
+  "version": "1.4.0",
   "identifier": "com.ehacademy.cpr-trainer-pro",
   "build": {
     "frontendDist": "../dist",
@@ -54,5 +54,12 @@
       "../public/*": "media/"
     }
   },
-  "plugins": {}
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/kikofrn/CPR-Trainer-Pro/releases/latest/download/update.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDZFNkNEMkVBMTE5MzI3QUQKUldTdEo1TVI2dEpzYnVzbmF1UURxM2k0a29KQWNqVTZWT0dGM296WTNhS2Y3RmYvbFFudDU2VHQK"
+    }
+  }
 }

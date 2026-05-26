@@ -17,6 +17,7 @@ export interface DownloadState {
   activeBaseUrl: string; // the download server base URL
   globalDownloadedCount: number;
   globalTotalCount: number;
+  fileAttempts: Record<string, number>;
 }
 
 export type DownloadStateListener = (state: DownloadState) => void;
@@ -43,6 +44,7 @@ class DownloadManager {
     activeBaseUrl: localStorage.getItem('eh_download_base_url') || 'https://media.ehacademy.com/',
     globalDownloadedCount: 0,
     globalTotalCount: 0,
+    fileAttempts: {},
   };
 
   private listeners: Set<DownloadStateListener> = new Set();
@@ -203,17 +205,36 @@ class DownloadManager {
       });
     } catch (e) {
       console.error(`[DownloadManager] ❌ Download failed for ${nextFile}:`, e);
-      // Wait a bit, then try next file or re-queue
-      setTimeout(() => {
-        // Pop the failed file to avoid infinite loops, but mark as not downloaded
+      
+      const attempts = this.state.fileAttempts[nextFile] || 0;
+      
+      if (attempts < 5) {
+        // Retry with exponential backoff + jitter
+        this.state.fileAttempts[nextFile] = attempts + 1;
+        const baseDelay = 1000;
+        const delay = Math.min(30000, baseDelay * Math.pow(2, attempts) + Math.random() * 1000);
+        
+        console.log(`[DownloadManager] Retrying ${nextFile} (Attempt ${attempts + 1}/5) in ${Math.round(delay)}ms...`);
+        this.notify();
+        
+        setTimeout(() => {
+          this.downloadNext();
+        }, delay);
+      } else {
+        // Give up after 5 attempts
+        console.error(`[DownloadManager] ❌ Gave up on ${nextFile} after 5 attempts.`);
         this.state.fileStatuses[nextFile] = false;
+        
+        // Reset attempts for future bulk downloads
+        this.state.fileAttempts[nextFile] = 0;
+        
         if (this.state.queue.length > 0 && this.state.queue[0] === nextFile) {
           this.state.queue.shift();
           this.state.completedQueueCount += 1;
         }
         this.notify();
         this.downloadNext();
-      }, 3000);
+      }
     }
   }
 
@@ -280,6 +301,17 @@ class DownloadManager {
       return;
     }
 
+    try {
+      const spaceBytes = await invoke<number>('check_disk_space');
+      const requiredBytes = category === 'everything' ? 5 * 1024 * 1024 * 1024 : 1.5 * 1024 * 1024 * 1024;
+      if (spaceBytes > 0 && spaceBytes < requiredBytes) {
+        window.alert(`Insufficient disk space! You have ${Math.max(1, Math.round(spaceBytes / 1024 / 1024 / 1024))}GB free, but this bulk download requires approx ${Math.round(requiredBytes / 1024 / 1024 / 1024)}GB. Please free up some space and try again.`);
+        return;
+      }
+    } catch (e) {
+      console.warn('[DownloadManager] Could not check disk space:', e);
+    }
+
     console.log(`[DownloadManager] Starting bulk download for: ${category}`);
     const allFiles = this.getFilesForCategory(category);
     
@@ -320,6 +352,17 @@ class DownloadManager {
         this.notify();
       }
       return;
+    }
+
+    try {
+      const spaceBytes = await invoke<number>('check_disk_space');
+      const requiredBytes = 500 * 1024 * 1024; // Assume single file is up to 500MB
+      if (spaceBytes > 0 && spaceBytes < requiredBytes) {
+        window.alert(`Insufficient disk space! You need at least 500MB of free space to safely download this file.`);
+        return;
+      }
+    } catch (e) {
+      console.warn('[DownloadManager] Could not check disk space:', e);
     }
 
     const clean = filename.trim().startsWith('/') ? filename.trim().slice(1) : filename.trim();
