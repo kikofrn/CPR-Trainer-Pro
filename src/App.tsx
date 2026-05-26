@@ -27,7 +27,8 @@ import {
   HelpCircle,
   Download,
   Loader2,
-  Settings
+  Settings,
+  Heart
 } from 'lucide-react';
 import { COURSES, MANUALS, Manual, SLIDESHOWS } from './chapters';
 import ManualFlipbook, { ManualFlipbookRef } from './components/ManualFlipbook';
@@ -59,6 +60,22 @@ export default function App() {
   // Updater State
   const [updateAvailable, setUpdateAvailable] = useState<any>(null);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isUpdateMinimized, setIsUpdateMinimized] = useState(false);
+
+  // Un-minimize timer: 20 minutes for real update, 15 seconds for mock testing update
+  useEffect(() => {
+    if (isUpdateMinimized && updateAvailable) {
+      const isMock = updateAvailable.version === '2.0.0-mock';
+      const delay = isMock ? 15000 : 20 * 60 * 1000; // 15 seconds for mock testing, 20 mins for production
+      
+      console.log(`[Updater] Notification minimized. Will auto-restore in ${delay / 1000}s`);
+      const timer = setTimeout(() => {
+        setIsUpdateMinimized(false);
+      }, delay);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isUpdateMinimized, updateAvailable]);
 
 
 
@@ -886,13 +903,22 @@ export default function App() {
     <div className="flex h-screen bg-black text-eh-peach overflow-hidden medical-gradient relative">
       {/* Auto-Updater Banner */}
       <AnimatePresence>
-        {updateAvailable && (
+        {updateAvailable && !isUpdateMinimized && (
           <motion.div
             initial={{ opacity: 0, y: -50 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -50 }}
-            className="absolute top-4 right-4 z-[9999] bg-[#ff4b4b] text-white px-6 py-4 rounded-2xl shadow-[0_10px_40px_rgba(255,75,75,0.4)] flex items-center gap-6 border border-white/20"
+            className="absolute top-4 right-4 z-[9999] bg-[#ff4b4b] text-white pl-12 pr-6 py-4 rounded-2xl shadow-[0_10px_40px_rgba(255,75,75,0.4)] flex items-center gap-6 border border-white/20"
           >
+            {/* Close / Minimize Button */}
+            <button
+              onClick={() => setIsUpdateMinimized(true)}
+              className="absolute top-3 left-3 text-white/70 hover:text-white hover:bg-white/10 p-1.5 rounded-full transition-all cursor-pointer flex items-center justify-center"
+              title="Minimize Update Notification"
+            >
+              <X size={16} />
+            </button>
+
             <div>
               <h3 className="font-bold text-lg leading-tight uppercase tracking-wide">Update Available!</h3>
               <p className="text-sm opacity-90">Version {updateAvailable.version} is ready to install.</p>
@@ -1419,6 +1445,42 @@ export default function App() {
                           </button>
                         )}
                       </div>
+
+                      {/* Developer Tools for Testing UI */}
+                      {(import.meta as any).env.DEV && (
+                        <div className="border-t border-eh-peach/10 pt-4 flex flex-col gap-3">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-eh-peach/40">Developer tools</span>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className={`w-2 h-2 rounded-full ${updateAvailable ? 'bg-red-500 animate-pulse' : 'bg-white/20'}`} />
+                              <span className="text-xs font-bold uppercase tracking-widest text-eh-peach/80">Mock Updater UI</span>
+                            </div>
+                            <button 
+                              onClick={() => {
+                                if (updateAvailable) {
+                                  setUpdateAvailable(null);
+                                } else {
+                                  setUpdateAvailable({
+                                    version: '2.0.0-mock',
+                                    downloadAndInstall: async () => {
+                                      await new Promise(resolve => setTimeout(resolve, 3000));
+                                      window.alert("Mock update complete! The app would now restart.");
+                                      setUpdateAvailable(null);
+                                    }
+                                  });
+                                }
+                              }}
+                              className={`px-3 py-1 rounded border text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                                updateAvailable 
+                                  ? 'bg-red-500/20 border-red-500 text-red-400 hover:bg-red-500/30' 
+                                  : 'bg-white/5 border-white/20 text-white/70 hover:bg-white/10 hover:text-white'
+                              }`}
+                            >
+                              {updateAvailable ? 'Hide Banner' : 'Show Banner'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </motion.div>
                 )}
@@ -1850,6 +1912,34 @@ export default function App() {
                 <span className="font-mono text-xs text-eh-peach/80">{Math.round(((activeChapterIndex + 1) / activeCourse.chapters.length) * 100)}% Complete</span>
               </div>
             )}
+
+            <AnimatePresence>
+              {updateAvailable && isUpdateMinimized && (
+                <motion.button
+                  key="minimized-updater"
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.5 }}
+                  onClick={() => setIsUpdateMinimized(false)}
+                  className="p-2.5 rounded-full bg-red-500/10 border border-red-500/30 text-red-500 hover:bg-red-500/20 hover:border-red-500/50 transition-colors duration-300 shadow-[0_0_15px_rgba(239,68,68,0.2)] flex items-center justify-center cursor-pointer group shrink-0 animate-pulse"
+                  title="Update Available! Click to view details."
+                >
+                  <motion.div
+                    animate={{
+                      scale: [1, 1.25, 1.05, 1.25, 1, 1],
+                    }}
+                    transition={{
+                      duration: 1.4,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                      times: [0, 0.15, 0.3, 0.45, 0.6, 1]
+                    }}
+                  >
+                    <Heart size={20} className="fill-red-500 text-red-500" />
+                  </motion.div>
+                </motion.button>
+              )}
+            </AnimatePresence>
           </div>
         </header>
 
