@@ -63,21 +63,7 @@ export default function App() {
   const [updateAvailable, setUpdateAvailable] = useState<any>(null);
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // Fullscreen State
-  const [isFullscreenActive, setIsFullscreenActive] = useState(false);
 
-  // Helper to exit fullscreen from anywhere
-  const exitFullscreen = async () => {
-    setIsFullscreenActive(false);
-    if (isTauri) {
-      try {
-        const { getCurrentWindow } = await import('@tauri-apps/api/window');
-        await getCurrentWindow().setFullscreen(false);
-      } catch (e) { console.error(e); }
-    } else if (document.fullscreenElement) {
-      document.exitFullscreen().catch(console.error);
-    }
-  };
 
   // Manifest State
   const [manifestLoaded, setManifestLoaded] = useState(0);
@@ -615,6 +601,7 @@ export default function App() {
   };
 
   const switchCourse = (index: number) => {
+    console.log('[FS-DEBUG] switchCourse called. index:', index, 'fullscreenElement:', document.fullscreenElement?.tagName || 'none', 'videoContainerRef:', videoContainerRef.current ? 'exists' : 'null');
     setActivePlayer('A');
     setActiveCourseIndex(index);
     let savedChapter = 0;
@@ -823,15 +810,25 @@ export default function App() {
           if (flipbookRef.current) flipbookRef.current.flipPrev();
         }
       } else if (e.key === 'Escape') {
-        if (isFullscreenActive) {
-          exitFullscreen();
+        console.log('[FS-DEBUG] Escape pressed. fullscreenElement:', document.fullscreenElement?.tagName || 'none');
+        if (document.fullscreenElement) {
+          document.exitFullscreen().catch(console.error);
         }
       }
     };
 
+    // Track browser fullscreen state changes
+    const handleFsChange = () => {
+      console.log('[FS-DEBUG] fullscreenchange fired. fullscreenElement:', document.fullscreenElement?.tagName || 'EXITED', 'className:', document.fullscreenElement?.className?.substring(0, 80) || 'n/a');
+    };
+
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeTab, activeSlideshow, activeSlideIndex, activeCourse, activeSlide, isPlaying, slideshowIsPlaying, activeChapterIndex, isFullscreenActive]);
+    document.addEventListener('fullscreenchange', handleFsChange);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('fullscreenchange', handleFsChange);
+    };
+  }, [activeTab, activeSlideshow, activeSlideIndex, activeCourse, activeSlide, isPlaying, slideshowIsPlaying, activeChapterIndex]);
 
   // UI Fade effect
   useEffect(() => {
@@ -2127,7 +2124,7 @@ export default function App() {
           </div>
 
           {/* Video Tab Container */}
-          <div className={`w-full h-full relative flex items-center justify-center ${isFullscreenActive && activeTab === 'video' ? 'fixed inset-0 z-[100]' : 'z-10'} ${activeTab === 'video' && activeCourse ? 'block' : 'hidden'}`}>
+          <div className={`w-full h-full relative z-10 flex items-center justify-center ${activeTab === 'video' && activeCourse ? '' : 'hidden'}`}>
             {activeCourse && (
               activeCourse.isComingSoon ? (
                 <div className="flex flex-col items-center justify-center text-center p-12 w-full h-full bg-black/80">
@@ -2156,7 +2153,7 @@ export default function App() {
                   {/* Close Video Button */}
                   <div className={`absolute top-6 right-6 z-50 flex items-center gap-4 transition-opacity duration-500 ${!isUiVisible ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
                     <button 
-                      onClick={() => { if (isFullscreenActive) exitFullscreen(); setActiveCourseIndex(null); }}
+                      onClick={() => { console.log('[FS-DEBUG] Close video clicked. fullscreenElement:', document.fullscreenElement?.tagName || 'none'); setActiveCourseIndex(null); }}
                       className="p-3 bg-eh-red/20 hover:bg-eh-red/30 rounded-full transition-colors text-eh-red shadow-lg backdrop-blur-md"
                     >
                       <X size={24} />
@@ -2393,18 +2390,14 @@ export default function App() {
                             </span>
                           </button>
                           <button 
-                            onClick={async () => {
-                              const nextFs = !isFullscreenActive;
-                              if (!nextFs) {
-                                exitFullscreen();
+                            onClick={() => {
+                              console.log('[FS-DEBUG] Video fullscreen clicked. fullscreenElement:', document.fullscreenElement?.tagName || 'none', 'videoContainerRef:', videoContainerRef.current ? 'exists' : 'null');
+                              if (!document.fullscreenElement) {
+                                videoContainerRef.current?.requestFullscreen()
+                                  .then(() => console.log('[FS-DEBUG] requestFullscreen SUCCESS'))
+                                  .catch((err) => console.error('[FS-DEBUG] requestFullscreen FAILED:', err));
                               } else {
-                                setIsFullscreenActive(true);
-                                if (isTauri) {
-                                  const { getCurrentWindow } = await import('@tauri-apps/api/window');
-                                  await getCurrentWindow().setFullscreen(true);
-                                } else if (!document.fullscreenElement) {
-                                  document.documentElement.requestFullscreen().catch(console.error);
-                                }
+                                document.exitFullscreen().catch(console.error);
                               }
                             }}
                             className="p-3 hover:bg-eh-peach/10 rounded-full text-eh-peach/80 transition-all"
@@ -2422,7 +2415,7 @@ export default function App() {
           </div>
 
           {/* Slideshow Tab Container */}
-          <div ref={slideshowContainerRef} className={`w-full h-full relative ${isFullscreenActive && activeTab === 'slideshow' ? 'fixed inset-0 z-[100]' : 'z-10'} ${activeTab === 'slideshow' && activeSlideshow ? 'block' : 'hidden'}`}>
+          <div ref={slideshowContainerRef} className={`w-full h-full relative z-10 ${activeTab === 'slideshow' && activeSlideshow ? '' : 'hidden'}`}>
             {activeSlideshow && (
               activeSlide && (
                 <div className={`w-full h-full relative bg-black flex flex-col items-center justify-center ${!isUiVisible ? 'cursor-none' : ''}`}>
@@ -2566,18 +2559,11 @@ export default function App() {
                             </div>
                           )}
                           <button 
-                            onClick={async () => {
-                              const nextFs = !isFullscreenActive;
-                              if (!nextFs) {
-                                exitFullscreen();
+                            onClick={() => {
+                              if (!document.fullscreenElement) {
+                                slideshowContainerRef.current?.requestFullscreen().catch(console.error);
                               } else {
-                                setIsFullscreenActive(true);
-                                if (isTauri) {
-                                  const { getCurrentWindow } = await import('@tauri-apps/api/window');
-                                  await getCurrentWindow().setFullscreen(true);
-                                } else if (!document.fullscreenElement) {
-                                  document.documentElement.requestFullscreen().catch(console.error);
-                                }
+                                document.exitFullscreen().catch(console.error);
                               }
                             }}
                             className="p-3 hover:bg-eh-peach/10 rounded-full text-eh-peach/80 transition-all"

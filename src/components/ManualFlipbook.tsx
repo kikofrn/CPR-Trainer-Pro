@@ -241,6 +241,23 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
     }
   };
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFullScreen) {
+        if (isTauri) {
+          import('@tauri-apps/api/window').then(({ getCurrentWindow }) => {
+            getCurrentWindow().setFullscreen(false);
+          });
+        } else if (document.fullscreenElement) {
+          document.exitFullscreen().catch(console.error);
+        }
+        setIsFullScreen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFullScreen]);
+
   const isMobile = containerWidth < 768;
   
   const headerHeight = 56; // h-14
@@ -262,10 +279,14 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
     pageWidth = pageHeight * pdfAspectRatio;
   }
 
+  // Guard: clamp dimensions to prevent react-pageflip crash when container is hidden (0 dimensions)
+  pageWidth = Math.max(1, pageWidth || 1);
+  pageHeight = Math.max(1, pageHeight || 1);
+
   return (
     <div 
       ref={containerRef}
-      className="w-full h-full bg-black flex flex-col"
+      className={`w-full h-full bg-black flex flex-col ${isFullScreen ? 'fixed inset-0 z-[9999]' : ''}`}
     >
       {/* Toolbar */}
       <div className="h-14 bg-black/50 border-b border-white/10 flex items-center justify-between px-6 z-50 shrink-0">
