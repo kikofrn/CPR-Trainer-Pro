@@ -1465,21 +1465,21 @@ export let MANUALS: Manual[] = [
     title: "Instructor Manual",
     filename: "instructor_manual.pdf",
     description: "Comprehensive guide for instructors covering core curriculums, lesson plans, and testing guidelines.",
-    thumbnail: "/manual-instructor-thumb.png"
+    thumbnail: "/manual-instructor-thumb.webp"
   },
   {
     id: "student",
     title: "Student Manual",
     filename: "student_manual.pdf",
     description: "Complete training handbook for students covering CPR, AED usage, and basic first aid.",
-    thumbnail: "/manual-student-thumb.png"
+    thumbnail: "/manual-student-thumb.webp"
   },
   {
     id: "pediatric",
     title: "Pediatric Student Manual",
     filename: "pediatric_student_manual.pdf",
     description: "Specialized student guide focused on infant, child, and pediatric emergency response.",
-    thumbnail: "/manual-pediatric-thumb.png"
+    thumbnail: "/manual-pediatric-thumb.webp"
   }
 ];
 

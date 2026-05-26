@@ -20,11 +20,18 @@ export default defineConfig(({mode}) => {
     // Use the standard public directory so UI assets are bundled correctly
     publicDir: 'public',
     build: {
+      target: 'esnext',
       rollupOptions: {
         input: {
           main: path.resolve(__dirname, 'index.html'),
           splash: path.resolve(__dirname, 'splash.html'),
         },
+        output: {
+          manualChunks: {
+            'vendor-pdf': ['react-pdf', 'pdfjs-dist'],
+            'vendor-flipbook': ['react-pageflip'],
+          }
+        }
       },
     },
     server: {

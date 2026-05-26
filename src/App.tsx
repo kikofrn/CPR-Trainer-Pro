@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Play, 
@@ -36,6 +36,8 @@ import { CprIcon, FirstAidIcon } from './components/Icons';
 import { downloadManager, DownloadState, formatSpeed, formatTimeRemaining } from './download-manager';
 import { check } from '@tauri-apps/plugin-updater';
 import { relaunch } from '@tauri-apps/plugin-process';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { parseVTT, type SubtitleCue } from './utils/vtt-parser';
 
 function EHLogo({ className }: { className?: string }) {
   return (
@@ -49,15 +51,10 @@ function EHLogo({ className }: { className?: string }) {
   );
 }
 
-interface SubtitleCue {
-  start: number;
-  end: number;
-  text: string;
-}
+// SubtitleCue type imported from utils/vtt-parser.ts
 
 export default function App() {
   const [mediaReady, setMediaReady] = useState(false);
-  const [showStartupBanner, setShowStartupBanner] = useState(true);
   
   // Updater State
   const [updateAvailable, setUpdateAvailable] = useState<any>(null);
@@ -65,17 +62,17 @@ export default function App() {
 
 
 
-  // Manifest State
-  const [manifestLoaded, setManifestLoaded] = useState(0);
-
+  // Manifest: fetch remote manifest on mount
   useEffect(() => {
+    let unsub: (() => void) | undefined;
     import('./chapters').then(({ fetchRemoteManifest, subscribeToManifest }) => {
       fetchRemoteManifest();
-      const unsub = subscribeToManifest(() => {
-        setManifestLoaded(prev => prev + 1);
+      unsub = subscribeToManifest(() => {
+        // Force a re-render when manifest updates
+        setMediaReady(prev => prev);
       });
-      return unsub;
     });
+    return () => { unsub?.(); };
   }, []);
 
   useEffect(() => {
@@ -94,11 +91,7 @@ export default function App() {
     checkForUpdates();
   }, []);
 
-  // Hide startup banner after 8 seconds
-  useEffect(() => {
-    const timer = setTimeout(() => setShowStartupBanner(false), 8000);
-    return () => clearTimeout(timer);
-  }, []);
+
 
   // Initialize media resolver for Tauri desktop support
   useEffect(() => {
@@ -111,16 +104,12 @@ export default function App() {
   useEffect(() => {
     if (mediaReady && isTauri) {
       const elapsed = Date.now() - appStartTime.current;
-      // We want the total minimum display time to be ~3.5s.
-      // We wait `delayToReady` to hit ~3.2s, then show "READY" for 300ms.
       const delayToReady = Math.max(0, 3200 - elapsed);
 
-      setTimeout(() => {
-        // Signal splashscreen to jump to 100% READY
+      const outerTimer = setTimeout(() => {
         localStorage.setItem('splash_status', 'ready');
         
-        // Wait 300ms for the user to see "READY", then close it
-        setTimeout(() => {
+        innerTimerRef = setTimeout(() => {
           import('@tauri-apps/api/core').then(({ invoke }) => {
             invoke('close_splashscreen').catch(e => 
               console.error('[Tauri] Splashscreen transition failed:', e)
@@ -128,6 +117,12 @@ export default function App() {
           });
         }, 300);
       }, delayToReady);
+
+      let innerTimerRef: ReturnType<typeof setTimeout> | undefined;
+      return () => {
+        clearTimeout(outerTimer);
+        if (innerTimerRef) clearTimeout(innerTimerRef);
+      };
     }
   }, [mediaReady]);
   const [activeCourseIndex, setActiveCourseIndex] = useState<number | null>(null);
@@ -154,7 +149,7 @@ export default function App() {
   const [previewManualIndex, setPreviewManualIndex] = useState(0);
   const [showCprSelector, setShowCprSelector] = useState(false);
   const [showFaSelector, setShowFaSelector] = useState(false);
-  const [faDrilldown, setFaDrilldown] = useState(false);
+  // faDrilldown state removed — was dead code (never read)
   
   // Elite Toggles
   const [cprVaEnabled, setCprVaEnabled] = useState(false);
@@ -289,7 +284,6 @@ export default function App() {
     }
     setShowCprSelector(false);
     setShowFaSelector(false);
-    setFaDrilldown(false);
     setShowManualSelector(false);
   };
 
@@ -332,61 +326,9 @@ export default function App() {
     };
   }, []);
 
-  // Helper to parse WebVTT timestamp into seconds
-  const parseTimestamp = (timeStr: string): number => {
-    const parts = timeStr.trim().split(':');
-    let hrs = 0;
-    let mins = 0;
-    let secs = 0;
+  // parseTimestamp and parseVTT moved to src/utils/vtt-parser.ts
 
-    if (parts.length === 3) {
-      hrs = parseInt(parts[0], 10);
-      mins = parseInt(parts[1], 10);
-      secs = parseFloat(parts[2]);
-    } else if (parts.length === 2) {
-      mins = parseInt(parts[0], 10);
-      secs = parseFloat(parts[1]);
-    }
-
-    return hrs * 3600 + mins * 60 + secs;
-  };
-
-  // Helper to parse the VTT file content
-  const parseVTT = (text: string): SubtitleCue[] => {
-    const cues: SubtitleCue[] = [];
-    const blocks = text.split(/\r?\n\r?\n/);
-
-    for (const block of blocks) {
-      if (!block.includes('-->')) continue;
-
-      const lines = block.split(/\r?\n/);
-      let timeLine = '';
-      const textLines: string[] = [];
-
-      for (const line of lines) {
-        if (line.includes('-->')) {
-          timeLine = line;
-        } else if (timeLine && line.trim()) {
-          textLines.push(line.trim());
-        }
-      }
-
-      if (timeLine) {
-        const parts = timeLine.split('-->');
-        if (parts.length === 2) {
-          const start = parseTimestamp(parts[0]);
-          const end = parseTimestamp(parts[1]);
-          const textStr = textLines.join(' ').replace(/<[^>]*>/g, ''); // strip HTML tags
-          if (!isNaN(start) && !isNaN(end)) {
-            cues.push({ start, end, text: textStr });
-          }
-        }
-      }
-    }
-    return cues;
-  };
-
-  // Fetch and parse subtitles when the active chapter changes
+  // Fetch and parse subtitles when the active chapter changes (with AbortController to prevent race conditions)
   useEffect(() => {
     if (!activeChapter) {
       setSubtitleCues([]);
@@ -394,72 +336,85 @@ export default function App() {
       return;
     }
 
+    let cancelled = false;
+    const controller = new AbortController();
+
     const videoFilename = activeChapter.filename;
     const baseName = videoFilename.substring(0, videoFilename.lastIndexOf('.')) || videoFilename;
     const cleanBaseName = baseName.startsWith('/') ? baseName.slice(1) : baseName;
     const vttFilename = `${cleanBaseName}.vtt`;
 
-    if (isTauri) {
-      // Multi-tier robust subtitle loading:
-      // Tier 1: Try native Rust command to read subtitles directly from disk (media/subtitles/)
-      import('@tauri-apps/api/core')
-        .then(({ invoke }) => invoke<string>('read_subtitle_file', { filename: vttFilename }))
-        .then(text => {
-          const parsed = parseVTT(text);
-          setSubtitleCues(parsed);
-          console.log(`[Subtitles] Loaded ${parsed.length} cues via native command for ${vttFilename}`);
-        })
-        .catch(err => {
-          console.warn('[Subtitles] Native command failed, trying Tier 2 (embedded public relative fetch):', err);
-          // Tier 2: Try relative fetch from standard public directory `/subtitles/` (built into WebView assets)
-          fetch(`/subtitles/${vttFilename}`)
-            .then(res => {
-              if (!res.ok) throw new Error('Relative fetch failed');
-              return res.text();
-            })
-            .then(text => {
-              const parsed = parseVTT(text);
-              setSubtitleCues(parsed);
-              console.log(`[Subtitles] Loaded ${parsed.length} cues via relative fetch for ${vttFilename}`);
-            })
-            .catch(err2 => {
-              console.warn('[Subtitles] Relative fetch failed, trying Tier 3 (custom scheme media protocol fetch):', err2);
-              // Tier 3: Try custom media protocol fetch
-              const subtitleUrl = m(`/subtitles/${vttFilename}`);
-              fetch(subtitleUrl)
-                .then(response => {
-                  if (!response.ok) throw new Error('Custom scheme fetch failed');
-                  return response.text();
-                })
-                .then(text => {
-                  const parsed = parseVTT(text);
-                  setSubtitleCues(parsed);
-                  console.log(`[Subtitles] Loaded ${parsed.length} cues via custom scheme for ${vttFilename}`);
-                })
-                .catch(err3 => {
-                  console.error('[Subtitles] All subtitle loading attempts failed:', err3);
-                  setSubtitleCues([]);
-                });
-            });
-        });
-    } else {
-      // In standard Web browser mode: Use standard relative fetch from public directory
-      const subtitleUrl = `/subtitles/${vttFilename}`;
-      fetch(subtitleUrl)
-        .then(response => {
-          if (!response.ok) throw new Error('No subtitles found');
-          return response.text();
-        })
-        .then(text => {
-          const parsed = parseVTT(text);
-          setSubtitleCues(parsed);
-        })
-        .catch(() => {
-          setSubtitleCues([]);
-        });
-    }
+    const loadSubtitles = async () => {
+      if (isTauri) {
+        try {
+          // Tier 1: Native Rust command
+          const { invoke } = await import('@tauri-apps/api/core');
+          const text = await invoke<string>('read_subtitle_file', { filename: vttFilename });
+          if (!cancelled) {
+            const parsed = parseVTT(text);
+            setSubtitleCues(parsed);
+            console.log(`[Subtitles] Loaded ${parsed.length} cues via native command for ${vttFilename}`);
+          }
+          return;
+        } catch (err) {
+          console.warn('[Subtitles] Native command failed, trying Tier 2:', err);
+        }
 
+        try {
+          // Tier 2: Relative fetch from public
+          const res = await fetch(`/subtitles/${vttFilename}`, { signal: controller.signal });
+          if (!res.ok) throw new Error('Relative fetch failed');
+          const text = await res.text();
+          if (!cancelled) {
+            const parsed = parseVTT(text);
+            setSubtitleCues(parsed);
+            console.log(`[Subtitles] Loaded ${parsed.length} cues via relative fetch for ${vttFilename}`);
+          }
+          return;
+        } catch (err) {
+          if (controller.signal.aborted) return;
+          console.warn('[Subtitles] Relative fetch failed, trying Tier 3:', err);
+        }
+
+        try {
+          // Tier 3: Custom media protocol
+          const subtitleUrl = m(`/subtitles/${vttFilename}`);
+          const response = await fetch(subtitleUrl, { signal: controller.signal });
+          if (!response.ok) throw new Error('Custom scheme fetch failed');
+          const text = await response.text();
+          if (!cancelled) {
+            const parsed = parseVTT(text);
+            setSubtitleCues(parsed);
+            console.log(`[Subtitles] Loaded ${parsed.length} cues via custom scheme for ${vttFilename}`);
+          }
+        } catch (err) {
+          if (!controller.signal.aborted && !cancelled) {
+            console.error('[Subtitles] All subtitle loading attempts failed:', err);
+            setSubtitleCues([]);
+          }
+        }
+      } else {
+        try {
+          const response = await fetch(`/subtitles/${vttFilename}`, { signal: controller.signal });
+          if (!response.ok) throw new Error('No subtitles found');
+          const text = await response.text();
+          if (!cancelled) {
+            const parsed = parseVTT(text);
+            setSubtitleCues(parsed);
+          }
+        } catch {
+          if (!cancelled) setSubtitleCues([]);
+        }
+      }
+    };
+
+    loadSubtitles();
     setActiveCue(null);
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
   }, [activeChapterIndex, activeCourseIndex]);
 
   const nextChapter = activeCourse && activeChapterIndex < activeCourse.chapters.length - 1 
@@ -1126,17 +1081,17 @@ export default function App() {
                           instructor: {
                             description: "Comprehensive guide for instructors covering core curriculums, lesson plans, and testing guidelines.",
                             pages: "113 Pages",
-                            thumb: "/manual-instructor-thumb.png"
+                            thumb: "/manual-instructor-thumb.webp"
                           },
                           student: {
                             description: "Complete training handbook for students covering CPR, AED usage, and basic first aid for all ages.",
                             pages: "156 Pages",
-                            thumb: "/manual-student-thumb.png"
+                            thumb: "/manual-student-thumb.webp"
                           },
                           pediatric: {
                             description: "Specialized student guide focused on infant, child, and pediatric emergency response.",
                             pages: "170 Pages",
-                            thumb: "/manual-pediatric-thumb.png"
+                            thumb: "/manual-pediatric-thumb.webp"
                           }
                         }[manual.id as 'instructor' | 'student' | 'pediatric'];
 
@@ -1593,7 +1548,7 @@ export default function App() {
                               <AnimatePresence mode="popLayout">
                                 <motion.img 
                                   key={cprVaEnabled ? 'cpr-va' : 'cpr-std'}
-                                  src={cprVaEnabled ? "/CPR AED for All Ages with VA.png" : "/CPR AED for All Ages Cover.png"} 
+                                  src={cprVaEnabled ? "/CPR AED for All Ages with VA.webp" : "/CPR AED for All Ages Cover.webp"} 
                                   alt="CPR AED Course Cover" 
                                   className="w-full h-full object-cover absolute inset-0"
                                   initial={{ opacity: 0, scale: 0.98, filter: 'blur(4px)' }}
@@ -1702,7 +1657,7 @@ export default function App() {
                               <AnimatePresence mode="popLayout">
                                 <motion.img 
                                   key={faPediatric ? 'fa-pedi' : faVaEnabled ? 'fa-va' : 'fa-std'}
-                                  src={faPediatric ? "/Pediatric First Aid Cover.png" : faVaEnabled ? "/First Aid for All Ages with VA.png" : "/First Aid for All Ages Cover.png"} 
+                                  src={faPediatric ? "/Pediatric First Aid Cover.webp" : faVaEnabled ? "/First Aid for All Ages with VA.webp" : "/First Aid for All Ages Cover.webp"} 
                                   alt="First Aid Course Cover" 
                                   className="w-full h-full object-cover absolute inset-0"
                                   initial={{ opacity: 0, scale: 0.98, filter: 'blur(4px)' }}
@@ -2118,19 +2073,26 @@ export default function App() {
           {/* Manual Tab Container */}
           <div className={`w-full h-full relative z-10 ${activeTab === 'manual' && selectedManual ? 'block' : 'hidden'}`}>
             {selectedManual && (
-              <ManualFlipbook 
-                key={selectedManual.id}
-                ref={flipbookRef}
-                pdfUrl={m(`/${selectedManual.filename}`)}
-                title={selectedManual.title}
-                onClose={() => {
-                  console.log('[FS-DEBUG] Manual closed.');
+              <ErrorBoundary
+                onReset={() => {
                   setSelectedManual(null);
                   setActiveTab('video');
                 }}
-                onOutlineLoaded={(outline) => setManualOutline(outline)}
-                showEasterEgg={easterEggLevel > 0}
-              />
+              >
+                <ManualFlipbook 
+                  key={selectedManual.id}
+                  ref={flipbookRef}
+                  pdfUrl={m(`/${selectedManual.filename}`)}
+                  title={selectedManual.title}
+                  onClose={() => {
+                    console.log('[FS-DEBUG] Manual closed.');
+                    setSelectedManual(null);
+                    setActiveTab('video');
+                  }}
+                  onOutlineLoaded={(outline) => setManualOutline(outline)}
+                  showEasterEgg={easterEggLevel > 0}
+                />
+              </ErrorBoundary>
             )}
           </div>
 
