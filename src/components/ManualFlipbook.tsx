@@ -91,16 +91,24 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
   const [hoverX, setHoverX] = useState<number>(0);
 
   useEffect(() => {
-    const updateSize = () => {
-      if (containerRef.current) {
-        setContainerWidth(containerRef.current.clientWidth);
-        setContainerHeight(containerRef.current.clientHeight);
-      }
-    };
+    const el = containerRef.current;
+    if (!el) return;
 
-    window.addEventListener('resize', updateSize);
-    updateSize();
-    return () => window.removeEventListener('resize', updateSize);
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        console.log('[FS-DEBUG] ManualFlipbook ResizeObserver:', Math.round(width), 'x', Math.round(height));
+        setContainerWidth(Math.round(width));
+        setContainerHeight(Math.round(height));
+      }
+    });
+
+    ro.observe(el);
+    // Also set initial size
+    setContainerWidth(el.clientWidth);
+    setContainerHeight(el.clientHeight);
+
+    return () => ro.disconnect();
   }, []);
 
   React.useImperativeHandle(ref, () => ({
@@ -412,7 +420,10 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
               maxShadowOpacity={0.5}
               showCover={true}
               mobileScrollSupport={true}
-              onFlip={(e) => setCurrentPage(e.data)}
+              onFlip={(e) => {
+                console.log('[FS-DEBUG] Manual page turned to:', e.data);
+                setCurrentPage(e.data);
+              }}
               className="flipbook-canvas"
               ref={flipbookRef}
               startPage={currentPage}

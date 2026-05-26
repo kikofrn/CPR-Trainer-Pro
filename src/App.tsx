@@ -279,9 +279,11 @@ export default function App() {
     else setLastFaView(type as 'video' | 'slideshow');
 
     if (type === 'video') {
+      console.log('[FS-DEBUG] Selected video course:', index);
       switchCourse(index);
       setActiveTab('video');
     } else {
+      console.log('[FS-DEBUG] Selected manual/slideshow:', index);
       switchSlideshow(index);
       setActiveTab('slideshow');
     }
@@ -691,6 +693,8 @@ export default function App() {
   };
 
   const switchSlideshow = (index: number) => {
+    console.log('[FS-DEBUG] switchSlideshow called. index:', index);
+    setIsPlaying(false);
     setActiveSlideshowIndex(index);
     setActiveSlideIndex(0);
     setSlideshowIsPlaying(true);
@@ -2114,6 +2118,7 @@ export default function App() {
                 pdfUrl={m(`/${selectedManual.filename}`)}
                 title={selectedManual.title}
                 onClose={() => {
+                  console.log('[FS-DEBUG] Manual closed.');
                   setSelectedManual(null);
                   setActiveTab('video');
                 }}
