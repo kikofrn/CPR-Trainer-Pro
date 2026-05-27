@@ -20,6 +20,7 @@ import 'react-pdf/dist/Page/TextLayer.css';
 import { isTauri } from '../media-resolver';
 
 // Set up worker for react-pdf to work offline in both dev and prod
+// @ts-ignore: Vite syntax for importing worker URL
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
