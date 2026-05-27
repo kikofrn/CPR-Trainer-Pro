@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Play, 
@@ -31,7 +31,8 @@ import {
   Heart
 } from 'lucide-react';
 import { COURSES, MANUALS, Manual, SLIDESHOWS } from './chapters';
-import ManualFlipbook, { ManualFlipbookRef } from './components/ManualFlipbook';
+import type { ManualFlipbookRef } from './components/ManualFlipbook';
+const ManualFlipbook = lazy(() => import('./components/ManualFlipbook'));
 import { mediaUrl as m, waitForMediaResolver, isTauri } from './media-resolver';
 import { CprIcon, FirstAidIcon } from './components/Icons';
 import { downloadManager, DownloadState, formatSpeed, formatTimeRemaining } from './download-manager';
@@ -39,8 +40,8 @@ import { check } from '@tauri-apps/plugin-updater';
 import { relaunch } from '@tauri-apps/plugin-process';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { parseVTT, type SubtitleCue } from './utils/vtt-parser';
-import { SendCertsPage } from './components/SendCertsPage';
-import { HowToGuideModal } from './components/HowToGuideModal';
+const SendCertsPage = lazy(() => import('./components/SendCertsPage').then(m => ({ default: m.SendCertsPage })));
+const HowToGuideModal = lazy(() => import('./components/HowToGuideModal').then(m => ({ default: m.HowToGuideModal })));
 import { HeaderNav } from './components/HeaderNav';
 import { Sidebar } from './components/Sidebar';
 import { VideoPlayer } from './components/VideoPlayer';
@@ -1064,7 +1065,8 @@ export default function App() {
           {/* Send Certs Tab Container */}
           <div className={`w-full h-full relative z-10 bg-black ${activeTab === 'send-certs' ? '' : 'hidden'}`}>
             {activeTab === 'send-certs' && (
-              <SendCertsPage 
+              <Suspense fallback={<div className="flex w-full h-full items-center justify-center text-white/50"><Loader2 className="animate-spin w-8 h-8" /></div>}>
+                <SendCertsPage 
                 isOnline={isOnline}
                 setIsOnline={setIsOnline}
                 onReturnToMenu={() => setActiveTab('video')}
@@ -1073,6 +1075,7 @@ export default function App() {
                   setActiveGuidePath('menu');
                 }}
               />
+              </Suspense>
             )}
           </div>
           {/* Manual Tab Container */}
@@ -1159,6 +1162,7 @@ export default function App() {
         </div>
       </main>
       {/* How-To Guide Modal */}
+      <Suspense fallback={null}>
       <HowToGuideModal
         showHowTo={showHowTo}
         setShowHowTo={setShowHowTo}
@@ -1167,6 +1171,7 @@ export default function App() {
         portalStep={portalStep}
         setPortalStep={setPortalStep}
       />
+      </Suspense>
 
       {/* First-Launch Download All Prompt */}
       <AnimatePresence>
