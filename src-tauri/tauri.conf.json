@@ -51,7 +51,7 @@
       "icons/icon.ico"
     ],
     "resources": {
-      "../public/*": "media/"
+      "media/*": "media/"
     }
   },
   "plugins": {
