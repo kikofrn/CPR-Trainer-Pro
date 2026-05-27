@@ -366,7 +366,8 @@ class DownloadManager {
     }
 
     const clean = filename.trim().startsWith('/') ? filename.trim().slice(1) : filename.trim();
-    const exists = await invoke<boolean>('check_media_file_exists', { filename: clean });
+    // All-in Version: File always exists
+    const exists = true; 
     if (exists) {
       this.state.fileStatuses[clean] = true;
       this.notify();
@@ -400,7 +401,10 @@ class DownloadManager {
   public async checkStatusesForFiles(filenames: string[]): Promise<Record<string, boolean>> {
     try {
       const cleanList = filenames.map(f => f.trim().startsWith('/') ? f.trim().slice(1) : f.trim());
-      const statusMap = await invoke<Record<string, boolean>>('check_media_files_status', { filenames: cleanList });
+      
+      // All-in Version: Force all files to be downloaded instantly
+      const statusMap: Record<string, boolean> = {};
+      cleanList.forEach(f => statusMap[f] = true);
       
       // Update local state statuses
       Object.entries(statusMap).forEach(([file, exists]) => {
@@ -410,7 +414,7 @@ class DownloadManager {
       this.notify();
       return statusMap;
     } catch (e) {
-      console.error('[DownloadManager] check_media_files_status failed:', e);
+      console.error('[DownloadManager] checkStatusesForFiles failed:', e);
       return {};
     }
   }

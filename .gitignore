@@ -7,6 +7,10 @@ src-tauri/target/
 
 # Large media files (distribute separately)
 # These are NOT tracked in git due to their 6GB size
+/public/media/*.mp4
+/public/media/*.pdf
+/public/media/*.png
+/public/media/*.webp
 
 # Local environment variables
 .env

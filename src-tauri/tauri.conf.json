@@ -1,8 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "CPR Trainer Pro",
+  "productName": "CPR-Trainer-Pro All-in (MAC)",
   "version": "2.0.0",
-  "identifier": "com.ehacademy.cpr-trainer-pro",
+  "identifier": "com.ehacademy.cpr-trainer-pro.allin",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:3000",
