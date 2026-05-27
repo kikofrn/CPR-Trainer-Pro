@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, ChevronDown, CheckCircle2, HelpCircle, BookOpen, ChevronRight, GraduationCap, Baby, Book, Award, Heart } from 'lucide-react';
+import { mediaUrl as m } from '../media-resolver';
 
 interface HeaderNavProps {
   showSidebar: boolean;
@@ -50,7 +51,7 @@ interface HeaderNavProps {
   FirstAidIcon: any;
 }
 
-export function HeaderNav({
+export const HeaderNav = React.memo(function HeaderNav({
   showSidebar, setShowSidebar,
   setActiveCourseIndex, setActiveSlideshowIndex, setSelectedManual, setActiveTab,
   lastCprView, showCprSelector, setShowCprSelector, isCprActive, cprVaEnabled, setCprVaEnabled,
@@ -176,7 +177,7 @@ export function HeaderNav({
                           <AnimatePresence mode="popLayout">
                             <motion.img 
                               key={cprVaEnabled ? 'cpr-va' : 'cpr-std'}
-                              src={cprVaEnabled ? "/CPR AED for All Ages with VA.webp" : "/CPR AED for All Ages Cover.webp"} 
+                              src={m(cprVaEnabled ? "/CPR AED for All Ages with VA.webp" : "/CPR AED for All Ages Cover.webp")} 
                               alt="CPR AED Course Cover" 
                               className="w-full h-full object-cover absolute inset-0"
                               initial={{ opacity: 0, scale: 0.98, filter: 'blur(4px)' }}
@@ -284,7 +285,7 @@ export function HeaderNav({
                           <AnimatePresence mode="popLayout">
                             <motion.img 
                               key={faPediatric ? 'fa-pedi' : faVaEnabled ? 'fa-va' : 'fa-std'}
-                              src={faPediatric ? "/Pediatric First Aid Cover.webp" : faVaEnabled ? "/First Aid for All Ages with VA.webp" : "/First Aid for All Ages Cover.webp"} 
+                              src={m(faPediatric ? "/Pediatric First Aid Cover.webp" : faVaEnabled ? "/First Aid for All Ages with VA.webp" : "/First Aid for All Ages Cover.webp")} 
                               alt="First Aid Course Cover" 
                               className="w-full h-full object-cover absolute inset-0"
                               initial={{ opacity: 0, scale: 0.98, filter: 'blur(4px)' }}
@@ -395,7 +396,7 @@ export function HeaderNav({
                           <AnimatePresence mode="popLayout">
                             <motion.img 
                               key={previewManualIndex}
-                              src={MANUALS[previewManualIndex].thumbnail} 
+                              src={m(MANUALS[previewManualIndex].thumbnail)} 
                               alt={MANUALS[previewManualIndex].title} 
                               className="w-full h-full object-cover absolute inset-0"
                               initial={{ opacity: 0, scale: 0.98, filter: 'blur(4px)' }}
@@ -451,7 +452,7 @@ export function HeaderNav({
               <div 
                 className={`absolute h-8 w-auto rounded overflow-hidden transition-all duration-1000 ease-in-out ${easterEggLevel === 1 ? 'opacity-100 scale-100' : 'opacity-0 scale-75 pointer-events-none'}`}
               >
-                <video src="/CPR-Dummies.mp4" autoPlay loop muted playsInline className="h-full w-auto object-cover" />
+                <video src={m("/CPR-Dummies.mp4")} autoPlay loop muted playsInline className="h-full w-auto object-cover" />
               </div>
               
               <div 
@@ -461,7 +462,7 @@ export function HeaderNav({
                   maskImage: 'radial-gradient(circle, black 40%, transparent 70%)' 
                 }}
               >
-                <video src="/WakeUp-Friends-SpaceStars.mp4" autoPlay loop muted playsInline className="h-full w-full object-cover" />
+                <video src={m("/WakeUp-Friends-SpaceStars.mp4")} autoPlay loop muted playsInline className="h-full w-full object-cover" />
               </div>
             </div>
           )}
@@ -506,4 +507,4 @@ export function HeaderNav({
       </div>
     </header>
   );
-}
+});

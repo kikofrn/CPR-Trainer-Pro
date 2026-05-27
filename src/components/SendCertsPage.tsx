@@ -1,6 +1,7 @@
 import React from 'react';
 import { X, Award, ExternalLink, Info, BookOpen } from 'lucide-react';
 import { openExternalUrl, openPortal } from '../utils/browser';
+import { mediaUrl as m } from '../media-resolver';
 
 interface SendCertsPageProps {
   isOnline: boolean;
@@ -105,7 +106,7 @@ export function SendCertsPage({
                       onClick={openPortal}
                     >
                       <img 
-                        src="/sample-cert.png" 
+                        src={m("/sample-cert.png")} 
                         alt="Sample CPR Certification" 
                         className="w-full h-auto object-cover"
                       />
@@ -123,7 +124,7 @@ export function SendCertsPage({
                       onClick={openPortal}
                     >
                       <img 
-                        src="/sample-pediatric-cert.png" 
+                        src={m("/sample-pediatric-cert.png")} 
                         alt="Sample Pediatric Certification" 
                         className="w-full h-auto object-cover"
                       />
@@ -178,10 +179,10 @@ export function SendCertsPage({
               <span className="text-[10px] font-bold text-eh-peach/40 uppercase tracking-widest font-mono border-b border-white/10 pb-2 w-full text-center">Sample Certification Cards</span>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
                 <div className="relative group rounded-xl overflow-hidden border border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.4)] transition-all duration-300 hover:border-eh-blue-light/30">
-                  <img src="/sample-cert.png" alt="Sample CPR Certification" className="w-full h-auto object-cover" />
+                  <img src={m("/sample-cert.png")} alt="Sample CPR Certification" className="w-full h-auto object-cover" />
                 </div>
                 <div className="relative group rounded-xl overflow-hidden border border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.4)] transition-all duration-300 hover:border-eh-red/30">
-                  <img src="/sample-pediatric-cert.png" alt="Sample Pediatric Certification" className="w-full h-auto object-cover" />
+                  <img src={m("/sample-pediatric-cert.png")} alt="Sample Pediatric Certification" className="w-full h-auto object-cover" />
                 </div>
               </div>
             </div>

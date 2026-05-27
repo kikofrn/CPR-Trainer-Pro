@@ -15,16 +15,28 @@ fn clean_path(path: PathBuf) -> PathBuf {
     }
 }
 
-/// Find the media directory dynamically based on environment priority:
-/// 1. Standalone EXE directory (portable)
-/// 2. Installer resource directory (standard installer deployment)
-/// 3. CWD directory (development mode)
 fn find_media_dir(app: &tauri::AppHandle) -> PathBuf {
+    // On macOS, the .app bundle places resources in Contents/Resources/
+    // so we should check resource_dir first.
+    #[cfg(target_os = "macos")]
+    {
+        if let Ok(resource_dir) = app.path().resource_dir() {
+            let dir = clean_path(resource_dir).join("media");
+            if dir.exists() {
+                return dir;
+            }
+        }
+    }
+
     // 1. Return exe_dir/media (portable standalone mode) proactively
     if let Ok(exe_path) = std::env::current_exe() {
         let exe_path = clean_path(exe_path);
         if let Some(exe_dir) = exe_path.parent() {
-            return exe_dir.join("media");
+            let dir = exe_dir.join("media");
+            // If it exists or we're on Windows, use it
+            if dir.exists() || cfg!(target_os = "windows") {
+                return dir;
+            }
         }
     }
 
@@ -165,9 +177,14 @@ fn handle_media_request(
 
 #[tauri::command]
 fn get_media_base_path(_app: tauri::AppHandle) -> Result<String, String> {
-    // In custom protocol mode, we just return the protocol URL base
-    // The frontend will use "http://media.localhost/<filename>" on Windows
-    Ok("http://media.localhost/".to_string())
+    #[cfg(target_os = "windows")]
+    {
+        Ok("http://media.localhost/".to_string())
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        Ok("media://localhost/".to_string())
+    }
 }
 
 #[tauri::command]

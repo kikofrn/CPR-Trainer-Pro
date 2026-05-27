@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, ChevronDown, CheckCircle2, Download, Play, Pause, Loader2, MonitorPlay, Settings, Info, HelpCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, CheckCircle2, Download, Play, Pause, MonitorPlay, Settings, Info, HelpCircle, Clock } from 'lucide-react';
+import { mediaUrl as m } from '../media-resolver';
 
 interface SidebarProps {
   showSidebar: boolean;
@@ -452,11 +453,9 @@ export const Sidebar = React.memo(function Sidebar({
                             dlState.fileStatuses[chapter.filename?.trim().replace(/^\//, '') || ''] ? (
                               <CheckCircle2 size={16} className="text-green-500 shrink-0" title="Downloaded" />
                             ) : dlState.isDownloading && dlState.currentFile === chapter.filename?.trim().replace(/^\//, '') ? (
-                              easterEggLevel > 0 ? (
-                                <video src="/CPR-Dummies.mp4" autoPlay loop muted playsInline className="w-6 h-6 shrink-0 rounded-md object-cover" title="Downloading..." />
-                              ) : (
-                                <Loader2 size={16} className="text-eh-blue animate-spin shrink-0" title="Downloading..." />
-                              )
+                              <video src={m("/CPR-Dummies.mp4")} autoPlay loop muted playsInline className="w-6 h-6 shrink-0 rounded-md object-cover" title="Downloading..." />
+                            ) : dlState.queue.includes(chapter.filename?.trim().replace(/^\//, '') || '') ? (
+                              <Clock size={16} className="text-eh-blue shrink-0" title="Queued for download" />
                             ) : (
                               <button
                                 onClick={(e) => {

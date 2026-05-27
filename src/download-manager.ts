@@ -68,7 +68,7 @@ class DownloadManager {
   }
 
   private notify() {
-    const stateCopy = { ...this.state };
+    const stateCopy = { ...this.state, fileStatuses: { ...this.state.fileStatuses } };
     this.listeners.forEach((listener) => listener(stateCopy));
   }
 

@@ -26,7 +26,7 @@ interface SlideshowPlayerProps {
   m: (path: string) => string;
 }
 
-export function SlideshowPlayer({
+export const SlideshowPlayer = React.memo(function SlideshowPlayer({
   activeSlideshow, activeSlide, activeSlideIndex, setActiveSlideshowIndex,
   isUiVisible, slideshowContainerRef, slideVideoRef,
   isMuted, setIsMuted, volume, setVolume,
@@ -200,4 +200,4 @@ export function SlideshowPlayer({
       </div>
     </div>
   );
-}
+});

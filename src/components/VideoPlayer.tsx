@@ -123,6 +123,12 @@ export const VideoPlayer = React.memo(function VideoPlayer({
                 handleTimeUpdate(e.currentTarget);
               }
             }}
+            onError={(e) => {
+              if (activePlayer === 'A') {
+                console.error("Video Player A Error:", e.currentTarget.error);
+                setIsPlaying(false);
+              }
+            }}
           />
           {/* Video Player B */}
           <video
@@ -143,6 +149,12 @@ export const VideoPlayer = React.memo(function VideoPlayer({
             onTimeUpdate={(e) => {
               if (activePlayer === 'B') {
                 handleTimeUpdate(e.currentTarget);
+              }
+            }}
+            onError={(e) => {
+              if (activePlayer === 'B') {
+                console.error("Video Player B Error:", e.currentTarget.error);
+                setIsPlaying(false);
               }
             }}
           />

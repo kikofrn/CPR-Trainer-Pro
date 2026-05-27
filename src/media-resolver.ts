@@ -7,11 +7,14 @@
 
 const isTauri = typeof window !== 'undefined' && !!(window as any).__TAURI_INTERNALS__;
 
-// On Windows Tauri, the media protocol base URL is always deterministic.
-// Set it eagerly so mediaUrl() works synchronously from the very first render.
-let mediaBase = isTauri ? 'http://media.localhost/' : '';
-let initialized = isTauri; // If Tauri, we already know the base URL
+// Detect macOS/Linux vs Windows to use the correct Tauri protocol scheme
+const isMacOrLinux = typeof navigator !== 'undefined' &&
+  (navigator.platform.startsWith('Mac') || navigator.platform.startsWith('Linux') || navigator.platform === 'iPhone');
 
+// Set the correct protocol base URL eagerly so mediaUrl() works synchronously
+let mediaBase = isTauri
+  ? (isMacOrLinux ? 'media://localhost/' : 'http://media.localhost/')
+  : '';
 async function init() {
   if (!isTauri) return;
   
@@ -39,8 +42,11 @@ const initPromise = init();
  * Web:   "/01_EHAcademy - CPR AED Course Video-Introduction.mp4"
  *     -> "/01_EHAcademy - CPR AED Course Video-Introduction.mp4"
  * 
- * Tauri: "/01_EHAcademy - CPR AED Course Video-Introduction.mp4"  
+ * Tauri (Win): "/01_EHAcademy - CPR AED Course Video-Introduction.mp4"  
  *     -> "http://media.localhost/01_EHAcademy%20-%20CPR%20AED%20Course%20Video-Introduction.mp4"
+ * 
+ * Tauri (Mac): "/01_EHAcademy - CPR AED Course Video-Introduction.mp4"
+ *     -> "media://localhost/01_EHAcademy%20-%20CPR%20AED%20Course%20Video-Introduction.mp4"
  */
 export function mediaUrl(filename: string): string {
   if (!isTauri || !mediaBase) return filename;
@@ -60,3 +66,4 @@ export async function waitForMediaResolver(): Promise<void> {
 }
 
 export { isTauri };
+
