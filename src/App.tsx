@@ -1,41 +1,22 @@
-import { useState, useRef, useEffect, useCallback, lazy, Suspense } from 'react';
+import { useState, useRef, useEffect, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Play, 
   Pause, 
-  SkipForward, 
-  SkipBack, 
-  Volume2, 
-  VolumeX, 
   Menu, 
   X, 
-  CheckCircle2, 
   Info,
-  Clock,
-  ExternalLink,
-  ChevronRight,
-  ChevronLeft,
-  BookOpen,
-  GraduationCap,
   Book,
-  Baby,
-  ChevronDown,
-  Maximize2,
-  MonitorPlay,
-  Projector,
-  Award,
-  HelpCircle,
   Download,
   Loader2,
-  Settings,
-  Heart
+  Settings
 } from 'lucide-react';
 import { COURSES, MANUALS, Manual, SLIDESHOWS } from './chapters';
 import type { ManualFlipbookRef } from './components/ManualFlipbook';
 const ManualFlipbook = lazy(() => import('./components/ManualFlipbook'));
 import { mediaUrl as m, waitForMediaResolver, isTauri } from './media-resolver';
 import { CprIcon, FirstAidIcon } from './components/Icons';
-import { downloadManager, DownloadState, formatSpeed, formatTimeRemaining } from './download-manager';
+import { downloadManager, DownloadState, formatSpeed } from './download-manager';
 import { check } from '@tauri-apps/plugin-updater';
 import { relaunch } from '@tauri-apps/plugin-process';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -270,11 +251,89 @@ export default function App() {
   
   // Download manager state
   const [dlState, setDlState] = useState<DownloadState>(downloadManager.getActiveState());
+  const [downloadingChapterIndex, setDownloadingChapterIndex] = useState<number | null>(null);
+  const [downloadingManualId, setDownloadingManualId] = useState<string | null>(null);
+  const [downloadingSlideIndex, setDownloadingSlideIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (downloadingChapterIndex !== null && activeCourseIndex !== null) {
+      const chapter = COURSES[activeCourseIndex]?.chapters[downloadingChapterIndex];
+      if (chapter && chapter.filename) {
+        const clean = chapter.filename.trim().replace(/^\//, '');
+        if (dlState.fileStatuses[clean]) {
+          const targetIndex = downloadingChapterIndex;
+          setDownloadingChapterIndex(null);
+          
+          setActivePlayer(prev => prev === 'A' ? 'B' : 'A');
+          setActiveChapterIndex(targetIndex);
+          if (activeCourseIndex !== null) saveProgress(activeCourseIndex, targetIndex);
+          
+          setShowNextOverlay(false);
+          setIsPlaying(true);
+          setActiveTab('video');
+          if (window.innerWidth < 1024) setShowSidebar(false);
+        }
+      }
+    }
+  }, [dlState.fileStatuses, downloadingChapterIndex, activeCourseIndex]);
+
+  // Watch for manual download complete
+  useEffect(() => {
+    if (downloadingManualId !== null && isTauri) {
+      const manual = MANUALS.find(m => m.id === downloadingManualId);
+      if (manual && manual.filename) {
+        const clean = manual.filename.trim().replace(/^\//, '');
+        if (dlState.fileStatuses[clean]) {
+          setSelectedManual(manual);
+          setShowSidebar(true);
+          setDownloadingManualId(null);
+        }
+      }
+    }
+  }, [dlState.fileStatuses, downloadingManualId, isTauri]);
+
+  // Watch for slide download complete
+  useEffect(() => {
+    if (downloadingSlideIndex !== null && isTauri && activeSlideshowIndex !== null) {
+      const slideshow = SLIDESHOWS[activeSlideshowIndex];
+      if (!slideshow) return;
+      const slide = slideshow.slides[downloadingSlideIndex];
+      if (slide && slide.filename) {
+        const clean = slide.filename.trim().replace(/^\//, '');
+        if (dlState.fileStatuses[clean]) {
+          const targetIndex = downloadingSlideIndex;
+          setDownloadingSlideIndex(null);
+          
+          if (slideVideoRef.current) slideVideoRef.current.pause();
+          setActiveSlideIndex(targetIndex);
+          setSlideshowIsPlaying(true);
+          setActiveTab('slideshow');
+          setShowSidebar(true);
+        }
+      }
+    }
+  }, [dlState.fileStatuses, downloadingSlideIndex, isTauri, activeSlideshowIndex]);
+
   const [isSettingsExpanded, setIsSettingsExpanded] = useState(false);
   useEffect(() => {
     const unsub = downloadManager.subscribe(setDlState);
     return unsub;
   }, []);
+
+  // Shared function to handle manual selection & auto-download
+  const selectManual = (manual: any) => {
+    if (manual && isTauri && manual.filename) {
+      const clean = manual.filename.trim().replace(/^\//, '');
+      if (!dlState.fileStatuses[clean]) {
+        setDownloadingManualId(manual.id);
+        setActiveTab('manual');
+        downloadManager.startSingleDownload(manual.filename);
+        return;
+      }
+    }
+    setSelectedManual(manual);
+    if (manual) setShowSidebar(true);
+  };
 
   // First-launch download prompt
   const [showDownloadPrompt, setShowDownloadPrompt] = useState(false);
@@ -298,11 +357,9 @@ export default function App() {
     else setLastFaView(type as 'video' | 'slideshow');
 
     if (type === 'video') {
-      console.log('[FS-DEBUG] Selected video course:', index);
       switchCourse(index);
       setActiveTab('video');
     } else {
-      console.log('[FS-DEBUG] Selected manual/slideshow:', index);
       switchSlideshow(index);
       setActiveTab('slideshow');
     }
@@ -377,7 +434,6 @@ export default function App() {
           if (!cancelled) {
             const parsed = parseVTT(text);
             setSubtitleCues(parsed);
-            console.log(`[Subtitles] Loaded ${parsed.length} cues via native command for ${vttFilename}`);
           }
           return;
         } catch (err) {
@@ -392,7 +448,6 @@ export default function App() {
           if (!cancelled) {
             const parsed = parseVTT(text);
             setSubtitleCues(parsed);
-            console.log(`[Subtitles] Loaded ${parsed.length} cues via relative fetch for ${vttFilename}`);
           }
           return;
         } catch (err) {
@@ -409,7 +464,6 @@ export default function App() {
           if (!cancelled) {
             const parsed = parseVTT(text);
             setSubtitleCues(parsed);
-            console.log(`[Subtitles] Loaded ${parsed.length} cues via custom scheme for ${vttFilename}`);
           }
         } catch (err) {
           if (!controller.signal.aborted && !cancelled) {
@@ -570,6 +624,21 @@ export default function App() {
   };
 
   const selectChapter = (index: number) => {
+    if (activeCourseIndex === null || !COURSES[activeCourseIndex]) return;
+    const chapter = COURSES[activeCourseIndex].chapters[index];
+    
+    // Ignore section headers
+    if (chapter.isSectionHeader) return;
+
+    if (isTauri && chapter.filename) {
+      const clean = chapter.filename.trim().replace(/^\//, '');
+      if (!dlState.fileStatuses[clean]) {
+        setDownloadingChapterIndex(index);
+        downloadManager.startSingleDownload(chapter.filename);
+        return;
+      }
+    }
+
     if (index !== activeChapterIndex) {
       setActivePlayer(prev => prev === 'A' ? 'B' : 'A');
       setActiveChapterIndex(index);
@@ -582,7 +651,6 @@ export default function App() {
   };
 
   const switchCourse = (index: number) => {
-    console.log('[FS-DEBUG] switchCourse called. index:', index, 'fullscreenElement:', document.fullscreenElement?.tagName || 'none', 'videoContainerRef:', videoContainerRef.current ? 'exists' : 'null');
     setActivePlayer('A');
     setActiveCourseIndex(index);
     let savedChapter = 0;
@@ -651,28 +719,17 @@ export default function App() {
 
   const handleNext = () => {
     if (activeCourse && activeChapterIndex < activeCourse.chapters.length - 1) {
-      setActivePlayer(prev => prev === 'A' ? 'B' : 'A');
-      const nextIndex = activeChapterIndex + 1;
-      setActiveChapterIndex(nextIndex);
-      if (activeCourseIndex !== null) saveProgress(activeCourseIndex, nextIndex);
-      setShowNextOverlay(false);
-      setIsPlaying(true);
+      selectChapter(activeChapterIndex + 1);
     }
   };
 
   const handlePrev = () => {
     if (activeChapterIndex > 0) {
-      setActivePlayer(prev => prev === 'A' ? 'B' : 'A');
-      const prevIndex = activeChapterIndex - 1;
-      setActiveChapterIndex(prevIndex);
-      if (activeCourseIndex !== null) saveProgress(activeCourseIndex, prevIndex);
-      setShowNextOverlay(false);
-      setIsPlaying(true);
+      selectChapter(activeChapterIndex - 1);
     }
   };
 
   const switchSlideshow = (index: number) => {
-    console.log('[FS-DEBUG] switchSlideshow called. index:', index);
     setIsPlaying(false);
     setActiveSlideshowIndex(index);
     setActiveSlideIndex(0);
@@ -680,29 +737,44 @@ export default function App() {
     setShowCprSelector(false);
     setShowFaSelector(false);
     setShowSidebar(true);
-    // Auto-download slideshow media
-    if (isTauri && SLIDESHOWS[index]) {
-      downloadManager.startSlideshowDownload(SLIDESHOWS[index].id);
+  };
+
+  const selectSlide = (index: number) => {
+    if (!activeSlideshow) return;
+    const slide = activeSlideshow.slides[index];
+    if (!slide) return;
+
+    // For VIDEO slides: gate on download (same as video chapters)
+    if (isTauri && slide.type === 'video' && slide.filename) {
+      const clean = slide.filename.trim().replace(/^\//, '');
+      if (!dlState.fileStatuses[clean]) {
+        // Only trigger if we're not already downloading this slide
+        if (downloadingSlideIndex !== index) {
+          setDownloadingSlideIndex(index);
+          downloadManager.startSingleDownload(slide.filename);
+        }
+        return; // Wait for download to complete
+      }
     }
+
+    // For IMAGE slides (or already-downloaded videos): navigate immediately
+    // Images load from CDN online or from local cache if already downloaded
+    // Use the sidebar download button to explicitly download individual slides
+    if (slideVideoRef.current) slideVideoRef.current.pause();
+    setActiveSlideIndex(index);
+    setSlideshowIsPlaying(true);
+    setActiveTab('slideshow');
   };
 
   const nextSlide = () => {
     if (activeSlideshow && activeSlideIndex < activeSlideshow.slides.length - 1) {
-      if (slideVideoRef.current) {
-        slideVideoRef.current.pause();
-      }
-      setActiveSlideIndex(prev => prev + 1);
-      setSlideshowIsPlaying(true);
+      selectSlide(activeSlideIndex + 1);
     }
   };
 
   const prevSlide = () => {
     if (activeSlideIndex > 0) {
-      if (slideVideoRef.current) {
-        slideVideoRef.current.pause();
-      }
-      setActiveSlideIndex(prev => prev - 1);
-      setSlideshowIsPlaying(true);
+      selectSlide(activeSlideIndex - 1);
     }
   };
   
@@ -761,16 +833,11 @@ export default function App() {
       } else if (e.key === 'ArrowRight') {
         if (activeTab === 'slideshow' && activeSlideshow) {
           if (activeSlideIndex < activeSlideshow.slides.length - 1) {
-            if (slideVideoRef.current) slideVideoRef.current.pause();
-            setActiveSlideIndex(prev => prev + 1);
-            setSlideshowIsPlaying(true);
+            selectSlide(activeSlideIndex + 1);
           }
         } else if (activeTab === 'video' && activeCourse) {
           if (activeChapterIndex < activeCourse.chapters.length - 1) {
-            setActivePlayer(prev => prev === 'A' ? 'B' : 'A');
-            setActiveChapterIndex(prev => prev + 1);
-            setShowNextOverlay(false);
-            setIsPlaying(true);
+            selectChapter(activeChapterIndex + 1);
           }
         } else if (activeTab === 'manual') {
           if (flipbookRef.current) flipbookRef.current.flipNext();
@@ -778,38 +845,31 @@ export default function App() {
       } else if (e.key === 'ArrowLeft') {
         if (activeTab === 'slideshow' && activeSlideshow) {
           if (activeSlideIndex > 0) {
-            if (slideVideoRef.current) slideVideoRef.current.pause();
-            setActiveSlideIndex(prev => prev - 1);
-            setSlideshowIsPlaying(true);
+            selectSlide(activeSlideIndex - 1);
           }
         } else if (activeTab === 'video' && activeCourse) {
           if (activeChapterIndex > 0) {
-            setActivePlayer(prev => prev === 'A' ? 'B' : 'A');
-            setActiveChapterIndex(prev => prev - 1);
-            setShowNextOverlay(false);
-            setIsPlaying(true);
+            selectChapter(activeChapterIndex - 1);
           }
         } else if (activeTab === 'manual') {
           if (flipbookRef.current) flipbookRef.current.flipPrev();
         }
-      } else if (e.key === 'Escape') {
-        console.log('[FS-DEBUG] Escape pressed. fullscreenElement:', document.fullscreenElement?.tagName || 'none');
-        if (document.fullscreenElement) {
-          document.exitFullscreen().catch(console.error);
-        }
+      } else if (e.key === 'Escape' && document.fullscreenElement) {
+        document.exitFullscreen().catch(console.error);
       }
     };
 
-    // Track browser fullscreen state changes
-    const handleFsChange = () => {
-      console.log('[FS-DEBUG] fullscreenchange fired. fullscreenElement:', document.fullscreenElement?.tagName || 'EXITED', 'className:', document.fullscreenElement?.className?.substring(0, 80) || 'n/a');
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement) {
+        setIsUiVisible(true);
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
-    document.addEventListener('fullscreenchange', handleFsChange);
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
-      document.removeEventListener('fullscreenchange', handleFsChange);
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
     };
   }, [activeTab, activeSlideshow, activeSlideIndex, activeCourse, activeSlide, isPlaying, slideshowIsPlaying, activeChapterIndex]);
 
@@ -874,24 +934,6 @@ export default function App() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  const handleOpenExternalUrl = async (url: string) => {
-    if (isTauri) {
-      try {
-        const { invoke } = await import('@tauri-apps/api/core');
-        await invoke('open_browser', { url });
-      } catch (e) {
-        console.error("Failed to open browser via Tauri", e);
-        window.open(url, '_blank');
-      }
-    } else {
-      window.open(url, '_blank');
-    }
-  };
-
-  const handleOpenPortal = async () => {
-    await handleOpenExternalUrl("https://ehacademy.com/login");
-  };
 
   // Prevent video background play & dropdown menu flickering when tab changes
   useEffect(() => {
@@ -959,7 +1001,7 @@ export default function App() {
             setShowSidebar={setShowSidebar}
             setActiveCourseIndex={setActiveCourseIndex}
             setActiveSlideshowIndex={setActiveSlideshowIndex}
-            setSelectedManual={setSelectedManual}
+            setSelectedManual={selectManual}
             setActiveTab={setActiveTab}
             activeTab={activeTab}
             activeCourse={activeCourse}
@@ -974,6 +1016,7 @@ export default function App() {
             expandedSections={expandedSections}
             setExpandedSections={setExpandedSections}
             setActiveSlideIndex={setActiveSlideIndex}
+            selectSlide={selectSlide}
             slideshowIsPlaying={slideshowIsPlaying}
             setSlideshowIsPlaying={setSlideshowIsPlaying}
             toggleSlideshowPlay={toggleSlideshowPlay}
@@ -1010,7 +1053,7 @@ export default function App() {
           setShowSidebar={setShowSidebar}
           setActiveCourseIndex={setActiveCourseIndex}
           setActiveSlideshowIndex={setActiveSlideshowIndex}
-          setSelectedManual={setSelectedManual}
+          setSelectedManual={selectManual}
           setActiveTab={setActiveTab}
           lastCprView={lastCprView}
           showCprSelector={showCprSelector}
@@ -1093,7 +1136,6 @@ export default function App() {
                   pdfUrl={m(`/${selectedManual.filename}`)}
                   title={selectedManual.title}
                   onClose={() => {
-                    console.log('[FS-DEBUG] Manual closed.');
                     setSelectedManual(null);
                     setActiveTab('video');
                   }}
@@ -1103,6 +1145,60 @@ export default function App() {
               </ErrorBoundary>
             )}
           </div>
+
+          {/* Download Overlay Container (Sibling to all tabs) */}
+          {(downloadingChapterIndex !== null || downloadingManualId !== null || downloadingSlideIndex !== null) ? (
+            <div className="absolute inset-0 z-[60] flex flex-col items-center justify-center bg-black/90 backdrop-blur-sm">
+              <div className="relative w-32 h-32 mb-6">
+                <div className="absolute inset-0 border-4 border-white/10 rounded-full" />
+                <div 
+                  className="absolute inset-0 border-4 border-eh-blue rounded-full transition-all duration-300"
+                  style={{ 
+                    clipPath: `polygon(50% 50%, 50% 0, ${dlState.currentFileTotalBytes ? (dlState.currentFileBytesWritten / dlState.currentFileTotalBytes * 100 > 12.5 ? '100% 0,' : '') : ''} ${dlState.currentFileTotalBytes ? (dlState.currentFileBytesWritten / dlState.currentFileTotalBytes * 100 > 37.5 ? '100% 100%,' : '') : ''} ${dlState.currentFileTotalBytes ? (dlState.currentFileBytesWritten / dlState.currentFileTotalBytes * 100 > 62.5 ? '0 100%,' : '') : ''} ${dlState.currentFileTotalBytes ? (dlState.currentFileBytesWritten / dlState.currentFileTotalBytes * 100 > 87.5 ? '0 0,' : '') : ''} ${dlState.currentFileTotalBytes ? (
+                      dlState.currentFileBytesWritten / dlState.currentFileTotalBytes * 100 <= 12.5 ? 50 + (dlState.currentFileBytesWritten / dlState.currentFileTotalBytes * 100 * 4) + '% 0' :
+                      dlState.currentFileBytesWritten / dlState.currentFileTotalBytes * 100 <= 37.5 ? '100% ' + ((dlState.currentFileBytesWritten / dlState.currentFileTotalBytes * 100 - 12.5) * 4) + '%' :
+                      dlState.currentFileBytesWritten / dlState.currentFileTotalBytes * 100 <= 62.5 ? (100 - (dlState.currentFileBytesWritten / dlState.currentFileTotalBytes * 100 - 37.5) * 4) + '% 100%' :
+                      dlState.currentFileBytesWritten / dlState.currentFileTotalBytes * 100 <= 87.5 ? '0 ' + (100 - (dlState.currentFileBytesWritten / dlState.currentFileTotalBytes * 100 - 62.5) * 4) + '%' :
+                      (dlState.currentFileBytesWritten / dlState.currentFileTotalBytes * 100 - 87.5) * 4 + '% 0'
+                    ) : '50% 0'})` 
+                  }}
+                />
+                <video 
+                  src="/CPR-Dummies.mp4"
+                  autoPlay 
+                  loop 
+                  muted 
+                  playsInline 
+                  className="absolute inset-2 w-28 h-28 object-cover rounded-full"
+                />
+              </div>
+              <h3 className="text-eh-peach font-bold text-lg mb-2">Downloading {downloadingChapterIndex !== null ? 'Course Chapter' : downloadingManualId !== null ? 'Training Manual' : 'Slideshow Video'}...</h3>
+              <p className="text-white/60 mb-4 text-center max-w-md text-sm">
+                This media must be downloaded before playback can begin. It will automatically play once the download completes.
+              </p>
+              <div className="flex flex-col items-center space-y-1">
+                <span className="text-eh-blue-light font-mono font-bold text-xl">
+                  {dlState.currentFileTotalBytes > 0 
+                    ? Math.round((dlState.currentFileBytesWritten / dlState.currentFileTotalBytes) * 100) 
+                    : 0}%
+                </span>
+                <span className="text-white/40 text-xs font-mono uppercase tracking-widest">
+                  {formatSpeed(dlState.currentSpeed)}
+                </span>
+              </div>
+              <button
+                onClick={() => {
+                  downloadManager.cancelDownload();
+                  setDownloadingChapterIndex(null);
+                  setDownloadingManualId(null);
+                  setDownloadingSlideIndex(null);
+                }}
+                className="mt-8 px-6 py-2 rounded-full border border-white/20 text-white/70 hover:bg-white/10 hover:text-white transition-all text-sm font-bold tracking-wider cursor-pointer"
+              >
+                Cancel Download
+              </button>
+            </div>
+          ) : null}
 
           {/* Video Tab Container */}
           <div className={`w-full h-full relative z-10 flex items-center justify-center ${activeTab === 'video' && activeCourse ? '' : 'hidden'}`}>

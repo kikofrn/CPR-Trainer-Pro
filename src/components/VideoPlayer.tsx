@@ -86,8 +86,8 @@ export const VideoPlayer = React.memo(function VideoPlayer({
       {/* Close Video Button */}
       <div className={`absolute top-6 right-6 z-50 flex items-center gap-4 transition-opacity duration-500 ${!isUiVisible ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
         <button 
-          onClick={() => {
-            console.log('[FS-DEBUG] Close video clicked. fullscreenElement:', document.fullscreenElement?.tagName || 'none');
+          onClick={(e) => {
+            e.stopPropagation();
             if (document.fullscreenElement) {
               document.exitFullscreen().catch(console.error);
             } else {
@@ -123,6 +123,10 @@ export const VideoPlayer = React.memo(function VideoPlayer({
                 handleTimeUpdate(e.currentTarget);
               }
             }}
+            onError={(e) => {
+              console.error('[VideoPlayer] Video A playback error:', e);
+              setIsPlaying(false);
+            }}
           />
           {/* Video Player B */}
           <video
@@ -144,6 +148,10 @@ export const VideoPlayer = React.memo(function VideoPlayer({
               if (activePlayer === 'B') {
                 handleTimeUpdate(e.currentTarget);
               }
+            }}
+            onError={(e) => {
+              console.error('[VideoPlayer] Video B playback error:', e);
+              setIsPlaying(false);
             }}
           />
         </div>
@@ -331,12 +339,10 @@ export const VideoPlayer = React.memo(function VideoPlayer({
               </button>
               <button 
                 onClick={() => {
-                  console.log('[FS-DEBUG] Video fullscreen clicked. fullscreenElement:', document.fullscreenElement?.tagName || 'none', 'videoContainerRef:', videoContainerRef.current ? 'exists' : 'null');
-                  if (!document.fullscreenElement) {
-                    videoContainerRef.current?.requestFullscreen()
-                      .then(() => console.log('[FS-DEBUG] requestFullscreen SUCCESS'))
-                      .catch((err: any) => console.error('[FS-DEBUG] requestFullscreen FAILED:', err));
-                  } else {
+                  if (!document.fullscreenElement && videoContainerRef.current) {
+                    videoContainerRef.current.requestFullscreen()
+                      .catch((err: any) => console.error(err));
+                  } else if (document.fullscreenElement) {
                     document.exitFullscreen().catch(console.error);
                   }
                 }}

@@ -98,7 +98,6 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
     const ro = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const { width, height } = entry.contentRect;
-        console.log('[FS-DEBUG] ManualFlipbook ResizeObserver:', Math.round(width), 'x', Math.round(height));
         setContainerWidth(Math.round(width));
         setContainerHeight(Math.round(height));
       }
@@ -422,7 +421,6 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
               showCover={true}
               mobileScrollSupport={true}
               onFlip={(e) => {
-                console.log('[FS-DEBUG] Manual page turned to:', e.data);
                 setCurrentPage(e.data);
               }}
               className="flipbook-canvas"

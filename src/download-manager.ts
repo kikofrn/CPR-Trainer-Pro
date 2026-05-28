@@ -51,6 +51,24 @@ class DownloadManager {
   private speedSamples: { time: number; bytes: number }[] = [];
   private lastProgressTime = 0;
   private lastBytesWritten = 0;
+  private mockMissingFiles = false;
+
+  public toggleMockMissingFiles() {
+    this.mockMissingFiles = !this.mockMissingFiles;
+    if (this.mockMissingFiles) {
+      Object.keys(this.state.fileStatuses).forEach(key => {
+        this.state.fileStatuses[key] = false;
+      });
+      this.state.globalDownloadedCount = 0;
+      this.notify();
+    } else {
+      this.checkAllStatuses();
+    }
+  }
+
+  public isMockingMissingFiles(): boolean {
+    return this.mockMissingFiles;
+  }
 
   constructor() {
     this.setupListeners();
@@ -68,7 +86,7 @@ class DownloadManager {
   }
 
   private notify() {
-    const stateCopy = { ...this.state };
+    const stateCopy = { ...this.state, fileStatuses: { ...this.state.fileStatuses } };
     this.listeners.forEach((listener) => listener(stateCopy));
   }
 
@@ -366,6 +384,33 @@ class DownloadManager {
     }
 
     const clean = filename.trim().startsWith('/') ? filename.trim().slice(1) : filename.trim();
+
+    // --- MOCK LOGIC ---
+    if ((import.meta as any).env.DEV && this.mockMissingFiles) {
+      this.state.isDownloading = true;
+      this.state.activeCategory = 'single';
+      this.state.queue = [clean];
+      this.state.totalQueueSize = 1;
+      this.state.completedQueueCount = 0;
+      this.state.currentFile = clean;
+      this.state.currentFileTotalBytes = 1000000;
+      this.state.currentFileBytesWritten = 0;
+      this.notify();
+      
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += 200000; // 20% per second
+        this.state.currentFileBytesWritten = progress;
+        this.notify();
+        if (progress >= 1000000) {
+          clearInterval(interval);
+          this.handleFileComplete(clean);
+        }
+      }, 1000);
+      return;
+    }
+    // ------------------
+
     const exists = await invoke<boolean>('check_media_file_exists', { filename: clean });
     if (exists) {
       this.state.fileStatuses[clean] = true;
@@ -404,7 +449,9 @@ class DownloadManager {
       
       // Update local state statuses
       Object.entries(statusMap).forEach(([file, exists]) => {
-        this.state.fileStatuses[file] = exists;
+        const effectiveExists = this.mockMissingFiles ? false : exists;
+        this.state.fileStatuses[file] = effectiveExists;
+        statusMap[file] = effectiveExists;
       });
       this.updateGlobalCounts();
       this.notify();
@@ -479,11 +526,6 @@ class DownloadManager {
       .map((s) => s.filename)
       .filter(Boolean)
       .map((f) => (f.trim().startsWith('/') ? f.trim().slice(1) : f.trim()));
-
-    // Also include manuals with the slideshow download as requested
-    MANUALS.forEach((m) => {
-      if (m.filename) files.push(m.filename.trim());
-    });
 
     const statusMap = await this.checkStatusesForFiles(files);
     const pending = files.filter((f) => !statusMap[f]);

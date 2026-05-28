@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, ChevronDown, CheckCircle2, Download, Play, Pause, Loader2, MonitorPlay, Settings, Info, HelpCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, CheckCircle2, Download, Play, Pause, Clock, MonitorPlay, Settings, Info, HelpCircle } from 'lucide-react';
+import { mediaUrl as m } from '../media-resolver';
 
 interface SidebarProps {
   showSidebar: boolean;
@@ -24,6 +25,7 @@ interface SidebarProps {
   expandedSections: Record<string, boolean>;
   setExpandedSections: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
   setActiveSlideIndex: (i: number) => void;
+  selectSlide: (i: number) => void;
   slideshowIsPlaying: boolean;
   setSlideshowIsPlaying: (v: boolean) => void;
   toggleSlideshowPlay: () => void;
@@ -61,7 +63,7 @@ interface SidebarProps {
 export const Sidebar = React.memo(function Sidebar({
   showSidebar, setShowSidebar, setActiveCourseIndex, setActiveSlideshowIndex, setSelectedManual, setActiveTab,
   activeTab, activeCourse, activeSlideshow, selectedManual, manualOutline, expandedManualSections, setExpandedManualSections, flipbookRef, MANUALS,
-  activeSlideIndex, expandedSections, setExpandedSections, setActiveSlideIndex, slideshowIsPlaying, setSlideshowIsPlaying, toggleSlideshowPlay,
+  activeSlideIndex, expandedSections, setExpandedSections, setActiveSlideIndex, selectSlide, slideshowIsPlaying, setSlideshowIsPlaying, toggleSlideshowPlay,
   activeChapterIndex, selectChapter, isPlaying, togglePlay,
   isTauri, dlState, easterEggLevel, downloadManager,
   isSettingsExpanded, setIsSettingsExpanded, isContinuousPlay, setIsContinuousPlay,
@@ -269,7 +271,18 @@ export const Sidebar = React.memo(function Sidebar({
                               <h4 className="text-sm font-bold text-eh-peach group-hover:text-eh-red transition-colors duration-300 leading-snug line-clamp-1">
                                 {manual.title.replace("EHA ", "")}
                               </h4>
-                              <span className="text-xs text-eh-blue/60 font-mono opacity-0 group-hover:opacity-100 transition-opacity duration-300 shrink-0">
+                              {isTauri && manual.filename && (
+                                dlState.fileStatuses[manual.filename.trim().replace(/^\//, '')] ? (
+                                  <CheckCircle2 size={14} className="text-green-500 shrink-0 ml-1" title="Downloaded" />
+                                ) : dlState.isDownloading && dlState.currentFile === manual.filename.trim().replace(/^\//, '') ? (
+                                  <video src="/CPR-Dummies.mp4" autoPlay loop muted playsInline className="w-4 h-4 shrink-0 rounded-sm object-cover ml-1" title="Downloading..." />
+                                ) : dlState.queue.includes(manual.filename.trim().replace(/^\//, '')) ? (
+                                  <Clock size={14} className="text-eh-blue/70 shrink-0 ml-1" title="Queued for download" />
+                                ) : (
+                                  <Download size={14} className="text-eh-blue/50 shrink-0 ml-1" title="Not downloaded" />
+                                )
+                              )}
+                              <span className="text-xs text-eh-blue/60 font-mono opacity-0 group-hover:opacity-100 transition-opacity duration-300 shrink-0 ml-auto">
                                 {details.pages}
                               </span>
                             </div>
@@ -306,11 +319,7 @@ export const Sidebar = React.memo(function Sidebar({
                       }`}
                     >
                       <button
-                        onClick={() => {
-                          setActiveSlideIndex(index);
-                          setSlideshowIsPlaying(true);
-                          setActiveTab('slideshow');
-                        }}
+                        onClick={() => selectSlide(index)}
                         className={`shrink-0 w-5 h-5 rounded-full border flex items-center justify-center text-[10px] font-mono transition-colors cursor-pointer ${
                           isActiveSlide 
                             ? 'bg-eh-red border-eh-red text-eh-peach' 
@@ -321,11 +330,7 @@ export const Sidebar = React.memo(function Sidebar({
                       </button>
                       
                       <button 
-                        onClick={() => {
-                          setActiveSlideIndex(index);
-                          if (slide.type === 'video') setSlideshowIsPlaying(true);
-                          setActiveTab('slideshow');
-                        }}
+                        onClick={() => selectSlide(index)}
                         className="flex-1 min-w-0 text-left cursor-pointer"
                       >
                         <h3 className={`text-base font-bold truncate ${isActiveSlide ? 'text-eh-peach' : 'text-eh-peach/60 group-hover:text-eh-peach/80'}`}>
@@ -364,7 +369,23 @@ export const Sidebar = React.memo(function Sidebar({
                             <Play size={14} className="text-eh-red ml-0.5" fill="currentColor" />
                           )}
                         </button>
-                      ) : null}
+                      ) : (
+                        // Download status for non-active, non-header slides
+                        isTauri ? (
+                          dlState.fileStatuses[slide.filename?.trim().replace(/^\//, '') || ''] ? (
+                            <CheckCircle2 size={16} className="text-green-500 shrink-0" title="Downloaded" />
+                          ) : dlState.isDownloading && dlState.currentFile === slide.filename?.trim().replace(/^\//, '') ? (
+                            <video src="/CPR-Dummies.mp4" autoPlay loop muted playsInline className="w-6 h-6 shrink-0 rounded-md object-cover" title="Downloading..." />
+                          ) : dlState.queue.includes(slide.filename?.trim().replace(/^\//, '') || '') ? (
+                            <Clock size={16} className="text-eh-blue/70 shrink-0" title="Queued" />
+                          ) : (
+                            <button onClick={(e) => { e.stopPropagation(); if (slide.filename) downloadManager.startSingleDownload(slide.filename); }}
+                              className="p-1 hover:bg-eh-blue/10 rounded-full transition-colors cursor-pointer" title="Download this slide">
+                              <Download size={14} className="text-eh-blue/50 hover:text-eh-blue" />
+                            </button>
+                          )
+                        ) : null
+                      )}
                     </div>
                   </div>
                 );
@@ -452,11 +473,9 @@ export const Sidebar = React.memo(function Sidebar({
                             dlState.fileStatuses[chapter.filename?.trim().replace(/^\//, '') || ''] ? (
                               <CheckCircle2 size={16} className="text-green-500 shrink-0" title="Downloaded" />
                             ) : dlState.isDownloading && dlState.currentFile === chapter.filename?.trim().replace(/^\//, '') ? (
-                              easterEggLevel > 0 ? (
-                                <video src="/CPR-Dummies.mp4" autoPlay loop muted playsInline className="w-6 h-6 shrink-0 rounded-md object-cover" title="Downloading..." />
-                              ) : (
-                                <Loader2 size={16} className="text-eh-blue animate-spin shrink-0" title="Downloading..." />
-                              )
+                              <video src="/CPR-Dummies.mp4" autoPlay loop muted playsInline className="w-6 h-6 shrink-0 rounded-md object-cover" title="Downloading..." />
+                            ) : dlState.queue.includes(chapter.filename?.trim().replace(/^\//, '') || '') ? (
+                              <Clock size={16} className="text-eh-blue/70 shrink-0" title="Queued for download" />
                             ) : (
                               <button
                                 onClick={(e) => {
@@ -602,7 +621,23 @@ export const Sidebar = React.memo(function Sidebar({
                                 : 'bg-white/5 border-white/20 text-white/70 hover:bg-white/10 hover:text-white'
                             }`}
                           >
-                            {updateAvailable ? 'Hide Banner' : 'Show Banner'}
+                            {updateAvailable ? 'Mocking ON' : 'Toggle'}
+                          </button>
+                        </div>
+                        <div className="flex items-center justify-between mt-2">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-2 h-2 rounded-full ${downloadManager.isMockingMissingFiles() ? 'bg-red-500 animate-pulse' : 'bg-white/20'}`} />
+                            <span className="text-xs font-bold uppercase tracking-widest text-eh-peach/80">Mock Missing Files</span>
+                          </div>
+                          <button 
+                            onClick={() => downloadManager.toggleMockMissingFiles()}
+                            className={`px-3 py-1 rounded border text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                              downloadManager.isMockingMissingFiles()
+                                ? 'bg-red-500/20 border-red-500 text-red-400 hover:bg-red-500/30' 
+                                : 'border-white/10 text-white/50 hover:bg-white/5 hover:text-white/80'
+                            }`}
+                          >
+                            {downloadManager.isMockingMissingFiles() ? 'Mocking ON' : 'Toggle'}
                           </button>
                         </div>
                       </div>

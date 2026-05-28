@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "CPR Trainer Pro",
-  "version": "1.4.0",
+  "version": "2.1.0",
   "identifier": "com.ehacademy.cpr-trainer-pro",
   "build": {
     "frontendDist": "../dist",
@@ -52,6 +52,11 @@
     ],
     "resources": {
       "../public/*": "media/"
+    },
+    "windows": {
+      "nsis": {
+        "installerIcon": "installer-icon.ico"
+      }
     }
   },
   "plugins": {

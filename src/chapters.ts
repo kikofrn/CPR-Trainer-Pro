@@ -1520,7 +1520,7 @@ export let COURSES: Course[] = [
       { id: "cpr-28", title: "Adult Choking Relief", filename: "28_EHAcademy - CPR AED Course Video-Adult Choking Relief.mp4", duration: "1:11" },
       { id: "cpr-29", title: "Child Choking Relief", filename: "29_EHAcademy - CPR AED Course Video-Child Choking Relief.mp4", duration: "0:51" },
       { id: "cpr-30", title: "Infant Choking Relief", filename: "30_EHAcademy - CPR AED Course Video-Infant Choking Relief.mp4", duration: "2:35" },
-      { id: "cpr-31", title: "Conclusion", filename: "31_EHAcademy - CPR AED Course Video-Conclusion.mp4.mp4", duration: "0:46" }
+      { id: "cpr-31", title: "Conclusion", filename: "31_EHAcademy - CPR AED Course Video-Conclusion.mp4", duration: "0:46" }
     ]
   },
   {

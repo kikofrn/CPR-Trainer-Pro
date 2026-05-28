@@ -10,7 +10,7 @@ const isTauri = typeof window !== 'undefined' && !!(window as any).__TAURI_INTER
 // On Windows Tauri, the media protocol base URL is always deterministic.
 // Set it eagerly so mediaUrl() works synchronously from the very first render.
 let mediaBase = isTauri ? 'http://media.localhost/' : '';
-let initialized = isTauri; // If Tauri, we already know the base URL
+// mediaBase is set eagerly for Tauri since the Windows protocol URL is deterministic
 
 async function init() {
   if (!isTauri) return;
