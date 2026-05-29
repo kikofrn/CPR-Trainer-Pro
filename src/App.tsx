@@ -30,6 +30,10 @@ import { COURSES, MANUALS, Manual, SLIDESHOWS } from './chapters';
 import ManualFlipbook, { ManualFlipbookRef } from './components/ManualFlipbook';
 import { mediaUrl as m, waitForMediaResolver, isTauri } from './media-resolver';
 import { CprIcon, FirstAidIcon } from './components/Icons';
+import { EHLogo as SharedEHLogo } from './components/Shared/EHLogo';
+import { useMediaQuery } from './hooks/useMediaQuery';
+import { MobileApp } from './components/mobile/MobileApp';
+import { AppState, AppActions } from './components/mobile/MobileTypes';
 import { downloadManager, DownloadState, formatSpeed, formatTimeRemaining } from './download-manager';
 
 function EHLogo({ className }: { className?: string }) {
@@ -732,6 +736,28 @@ export default function App() {
     }
   }, [activeTab]);
 
+  const isMobile = useMediaQuery('(max-width: 768px)');
+
+  if (isMobile) {
+    const appState: AppState = {
+      activeCourseIndex, activeChapterIndex, isPlaying, isMuted, isContinuousPlay,
+      progress, showNextOverlay, selectedManual, activeTab, isOnline,
+      cprVaEnabled, faVaEnabled, faPediatric, activeSlideshowIndex, activeSlideIndex,
+      slideshowIsPlaying, activePlayer, showSubtitles, activeCue, dlState
+    };
+    
+    const appActions: AppActions = {
+      setActiveCourseIndex, setActiveChapterIndex, setIsPlaying, setIsMuted, setIsContinuousPlay,
+      setProgress, setShowNextOverlay, setSelectedManual, setActiveTab,
+      setCprVaEnabled, setFaVaEnabled, setFaPediatric, setActiveSlideshowIndex,
+      setActiveSlideIndex, setSlideshowIsPlaying, setShowSubtitles,
+      handlePrev, handleNext, togglePlay, selectChapter, handleOpenPortal,
+      videoRefA, videoRefB, slideVideoRef, handleEnded, handleTimeUpdate
+    };
+
+    return <MobileApp state={appState} actions={appActions} />;
+  }
+
   return (
     <div className="flex h-screen bg-black text-eh-peach overflow-hidden medical-gradient">
       {/* Sidebar Navigation */}
@@ -743,9 +769,9 @@ export default function App() {
             animate={{ width: 320, opacity: 1 }}
             exit={{ width: 0, opacity: 0 }}
             transition={{ type: "tween", ease: "easeInOut", duration: 0.4 }}
-            className="h-full bg-black border-r border-eh-peach/10 flex flex-col z-50 shrink-0 overflow-hidden relative"
+            className="h-full bg-black border-r border-eh-peach/10 flex flex-col z-[100] md:z-50 shrink-0 overflow-hidden absolute md:relative left-0 top-0 bottom-0"
           >
-            <div className="w-80 h-full flex flex-col shrink-0">
+            <div className="w-80 h-full flex flex-col shrink-0 bg-black">
               <div className="p-8 border-b border-eh-peach/10">
                 <div className="flex items-center justify-between gap-2 w-full">
                   <div className="flex items-center gap-4">
@@ -1266,8 +1292,8 @@ export default function App() {
               </div>
             </motion.div>
             
-            <div className="flex items-end h-full gap-2 lg:gap-8 z-50 pt-4">
-              <div className="relative h-full flex items-end">
+            <div className="flex items-end h-full gap-2 lg:gap-8 z-50 pt-4 overflow-x-auto no-scrollbar scroll-smooth flex-1 md:flex-initial">
+              <div className="relative h-full flex items-end shrink-0">
                 <button 
                   onClick={() => {
                     if (lastCprView && (activeTab === 'manual' || activeTab === 'send-certs')) {
@@ -1281,7 +1307,7 @@ export default function App() {
                     setShowFaSelector(false);
                     setShowManualSelector(false);
                   }}
-                  className={`hidden sm:flex flex-col items-start px-4 pb-4 border-b-2 transition-colors ${isCprActive ? 'border-eh-red' : 'border-transparent hover:border-eh-peach/20 opacity-50 hover:opacity-100'}`}
+                  className={`flex flex-col items-start px-4 pb-4 border-b-2 transition-colors shrink-0 ${isCprActive ? 'border-eh-red' : 'border-transparent hover:border-eh-peach/20 opacity-50 hover:opacity-100'}`}
                   title="Select CPR & AED Course Edition"
                 >
                   <div className="flex items-center gap-2">
@@ -1385,7 +1411,7 @@ export default function App() {
                     setShowCprSelector(false);
                     setShowManualSelector(false);
                   }}
-                  className={`hidden sm:flex flex-col items-start px-4 pb-4 border-b-2 transition-colors ${isFaActive ? 'border-eh-red' : 'border-transparent hover:border-eh-peach/20 opacity-50 hover:opacity-100'}`}
+                  className={`flex flex-col items-start px-4 pb-4 border-b-2 transition-colors shrink-0 ${isFaActive ? 'border-eh-red' : 'border-transparent hover:border-eh-peach/20 opacity-50 hover:opacity-100'}`}
                   title="Select First Aid Course Edition"
                 >
                   <div className="flex items-center gap-2">
@@ -1500,7 +1526,7 @@ export default function App() {
                     setShowCprSelector(false);
                     setShowFaSelector(false);
                   }}
-                  className={`hidden sm:flex flex-col items-start px-4 ${selectedManual ? 'pb-2' : 'pb-4'} border-b-2 transition-colors ${activeTab === 'manual' ? 'border-eh-red' : 'border-transparent hover:border-eh-peach/20 opacity-50 hover:opacity-100'}`}
+                  className={`flex flex-col items-start px-4 ${selectedManual ? 'pb-2' : 'pb-4'} border-b-2 transition-colors shrink-0 ${activeTab === 'manual' ? 'border-eh-red' : 'border-transparent hover:border-eh-peach/20 opacity-50 hover:opacity-100'}`}
                   title="Browse Student and Instructor Handbooks"
                 >
                   <div className="flex items-center gap-2">
@@ -1557,7 +1583,7 @@ export default function App() {
                     setShowFaSelector(false);
                     setShowManualSelector(false);
                   }}
-                  className={`hidden sm:flex flex-col items-start px-4 pb-4 border-b-2 transition-colors ${activeTab === 'send-certs' ? 'border-eh-red' : 'border-transparent hover:border-eh-peach/20 opacity-50 hover:opacity-100'}`}
+                  className={`flex flex-col items-start px-4 pb-4 border-b-2 transition-colors shrink-0 ${activeTab === 'send-certs' ? 'border-eh-red' : 'border-transparent hover:border-eh-peach/20 opacity-50 hover:opacity-100'}`}
                   title="Done teaching? Ready to certify your students?"
                 >
                   <div className="flex items-center gap-2">
@@ -1567,7 +1593,7 @@ export default function App() {
                 </button>
               </div>
               {easterEggLevel > 0 && (
-                <div className="hidden sm:flex relative items-center justify-center self-center ml-2 h-10 w-14">
+                <div className="flex relative items-center justify-center self-center ml-2 h-10 w-14 shrink-0">
                   <div 
                     className={`absolute h-8 w-auto rounded overflow-hidden transition-all duration-1000 ease-in-out ${easterEggLevel === 1 ? 'opacity-100 scale-100' : 'opacity-0 scale-75 pointer-events-none'}`}
                   >

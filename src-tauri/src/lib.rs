@@ -4,6 +4,9 @@ use std::io::{Read, Seek, SeekFrom};
 use std::path::PathBuf;
 use tauri::{Manager, Emitter};
 use futures_util::StreamExt;
+use std::sync::Mutex;
+
+static APP_HANDLE: std::sync::Mutex<Option<tauri::AppHandle>> = std::sync::Mutex::new(None);
 
 /// Strip the Windows extended-length path prefix (\\?\) from a path string.
 fn clean_path(path: PathBuf) -> PathBuf {
@@ -20,21 +23,32 @@ fn clean_path(path: PathBuf) -> PathBuf {
 /// 2. Installer resource directory (standard installer deployment)
 /// 3. CWD directory (development mode)
 fn find_media_dir(app: &tauri::AppHandle) -> PathBuf {
-    // 1. Return exe_dir/media (portable standalone mode) proactively
-    if let Ok(exe_path) = std::env::current_exe() {
-        let exe_path = clean_path(exe_path);
-        if let Some(exe_dir) = exe_path.parent() {
-            return exe_dir.join("media");
+    #[cfg(target_os = "ios")]
+    {
+        if let Ok(app_data_dir) = app.path().app_data_dir() {
+            return app_data_dir.join("media");
         }
+        return PathBuf::from("media");
     }
 
-    // 2. Fallback to resource_dir/media
-    if let Ok(resource_dir) = app.path().resource_dir() {
-        return clean_path(resource_dir).join("media");
-    }
+    #[cfg(not(target_os = "ios"))]
+    {
+        // 1. Return exe_dir/media (portable standalone mode) proactively
+        if let Ok(exe_path) = std::env::current_exe() {
+            let exe_path = clean_path(exe_path);
+            if let Some(exe_dir) = exe_path.parent() {
+                return exe_dir.join("media");
+            }
+        }
 
-    // 3. Fallback to CWD media/
-    PathBuf::from("media")
+        // 2. Fallback to resource_dir/media
+        if let Ok(resource_dir) = app.path().resource_dir() {
+            return clean_path(resource_dir).join("media");
+        }
+
+        // 3. Fallback to CWD media/
+        PathBuf::from("media")
+    }
 }
 
 /// Guess MIME type from file extension
@@ -165,9 +179,20 @@ fn handle_media_request(
 
 #[tauri::command]
 fn get_media_base_path(_app: tauri::AppHandle) -> Result<String, String> {
-    // In custom protocol mode, we just return the protocol URL base
-    // The frontend will use "http://media.localhost/<filename>" on Windows
-    Ok("http://media.localhost/".to_string())
+    #[cfg(target_os = "ios")]
+    {
+        Ok("media://localhost/".to_string())
+    }
+    #[cfg(not(target_os = "ios"))]
+    {
+        Ok("http://media.localhost/".to_string())
+    }
+}
+
+#[tauri::command]
+fn get_media_dir_path(app: tauri::AppHandle) -> Result<String, String> {
+    let dir = find_media_dir(&app);
+    Ok(dir.to_string_lossy().to_string())
 }
 
 #[tauri::command]
@@ -356,6 +381,166 @@ fn check_media_files_status(
     Ok(result)
 }
 
+#[cfg(target_os = "ios")]
+extern "C" {
+    fn swift_start_download_group(group_id: *const std::ffi::c_char, base_url: *const std::ffi::c_char, files_json: *const std::ffi::c_char, dest_dir: *const std::ffi::c_char);
+    fn swift_pause_download_group(group_id: *const std::ffi::c_char);
+    fn swift_resume_download_group(group_id: *const std::ffi::c_char);
+    fn swift_cancel_download_group(group_id: *const std::ffi::c_char);
+}
+
+#[cfg(target_os = "ios")]
+#[no_mangle]
+pub extern "C" fn rust_on_download_progress(group_id: *const std::ffi::c_char, filename: *const std::ffi::c_char, bytes_written: i64, total_bytes: i64) {
+    let app_opt = APP_HANDLE.lock().unwrap();
+    if let Some(app) = app_opt.as_ref() {
+        let group_id_str = unsafe { std::ffi::CStr::from_ptr(group_id) }.to_string_lossy().to_string();
+        let filename_str = unsafe { std::ffi::CStr::from_ptr(filename) }.to_string_lossy().to_string();
+        let _ = app.emit("download-group-progress", serde_json::json!({
+            "groupId": group_id_str,
+            "filename": filename_str,
+            "bytesWritten": bytes_written,
+            "totalBytes": total_bytes
+        }));
+    }
+}
+
+#[cfg(target_os = "ios")]
+#[no_mangle]
+pub extern "C" fn rust_on_download_complete(group_id: *const std::ffi::c_char, filename: *const std::ffi::c_char) {
+    let app_opt = APP_HANDLE.lock().unwrap();
+    if let Some(app) = app_opt.as_ref() {
+        let group_id_str = unsafe { std::ffi::CStr::from_ptr(group_id) }.to_string_lossy().to_string();
+        let filename_str = unsafe { std::ffi::CStr::from_ptr(filename) }.to_string_lossy().to_string();
+        let _ = app.emit("download-group-complete", serde_json::json!({
+            "groupId": group_id_str,
+            "filename": filename_str
+        }));
+    }
+}
+
+#[tauri::command]
+fn start_download_group(
+    app: tauri::AppHandle,
+    group_id: String,
+    base_url: String,
+    files: Vec<String>,
+) -> Result<(), String> {
+    #[cfg(target_os = "ios")]
+    {
+        let media_dir = find_media_dir(&app);
+        let dest_dir = media_dir.to_string_lossy().to_string();
+        let files_json = serde_json::to_string(&files).unwrap_or_else(|_| "[]".to_string());
+        
+        let c_group = std::ffi::CString::new(group_id).map_err(|e| e.to_string())?;
+        let c_base = std::ffi::CString::new(base_url).map_err(|e| e.to_string())?;
+        let c_json = std::ffi::CString::new(files_json).map_err(|e| e.to_string())?;
+        let c_dest = std::ffi::CString::new(dest_dir).map_err(|e| e.to_string())?;
+        
+        unsafe {
+            swift_start_download_group(c_group.as_ptr(), c_base.as_ptr(), c_json.as_ptr(), c_dest.as_ptr());
+        }
+        Ok(())
+    }
+    
+    #[cfg(not(target_os = "ios"))]
+    {
+        Err("Not implemented on desktop".to_string())
+    }
+}
+
+#[tauri::command]
+fn pause_download_group(group_id: String) -> Result<(), String> {
+    #[cfg(target_os = "ios")]
+    {
+        let c_group = std::ffi::CString::new(group_id).map_err(|e| e.to_string())?;
+        unsafe {
+            swift_pause_download_group(c_group.as_ptr());
+        }
+        Ok(())
+    }
+    #[cfg(not(target_os = "ios"))]
+    {
+        Err("Not implemented on desktop".to_string())
+    }
+}
+
+#[tauri::command]
+fn resume_download_group(group_id: String) -> Result<(), String> {
+    #[cfg(target_os = "ios")]
+    {
+        let c_group = std::ffi::CString::new(group_id).map_err(|e| e.to_string())?;
+        unsafe {
+            swift_resume_download_group(c_group.as_ptr());
+        }
+        Ok(())
+    }
+    #[cfg(not(target_os = "ios"))]
+    {
+        Err("Not implemented on desktop".to_string())
+    }
+}
+
+#[tauri::command]
+fn cancel_download_group(group_id: String) -> Result<(), String> {
+    #[cfg(target_os = "ios")]
+    {
+        let c_group = std::ffi::CString::new(group_id).map_err(|e| e.to_string())?;
+        unsafe {
+            swift_cancel_download_group(c_group.as_ptr());
+        }
+        Ok(())
+    }
+    #[cfg(not(target_os = "ios"))]
+    {
+        Err("Not implemented on desktop".to_string())
+    }
+}
+
+#[tauri::command]
+fn delete_media_files(app: tauri::AppHandle, files: Vec<String>) -> Result<u64, String> {
+    let media_dir = find_media_dir(&app);
+    let mut bytes_freed: u64 = 0;
+    
+    for file in files {
+        let clean = file.trim_start_matches('/');
+        let path = media_dir.join(clean);
+        if path.exists() {
+            if let Ok(metadata) = std::fs::metadata(&path) {
+                bytes_freed += metadata.len();
+            }
+            let _ = std::fs::remove_file(path);
+        }
+    }
+    
+    Ok(bytes_freed)
+}
+
+#[tauri::command]
+async fn fetch_file_sizes(base_url: String, files: Vec<String>) -> Result<std::collections::HashMap<String, u64>, String> {
+    let mut result = std::collections::HashMap::new();
+    let client = reqwest::Client::new();
+    
+    for file in files {
+        let clean = file.trim_start_matches('/');
+        let encoded = clean
+            .split('/')
+            .map(|p| percent_encoding::percent_encode(p.as_bytes(), percent_encoding::NON_ALPHANUMERIC).to_string())
+            .collect::<Vec<_>>()
+            .join("/");
+            
+        let url = format!("{}{}", base_url, encoded);
+        
+        if let Ok(response) = client.head(&url).send().await {
+            if let Some(content_length) = response.content_length() {
+                result.insert(file, content_length);
+            }
+        }
+    }
+    
+    Ok(result)
+}
+
 #[tauri::command]
 async fn close_splashscreen(window: tauri::Window) {
     // Close splashscreen
@@ -372,12 +557,19 @@ pub fn run() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
             get_media_base_path,
+            get_media_dir_path,
             list_media_files,
             open_browser,
             read_subtitle_file,
             download_media_file,
             check_media_file_exists,
             check_media_files_status,
+            start_download_group,
+            pause_download_group,
+            resume_download_group,
+            cancel_download_group,
+            delete_media_files,
+            fetch_file_sizes,
             close_splashscreen,
         ])
         // Register custom "media" protocol to serve files from media directory
@@ -401,6 +593,7 @@ pub fn run() {
         })
         .setup(move |app| {
             let handle = app.handle().clone();
+            *APP_HANDLE.lock().unwrap() = Some(handle.clone());
             
             // Log resolved media directory for tracking
             let resolved_media = find_media_dir(&handle);
