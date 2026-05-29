@@ -1,0 +1,3441 @@
+{
+  "schemaVersion": 1,
+  "mediaBaseURL": "https://media.ehacademy.com/",
+  "sendCertsURL": "https://ehacademy.com/login",
+  "courses": [
+    {
+      "id": "cpr-aed",
+      "title": "CPR & AED for All Ages",
+      "subtitle": "Instructor-paced slideshow by default, with VA video as an optional mode.",
+      "artworkName": "CPR AED for All Ages Cover.webp",
+      "modes": [
+        {
+          "id": "cpr-aed-course",
+          "kind": "slideshow",
+          "title": "Slideshow",
+          "packageID": "package.cpr-aed.slideshow"
+        },
+        {
+          "id": "cpr-aed",
+          "kind": "video",
+          "title": "VA Video",
+          "packageID": "package.cpr-aed.video"
+        }
+      ]
+    },
+    {
+      "id": "first-aid",
+      "title": "First Aid for All Ages",
+      "subtitle": "Instructor-paced slideshow by default. Pediatric Focused is a variant inside this course.",
+      "artworkName": "First Aid for All Ages Cover.webp",
+      "modes": [
+        {
+          "id": "first-aid-course",
+          "kind": "slideshow",
+          "title": "Slideshow",
+          "packageID": "package.first-aid.slideshow"
+        },
+        {
+          "id": "first-aid",
+          "kind": "video",
+          "title": "VA Video",
+          "packageID": "package.first-aid.video"
+        },
+        {
+          "id": "pediatric-first-aid-course",
+          "kind": "slideshow",
+          "title": "Pediatric Focused",
+          "packageID": "package.first-aid.pediatric-slideshow"
+        }
+      ]
+    }
+  ],
+  "videoCourses": [
+    {
+      "id": "cpr-aed",
+      "title": "CPR & AED for All Ages",
+      "shortTitle": "CPR & AED",
+      "manualFilename": "instructor_manual.pdf",
+      "chapters": [
+        {
+          "id": "cpr-1",
+          "title": "Introduction",
+          "filename": "01_EHAcademy - CPR AED Course Video-Introduction.mp4",
+          "duration": "0:44",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "cpr-2",
+          "title": "Why are we here",
+          "filename": "02_EHAcademy - CPR AED Course Video-Why are we here.mp4",
+          "duration": "7:20",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "cpr-3",
+          "title": "Life and Death Drama",
+          "filename": "03_EHAcademy - CPR AED Course Video-Life and Death Drama.mp4",
+          "duration": "1:00",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "cpr-4",
+          "title": "Course Overview",
+          "filename": "04_EHAcademy - CPR AED Course Video-Course Overview.mp4",
+          "duration": "2:11",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "cpr-5",
+          "title": "Recognizing the Emergency",
+          "filename": "05__EHAcademy - CPR AED Course Video-Recognizing the Emergency.mp4",
+          "duration": "1:00",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "cpr-6",
+          "title": "First Actions",
+          "filename": "06_EHAcademy - CPR AED Course Video-First Actions.mp4",
+          "duration": "1:13",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "cpr-7",
+          "title": "Assessment Example",
+          "filename": "07_EHAcademy - CPR AED Course Video-Assessment Example.mp4",
+          "duration": "1:04",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "cpr-8",
+          "title": "Assessment and Activation",
+          "filename": "08_EHAcademy - CPR AED Course Video-Assessment and Activation.mp4",
+          "duration": "4:10",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "cpr-9",
+          "title": "Chest Compressions Video",
+          "filename": "09_EHAcademy - CPR AED Course Video-Chest Compressions Video.mp4",
+          "duration": "0:44",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "cpr-10",
+          "title": "Hand Placement",
+          "filename": "10_EHAcademy - CPR AED Course Video-Hand Placement.mp4",
+          "duration": "1:20",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "cpr-11",
+          "title": "Compression Depth",
+          "filename": "11_EHAcademy - CPR AED Course Video-Compression Depth.mp4",
+          "duration": "0:38",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "cpr-12",
+          "title": "Rate and Rhythm",
+          "filename": "12_EHAcademy - CPR AED Course Video-Rate and Rhythm.mp4",
+          "duration": "1:23",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "cpr-13",
+          "title": "CPR Music",
+          "filename": "13_EHAcademy - CPR AED Course Video-CPR Music.mp4",
+          "duration": "0:23",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "cpr-14",
+          "title": "Practice Compressions",
+          "filename": "14_EHAcademy - CPR AED Course Video-Practice Compressions.mp4",
+          "duration": "1:16",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "cpr-15",
+          "title": "Giving Breaths",
+          "filename": "15_EHAcademy - CPR AED Course Video-Giving Breaths.mp4",
+          "duration": "1:36",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "cpr-16",
+          "title": "Practice Breaths",
+          "filename": "16_EHAcademy - CPR AED Course Video-Practice Breaths.mp4",
+          "duration": "0:44",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "cpr-17",
+          "title": "Using an AED",
+          "filename": "17_EHAcademy - CPR AED Course Video-Using an AED.mp4",
+          "duration": "1:52",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "cpr-18",
+          "title": "Adult Scenario",
+          "filename": "18_EHAcademy - CPR AED Course Video-Adult Scenario.mp4",
+          "duration": "1:02",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "cpr-19",
+          "title": "Child CPR",
+          "filename": "19_EHAcademy - CPR AED Course Video-Child CPR.mp4",
+          "duration": "2:05",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "cpr-20",
+          "title": "AED use on kids",
+          "filename": "20_EHAcademy - CPR AED Course Video-AED use on kids.mp4",
+          "duration": "1:32",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "cpr-21",
+          "title": "Help from Others",
+          "filename": "21_EHAcademy - CPR AED Course Video-Help from Others.mp4",
+          "duration": "0:57",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "cpr-22",
+          "title": "Infant CPR",
+          "filename": "22_EHAcademy - CPR AED Course Video-Infant CPR.mp4",
+          "duration": "1:30",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "cpr-23",
+          "title": "Infant Compressions",
+          "filename": "23_EHAcademy - CPR AED Course Video-Infant Compressions.mp4",
+          "duration": "0:50",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "cpr-24",
+          "title": "Infant Breaths",
+          "filename": "24_EHAcademy - CPR AED Course Video-Infant Breaths.mp4",
+          "duration": "1:11",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "cpr-25",
+          "title": "Infant Scenario",
+          "filename": "25_EHAcademy - CPR AED Course Video-Infant Scenario.mp4",
+          "duration": "0:30",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "cpr-26",
+          "title": "Mild Choking",
+          "filename": "26_EHAcademy - CPR AED Course Video-Mild Choking.mp4",
+          "duration": "0:40",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "cpr-27",
+          "title": "Severe Choking",
+          "filename": "27_EHAcademy - CPR AED Course Video-Severe Choking.mp4",
+          "duration": "0:36",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "cpr-28",
+          "title": "Adult Choking Relief",
+          "filename": "28_EHAcademy - CPR AED Course Video-Adult Choking Relief.mp4",
+          "duration": "1:11",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "cpr-29",
+          "title": "Child Choking Relief",
+          "filename": "29_EHAcademy - CPR AED Course Video-Child Choking Relief.mp4",
+          "duration": "0:51",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "cpr-30",
+          "title": "Infant Choking Relief",
+          "filename": "30_EHAcademy - CPR AED Course Video-Infant Choking Relief.mp4",
+          "duration": "2:35",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "cpr-31",
+          "title": "Conclusion",
+          "filename": "31_EHAcademy - CPR AED Course Video-Conclusion.mp4",
+          "duration": "0:46",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": null
+        }
+      ]
+    },
+    {
+      "id": "first-aid",
+      "title": "First Aid for All Ages",
+      "shortTitle": "First Aid",
+      "manualFilename": "instructor_manual.pdf",
+      "chapters": [
+        {
+          "id": "fa-1",
+          "title": "Introduction",
+          "filename": "01_EHAcademy - First Aid Course-Introduction.mp4",
+          "duration": "0:55",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "fa-2",
+          "title": "What is First Aid",
+          "filename": "02_EHAcademy - First Aid Course-What is First Aid.mp4",
+          "duration": "1:04",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "fa-3",
+          "title": "First Aid Basics",
+          "filename": "03_EHAcademy - First Aid Course-First Aid Basics.mp4",
+          "duration": "1:29",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "fa-4",
+          "title": "Universal Precautions",
+          "filename": "04_EHAcademy - First Aid Course-Universal Precautions.mp4",
+          "duration": "1:10",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "fa-5",
+          "title": "Legal Concerns",
+          "filename": "05_EHAcademy - First Aid Course-Legal Concerns.mp4",
+          "duration": "0:56",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "fa-6",
+          "title": "Calling 911",
+          "filename": "06_EHAcademy - First Aid Course-Calling 911.mp4",
+          "duration": "1:01",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "fa-7",
+          "title": "MEDICAL EMERGENCIES",
+          "filename": "07_EHAcademy - First Aid Course-MEDICAL EMERGENCIES.mp4",
+          "duration": "0:17",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": true,
+          "parentSectionId": null
+        },
+        {
+          "id": "fa-8",
+          "title": "Heart Attack",
+          "filename": "08_EHAcademy - First Aid Course-Heart Attack.mp4",
+          "duration": "2:16",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": "fa-7"
+        },
+        {
+          "id": "fa-9",
+          "title": "Stroke",
+          "filename": "09_EHAcademy - First Aid Course-Stroke.mp4",
+          "duration": "1:34",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": "fa-7"
+        },
+        {
+          "id": "fa-10",
+          "title": "Seizure Example",
+          "filename": "10_EHAcademy - First Aid Course-Seizure Example.mp4",
+          "duration": "2:14",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": "fa-7"
+        },
+        {
+          "id": "fa-11",
+          "title": "Diabetes",
+          "filename": "11_EHAcademy - First Aid Course-Diabetes.mp4",
+          "duration": "1:29",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": "fa-7"
+        },
+        {
+          "id": "fa-12",
+          "title": "Difficulty Breathing",
+          "filename": "12_EHAcademy - First Aid Course-Difficulty Breathing.mp4",
+          "duration": "0:51",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": "fa-7"
+        },
+        {
+          "id": "fa-13",
+          "title": "Allergic Reaction",
+          "filename": "13_EHAcademy - First Aid Course-Allergic Reaction.mp4",
+          "duration": "0:55",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": "fa-7"
+        },
+        {
+          "id": "fa-14",
+          "title": "Fainting",
+          "filename": "14_EHAcademy - First Aid Course-Fainting.mp4",
+          "duration": "1:01",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": "fa-7"
+        },
+        {
+          "id": "fa-15",
+          "title": "BLEEDING AND WOUNDS",
+          "filename": "15_EHAcademy - First Aid Course-BLEEDING AND WOUNDS.mp4",
+          "duration": "0:43",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": true,
+          "parentSectionId": null
+        },
+        {
+          "id": "fa-16",
+          "title": "Minor Bleeding",
+          "filename": "16_EHAcademy - First Aid Course-Minor Bleeding.mp4",
+          "duration": "1:12",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": "fa-15"
+        },
+        {
+          "id": "fa-17",
+          "title": "Major Bleeding",
+          "filename": "17_EHAcademy - First Aid Course-Major Bleeding.mp4",
+          "duration": "1:32",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": "fa-15"
+        },
+        {
+          "id": "fa-18",
+          "title": "Using a Tourniquet",
+          "filename": "18_EHAcademy - First Aid Course-Using a Tourniquet.mp4",
+          "duration": "2:00",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": "fa-15"
+        },
+        {
+          "id": "fa-19",
+          "title": "Nose Bleed",
+          "filename": "19_EHAcademy - First Aid Course-Nose Bleed.mp4",
+          "duration": "0:55",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": "fa-15"
+        },
+        {
+          "id": "fa-20",
+          "title": "Mouth Bleed",
+          "filename": "20_EHAcademy - First Aid Course-Mouth Bleed.mp4",
+          "duration": "1:17",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": "fa-15"
+        },
+        {
+          "id": "fa-21",
+          "title": "Penetration Injuries",
+          "filename": "21_EHAcademy - First Aid Course-Penetration Injuries.mp4",
+          "duration": "1:17",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": "fa-15"
+        },
+        {
+          "id": "fa-22",
+          "title": "Internal Bleeding",
+          "filename": "22_EHAcademy - First Aid Course-Internal Bleeding.mp4",
+          "duration": "1:13",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": "fa-15"
+        },
+        {
+          "id": "fa-23",
+          "title": "Amputation",
+          "filename": "23_EHAcademy - First Aid Course-Amputation.mp4",
+          "duration": "1:15",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": "fa-15"
+        },
+        {
+          "id": "fa-24",
+          "title": "Shock",
+          "filename": "24_EHAcademy - First Aid Course-Shock.mp4",
+          "duration": "1:23",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": "fa-15"
+        },
+        {
+          "id": "fa-25",
+          "title": "BODILY INJURIES",
+          "filename": "25_EHAcademy - First Aid Course-BODILY INJURIES.mp4",
+          "duration": "0:24",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": true,
+          "parentSectionId": null
+        },
+        {
+          "id": "fa-26",
+          "title": "Eye Injury",
+          "filename": "26_EHAcademy - First Aid Course-Eye Injury.mp4",
+          "duration": "1:38",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": "fa-25"
+        },
+        {
+          "id": "fa-27",
+          "title": "Sprain or Fracture",
+          "filename": "27_EHAcademy - First Aid Course-Sprain or Fracture.mp4",
+          "duration": "1:33",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": "fa-25"
+        },
+        {
+          "id": "fa-28",
+          "title": "Head Neck or Spine Injury",
+          "filename": "28_EHAcademy - First Aid Course-Head Neck or Spine Injury.mp4",
+          "duration": "1:30",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": "fa-25"
+        },
+        {
+          "id": "fa-29",
+          "title": "Burns",
+          "filename": "29_EHAcademy - First Aid Course-Burns.mp4",
+          "duration": "1:47",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": "fa-25"
+        },
+        {
+          "id": "fa-30",
+          "title": "Electrical Burns",
+          "filename": "30_EHAcademy - First Aid Course-Electrical Burns.mp4",
+          "duration": "1:05",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": "fa-25"
+        },
+        {
+          "id": "fa-31",
+          "title": "ENVIRONMENTAL EMERGENCIES",
+          "filename": "31_EHAcademy - First Aid Course-ENVIRONMENTAL EMERGENCIES.mp4",
+          "duration": "0:23",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": true,
+          "parentSectionId": null
+        },
+        {
+          "id": "fa-32",
+          "title": "Animal or Human Bite",
+          "filename": "32_EHAcademy - First Aid Course-Animal or Human Bite.mp4",
+          "duration": "0:57",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": "fa-31"
+        },
+        {
+          "id": "fa-33",
+          "title": "Snake Bite",
+          "filename": "33_EHAcademy - First Aid Course-Snake Bite.mp4",
+          "duration": "1:09",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": "fa-31"
+        },
+        {
+          "id": "fa-34",
+          "title": "Bee Sting",
+          "filename": "34_EHAcademy - First Aid Course-Bee Sting.mp4",
+          "duration": "0:39",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": "fa-31"
+        },
+        {
+          "id": "fa-35",
+          "title": "Spider or Scorpion",
+          "filename": "35_EHAcademy - First Aid Course-Spider or Scorpion.mp4",
+          "duration": "1:03",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": "fa-31"
+        },
+        {
+          "id": "fa-36",
+          "title": "Tick Bite",
+          "filename": "36_EHAcademy - First Aid Course-Tick Bite.mp4",
+          "duration": "1:15",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": "fa-31"
+        },
+        {
+          "id": "fa-37",
+          "title": "Marine Life",
+          "filename": "37_EHAcademy - First Aid Course-Marine Life.mp4",
+          "duration": "1:18",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": "fa-31"
+        },
+        {
+          "id": "fa-38",
+          "title": "Drowning",
+          "filename": "38_EHAcademy - First Aid Course-Drowning.mp4",
+          "duration": "1:13",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": "fa-31"
+        },
+        {
+          "id": "fa-39",
+          "title": "Poisoning",
+          "filename": "39_EHAcademy - First Aid Course-Poisoning.mp4",
+          "duration": "1:30",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": "fa-31"
+        },
+        {
+          "id": "fa-40",
+          "title": "Opioids and Overdose",
+          "filename": "40_EHAcademy - First Aid Course-Opioids and Overdose.mp4",
+          "duration": "1:17",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": "fa-31"
+        },
+        {
+          "id": "fa-41",
+          "title": "TEMPERATURE RELATED ILLNESS",
+          "filename": "41_EHAcademy - First Aid Course-TEMPERATURE RELATED ILLNESS.mp4",
+          "duration": "0:28",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": true,
+          "parentSectionId": null
+        },
+        {
+          "id": "fa-42",
+          "title": "Heat Related Illness",
+          "filename": "42_EHAcademy - First Aid Course-Heat Related Illness.mp4",
+          "duration": "1:20",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": "fa-41"
+        },
+        {
+          "id": "fa-43",
+          "title": "Cold Related Illness",
+          "filename": "43_EHAcademy - First Aid Course-Cold Related Illness.mp4",
+          "duration": "1:27",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": "fa-41"
+        },
+        {
+          "id": "fa-44",
+          "title": "Conclusion",
+          "filename": "44_EHAcademy - First Aid Course-Conclusion.mp4",
+          "duration": "0:28",
+          "subtitle": null,
+          "description": null,
+          "isSectionHeader": false,
+          "parentSectionId": null
+        }
+      ]
+    }
+  ],
+  "slideshows": [
+    {
+      "id": "cpr-aed-course",
+      "title": "CPR & AED for All Ages",
+      "slides": [
+        {
+          "id": "slide-1",
+          "title": "Introduction",
+          "filename": "01_EHAcademy - CPR AED Course Pres-Introduction.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-2",
+          "title": "WHY ARE WE HERE?",
+          "filename": "02_EHAcademy - CPR AED Course Pres-Why should I learn CPR.png",
+          "type": "image",
+          "isSectionHeader": true,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-3",
+          "title": "Heart Attack vs Cardiac Arrest",
+          "filename": "03_EHAcademy - CPR AED Course Pres-Heart Attack vs Cardiac Arrest.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-2"
+        },
+        {
+          "id": "slide-4",
+          "title": "What is CPR",
+          "filename": "04_EHAcademy - CPR AED Course Pres-What is CPR.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-2"
+        },
+        {
+          "id": "slide-5",
+          "title": "When will I use CPR",
+          "filename": "05_EHAcademy - CPR AED Course Pres-When will I use CPR.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-2"
+        },
+        {
+          "id": "slide-6",
+          "title": "What is something goes wrong",
+          "filename": "06_EHAcademy - CPR AED Course Pres-What is something goes wrong.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-2"
+        },
+        {
+          "id": "slide-7",
+          "title": "Good Samaritan Law",
+          "filename": "07_EHAcademy - CPR AED Course Pres-Good Samaritan Law.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-2"
+        },
+        {
+          "id": "slide-8",
+          "title": "Life and Death Drama",
+          "filename": "08_EHAcademy - CPR AED Course Pres-Life and Death Drama.mp4",
+          "type": "video",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-9",
+          "title": "Course Overview",
+          "filename": "09_EHAcademy - CPR AED Course Pres-Course Overview.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-10",
+          "title": "Recognizing the Emergency",
+          "filename": "10_EHAcademy - CPR AED Course Pres-Recognizing the Emergency.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-11",
+          "title": "First Actions",
+          "filename": "11_EHAcademy - CPR AED Course Pres-First Actions.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-12",
+          "title": "ASSESSMENT AND ACTIVATION",
+          "filename": "12_EHAcademy - CPR AED Course Pres-Assessment Example.mp4",
+          "type": "video",
+          "isSectionHeader": true,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-13",
+          "title": "Check Responsiveness",
+          "filename": "13_EHAcademy - CPR AED Course Pres-Check Responsiveness.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-12"
+        },
+        {
+          "id": "slide-14",
+          "title": "-Getting Help",
+          "filename": "14_EHAcademy - CPR AED Course Pres--Getting Help.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-12"
+        },
+        {
+          "id": "slide-15",
+          "title": "Check Breathing",
+          "filename": "15_EHAcademy - CPR AED Course Pres-Check Breathing.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-12"
+        },
+        {
+          "id": "slide-16",
+          "title": "Begin Chest Compressions",
+          "filename": "16_EHAcademy - CPR AED Course Pres-Begin Chest Compressions.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-12"
+        },
+        {
+          "id": "slide-17",
+          "title": "CHEST COMPRESSIONS",
+          "filename": "17_EHAcademy - CPR AED Course Pres-Chest Compressions Video.mp4",
+          "type": "video",
+          "isSectionHeader": true,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-18",
+          "title": "Hand Placement",
+          "filename": "18_EHAcademy - CPR AED Course Pres-Hand Placement.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-17"
+        },
+        {
+          "id": "slide-19",
+          "title": "Compression Depth",
+          "filename": "19_EHAcademy - CPR AED Course Pres-Compression Depth.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-17"
+        },
+        {
+          "id": "slide-20",
+          "title": "Rate and Rhythm",
+          "filename": "20_EHAcademy - CPR AED Course Pres-Rate and Rhythm.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-17"
+        },
+        {
+          "id": "slide-21",
+          "title": "CPR Songs",
+          "filename": "21_EHAcademy - CPR AED Course Pres-CPR Songs.mp4",
+          "type": "video",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-17"
+        },
+        {
+          "id": "slide-22",
+          "title": "Practice Compressions",
+          "filename": "22_EHAcademy - CPR AED Course Pres-Practice Compressions.mp4",
+          "type": "video",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-17"
+        },
+        {
+          "id": "slide-23",
+          "title": "GIVING BREATHS",
+          "filename": "23_EHAcademy - CPR AED Course Pres-Giving Breaths.png",
+          "type": "image",
+          "isSectionHeader": true,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-24",
+          "title": "Practice Giving Breaths",
+          "filename": "24_EHAcademy - CPR AED Course Pres-Practice Giving Breaths.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-23"
+        },
+        {
+          "id": "slide-25",
+          "title": "Using an AED",
+          "filename": "25_EHAcademy - CPR AED Course Pres-Using an AED.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-26",
+          "title": "Adult Scenario",
+          "filename": "26_EHAcademy - CPR AED Course Pres-Adult Scenario.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-27",
+          "title": "Child CPR",
+          "filename": "27_EHAcademy - CPR AED Course Pres-Child CPR.png",
+          "type": "image",
+          "isSectionHeader": true,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-28",
+          "title": "AED use on kids",
+          "filename": "28_EHAcademy - CPR AED Course Pres-AED use on kids.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-27"
+        },
+        {
+          "id": "slide-29",
+          "title": "Help from Others",
+          "filename": "29_EHAcademy - CPR AED Course Pres-Help from Others.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-30",
+          "title": "Infant CPR",
+          "filename": "30_EHAcademy - CPR AED Course Pres-Infant CPR.png",
+          "type": "image",
+          "isSectionHeader": true,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-31",
+          "title": "Infant Chest Compressions",
+          "filename": "31_EHAcademy - CPR AED Course Pres-Infant Chest Compressions.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-30"
+        },
+        {
+          "id": "slide-32",
+          "title": "Giving Breaths",
+          "filename": "32_EHAcademy - CPR AED Course Pres-Giving Breaths.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-30"
+        },
+        {
+          "id": "slide-33",
+          "title": "Infant Scenario",
+          "filename": "33_EHAcademy - CPR AED Course Pres-Infant Scenario.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-30"
+        },
+        {
+          "id": "slide-34",
+          "title": "CHOKING",
+          "filename": "34_EHAcademy - CPR AED Course Pres-Mild Choking.png",
+          "type": "image",
+          "isSectionHeader": true,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-35",
+          "title": "Severe Choking",
+          "filename": "35_EHAcademy - CPR AED Course Pres-Severe Choking.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-34"
+        },
+        {
+          "id": "slide-36",
+          "title": "Choking  Adult",
+          "filename": "36_EHAcademy - CPR AED Course Pres-Choking  Adult.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-34"
+        },
+        {
+          "id": "slide-37",
+          "title": "Choking Child",
+          "filename": "37_EHAcademy - CPR AED Course Pres-Choking Child.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-34"
+        },
+        {
+          "id": "slide-38",
+          "title": "Choking Infant",
+          "filename": "38_EHAcademy - CPR AED Course Pres-Choking Infant.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-34"
+        },
+        {
+          "id": "slide-39",
+          "title": "Practice Infant Choking",
+          "filename": "39_EHAcademy - CPR AED Course Pres-Practice Infant Choking.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-34"
+        },
+        {
+          "id": "slide-40",
+          "title": "Conclusion",
+          "filename": "40_EHAcademy - CPR AED Course Pres-Conclusion.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        }
+      ]
+    },
+    {
+      "id": "first-aid-course",
+      "title": "First Aid for All Ages",
+      "slides": [
+        {
+          "id": "slide-1",
+          "title": "Introduction",
+          "filename": "01_EHAcademy - First Aid Course Pres-Introduction.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-2",
+          "title": "What is First Aid",
+          "filename": "02_EHAcademy - First Aid Course Pres-What is First Aid.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-3",
+          "title": "First Aid Basics",
+          "filename": "03_EHAcademy - First Aid Course Pres-First Aid Basics.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-4",
+          "title": "Universal Precautions",
+          "filename": "04_EHAcademy - First Aid Course Pres-Universal Precautions.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-5",
+          "title": "Legal Concerns",
+          "filename": "05_EHAcademy - First Aid Course Pres-Legal Concerns.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-6",
+          "title": "Calling 911",
+          "filename": "06_EHAcademy - First Aid Course Pres-Calling 911.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-7",
+          "title": "MEDICAL EMERGENCIES",
+          "filename": "07_EHAcademy - First Aid Course Pres-Medical Emergencies.png",
+          "type": "image",
+          "isSectionHeader": true,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-8",
+          "title": "Heart Attack Symptoms",
+          "filename": "08_EHAcademy - First Aid Course Pres-Heart Attack Symptoms.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-7"
+        },
+        {
+          "id": "slide-9",
+          "title": "Heart Attack",
+          "filename": "09_EHAcademy - First Aid Course Pres-Heart Attack.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-7"
+        },
+        {
+          "id": "slide-10",
+          "title": "Stroke",
+          "filename": "10_EHAcademy - First Aid Course Pres-Stroke.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-7"
+        },
+        {
+          "id": "slide-11",
+          "title": "Seizure Video",
+          "filename": "11_EHAcademy - First Aid Course Pres-Seizure Video.mp4",
+          "type": "video",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-7"
+        },
+        {
+          "id": "slide-12",
+          "title": "Seizure",
+          "filename": "12_EHAcademy - First Aid Course Pres-Seizure.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-7"
+        },
+        {
+          "id": "slide-13",
+          "title": "Diabetes",
+          "filename": "13_EHAcademy - First Aid Course Pres-Diabetes.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-7"
+        },
+        {
+          "id": "slide-14",
+          "title": "Difficulty Breathing",
+          "filename": "14_EHAcademy - First Aid Course Pres-Difficulty Breathing.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-7"
+        },
+        {
+          "id": "slide-15",
+          "title": "Allergic Reaction",
+          "filename": "15_EHAcademy - First Aid Course Pres-Allergic Reaction.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-7"
+        },
+        {
+          "id": "slide-16",
+          "title": "Fainting",
+          "filename": "16_EHAcademy - First Aid Course Pres-Fainting.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-7"
+        },
+        {
+          "id": "slide-17",
+          "title": "BLEEDING AND WOUNDS",
+          "filename": "17_EHAcademy - First Aid Course Pres-Bleeding and Wounds.png",
+          "type": "image",
+          "isSectionHeader": true,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-18",
+          "title": "Minor External Bleeding",
+          "filename": "18_EHAcademy - First Aid Course Pres-Minor External Bleeding.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-17"
+        },
+        {
+          "id": "slide-19",
+          "title": "Major External Bleeding",
+          "filename": "19_EHAcademy - First Aid Course Pres-Major External Bleeding.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-17"
+        },
+        {
+          "id": "slide-20",
+          "title": "Using a Tourniquet",
+          "filename": "20_EHAcademy - First Aid Course Pres-Using a Tourniquet.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-17"
+        },
+        {
+          "id": "slide-21",
+          "title": "Nosebleed",
+          "filename": "21_EHAcademy - First Aid Course Pres-Nosebleed.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-17"
+        },
+        {
+          "id": "slide-22",
+          "title": "Mouth Bleed",
+          "filename": "22_EHAcademy - First Aid Course Pres-Mouth Bleed.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-17"
+        },
+        {
+          "id": "slide-23",
+          "title": "Penetration Injuries",
+          "filename": "23_EHAcademy - First Aid Course Pres-Penetration Injuries.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-17"
+        },
+        {
+          "id": "slide-24",
+          "title": "Internal Bleeding",
+          "filename": "24_EHAcademy - First Aid Course Pres-Internal Bleeding.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-17"
+        },
+        {
+          "id": "slide-25",
+          "title": "Amputation",
+          "filename": "25_EHAcademy - First Aid Course Pres-Amputation.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-17"
+        },
+        {
+          "id": "slide-26",
+          "title": "Shock",
+          "filename": "26_EHAcademy - First Aid Course Pres-Shock.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-17"
+        },
+        {
+          "id": "slide-27",
+          "title": "BODILY INJURIES",
+          "filename": "27_EHAcademy - First Aid Course Pres-Bodily Injuries.png",
+          "type": "image",
+          "isSectionHeader": true,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-28",
+          "title": "Eye Injury",
+          "filename": "28_EHAcademy - First Aid Course Pres-Eye Injury.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-27"
+        },
+        {
+          "id": "slide-29",
+          "title": "Sprain and Fracture",
+          "filename": "29_EHAcademy - First Aid Course Pres-Sprain and Fracture.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-27"
+        },
+        {
+          "id": "slide-30",
+          "title": "Head Neck or Spine Injuries",
+          "filename": "30_EHAcademy - First Aid Course Pres-Head Neck or Spine Injuries.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-27"
+        },
+        {
+          "id": "slide-31",
+          "title": "Burns",
+          "filename": "31_EHAcademy - First Aid Course Pres-Burns.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-27"
+        },
+        {
+          "id": "slide-32",
+          "title": "Electrical Burns",
+          "filename": "32_EHAcademy - First Aid Course Pres-Electrical Burns.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-27"
+        },
+        {
+          "id": "slide-33",
+          "title": "ENVIRONMENTAL EMERGENCIES",
+          "filename": "33_EHAcademy - First Aid Course Pres-Environmental Emergencies.png",
+          "type": "image",
+          "isSectionHeader": true,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-34",
+          "title": "Animal or Human Bite",
+          "filename": "34_EHAcademy - First Aid Course Pres-Animal or Human Bite.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-33"
+        },
+        {
+          "id": "slide-35",
+          "title": "Snake Bite",
+          "filename": "35_EHAcademy - First Aid Course Pres-Snake Bite.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-33"
+        },
+        {
+          "id": "slide-36",
+          "title": "Bee Sting",
+          "filename": "36_EHAcademy - First Aid Course Pres-Bee Sting.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-33"
+        },
+        {
+          "id": "slide-37",
+          "title": "Spider or Scorpion Bite",
+          "filename": "37_EHAcademy - First Aid Course Pres-Spider or Scorpion Bite.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-33"
+        },
+        {
+          "id": "slide-38",
+          "title": "Tick Bites",
+          "filename": "38_EHAcademy - First Aid Course Pres-Tick Bites.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-33"
+        },
+        {
+          "id": "slide-39",
+          "title": "Marine Life Stings",
+          "filename": "39_EHAcademy - First Aid Course Pres-Marine Life Stings.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-33"
+        },
+        {
+          "id": "slide-40",
+          "title": "Drowning",
+          "filename": "40_EHAcademy - First Aid Course Pres-Drowning.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-33"
+        },
+        {
+          "id": "slide-41",
+          "title": "Poisoning",
+          "filename": "41_EHAcademy - First Aid Course Pres-Poisoning.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-33"
+        },
+        {
+          "id": "slide-42",
+          "title": "Opioid and Overdose",
+          "filename": "42_EHAcademy - First Aid Course Pres-Opioid and Overdose.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-33"
+        },
+        {
+          "id": "slide-43",
+          "title": "TEMPERATURE RELATE ILLNESS",
+          "filename": "43_EHAcademy - First Aid Course Pres-Temperature Relate Illness.png",
+          "type": "image",
+          "isSectionHeader": true,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-44",
+          "title": "Heat Relate Illness",
+          "filename": "44_EHAcademy - First Aid Course Pres-Heat Relate Illness.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-43"
+        },
+        {
+          "id": "slide-45",
+          "title": "Cold Related Illness",
+          "filename": "45_EHAcademy - First Aid Course Pres-Cold Related Illness.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": "slide-43"
+        },
+        {
+          "id": "slide-46",
+          "title": "Conclusion",
+          "filename": "46_EHAcademy - First Aid Course Pres-Conclusion.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        }
+      ]
+    },
+    {
+      "id": "pediatric-first-aid-course",
+      "title": "Pediatric First Aid",
+      "slides": [
+        {
+          "id": "slide-1",
+          "title": "Introduction",
+          "filename": "01_EHAcademy - Pedi FA Course Pres-Introduction.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-2",
+          "title": "What is First Aid",
+          "filename": "02_EHAcademy - Pedi FA Course Pres-What is First Aid.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-3",
+          "title": "First Aid Basics",
+          "filename": "03_EHAcademy - Pedi FA Course Pres-First Aid Basics.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-4",
+          "title": "Universal Precautions",
+          "filename": "04_EHAcademy - Pedi FA Course Pres-Universal Precautions.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-5",
+          "title": "Legal Concerns",
+          "filename": "05_EHAcademy - Pedi FA Course Pres-Legal Concerns.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-6",
+          "title": "Calling 911",
+          "filename": "06_EHAcademy - Pedi FA Course Pres-Calling 911.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-7",
+          "title": "MEDICAL EMERGENCIES",
+          "filename": "07_EHAcademy - Pedi FA Course Pres- MEDICAL EMERGENCIES.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-8",
+          "title": "Heart Attack Symptoms",
+          "filename": "08_EHAcademy - Pedi FA Course Pres-Heart Attack Symptoms.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-9",
+          "title": "Heart Attack",
+          "filename": "09_EHAcademy - Pedi FA Course Pres-Heart Attack.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-10",
+          "title": "Stroke",
+          "filename": "10_EHAcademy - Pedi FA Course Pres-Stroke.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-11",
+          "title": "Seizure Video",
+          "filename": "11_EHAcademy - Pedi FA Course Pres-Seizure Video.mp4",
+          "type": "video",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-12",
+          "title": "Seizures",
+          "filename": "12_EHAcademy - Pedi FA Course Pres-Seizures.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-13",
+          "title": "Diabetes",
+          "filename": "13_EHAcademy - Pedi FA Course Pres-Diabetes.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-14",
+          "title": "Asthma",
+          "filename": "14_EHAcademy - Pedi FA Course Pres-Asthma.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-15",
+          "title": "Difficulty Breathing",
+          "filename": "15_EHAcademy - Pedi FA Course Pres-Difficulty Breathing.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-16",
+          "title": "Allergic Reaction",
+          "filename": "16_EHAcademy - Pedi FA Course Pres-Allergic Reaction.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-17",
+          "title": "Fainting",
+          "filename": "17_EHAcademy - Pedi FA Course Pres-Fainting.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-18",
+          "title": "BLEEDING & WOUNDS",
+          "filename": "18_EHAcademy - Pedi FA Course Pres-BLEEDING & WOUNDS.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-19",
+          "title": "Minor External Bleeding",
+          "filename": "19_EHAcademy - Pedi FA Course Pres-Minor External Bleeding.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-20",
+          "title": "Major External Bleeding",
+          "filename": "20_EHAcademy - Pedi FA Course Pres-Major External Bleeding.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-21",
+          "title": "Using a Tourniquet",
+          "filename": "21_EHAcademy - Pedi FA Course Pres-Using a Tourniquet.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-22",
+          "title": "Nose Bleed",
+          "filename": "22_EHAcademy - Pedi FA Course Pres-Nose Bleed.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-23",
+          "title": "Mouth Bleed",
+          "filename": "23_EHAcademy - Pedi FA Course Pres-Mouth Bleed.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-24",
+          "title": "Penetration Injuries",
+          "filename": "24_EHAcademy - Pedi FA Course Pres-Penetration Injuries.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-25",
+          "title": "Internal Bleeding",
+          "filename": "25_EHAcademy - Pedi FA Course Pres-Internal Bleeding.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-26",
+          "title": "Amputation",
+          "filename": "26_EHAcademy - Pedi FA Course Pres-Amputation.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-27",
+          "title": "Shock",
+          "filename": "27_EHAcademy - Pedi FA Course Pres-Shock.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-28",
+          "title": "BODILY INJURIES",
+          "filename": "28_EHAcademy - Pedi FA Course Pres-BODILY INJURIES.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-29",
+          "title": "Eye Injury",
+          "filename": "29_EHAcademy - Pedi FA Course Pres-Eye Injury.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-30",
+          "title": "Sprain or Fracture",
+          "filename": "30_EHAcademy - Pedi FA Course Pres-Sprain or Fracture.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-31",
+          "title": "Head or Spine Injuries",
+          "filename": "31_EHAcademy - Pedi FA Course Pres-Head or Spine Injuries.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-32",
+          "title": "Burns",
+          "filename": "32_EHAcademy - Pedi FA Course Pres-Burns.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-33",
+          "title": "Electrical Burns",
+          "filename": "33_EHAcademy - Pedi FA Course Pres-Electrical Burns.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-34",
+          "title": "ENVIRONMENTAL EMERGENCIES",
+          "filename": "34_EHAcademy - Pedi FA Course Pres-ENVIRONMENTAL EMERGENCIES.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-35",
+          "title": "Animal or Human Bite",
+          "filename": "35_EHAcademy - Pedi FA Course Pres-Animal or Human Bite.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-36",
+          "title": "Snake Bite",
+          "filename": "36_EHAcademy - Pedi FA Course Pres-Snake Bite.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-37",
+          "title": "Bee Sting",
+          "filename": "37_EHAcademy - Pedi FA Course Pres-Bee Sting.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-38",
+          "title": "Spider or Scorpion Bite",
+          "filename": "38_EHAcademy - Pedi FA Course Pres-Spider or Scorpion Bite.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-39",
+          "title": "Tick Bite",
+          "filename": "39_EHAcademy - Pedi FA Course Pres-Tick Bite.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-40",
+          "title": "Marine Bites and Stings",
+          "filename": "40_EHAcademy - Pedi FA Course Pres-Marine Bites and Stings.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-41",
+          "title": "Drowning",
+          "filename": "41_EHAcademy - Pedi FA Course Pres-Drowning.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-42",
+          "title": "Poisoning",
+          "filename": "42_EHAcademy - Pedi FA Course Pres-Poisoning.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-43",
+          "title": "Opioids and Overdose",
+          "filename": "43_EHAcademy - Pedi FA Course Pres-Opioids and Overdose.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-44",
+          "title": "TEMPERATURE RELATED ILLNESS",
+          "filename": "44_EHAcademy - Pedi FA Course Pres-TEMPERATURE RELATED ILLNESS.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-45",
+          "title": "Heat Related Illness",
+          "filename": "45_EHAcademy - Pedi FA Course Pres-Heat Related Illness.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-46",
+          "title": "Cold Related Illness",
+          "filename": "46_EHAcademy - Pedi FA Course Pres-Cold Related Illness.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        },
+        {
+          "id": "slide-47",
+          "title": "Conclusion",
+          "filename": "47_EHAcademy - Pedi FA Course Pres-Conclusion.png",
+          "type": "image",
+          "isSectionHeader": false,
+          "parentSectionId": null
+        }
+      ]
+    }
+  ],
+  "manuals": [
+    {
+      "id": "instructor",
+      "title": "Instructor Manual",
+      "description": "Comprehensive guide for instructors covering core curriculums, lesson plans, and testing guidelines.",
+      "filename": "instructor_manual.pdf",
+      "thumbnail": "manual-instructor-thumb.webp",
+      "packageID": "package.manual.instructor"
+    },
+    {
+      "id": "student",
+      "title": "Student Manual",
+      "description": "Complete training handbook for students covering CPR, AED usage, and basic first aid.",
+      "filename": "student_manual.pdf",
+      "thumbnail": "manual-student-thumb.webp",
+      "packageID": "package.manual.student"
+    },
+    {
+      "id": "pediatric",
+      "title": "Pediatric Student Manual",
+      "description": "Specialized student guide focused on infant, child, and pediatric emergency response.",
+      "filename": "pediatric_student_manual.pdf",
+      "thumbnail": "manual-pediatric-thumb.webp",
+      "packageID": "package.manual.pediatric"
+    }
+  ],
+  "packages": [
+    {
+      "id": "package.cpr-aed.slideshow",
+      "title": "CPR & AED Slideshow",
+      "assets": [
+        {
+          "id": "package.cpr-aed.slideshow.01_EHAcademy - CPR AED Course Pres-Introduction.png",
+          "filename": "01_EHAcademy - CPR AED Course Pres-Introduction.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.cpr-aed.slideshow.02_EHAcademy - CPR AED Course Pres-Why should I learn CPR.png",
+          "filename": "02_EHAcademy - CPR AED Course Pres-Why should I learn CPR.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.cpr-aed.slideshow.03_EHAcademy - CPR AED Course Pres-Heart Attack vs Cardiac Arrest.png",
+          "filename": "03_EHAcademy - CPR AED Course Pres-Heart Attack vs Cardiac Arrest.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.cpr-aed.slideshow.04_EHAcademy - CPR AED Course Pres-What is CPR.png",
+          "filename": "04_EHAcademy - CPR AED Course Pres-What is CPR.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.cpr-aed.slideshow.05_EHAcademy - CPR AED Course Pres-When will I use CPR.png",
+          "filename": "05_EHAcademy - CPR AED Course Pres-When will I use CPR.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.cpr-aed.slideshow.06_EHAcademy - CPR AED Course Pres-What is something goes wrong.png",
+          "filename": "06_EHAcademy - CPR AED Course Pres-What is something goes wrong.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.cpr-aed.slideshow.07_EHAcademy - CPR AED Course Pres-Good Samaritan Law.png",
+          "filename": "07_EHAcademy - CPR AED Course Pres-Good Samaritan Law.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.cpr-aed.slideshow.08_EHAcademy - CPR AED Course Pres-Life and Death Drama.mp4",
+          "filename": "08_EHAcademy - CPR AED Course Pres-Life and Death Drama.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.cpr-aed.slideshow.09_EHAcademy - CPR AED Course Pres-Course Overview.png",
+          "filename": "09_EHAcademy - CPR AED Course Pres-Course Overview.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.cpr-aed.slideshow.10_EHAcademy - CPR AED Course Pres-Recognizing the Emergency.png",
+          "filename": "10_EHAcademy - CPR AED Course Pres-Recognizing the Emergency.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.cpr-aed.slideshow.11_EHAcademy - CPR AED Course Pres-First Actions.png",
+          "filename": "11_EHAcademy - CPR AED Course Pres-First Actions.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.cpr-aed.slideshow.12_EHAcademy - CPR AED Course Pres-Assessment Example.mp4",
+          "filename": "12_EHAcademy - CPR AED Course Pres-Assessment Example.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.cpr-aed.slideshow.subtitle.12_EHAcademy - CPR AED Course Pres-Assessment Example.vtt",
+          "filename": "subtitles/12_EHAcademy - CPR AED Course Pres-Assessment Example.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.cpr-aed.slideshow.13_EHAcademy - CPR AED Course Pres-Check Responsiveness.png",
+          "filename": "13_EHAcademy - CPR AED Course Pres-Check Responsiveness.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.cpr-aed.slideshow.14_EHAcademy - CPR AED Course Pres--Getting Help.png",
+          "filename": "14_EHAcademy - CPR AED Course Pres--Getting Help.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.cpr-aed.slideshow.15_EHAcademy - CPR AED Course Pres-Check Breathing.png",
+          "filename": "15_EHAcademy - CPR AED Course Pres-Check Breathing.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.cpr-aed.slideshow.16_EHAcademy - CPR AED Course Pres-Begin Chest Compressions.png",
+          "filename": "16_EHAcademy - CPR AED Course Pres-Begin Chest Compressions.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.cpr-aed.slideshow.17_EHAcademy - CPR AED Course Pres-Chest Compressions Video.mp4",
+          "filename": "17_EHAcademy - CPR AED Course Pres-Chest Compressions Video.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.cpr-aed.slideshow.subtitle.17_EHAcademy - CPR AED Course Pres-Chest Compressions Video.vtt",
+          "filename": "subtitles/17_EHAcademy - CPR AED Course Pres-Chest Compressions Video.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.cpr-aed.slideshow.18_EHAcademy - CPR AED Course Pres-Hand Placement.png",
+          "filename": "18_EHAcademy - CPR AED Course Pres-Hand Placement.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.cpr-aed.slideshow.19_EHAcademy - CPR AED Course Pres-Compression Depth.png",
+          "filename": "19_EHAcademy - CPR AED Course Pres-Compression Depth.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.cpr-aed.slideshow.20_EHAcademy - CPR AED Course Pres-Rate and Rhythm.png",
+          "filename": "20_EHAcademy - CPR AED Course Pres-Rate and Rhythm.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.cpr-aed.slideshow.21_EHAcademy - CPR AED Course Pres-CPR Songs.mp4",
+          "filename": "21_EHAcademy - CPR AED Course Pres-CPR Songs.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.cpr-aed.slideshow.subtitle.21_EHAcademy - CPR AED Course Pres-CPR Songs.vtt",
+          "filename": "subtitles/21_EHAcademy - CPR AED Course Pres-CPR Songs.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.cpr-aed.slideshow.22_EHAcademy - CPR AED Course Pres-Practice Compressions.mp4",
+          "filename": "22_EHAcademy - CPR AED Course Pres-Practice Compressions.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.cpr-aed.slideshow.subtitle.22_EHAcademy - CPR AED Course Pres-Practice Compressions.vtt",
+          "filename": "subtitles/22_EHAcademy - CPR AED Course Pres-Practice Compressions.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.cpr-aed.slideshow.23_EHAcademy - CPR AED Course Pres-Giving Breaths.png",
+          "filename": "23_EHAcademy - CPR AED Course Pres-Giving Breaths.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.cpr-aed.slideshow.24_EHAcademy - CPR AED Course Pres-Practice Giving Breaths.png",
+          "filename": "24_EHAcademy - CPR AED Course Pres-Practice Giving Breaths.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.cpr-aed.slideshow.25_EHAcademy - CPR AED Course Pres-Using an AED.png",
+          "filename": "25_EHAcademy - CPR AED Course Pres-Using an AED.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.cpr-aed.slideshow.26_EHAcademy - CPR AED Course Pres-Adult Scenario.png",
+          "filename": "26_EHAcademy - CPR AED Course Pres-Adult Scenario.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.cpr-aed.slideshow.27_EHAcademy - CPR AED Course Pres-Child CPR.png",
+          "filename": "27_EHAcademy - CPR AED Course Pres-Child CPR.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.cpr-aed.slideshow.28_EHAcademy - CPR AED Course Pres-AED use on kids.png",
+          "filename": "28_EHAcademy - CPR AED Course Pres-AED use on kids.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.cpr-aed.slideshow.29_EHAcademy - CPR AED Course Pres-Help from Others.png",
+          "filename": "29_EHAcademy - CPR AED Course Pres-Help from Others.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.cpr-aed.slideshow.30_EHAcademy - CPR AED Course Pres-Infant CPR.png",
+          "filename": "30_EHAcademy - CPR AED Course Pres-Infant CPR.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.cpr-aed.slideshow.31_EHAcademy - CPR AED Course Pres-Infant Chest Compressions.png",
+          "filename": "31_EHAcademy - CPR AED Course Pres-Infant Chest Compressions.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.cpr-aed.slideshow.32_EHAcademy - CPR AED Course Pres-Giving Breaths.png",
+          "filename": "32_EHAcademy - CPR AED Course Pres-Giving Breaths.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.cpr-aed.slideshow.33_EHAcademy - CPR AED Course Pres-Infant Scenario.png",
+          "filename": "33_EHAcademy - CPR AED Course Pres-Infant Scenario.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.cpr-aed.slideshow.34_EHAcademy - CPR AED Course Pres-Mild Choking.png",
+          "filename": "34_EHAcademy - CPR AED Course Pres-Mild Choking.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.cpr-aed.slideshow.35_EHAcademy - CPR AED Course Pres-Severe Choking.png",
+          "filename": "35_EHAcademy - CPR AED Course Pres-Severe Choking.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.cpr-aed.slideshow.36_EHAcademy - CPR AED Course Pres-Choking  Adult.png",
+          "filename": "36_EHAcademy - CPR AED Course Pres-Choking  Adult.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.cpr-aed.slideshow.37_EHAcademy - CPR AED Course Pres-Choking Child.png",
+          "filename": "37_EHAcademy - CPR AED Course Pres-Choking Child.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.cpr-aed.slideshow.38_EHAcademy - CPR AED Course Pres-Choking Infant.png",
+          "filename": "38_EHAcademy - CPR AED Course Pres-Choking Infant.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.cpr-aed.slideshow.39_EHAcademy - CPR AED Course Pres-Practice Infant Choking.png",
+          "filename": "39_EHAcademy - CPR AED Course Pres-Practice Infant Choking.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.cpr-aed.slideshow.40_EHAcademy - CPR AED Course Pres-Conclusion.png",
+          "filename": "40_EHAcademy - CPR AED Course Pres-Conclusion.png",
+          "kind": "image"
+        }
+      ]
+    },
+    {
+      "id": "package.cpr-aed.video",
+      "title": "CPR & AED VA Video",
+      "assets": [
+        {
+          "id": "package.cpr-aed.video.01_EHAcademy - CPR AED Course Video-Introduction.mp4",
+          "filename": "01_EHAcademy - CPR AED Course Video-Introduction.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.cpr-aed.video.subtitle.01_EHAcademy - CPR AED Course Video-Introduction.vtt",
+          "filename": "subtitles/01_EHAcademy - CPR AED Course Video-Introduction.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.cpr-aed.video.02_EHAcademy - CPR AED Course Video-Why are we here.mp4",
+          "filename": "02_EHAcademy - CPR AED Course Video-Why are we here.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.cpr-aed.video.subtitle.02_EHAcademy - CPR AED Course Video-Why are we here.vtt",
+          "filename": "subtitles/02_EHAcademy - CPR AED Course Video-Why are we here.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.cpr-aed.video.03_EHAcademy - CPR AED Course Video-Life and Death Drama.mp4",
+          "filename": "03_EHAcademy - CPR AED Course Video-Life and Death Drama.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.cpr-aed.video.subtitle.03_EHAcademy - CPR AED Course Video-Life and Death Drama.vtt",
+          "filename": "subtitles/03_EHAcademy - CPR AED Course Video-Life and Death Drama.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.cpr-aed.video.04_EHAcademy - CPR AED Course Video-Course Overview.mp4",
+          "filename": "04_EHAcademy - CPR AED Course Video-Course Overview.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.cpr-aed.video.subtitle.04_EHAcademy - CPR AED Course Video-Course Overview.vtt",
+          "filename": "subtitles/04_EHAcademy - CPR AED Course Video-Course Overview.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.cpr-aed.video.05__EHAcademy - CPR AED Course Video-Recognizing the Emergency.mp4",
+          "filename": "05__EHAcademy - CPR AED Course Video-Recognizing the Emergency.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.cpr-aed.video.subtitle.05__EHAcademy - CPR AED Course Video-Recognizing the Emergency.vtt",
+          "filename": "subtitles/05__EHAcademy - CPR AED Course Video-Recognizing the Emergency.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.cpr-aed.video.06_EHAcademy - CPR AED Course Video-First Actions.mp4",
+          "filename": "06_EHAcademy - CPR AED Course Video-First Actions.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.cpr-aed.video.subtitle.06_EHAcademy - CPR AED Course Video-First Actions.vtt",
+          "filename": "subtitles/06_EHAcademy - CPR AED Course Video-First Actions.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.cpr-aed.video.07_EHAcademy - CPR AED Course Video-Assessment Example.mp4",
+          "filename": "07_EHAcademy - CPR AED Course Video-Assessment Example.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.cpr-aed.video.subtitle.07_EHAcademy - CPR AED Course Video-Assessment Example.vtt",
+          "filename": "subtitles/07_EHAcademy - CPR AED Course Video-Assessment Example.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.cpr-aed.video.08_EHAcademy - CPR AED Course Video-Assessment and Activation.mp4",
+          "filename": "08_EHAcademy - CPR AED Course Video-Assessment and Activation.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.cpr-aed.video.subtitle.08_EHAcademy - CPR AED Course Video-Assessment and Activation.vtt",
+          "filename": "subtitles/08_EHAcademy - CPR AED Course Video-Assessment and Activation.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.cpr-aed.video.09_EHAcademy - CPR AED Course Video-Chest Compressions Video.mp4",
+          "filename": "09_EHAcademy - CPR AED Course Video-Chest Compressions Video.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.cpr-aed.video.subtitle.09_EHAcademy - CPR AED Course Video-Chest Compressions Video.vtt",
+          "filename": "subtitles/09_EHAcademy - CPR AED Course Video-Chest Compressions Video.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.cpr-aed.video.10_EHAcademy - CPR AED Course Video-Hand Placement.mp4",
+          "filename": "10_EHAcademy - CPR AED Course Video-Hand Placement.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.cpr-aed.video.subtitle.10_EHAcademy - CPR AED Course Video-Hand Placement.vtt",
+          "filename": "subtitles/10_EHAcademy - CPR AED Course Video-Hand Placement.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.cpr-aed.video.11_EHAcademy - CPR AED Course Video-Compression Depth.mp4",
+          "filename": "11_EHAcademy - CPR AED Course Video-Compression Depth.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.cpr-aed.video.subtitle.11_EHAcademy - CPR AED Course Video-Compression Depth.vtt",
+          "filename": "subtitles/11_EHAcademy - CPR AED Course Video-Compression Depth.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.cpr-aed.video.12_EHAcademy - CPR AED Course Video-Rate and Rhythm.mp4",
+          "filename": "12_EHAcademy - CPR AED Course Video-Rate and Rhythm.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.cpr-aed.video.subtitle.12_EHAcademy - CPR AED Course Video-Rate and Rhythm.vtt",
+          "filename": "subtitles/12_EHAcademy - CPR AED Course Video-Rate and Rhythm.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.cpr-aed.video.13_EHAcademy - CPR AED Course Video-CPR Music.mp4",
+          "filename": "13_EHAcademy - CPR AED Course Video-CPR Music.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.cpr-aed.video.subtitle.13_EHAcademy - CPR AED Course Video-CPR Music.vtt",
+          "filename": "subtitles/13_EHAcademy - CPR AED Course Video-CPR Music.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.cpr-aed.video.14_EHAcademy - CPR AED Course Video-Practice Compressions.mp4",
+          "filename": "14_EHAcademy - CPR AED Course Video-Practice Compressions.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.cpr-aed.video.subtitle.14_EHAcademy - CPR AED Course Video-Practice Compressions.vtt",
+          "filename": "subtitles/14_EHAcademy - CPR AED Course Video-Practice Compressions.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.cpr-aed.video.15_EHAcademy - CPR AED Course Video-Giving Breaths.mp4",
+          "filename": "15_EHAcademy - CPR AED Course Video-Giving Breaths.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.cpr-aed.video.subtitle.15_EHAcademy - CPR AED Course Video-Giving Breaths.vtt",
+          "filename": "subtitles/15_EHAcademy - CPR AED Course Video-Giving Breaths.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.cpr-aed.video.16_EHAcademy - CPR AED Course Video-Practice Breaths.mp4",
+          "filename": "16_EHAcademy - CPR AED Course Video-Practice Breaths.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.cpr-aed.video.subtitle.16_EHAcademy - CPR AED Course Video-Practice Breaths.vtt",
+          "filename": "subtitles/16_EHAcademy - CPR AED Course Video-Practice Breaths.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.cpr-aed.video.17_EHAcademy - CPR AED Course Video-Using an AED.mp4",
+          "filename": "17_EHAcademy - CPR AED Course Video-Using an AED.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.cpr-aed.video.subtitle.17_EHAcademy - CPR AED Course Video-Using an AED.vtt",
+          "filename": "subtitles/17_EHAcademy - CPR AED Course Video-Using an AED.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.cpr-aed.video.18_EHAcademy - CPR AED Course Video-Adult Scenario.mp4",
+          "filename": "18_EHAcademy - CPR AED Course Video-Adult Scenario.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.cpr-aed.video.subtitle.18_EHAcademy - CPR AED Course Video-Adult Scenario.vtt",
+          "filename": "subtitles/18_EHAcademy - CPR AED Course Video-Adult Scenario.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.cpr-aed.video.19_EHAcademy - CPR AED Course Video-Child CPR.mp4",
+          "filename": "19_EHAcademy - CPR AED Course Video-Child CPR.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.cpr-aed.video.subtitle.19_EHAcademy - CPR AED Course Video-Child CPR.vtt",
+          "filename": "subtitles/19_EHAcademy - CPR AED Course Video-Child CPR.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.cpr-aed.video.20_EHAcademy - CPR AED Course Video-AED use on kids.mp4",
+          "filename": "20_EHAcademy - CPR AED Course Video-AED use on kids.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.cpr-aed.video.subtitle.20_EHAcademy - CPR AED Course Video-AED use on kids.vtt",
+          "filename": "subtitles/20_EHAcademy - CPR AED Course Video-AED use on kids.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.cpr-aed.video.21_EHAcademy - CPR AED Course Video-Help from Others.mp4",
+          "filename": "21_EHAcademy - CPR AED Course Video-Help from Others.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.cpr-aed.video.subtitle.21_EHAcademy - CPR AED Course Video-Help from Others.vtt",
+          "filename": "subtitles/21_EHAcademy - CPR AED Course Video-Help from Others.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.cpr-aed.video.22_EHAcademy - CPR AED Course Video-Infant CPR.mp4",
+          "filename": "22_EHAcademy - CPR AED Course Video-Infant CPR.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.cpr-aed.video.subtitle.22_EHAcademy - CPR AED Course Video-Infant CPR.vtt",
+          "filename": "subtitles/22_EHAcademy - CPR AED Course Video-Infant CPR.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.cpr-aed.video.23_EHAcademy - CPR AED Course Video-Infant Compressions.mp4",
+          "filename": "23_EHAcademy - CPR AED Course Video-Infant Compressions.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.cpr-aed.video.subtitle.23_EHAcademy - CPR AED Course Video-Infant Compressions.vtt",
+          "filename": "subtitles/23_EHAcademy - CPR AED Course Video-Infant Compressions.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.cpr-aed.video.24_EHAcademy - CPR AED Course Video-Infant Breaths.mp4",
+          "filename": "24_EHAcademy - CPR AED Course Video-Infant Breaths.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.cpr-aed.video.subtitle.24_EHAcademy - CPR AED Course Video-Infant Breaths.vtt",
+          "filename": "subtitles/24_EHAcademy - CPR AED Course Video-Infant Breaths.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.cpr-aed.video.25_EHAcademy - CPR AED Course Video-Infant Scenario.mp4",
+          "filename": "25_EHAcademy - CPR AED Course Video-Infant Scenario.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.cpr-aed.video.subtitle.25_EHAcademy - CPR AED Course Video-Infant Scenario.vtt",
+          "filename": "subtitles/25_EHAcademy - CPR AED Course Video-Infant Scenario.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.cpr-aed.video.26_EHAcademy - CPR AED Course Video-Mild Choking.mp4",
+          "filename": "26_EHAcademy - CPR AED Course Video-Mild Choking.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.cpr-aed.video.subtitle.26_EHAcademy - CPR AED Course Video-Mild Choking.vtt",
+          "filename": "subtitles/26_EHAcademy - CPR AED Course Video-Mild Choking.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.cpr-aed.video.27_EHAcademy - CPR AED Course Video-Severe Choking.mp4",
+          "filename": "27_EHAcademy - CPR AED Course Video-Severe Choking.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.cpr-aed.video.subtitle.27_EHAcademy - CPR AED Course Video-Severe Choking.vtt",
+          "filename": "subtitles/27_EHAcademy - CPR AED Course Video-Severe Choking.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.cpr-aed.video.28_EHAcademy - CPR AED Course Video-Adult Choking Relief.mp4",
+          "filename": "28_EHAcademy - CPR AED Course Video-Adult Choking Relief.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.cpr-aed.video.subtitle.28_EHAcademy - CPR AED Course Video-Adult Choking Relief.vtt",
+          "filename": "subtitles/28_EHAcademy - CPR AED Course Video-Adult Choking Relief.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.cpr-aed.video.29_EHAcademy - CPR AED Course Video-Child Choking Relief.mp4",
+          "filename": "29_EHAcademy - CPR AED Course Video-Child Choking Relief.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.cpr-aed.video.subtitle.29_EHAcademy - CPR AED Course Video-Child Choking Relief.vtt",
+          "filename": "subtitles/29_EHAcademy - CPR AED Course Video-Child Choking Relief.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.cpr-aed.video.30_EHAcademy - CPR AED Course Video-Infant Choking Relief.mp4",
+          "filename": "30_EHAcademy - CPR AED Course Video-Infant Choking Relief.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.cpr-aed.video.subtitle.30_EHAcademy - CPR AED Course Video-Infant Choking Relief.vtt",
+          "filename": "subtitles/30_EHAcademy - CPR AED Course Video-Infant Choking Relief.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.cpr-aed.video.31_EHAcademy - CPR AED Course Video-Conclusion.mp4",
+          "filename": "31_EHAcademy - CPR AED Course Video-Conclusion.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.cpr-aed.video.subtitle.31_EHAcademy - CPR AED Course Video-Conclusion.mp4.vtt",
+          "filename": "subtitles/31_EHAcademy - CPR AED Course Video-Conclusion.mp4.vtt",
+          "kind": "subtitle"
+        }
+      ]
+    },
+    {
+      "id": "package.first-aid.slideshow",
+      "title": "First Aid Slideshow",
+      "assets": [
+        {
+          "id": "package.first-aid.slideshow.01_EHAcademy - First Aid Course Pres-Introduction.png",
+          "filename": "01_EHAcademy - First Aid Course Pres-Introduction.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.slideshow.02_EHAcademy - First Aid Course Pres-What is First Aid.png",
+          "filename": "02_EHAcademy - First Aid Course Pres-What is First Aid.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.slideshow.03_EHAcademy - First Aid Course Pres-First Aid Basics.png",
+          "filename": "03_EHAcademy - First Aid Course Pres-First Aid Basics.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.slideshow.04_EHAcademy - First Aid Course Pres-Universal Precautions.png",
+          "filename": "04_EHAcademy - First Aid Course Pres-Universal Precautions.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.slideshow.05_EHAcademy - First Aid Course Pres-Legal Concerns.png",
+          "filename": "05_EHAcademy - First Aid Course Pres-Legal Concerns.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.slideshow.06_EHAcademy - First Aid Course Pres-Calling 911.png",
+          "filename": "06_EHAcademy - First Aid Course Pres-Calling 911.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.slideshow.07_EHAcademy - First Aid Course Pres-Medical Emergencies.png",
+          "filename": "07_EHAcademy - First Aid Course Pres-Medical Emergencies.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.slideshow.08_EHAcademy - First Aid Course Pres-Heart Attack Symptoms.png",
+          "filename": "08_EHAcademy - First Aid Course Pres-Heart Attack Symptoms.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.slideshow.09_EHAcademy - First Aid Course Pres-Heart Attack.png",
+          "filename": "09_EHAcademy - First Aid Course Pres-Heart Attack.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.slideshow.10_EHAcademy - First Aid Course Pres-Stroke.png",
+          "filename": "10_EHAcademy - First Aid Course Pres-Stroke.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.slideshow.11_EHAcademy - First Aid Course Pres-Seizure Video.mp4",
+          "filename": "11_EHAcademy - First Aid Course Pres-Seizure Video.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.first-aid.slideshow.subtitle.11_EHAcademy - First Aid Course Pres-Seizure Video.vtt",
+          "filename": "subtitles/11_EHAcademy - First Aid Course Pres-Seizure Video.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.first-aid.slideshow.12_EHAcademy - First Aid Course Pres-Seizure.png",
+          "filename": "12_EHAcademy - First Aid Course Pres-Seizure.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.slideshow.13_EHAcademy - First Aid Course Pres-Diabetes.png",
+          "filename": "13_EHAcademy - First Aid Course Pres-Diabetes.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.slideshow.14_EHAcademy - First Aid Course Pres-Difficulty Breathing.png",
+          "filename": "14_EHAcademy - First Aid Course Pres-Difficulty Breathing.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.slideshow.15_EHAcademy - First Aid Course Pres-Allergic Reaction.png",
+          "filename": "15_EHAcademy - First Aid Course Pres-Allergic Reaction.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.slideshow.16_EHAcademy - First Aid Course Pres-Fainting.png",
+          "filename": "16_EHAcademy - First Aid Course Pres-Fainting.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.slideshow.17_EHAcademy - First Aid Course Pres-Bleeding and Wounds.png",
+          "filename": "17_EHAcademy - First Aid Course Pres-Bleeding and Wounds.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.slideshow.18_EHAcademy - First Aid Course Pres-Minor External Bleeding.png",
+          "filename": "18_EHAcademy - First Aid Course Pres-Minor External Bleeding.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.slideshow.19_EHAcademy - First Aid Course Pres-Major External Bleeding.png",
+          "filename": "19_EHAcademy - First Aid Course Pres-Major External Bleeding.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.slideshow.20_EHAcademy - First Aid Course Pres-Using a Tourniquet.png",
+          "filename": "20_EHAcademy - First Aid Course Pres-Using a Tourniquet.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.slideshow.21_EHAcademy - First Aid Course Pres-Nosebleed.png",
+          "filename": "21_EHAcademy - First Aid Course Pres-Nosebleed.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.slideshow.22_EHAcademy - First Aid Course Pres-Mouth Bleed.png",
+          "filename": "22_EHAcademy - First Aid Course Pres-Mouth Bleed.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.slideshow.23_EHAcademy - First Aid Course Pres-Penetration Injuries.png",
+          "filename": "23_EHAcademy - First Aid Course Pres-Penetration Injuries.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.slideshow.24_EHAcademy - First Aid Course Pres-Internal Bleeding.png",
+          "filename": "24_EHAcademy - First Aid Course Pres-Internal Bleeding.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.slideshow.25_EHAcademy - First Aid Course Pres-Amputation.png",
+          "filename": "25_EHAcademy - First Aid Course Pres-Amputation.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.slideshow.26_EHAcademy - First Aid Course Pres-Shock.png",
+          "filename": "26_EHAcademy - First Aid Course Pres-Shock.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.slideshow.27_EHAcademy - First Aid Course Pres-Bodily Injuries.png",
+          "filename": "27_EHAcademy - First Aid Course Pres-Bodily Injuries.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.slideshow.28_EHAcademy - First Aid Course Pres-Eye Injury.png",
+          "filename": "28_EHAcademy - First Aid Course Pres-Eye Injury.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.slideshow.29_EHAcademy - First Aid Course Pres-Sprain and Fracture.png",
+          "filename": "29_EHAcademy - First Aid Course Pres-Sprain and Fracture.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.slideshow.30_EHAcademy - First Aid Course Pres-Head Neck or Spine Injuries.png",
+          "filename": "30_EHAcademy - First Aid Course Pres-Head Neck or Spine Injuries.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.slideshow.31_EHAcademy - First Aid Course Pres-Burns.png",
+          "filename": "31_EHAcademy - First Aid Course Pres-Burns.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.slideshow.32_EHAcademy - First Aid Course Pres-Electrical Burns.png",
+          "filename": "32_EHAcademy - First Aid Course Pres-Electrical Burns.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.slideshow.33_EHAcademy - First Aid Course Pres-Environmental Emergencies.png",
+          "filename": "33_EHAcademy - First Aid Course Pres-Environmental Emergencies.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.slideshow.34_EHAcademy - First Aid Course Pres-Animal or Human Bite.png",
+          "filename": "34_EHAcademy - First Aid Course Pres-Animal or Human Bite.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.slideshow.35_EHAcademy - First Aid Course Pres-Snake Bite.png",
+          "filename": "35_EHAcademy - First Aid Course Pres-Snake Bite.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.slideshow.36_EHAcademy - First Aid Course Pres-Bee Sting.png",
+          "filename": "36_EHAcademy - First Aid Course Pres-Bee Sting.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.slideshow.37_EHAcademy - First Aid Course Pres-Spider or Scorpion Bite.png",
+          "filename": "37_EHAcademy - First Aid Course Pres-Spider or Scorpion Bite.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.slideshow.38_EHAcademy - First Aid Course Pres-Tick Bites.png",
+          "filename": "38_EHAcademy - First Aid Course Pres-Tick Bites.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.slideshow.39_EHAcademy - First Aid Course Pres-Marine Life Stings.png",
+          "filename": "39_EHAcademy - First Aid Course Pres-Marine Life Stings.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.slideshow.40_EHAcademy - First Aid Course Pres-Drowning.png",
+          "filename": "40_EHAcademy - First Aid Course Pres-Drowning.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.slideshow.41_EHAcademy - First Aid Course Pres-Poisoning.png",
+          "filename": "41_EHAcademy - First Aid Course Pres-Poisoning.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.slideshow.42_EHAcademy - First Aid Course Pres-Opioid and Overdose.png",
+          "filename": "42_EHAcademy - First Aid Course Pres-Opioid and Overdose.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.slideshow.43_EHAcademy - First Aid Course Pres-Temperature Relate Illness.png",
+          "filename": "43_EHAcademy - First Aid Course Pres-Temperature Relate Illness.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.slideshow.44_EHAcademy - First Aid Course Pres-Heat Relate Illness.png",
+          "filename": "44_EHAcademy - First Aid Course Pres-Heat Relate Illness.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.slideshow.45_EHAcademy - First Aid Course Pres-Cold Related Illness.png",
+          "filename": "45_EHAcademy - First Aid Course Pres-Cold Related Illness.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.slideshow.46_EHAcademy - First Aid Course Pres-Conclusion.png",
+          "filename": "46_EHAcademy - First Aid Course Pres-Conclusion.png",
+          "kind": "image"
+        }
+      ]
+    },
+    {
+      "id": "package.first-aid.video",
+      "title": "First Aid VA Video",
+      "assets": [
+        {
+          "id": "package.first-aid.video.01_EHAcademy - First Aid Course-Introduction.mp4",
+          "filename": "01_EHAcademy - First Aid Course-Introduction.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.first-aid.video.subtitle.01_EHAcademy - First Aid Course-Introduction.vtt",
+          "filename": "subtitles/01_EHAcademy - First Aid Course-Introduction.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.first-aid.video.02_EHAcademy - First Aid Course-What is First Aid.mp4",
+          "filename": "02_EHAcademy - First Aid Course-What is First Aid.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.first-aid.video.subtitle.02_EHAcademy - First Aid Course-What is First Aid.vtt",
+          "filename": "subtitles/02_EHAcademy - First Aid Course-What is First Aid.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.first-aid.video.03_EHAcademy - First Aid Course-First Aid Basics.mp4",
+          "filename": "03_EHAcademy - First Aid Course-First Aid Basics.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.first-aid.video.subtitle.03_EHAcademy - First Aid Course-First Aid Basics.vtt",
+          "filename": "subtitles/03_EHAcademy - First Aid Course-First Aid Basics.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.first-aid.video.04_EHAcademy - First Aid Course-Universal Precautions.mp4",
+          "filename": "04_EHAcademy - First Aid Course-Universal Precautions.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.first-aid.video.subtitle.04_EHAcademy - First Aid Course-Universal Precautions.vtt",
+          "filename": "subtitles/04_EHAcademy - First Aid Course-Universal Precautions.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.first-aid.video.05_EHAcademy - First Aid Course-Legal Concerns.mp4",
+          "filename": "05_EHAcademy - First Aid Course-Legal Concerns.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.first-aid.video.subtitle.05_EHAcademy - First Aid Course-Legal Concerns.vtt",
+          "filename": "subtitles/05_EHAcademy - First Aid Course-Legal Concerns.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.first-aid.video.06_EHAcademy - First Aid Course-Calling 911.mp4",
+          "filename": "06_EHAcademy - First Aid Course-Calling 911.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.first-aid.video.subtitle.06_EHAcademy - First Aid Course-Calling 911.vtt",
+          "filename": "subtitles/06_EHAcademy - First Aid Course-Calling 911.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.first-aid.video.07_EHAcademy - First Aid Course-MEDICAL EMERGENCIES.mp4",
+          "filename": "07_EHAcademy - First Aid Course-MEDICAL EMERGENCIES.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.first-aid.video.subtitle.07_EHAcademy - First Aid Course-MEDICAL EMERGENCIES.vtt",
+          "filename": "subtitles/07_EHAcademy - First Aid Course-MEDICAL EMERGENCIES.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.first-aid.video.08_EHAcademy - First Aid Course-Heart Attack.mp4",
+          "filename": "08_EHAcademy - First Aid Course-Heart Attack.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.first-aid.video.subtitle.08_EHAcademy - First Aid Course-Heart Attack.vtt",
+          "filename": "subtitles/08_EHAcademy - First Aid Course-Heart Attack.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.first-aid.video.09_EHAcademy - First Aid Course-Stroke.mp4",
+          "filename": "09_EHAcademy - First Aid Course-Stroke.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.first-aid.video.subtitle.09_EHAcademy - First Aid Course-Stroke.vtt",
+          "filename": "subtitles/09_EHAcademy - First Aid Course-Stroke.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.first-aid.video.10_EHAcademy - First Aid Course-Seizure Example.mp4",
+          "filename": "10_EHAcademy - First Aid Course-Seizure Example.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.first-aid.video.subtitle.10_EHAcademy - First Aid Course-Seizure Example.vtt",
+          "filename": "subtitles/10_EHAcademy - First Aid Course-Seizure Example.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.first-aid.video.11_EHAcademy - First Aid Course-Diabetes.mp4",
+          "filename": "11_EHAcademy - First Aid Course-Diabetes.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.first-aid.video.subtitle.11_EHAcademy - First Aid Course-Diabetes.vtt",
+          "filename": "subtitles/11_EHAcademy - First Aid Course-Diabetes.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.first-aid.video.12_EHAcademy - First Aid Course-Difficulty Breathing.mp4",
+          "filename": "12_EHAcademy - First Aid Course-Difficulty Breathing.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.first-aid.video.subtitle.12_EHAcademy - First Aid Course-Difficulty Breathing.vtt",
+          "filename": "subtitles/12_EHAcademy - First Aid Course-Difficulty Breathing.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.first-aid.video.13_EHAcademy - First Aid Course-Allergic Reaction.mp4",
+          "filename": "13_EHAcademy - First Aid Course-Allergic Reaction.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.first-aid.video.subtitle.13_EHAcademy - First Aid Course-Allergic Reaction.vtt",
+          "filename": "subtitles/13_EHAcademy - First Aid Course-Allergic Reaction.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.first-aid.video.14_EHAcademy - First Aid Course-Fainting.mp4",
+          "filename": "14_EHAcademy - First Aid Course-Fainting.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.first-aid.video.subtitle.14_EHAcademy - First Aid Course-Fainting.vtt",
+          "filename": "subtitles/14_EHAcademy - First Aid Course-Fainting.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.first-aid.video.15_EHAcademy - First Aid Course-BLEEDING AND WOUNDS.mp4",
+          "filename": "15_EHAcademy - First Aid Course-BLEEDING AND WOUNDS.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.first-aid.video.subtitle.15_EHAcademy - First Aid Course-BLEEDING AND WOUNDS.vtt",
+          "filename": "subtitles/15_EHAcademy - First Aid Course-BLEEDING AND WOUNDS.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.first-aid.video.16_EHAcademy - First Aid Course-Minor Bleeding.mp4",
+          "filename": "16_EHAcademy - First Aid Course-Minor Bleeding.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.first-aid.video.subtitle.16_EHAcademy - First Aid Course-Minor Bleeding.vtt",
+          "filename": "subtitles/16_EHAcademy - First Aid Course-Minor Bleeding.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.first-aid.video.17_EHAcademy - First Aid Course-Major Bleeding.mp4",
+          "filename": "17_EHAcademy - First Aid Course-Major Bleeding.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.first-aid.video.subtitle.17_EHAcademy - First Aid Course-Major Bleeding.vtt",
+          "filename": "subtitles/17_EHAcademy - First Aid Course-Major Bleeding.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.first-aid.video.18_EHAcademy - First Aid Course-Using a Tourniquet.mp4",
+          "filename": "18_EHAcademy - First Aid Course-Using a Tourniquet.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.first-aid.video.subtitle.18_EHAcademy - First Aid Course-Using a Tourniquet.vtt",
+          "filename": "subtitles/18_EHAcademy - First Aid Course-Using a Tourniquet.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.first-aid.video.19_EHAcademy - First Aid Course-Nose Bleed.mp4",
+          "filename": "19_EHAcademy - First Aid Course-Nose Bleed.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.first-aid.video.subtitle.19_EHAcademy - First Aid Course-Nose Bleed.vtt",
+          "filename": "subtitles/19_EHAcademy - First Aid Course-Nose Bleed.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.first-aid.video.20_EHAcademy - First Aid Course-Mouth Bleed.mp4",
+          "filename": "20_EHAcademy - First Aid Course-Mouth Bleed.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.first-aid.video.subtitle.20_EHAcademy - First Aid Course-Mouth Bleed.vtt",
+          "filename": "subtitles/20_EHAcademy - First Aid Course-Mouth Bleed.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.first-aid.video.21_EHAcademy - First Aid Course-Penetration Injuries.mp4",
+          "filename": "21_EHAcademy - First Aid Course-Penetration Injuries.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.first-aid.video.subtitle.21_EHAcademy - First Aid Course-Penetration Injuries.vtt",
+          "filename": "subtitles/21_EHAcademy - First Aid Course-Penetration Injuries.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.first-aid.video.22_EHAcademy - First Aid Course-Internal Bleeding.mp4",
+          "filename": "22_EHAcademy - First Aid Course-Internal Bleeding.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.first-aid.video.subtitle.22_EHAcademy - First Aid Course-Internal Bleeding.vtt",
+          "filename": "subtitles/22_EHAcademy - First Aid Course-Internal Bleeding.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.first-aid.video.23_EHAcademy - First Aid Course-Amputation.mp4",
+          "filename": "23_EHAcademy - First Aid Course-Amputation.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.first-aid.video.subtitle.23_EHAcademy - First Aid Course-Amputation.vtt",
+          "filename": "subtitles/23_EHAcademy - First Aid Course-Amputation.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.first-aid.video.24_EHAcademy - First Aid Course-Shock.mp4",
+          "filename": "24_EHAcademy - First Aid Course-Shock.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.first-aid.video.subtitle.24_EHAcademy - First Aid Course-Shock.vtt",
+          "filename": "subtitles/24_EHAcademy - First Aid Course-Shock.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.first-aid.video.25_EHAcademy - First Aid Course-BODILY INJURIES.mp4",
+          "filename": "25_EHAcademy - First Aid Course-BODILY INJURIES.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.first-aid.video.subtitle.25_EHAcademy - First Aid Course-BODILY INJURIES.vtt",
+          "filename": "subtitles/25_EHAcademy - First Aid Course-BODILY INJURIES.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.first-aid.video.26_EHAcademy - First Aid Course-Eye Injury.mp4",
+          "filename": "26_EHAcademy - First Aid Course-Eye Injury.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.first-aid.video.subtitle.26_EHAcademy - First Aid Course-Eye Injury.vtt",
+          "filename": "subtitles/26_EHAcademy - First Aid Course-Eye Injury.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.first-aid.video.27_EHAcademy - First Aid Course-Sprain or Fracture.mp4",
+          "filename": "27_EHAcademy - First Aid Course-Sprain or Fracture.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.first-aid.video.subtitle.27_EHAcademy - First Aid Course-Sprain or Fracture.vtt",
+          "filename": "subtitles/27_EHAcademy - First Aid Course-Sprain or Fracture.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.first-aid.video.28_EHAcademy - First Aid Course-Head Neck or Spine Injury.mp4",
+          "filename": "28_EHAcademy - First Aid Course-Head Neck or Spine Injury.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.first-aid.video.subtitle.28_EHAcademy - First Aid Course-Head Neck or Spine Injury.vtt",
+          "filename": "subtitles/28_EHAcademy - First Aid Course-Head Neck or Spine Injury.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.first-aid.video.29_EHAcademy - First Aid Course-Burns.mp4",
+          "filename": "29_EHAcademy - First Aid Course-Burns.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.first-aid.video.subtitle.29_EHAcademy - First Aid Course-Burns.vtt",
+          "filename": "subtitles/29_EHAcademy - First Aid Course-Burns.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.first-aid.video.30_EHAcademy - First Aid Course-Electrical Burns.mp4",
+          "filename": "30_EHAcademy - First Aid Course-Electrical Burns.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.first-aid.video.subtitle.30_EHAcademy - First Aid Course-Electrical Burns.vtt",
+          "filename": "subtitles/30_EHAcademy - First Aid Course-Electrical Burns.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.first-aid.video.31_EHAcademy - First Aid Course-ENVIRONMENTAL EMERGENCIES.mp4",
+          "filename": "31_EHAcademy - First Aid Course-ENVIRONMENTAL EMERGENCIES.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.first-aid.video.subtitle.31_EHAcademy - First Aid Course-ENVIRONMENTAL EMERGENCIES.vtt",
+          "filename": "subtitles/31_EHAcademy - First Aid Course-ENVIRONMENTAL EMERGENCIES.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.first-aid.video.32_EHAcademy - First Aid Course-Animal or Human Bite.mp4",
+          "filename": "32_EHAcademy - First Aid Course-Animal or Human Bite.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.first-aid.video.subtitle.32_EHAcademy - First Aid Course-Animal or Human Bite.vtt",
+          "filename": "subtitles/32_EHAcademy - First Aid Course-Animal or Human Bite.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.first-aid.video.33_EHAcademy - First Aid Course-Snake Bite.mp4",
+          "filename": "33_EHAcademy - First Aid Course-Snake Bite.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.first-aid.video.subtitle.33_EHAcademy - First Aid Course-Snake Bite.vtt",
+          "filename": "subtitles/33_EHAcademy - First Aid Course-Snake Bite.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.first-aid.video.34_EHAcademy - First Aid Course-Bee Sting.mp4",
+          "filename": "34_EHAcademy - First Aid Course-Bee Sting.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.first-aid.video.subtitle.34_EHAcademy - First Aid Course-Bee Sting.vtt",
+          "filename": "subtitles/34_EHAcademy - First Aid Course-Bee Sting.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.first-aid.video.35_EHAcademy - First Aid Course-Spider or Scorpion.mp4",
+          "filename": "35_EHAcademy - First Aid Course-Spider or Scorpion.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.first-aid.video.subtitle.35_EHAcademy - First Aid Course-Spider or Scorpion.vtt",
+          "filename": "subtitles/35_EHAcademy - First Aid Course-Spider or Scorpion.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.first-aid.video.36_EHAcademy - First Aid Course-Tick Bite.mp4",
+          "filename": "36_EHAcademy - First Aid Course-Tick Bite.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.first-aid.video.subtitle.36_EHAcademy - First Aid Course-Tick Bite.vtt",
+          "filename": "subtitles/36_EHAcademy - First Aid Course-Tick Bite.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.first-aid.video.37_EHAcademy - First Aid Course-Marine Life.mp4",
+          "filename": "37_EHAcademy - First Aid Course-Marine Life.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.first-aid.video.subtitle.37_EHAcademy - First Aid Course-Marine Life.vtt",
+          "filename": "subtitles/37_EHAcademy - First Aid Course-Marine Life.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.first-aid.video.38_EHAcademy - First Aid Course-Drowning.mp4",
+          "filename": "38_EHAcademy - First Aid Course-Drowning.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.first-aid.video.subtitle.38_EHAcademy - First Aid Course-Drowning.vtt",
+          "filename": "subtitles/38_EHAcademy - First Aid Course-Drowning.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.first-aid.video.39_EHAcademy - First Aid Course-Poisoning.mp4",
+          "filename": "39_EHAcademy - First Aid Course-Poisoning.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.first-aid.video.subtitle.39_EHAcademy - First Aid Course-Poisoning.vtt",
+          "filename": "subtitles/39_EHAcademy - First Aid Course-Poisoning.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.first-aid.video.40_EHAcademy - First Aid Course-Opioids and Overdose.mp4",
+          "filename": "40_EHAcademy - First Aid Course-Opioids and Overdose.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.first-aid.video.subtitle.40_EHAcademy - First Aid Course-Opioids and Overdose.vtt",
+          "filename": "subtitles/40_EHAcademy - First Aid Course-Opioids and Overdose.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.first-aid.video.41_EHAcademy - First Aid Course-TEMPERATURE RELATED ILLNESS.mp4",
+          "filename": "41_EHAcademy - First Aid Course-TEMPERATURE RELATED ILLNESS.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.first-aid.video.subtitle.41_EHAcademy - First Aid Course-TEMPERATURE RELATED ILLNESS.vtt",
+          "filename": "subtitles/41_EHAcademy - First Aid Course-TEMPERATURE RELATED ILLNESS.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.first-aid.video.42_EHAcademy - First Aid Course-Heat Related Illness.mp4",
+          "filename": "42_EHAcademy - First Aid Course-Heat Related Illness.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.first-aid.video.subtitle.42_EHAcademy - First Aid Course-Heat Related Illness.vtt",
+          "filename": "subtitles/42_EHAcademy - First Aid Course-Heat Related Illness.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.first-aid.video.43_EHAcademy - First Aid Course-Cold Related Illness.mp4",
+          "filename": "43_EHAcademy - First Aid Course-Cold Related Illness.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.first-aid.video.subtitle.43_EHAcademy - First Aid Course-Cold Related Illness.vtt",
+          "filename": "subtitles/43_EHAcademy - First Aid Course-Cold Related Illness.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.first-aid.video.44_EHAcademy - First Aid Course-Conclusion.mp4",
+          "filename": "44_EHAcademy - First Aid Course-Conclusion.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.first-aid.video.subtitle.44_EHAcademy - First Aid Course-Conclusion.vtt",
+          "filename": "subtitles/44_EHAcademy - First Aid Course-Conclusion.vtt",
+          "kind": "subtitle"
+        }
+      ]
+    },
+    {
+      "id": "package.first-aid.pediatric-slideshow",
+      "title": "Pediatric Focused Slideshow",
+      "assets": [
+        {
+          "id": "package.first-aid.pediatric-slideshow.01_EHAcademy - Pedi FA Course Pres-Introduction.png",
+          "filename": "01_EHAcademy - Pedi FA Course Pres-Introduction.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.pediatric-slideshow.02_EHAcademy - Pedi FA Course Pres-What is First Aid.png",
+          "filename": "02_EHAcademy - Pedi FA Course Pres-What is First Aid.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.pediatric-slideshow.03_EHAcademy - Pedi FA Course Pres-First Aid Basics.png",
+          "filename": "03_EHAcademy - Pedi FA Course Pres-First Aid Basics.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.pediatric-slideshow.04_EHAcademy - Pedi FA Course Pres-Universal Precautions.png",
+          "filename": "04_EHAcademy - Pedi FA Course Pres-Universal Precautions.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.pediatric-slideshow.05_EHAcademy - Pedi FA Course Pres-Legal Concerns.png",
+          "filename": "05_EHAcademy - Pedi FA Course Pres-Legal Concerns.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.pediatric-slideshow.06_EHAcademy - Pedi FA Course Pres-Calling 911.png",
+          "filename": "06_EHAcademy - Pedi FA Course Pres-Calling 911.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.pediatric-slideshow.07_EHAcademy - Pedi FA Course Pres- MEDICAL EMERGENCIES.png",
+          "filename": "07_EHAcademy - Pedi FA Course Pres- MEDICAL EMERGENCIES.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.pediatric-slideshow.08_EHAcademy - Pedi FA Course Pres-Heart Attack Symptoms.png",
+          "filename": "08_EHAcademy - Pedi FA Course Pres-Heart Attack Symptoms.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.pediatric-slideshow.09_EHAcademy - Pedi FA Course Pres-Heart Attack.png",
+          "filename": "09_EHAcademy - Pedi FA Course Pres-Heart Attack.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.pediatric-slideshow.10_EHAcademy - Pedi FA Course Pres-Stroke.png",
+          "filename": "10_EHAcademy - Pedi FA Course Pres-Stroke.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.pediatric-slideshow.11_EHAcademy - Pedi FA Course Pres-Seizure Video.mp4",
+          "filename": "11_EHAcademy - Pedi FA Course Pres-Seizure Video.mp4",
+          "kind": "video"
+        },
+        {
+          "id": "package.first-aid.pediatric-slideshow.subtitle.11_EHAcademy - Pedi FA Course Pres-Seizure Video.vtt",
+          "filename": "subtitles/11_EHAcademy - Pedi FA Course Pres-Seizure Video.vtt",
+          "kind": "subtitle"
+        },
+        {
+          "id": "package.first-aid.pediatric-slideshow.12_EHAcademy - Pedi FA Course Pres-Seizures.png",
+          "filename": "12_EHAcademy - Pedi FA Course Pres-Seizures.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.pediatric-slideshow.13_EHAcademy - Pedi FA Course Pres-Diabetes.png",
+          "filename": "13_EHAcademy - Pedi FA Course Pres-Diabetes.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.pediatric-slideshow.14_EHAcademy - Pedi FA Course Pres-Asthma.png",
+          "filename": "14_EHAcademy - Pedi FA Course Pres-Asthma.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.pediatric-slideshow.15_EHAcademy - Pedi FA Course Pres-Difficulty Breathing.png",
+          "filename": "15_EHAcademy - Pedi FA Course Pres-Difficulty Breathing.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.pediatric-slideshow.16_EHAcademy - Pedi FA Course Pres-Allergic Reaction.png",
+          "filename": "16_EHAcademy - Pedi FA Course Pres-Allergic Reaction.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.pediatric-slideshow.17_EHAcademy - Pedi FA Course Pres-Fainting.png",
+          "filename": "17_EHAcademy - Pedi FA Course Pres-Fainting.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.pediatric-slideshow.18_EHAcademy - Pedi FA Course Pres-BLEEDING & WOUNDS.png",
+          "filename": "18_EHAcademy - Pedi FA Course Pres-BLEEDING & WOUNDS.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.pediatric-slideshow.19_EHAcademy - Pedi FA Course Pres-Minor External Bleeding.png",
+          "filename": "19_EHAcademy - Pedi FA Course Pres-Minor External Bleeding.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.pediatric-slideshow.20_EHAcademy - Pedi FA Course Pres-Major External Bleeding.png",
+          "filename": "20_EHAcademy - Pedi FA Course Pres-Major External Bleeding.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.pediatric-slideshow.21_EHAcademy - Pedi FA Course Pres-Using a Tourniquet.png",
+          "filename": "21_EHAcademy - Pedi FA Course Pres-Using a Tourniquet.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.pediatric-slideshow.22_EHAcademy - Pedi FA Course Pres-Nose Bleed.png",
+          "filename": "22_EHAcademy - Pedi FA Course Pres-Nose Bleed.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.pediatric-slideshow.23_EHAcademy - Pedi FA Course Pres-Mouth Bleed.png",
+          "filename": "23_EHAcademy - Pedi FA Course Pres-Mouth Bleed.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.pediatric-slideshow.24_EHAcademy - Pedi FA Course Pres-Penetration Injuries.png",
+          "filename": "24_EHAcademy - Pedi FA Course Pres-Penetration Injuries.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.pediatric-slideshow.25_EHAcademy - Pedi FA Course Pres-Internal Bleeding.png",
+          "filename": "25_EHAcademy - Pedi FA Course Pres-Internal Bleeding.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.pediatric-slideshow.26_EHAcademy - Pedi FA Course Pres-Amputation.png",
+          "filename": "26_EHAcademy - Pedi FA Course Pres-Amputation.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.pediatric-slideshow.27_EHAcademy - Pedi FA Course Pres-Shock.png",
+          "filename": "27_EHAcademy - Pedi FA Course Pres-Shock.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.pediatric-slideshow.28_EHAcademy - Pedi FA Course Pres-BODILY INJURIES.png",
+          "filename": "28_EHAcademy - Pedi FA Course Pres-BODILY INJURIES.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.pediatric-slideshow.29_EHAcademy - Pedi FA Course Pres-Eye Injury.png",
+          "filename": "29_EHAcademy - Pedi FA Course Pres-Eye Injury.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.pediatric-slideshow.30_EHAcademy - Pedi FA Course Pres-Sprain or Fracture.png",
+          "filename": "30_EHAcademy - Pedi FA Course Pres-Sprain or Fracture.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.pediatric-slideshow.31_EHAcademy - Pedi FA Course Pres-Head or Spine Injuries.png",
+          "filename": "31_EHAcademy - Pedi FA Course Pres-Head or Spine Injuries.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.pediatric-slideshow.32_EHAcademy - Pedi FA Course Pres-Burns.png",
+          "filename": "32_EHAcademy - Pedi FA Course Pres-Burns.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.pediatric-slideshow.33_EHAcademy - Pedi FA Course Pres-Electrical Burns.png",
+          "filename": "33_EHAcademy - Pedi FA Course Pres-Electrical Burns.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.pediatric-slideshow.34_EHAcademy - Pedi FA Course Pres-ENVIRONMENTAL EMERGENCIES.png",
+          "filename": "34_EHAcademy - Pedi FA Course Pres-ENVIRONMENTAL EMERGENCIES.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.pediatric-slideshow.35_EHAcademy - Pedi FA Course Pres-Animal or Human Bite.png",
+          "filename": "35_EHAcademy - Pedi FA Course Pres-Animal or Human Bite.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.pediatric-slideshow.36_EHAcademy - Pedi FA Course Pres-Snake Bite.png",
+          "filename": "36_EHAcademy - Pedi FA Course Pres-Snake Bite.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.pediatric-slideshow.37_EHAcademy - Pedi FA Course Pres-Bee Sting.png",
+          "filename": "37_EHAcademy - Pedi FA Course Pres-Bee Sting.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.pediatric-slideshow.38_EHAcademy - Pedi FA Course Pres-Spider or Scorpion Bite.png",
+          "filename": "38_EHAcademy - Pedi FA Course Pres-Spider or Scorpion Bite.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.pediatric-slideshow.39_EHAcademy - Pedi FA Course Pres-Tick Bite.png",
+          "filename": "39_EHAcademy - Pedi FA Course Pres-Tick Bite.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.pediatric-slideshow.40_EHAcademy - Pedi FA Course Pres-Marine Bites and Stings.png",
+          "filename": "40_EHAcademy - Pedi FA Course Pres-Marine Bites and Stings.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.pediatric-slideshow.41_EHAcademy - Pedi FA Course Pres-Drowning.png",
+          "filename": "41_EHAcademy - Pedi FA Course Pres-Drowning.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.pediatric-slideshow.42_EHAcademy - Pedi FA Course Pres-Poisoning.png",
+          "filename": "42_EHAcademy - Pedi FA Course Pres-Poisoning.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.pediatric-slideshow.43_EHAcademy - Pedi FA Course Pres-Opioids and Overdose.png",
+          "filename": "43_EHAcademy - Pedi FA Course Pres-Opioids and Overdose.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.pediatric-slideshow.44_EHAcademy - Pedi FA Course Pres-TEMPERATURE RELATED ILLNESS.png",
+          "filename": "44_EHAcademy - Pedi FA Course Pres-TEMPERATURE RELATED ILLNESS.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.pediatric-slideshow.45_EHAcademy - Pedi FA Course Pres-Heat Related Illness.png",
+          "filename": "45_EHAcademy - Pedi FA Course Pres-Heat Related Illness.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.pediatric-slideshow.46_EHAcademy - Pedi FA Course Pres-Cold Related Illness.png",
+          "filename": "46_EHAcademy - Pedi FA Course Pres-Cold Related Illness.png",
+          "kind": "image"
+        },
+        {
+          "id": "package.first-aid.pediatric-slideshow.47_EHAcademy - Pedi FA Course Pres-Conclusion.png",
+          "filename": "47_EHAcademy - Pedi FA Course Pres-Conclusion.png",
+          "kind": "image"
+        }
+      ]
+    },
+    {
+      "id": "package.manual.instructor",
+      "title": "Instructor Manual",
+      "assets": [
+        {
+          "id": "package.manual.instructor.instructor_manual.pdf",
+          "filename": "instructor_manual.pdf",
+          "kind": "pdf"
+        }
+      ]
+    },
+    {
+      "id": "package.manual.student",
+      "title": "Student Manual",
+      "assets": [
+        {
+          "id": "package.manual.student.student_manual.pdf",
+          "filename": "student_manual.pdf",
+          "kind": "pdf"
+        }
+      ]
+    },
+    {
+      "id": "package.manual.pediatric",
+      "title": "Pediatric Student Manual",
+      "assets": [
+        {
+          "id": "package.manual.pediatric.pediatric_student_manual.pdf",
+          "filename": "pediatric_student_manual.pdf",
+          "kind": "pdf"
+        }
+      ]
+    }
+  ]
+}
