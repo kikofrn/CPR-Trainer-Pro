@@ -12,6 +12,9 @@ struct VideoCoursePlayerView: View {
     @State private var subtitleCues: [SubtitleCue] = []
     @State private var currentSubtitleText: String?
     @State private var isFullScreen = false
+    @State private var captionsEnabled = true
+    @State private var overlayControlsVisible = true
+    @State private var overlayControlsHideToken = UUID()
 
     private var playableChapters: [Chapter] {
         videoCourse.chapters.filter { !$0.isSectionHeader }
@@ -32,30 +35,45 @@ struct VideoCoursePlayerView: View {
                 let isLandscape = proxy.size.width > proxy.size.height
                 let playerShouldFill = isLandscape || isFullScreen
 
-                VStack(spacing: 0) {
-                    playerArea(fillsAvailableSpace: playerShouldFill)
+                ZStack {
+                    VStack(spacing: 0) {
+                        playerArea(fillsAvailableSpace: playerShouldFill)
 
-                    if !playerShouldFill {
-                        chaptersList
+                        if !playerShouldFill {
+                            chaptersList
+                        }
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                    if isFullScreen && overlayControlsVisible {
+                        fullScreenToolbar(topInset: proxy.safeAreaInsets.top)
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .ignoresSafeArea(isFullScreen ? .all : [], edges: .all)
+                .simultaneousGesture(
+                    TapGesture().onEnded {
+                        revealFullScreenControls()
+                    }
+                )
             }
             .appBackground()
             .navigationTitle(videoCourse.shortTitle)
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar(isFullScreen ? .hidden : .visible, for: .navigationBar)
+            .statusBarHidden(isFullScreen)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Close") {
-                        removeTimeObserver()
-                        player?.pause()
-                        dismiss()
+                        closePlayer()
                     }
                     .foregroundStyle(Theme.Colors.peach)
                 }
 
                 ToolbarItem(placement: .topBarTrailing) {
                     HStack(spacing: 10) {
+                        CaptionToggleButton(captionsEnabled: $captionsEnabled)
+
                         AirPlayRoutePicker()
                             .frame(width: 34, height: 34)
 
@@ -71,6 +89,12 @@ struct VideoCoursePlayerView: View {
             }
             .onChange(of: selectedChapterID) { _, _ in
                 loadSelectedChapter()
+            }
+            .onChange(of: isFullScreen) { _, isFullScreen in
+                overlayControlsVisible = true
+                if isFullScreen {
+                    scheduleFullScreenControlsHide()
+                }
             }
             .onDisappear {
                 removeTimeObserver()
@@ -98,13 +122,15 @@ struct VideoCoursePlayerView: View {
             if let player {
                 VideoPlayer(player: player)
 
-                VStack {
-                    Spacer()
-                    SubtitleOverlay(text: currentSubtitleText)
-                        .padding(.horizontal, 18)
-                        .padding(.bottom, 12)
+                if captionsEnabled {
+                    VStack {
+                        Spacer()
+                        SubtitleOverlay(text: currentSubtitleText)
+                            .padding(.horizontal, 18)
+                            .padding(.bottom, 12)
+                    }
+                    .allowsHitTesting(false)
                 }
-                .allowsHitTesting(false)
             } else {
                 VStack(spacing: 12) {
                     Image(systemName: "exclamationmark.triangle.fill")
@@ -153,8 +179,88 @@ struct VideoCoursePlayerView: View {
         .scrollContentBackground(.hidden)
     }
 
+    private func fullScreenToolbar(topInset: CGFloat) -> some View {
+        VStack {
+            HStack(spacing: 12) {
+                Button("Close") {
+                    closePlayer()
+                }
+                .font(.headline.weight(.semibold))
+                .foregroundStyle(Theme.Colors.peach)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 11)
+                .background(.white.opacity(0.10))
+                .clipShape(Capsule())
+
+                Spacer(minLength: 12)
+
+                Text(videoCourse.shortTitle)
+                    .font(.headline.weight(.bold))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+
+                Spacer(minLength: 12)
+
+                HStack(spacing: 8) {
+                    CaptionToggleButton(captionsEnabled: $captionsEnabled)
+
+                    AirPlayRoutePicker()
+                        .frame(width: 34, height: 34)
+
+                    FullScreenToggleButton(isFullScreen: $isFullScreen)
+                }
+                .padding(6)
+                .background(.black.opacity(0.52))
+                .clipShape(Capsule())
+            }
+            .padding(.top, topInset + 10)
+            .padding(.horizontal, 20)
+
+            Spacer()
+        }
+        .background(
+            LinearGradient(
+                colors: [.black.opacity(0.68), .black.opacity(0.0)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .frame(height: 118),
+            alignment: .top
+        )
+        .transition(.opacity)
+    }
+
     private func select(_ chapter: Chapter) {
         selectedChapterID = chapter.id
+    }
+
+    private func closePlayer() {
+        removeTimeObserver()
+        player?.pause()
+        dismiss()
+    }
+
+    private func revealFullScreenControls() {
+        guard isFullScreen else { return }
+        withAnimation(.easeInOut(duration: 0.18)) {
+            overlayControlsVisible = true
+        }
+        scheduleFullScreenControlsHide()
+    }
+
+    private func scheduleFullScreenControlsHide() {
+        let token = UUID()
+        overlayControlsHideToken = token
+        Task {
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            await MainActor.run {
+                guard isFullScreen, overlayControlsHideToken == token else { return }
+                withAnimation(.easeInOut(duration: 0.24)) {
+                    overlayControlsVisible = false
+                }
+            }
+        }
     }
 
     private func loadSelectedChapter() {

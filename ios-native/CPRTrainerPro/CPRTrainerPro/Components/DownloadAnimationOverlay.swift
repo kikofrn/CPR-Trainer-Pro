@@ -41,7 +41,7 @@ struct DownloadAnimationOverlay: View {
     }
 }
 
-private struct LoopingVideoView: UIViewRepresentable {
+struct LoopingVideoView: UIViewRepresentable {
     let resourceName: String
     let fileExtension: String
 
@@ -82,7 +82,7 @@ private struct LoopingVideoView: UIViewRepresentable {
     }
 }
 
-private final class PlayerUIView: UIView {
+final class PlayerUIView: UIView {
     override class var layerClass: AnyClass {
         AVPlayerLayer.self
     }

@@ -3,12 +3,29 @@ import UIKit
 
 struct RootView: View {
     @EnvironmentObject private var appViewModel: AppViewModel
+    @State private var showsLaunchExperience = true
 
     init() {
         Self.configureTabBarAppearance()
     }
 
     var body: some View {
+        ZStack {
+            tabContent
+
+            if showsLaunchExperience {
+                LaunchExperienceView {
+                    showsLaunchExperience = false
+                }
+                .transition(.opacity)
+                .zIndex(10)
+            }
+        }
+        .background(Color.black)
+        .preferredColorScheme(.dark)
+    }
+
+    private var tabContent: some View {
         TabView(selection: $appViewModel.selectedTab) {
             CoursesView()
                 .tabItem {
@@ -35,7 +52,6 @@ struct RootView: View {
                 .tag(AppTab.sendCerts)
         }
         .tint(Theme.Colors.selectedTabItem)
-        .preferredColorScheme(.dark)
     }
 }
 
@@ -71,5 +87,66 @@ private extension RootView {
         UITabBar.appearance().tintColor = selectedColor
         UITabBar.appearance().unselectedItemTintColor = normalColor
         UITabBar.appearance().isTranslucent = true
+    }
+}
+
+private struct LaunchExperienceView: View {
+    let onFinished: () -> Void
+
+    @State private var showsLogo = false
+    @State private var settlesLogo = false
+    @State private var fadesOut = false
+
+    var body: some View {
+        GeometryReader { proxy in
+            ZStack {
+                Color.black.ignoresSafeArea()
+
+                LoopingVideoView(resourceName: "DummiesDoingCPR", fileExtension: "mp4")
+                    .frame(width: 160, height: 160)
+                    .clipShape(Circle())
+                    .overlay {
+                        Circle()
+                            .stroke(.white.opacity(0.18), lineWidth: 1)
+                    }
+                    .opacity(settlesLogo ? 0 : 1)
+                    .scaleEffect(showsLogo ? 0.72 : 1)
+                    .offset(y: showsLogo ? -96 : 0)
+
+                BrandHeader(logoHeight: settlesLogo ? 66 : 100)
+                    .frame(maxWidth: settlesLogo ? 420 : 560)
+                    .position(
+                        x: proxy.size.width / 2,
+                        y: settlesLogo ? proxy.safeAreaInsets.top + 46 : proxy.size.height / 2
+                    )
+                    .opacity(showsLogo ? 1 : 0)
+            }
+            .opacity(fadesOut ? 0 : 1)
+            .onAppear(perform: runLaunchSequence)
+        }
+    }
+
+    private func runLaunchSequence() {
+        Task {
+            try? await Task.sleep(nanoseconds: 450_000_000)
+            withAnimation(.easeOut(duration: 0.45)) {
+                showsLogo = true
+            }
+
+            try? await Task.sleep(nanoseconds: 1_650_000_000)
+            withAnimation(.spring(response: 0.62, dampingFraction: 0.86)) {
+                settlesLogo = true
+            }
+
+            try? await Task.sleep(nanoseconds: 650_000_000)
+            withAnimation(.easeInOut(duration: 0.32)) {
+                fadesOut = true
+            }
+
+            try? await Task.sleep(nanoseconds: 340_000_000)
+            await MainActor.run {
+                onFinished()
+            }
+        }
     }
 }

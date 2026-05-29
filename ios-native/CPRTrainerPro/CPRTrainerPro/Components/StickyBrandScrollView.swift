@@ -6,6 +6,7 @@ struct StickyBrandScrollView<Content: View>: View {
     @ViewBuilder let content: () -> Content
 
     @State private var scrollOffset: CGFloat = 0
+    @State private var initialReaderY: CGFloat?
 
     init(
         title: String? = nil,
@@ -46,7 +47,12 @@ struct StickyBrandScrollView<Content: View>: View {
             }
             .coordinateSpace(name: StickyBrandScrollSpace.name)
             .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
-                scrollOffset = max(0, -value)
+                if initialReaderY == nil {
+                    initialReaderY = value
+                }
+
+                let baseline = initialReaderY ?? value
+                scrollOffset = max(0, baseline - value)
             }
 
             stickyHeader
@@ -55,7 +61,7 @@ struct StickyBrandScrollView<Content: View>: View {
     }
 
     private var stickyHeader: some View {
-        let progress = min(1, scrollOffset / 84)
+        let progress = min(1, scrollOffset / 72)
         let logoHeight = expandedLogoHeight - ((expandedLogoHeight - collapsedLogoHeight) * progress)
         let headerHeight = expandedHeaderHeight - ((expandedHeaderHeight - collapsedHeaderHeight) * progress)
 
@@ -63,25 +69,19 @@ struct StickyBrandScrollView<Content: View>: View {
             .padding(.horizontal, Theme.Layout.screenPadding)
             .frame(maxWidth: .infinity)
             .frame(height: headerHeight)
-            .background(
-                ZStack {
-                    Rectangle().fill(.ultraThinMaterial)
-                    Theme.Colors.red.opacity(0.20)
-                    Theme.Colors.background.opacity(0.42)
-                }
-                .ignoresSafeArea(edges: .top)
-            )
+            .background(Color.black.ignoresSafeArea(edges: .top))
             .overlay(alignment: .bottom) {
                 Rectangle()
-                    .fill(Color.white.opacity(0.08))
+                    .fill(Color.white.opacity(0.06))
                     .frame(height: 1)
             }
+            .animation(.easeInOut(duration: 0.18), value: progress)
     }
 
     private var expandedHeaderHeight: CGFloat { 92 }
-    private var collapsedHeaderHeight: CGFloat { 58 }
+    private var collapsedHeaderHeight: CGFloat { 46 }
     private var expandedLogoHeight: CGFloat { 66 }
-    private var collapsedLogoHeight: CGFloat { 40 }
+    private var collapsedLogoHeight: CGFloat { 33 }
 }
 
 private struct ScrollOffsetReader: View {
