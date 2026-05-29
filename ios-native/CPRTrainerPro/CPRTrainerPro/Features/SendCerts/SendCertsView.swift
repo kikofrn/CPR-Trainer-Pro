@@ -37,7 +37,7 @@ struct SendCertsView: View {
             .appBackground()
             .navigationTitle("Send Certs")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarColorScheme(.dark, for: .navigationBar)
         }
     }
 }
-

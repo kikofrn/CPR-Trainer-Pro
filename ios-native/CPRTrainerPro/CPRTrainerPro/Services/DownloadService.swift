@@ -45,13 +45,22 @@ final class DownloadService: NSObject, ObservableObject {
     @Published private var states: [DownloadPackage.ID: DownloadState] = [:]
 
     private lazy var session: URLSession = {
+        #if targetEnvironment(simulator)
+        let configuration = URLSessionConfiguration.default
+        #else
         let configuration = URLSessionConfiguration.background(
             withIdentifier: "com.ehacademy.cpr-trainer-pro.background"
         )
         configuration.sessionSendsLaunchEvents = true
+        #endif
         configuration.isDiscretionary = false
         configuration.waitsForConnectivity = true
         configuration.httpMaximumConnectionsPerHost = maxConcurrentDownloads
+        configuration.allowsConstrainedNetworkAccess = true
+        configuration.allowsExpensiveNetworkAccess = true
+        configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
+        configuration.timeoutIntervalForRequest = 60
+        configuration.timeoutIntervalForResource = 3_600
         return URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
     }()
 
@@ -148,7 +157,11 @@ final class DownloadService: NSObject, ObservableObject {
 
             do {
                 try storageService.prepareParentDirectory(for: next.asset.filename)
-                let task = session.downloadTask(with: next.remoteURL)
+                var request = URLRequest(url: next.remoteURL)
+                request.cachePolicy = .reloadIgnoringLocalCacheData
+                request.timeoutInterval = 60
+                request.setValue("CPRTrainerPro-iOS/0.1", forHTTPHeaderField: "User-Agent")
+                let task = session.downloadTask(with: request)
                 task.taskDescription = try encodeTaskDescription(
                     TaskDescription(packageID: next.packageID, asset: next.asset)
                 )
@@ -161,7 +174,7 @@ final class DownloadService: NSObject, ObservableObject {
                 setPackageStateDownloading(next.packageID)
                 task.resume()
             } catch {
-                failPackage(next.packageID, message: error.localizedDescription)
+                failPackage(next.packageID, message: message(for: error, asset: next.asset))
             }
         }
     }
@@ -278,9 +291,18 @@ final class DownloadService: NSObject, ObservableObject {
     private func finishDownload(taskIdentifier: Int, temporaryURL: URL, response: URLResponse?) {
         guard let activeDownload = activeDownloads[taskIdentifier] else { return }
 
-        guard let httpResponse = response as? HTTPURLResponse, 200..<300 ~= httpResponse.statusCode else {
+        guard let httpResponse = response as? HTTPURLResponse else {
             activeDownloads[taskIdentifier] = nil
-            retryOrFail(activeDownload, message: "Server returned an invalid response.")
+            retryOrFail(activeDownload, message: "No HTTP response for \(activeDownload.asset.filename).")
+            return
+        }
+
+        guard 200..<300 ~= httpResponse.statusCode else {
+            activeDownloads[taskIdentifier] = nil
+            retryOrFail(
+                activeDownload,
+                message: "HTTP \(httpResponse.statusCode) for \(activeDownload.asset.filename)."
+            )
             return
         }
 
@@ -301,7 +323,7 @@ final class DownloadService: NSObject, ObservableObject {
             pumpQueue()
         } catch {
             activeDownloads[taskIdentifier] = nil
-            retryOrFail(activeDownload, message: error.localizedDescription)
+            retryOrFail(activeDownload, message: message(for: error, asset: activeDownload.asset))
         }
     }
 
@@ -309,7 +331,7 @@ final class DownloadService: NSObject, ObservableObject {
         guard let error, let activeDownload = activeDownloads[taskIdentifier] else { return }
         activeDownloads[taskIdentifier] = nil
         packageProgress[activeDownload.packageID]?.activeFractions[activeDownload.asset.filename] = nil
-        retryOrFail(activeDownload, message: error.localizedDescription)
+        retryOrFail(activeDownload, message: message(for: error, asset: activeDownload.asset))
         pumpQueue()
     }
 
@@ -380,6 +402,11 @@ final class DownloadService: NSObject, ObservableObject {
     private func decodeTaskDescription(_ description: String) throws -> TaskDescription {
         let data = Data(description.utf8)
         return try JSONDecoder().decode(TaskDescription.self, from: data)
+    }
+
+    private func message(for error: Error, asset: MediaAsset) -> String {
+        let nsError = error as NSError
+        return "\(asset.filename): \(error.localizedDescription) (\(nsError.domain) \(nsError.code))"
     }
 
     private func loadPersistedPlans() {

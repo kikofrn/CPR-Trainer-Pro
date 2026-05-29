@@ -20,8 +20,8 @@ struct CoursesView: View {
                 .padding(Theme.Layout.screenPadding)
             }
             .appBackground()
-            .navigationTitle("Courses")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("")
+            .toolbar(.hidden, for: .navigationBar)
         }
         .fullScreenCover(item: $activeLaunch) { request in
             launchView(for: request.mode)
@@ -29,15 +29,7 @@ struct CoursesView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("CPR Trainer Pro")
-                .font(.largeTitle.weight(.bold))
-                .foregroundStyle(.white)
-
-            Text("Choose the course mode before class, download it once, then train offline with confidence.")
-                .font(.subheadline)
-                .foregroundStyle(.white.opacity(0.68))
-        }
+        BrandHeader()
     }
 
     @ViewBuilder

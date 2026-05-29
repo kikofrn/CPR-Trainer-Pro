@@ -18,6 +18,7 @@ struct ManualsView: View {
                                     cornerRadius: 6
                                 )
                                 .frame(width: 54, height: 72)
+                                .clipped()
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 6, style: .continuous)
                                         .stroke(.white.opacity(0.1), lineWidth: 1)
@@ -62,6 +63,7 @@ struct ManualsView: View {
             .appBackground()
             .navigationTitle("Manuals")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarColorScheme(.dark, for: .navigationBar)
         }
         .fullScreenCover(item: $activeManual) { manual in
             ManualViewerView(manual: manual, storageService: StorageService())

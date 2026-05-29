@@ -12,6 +12,8 @@ struct ArtworkImage: View {
                 Image(uiImage: image)
                     .resizable()
                     .scaledToFill()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .clipped()
             } else {
                 Rectangle()
                     .fill(Theme.Colors.red.gradient)
@@ -21,6 +23,7 @@ struct ArtworkImage: View {
                     .foregroundStyle(.white)
             }
         }
+        .clipped()
         .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
     }
 

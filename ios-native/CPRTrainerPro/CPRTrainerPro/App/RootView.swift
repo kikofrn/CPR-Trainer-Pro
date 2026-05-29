@@ -30,6 +30,6 @@ struct RootView: View {
                 .tag(AppTab.sendCerts)
         }
         .tint(Theme.Colors.peach)
+        .preferredColorScheme(.dark)
     }
 }
-

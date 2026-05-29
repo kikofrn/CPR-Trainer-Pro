@@ -9,33 +9,43 @@ struct CourseCard: View {
 
     var body: some View {
         Button(action: onSelect) {
-            VStack(alignment: .leading, spacing: 14) {
-                HStack(alignment: .top, spacing: 12) {
-                    artwork
+            VStack(alignment: .leading, spacing: 12) {
+                artwork
 
-                    VStack(alignment: .leading, spacing: 7) {
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(alignment: .top, spacing: 10) {
                         Text(course.title)
                             .font(.title3.weight(.bold))
                             .foregroundStyle(.white)
-                            .lineLimit(2)
-
-                        Text(course.subtitle)
-                            .font(.subheadline)
-                            .foregroundStyle(.white.opacity(0.68))
                             .lineLimit(3)
+                            .fixedSize(horizontal: false, vertical: true)
+
+                        Spacer(minLength: 8)
+
+                        DownloadStatusBadge(state: downloadState)
                     }
 
-                    Spacer(minLength: 8)
-                }
+                    Text(course.subtitle)
+                        .font(.subheadline)
+                        .foregroundStyle(.white.opacity(0.70))
+                        .lineLimit(3)
+                        .fixedSize(horizontal: false, vertical: true)
 
-                HStack {
-                    Text(selectedMode?.title ?? "Select Mode")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Theme.Colors.peach)
+                    HStack {
+                        Text(selectedMode?.title ?? "Select Mode")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(Theme.Colors.peach)
 
-                    Spacer()
+                        Spacer()
+                    }
 
-                    DownloadStatusBadge(state: downloadState)
+                    if case .failed(let message) = downloadState {
+                        Text(message)
+                            .font(.caption)
+                            .foregroundStyle(Theme.Colors.failure)
+                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
             }
             .padding(16)
@@ -54,7 +64,9 @@ struct CourseCard: View {
             name: artworkName,
             placeholderSystemName: course.id == .cprAED ? "heart.text.square.fill" : "cross.case.fill"
         )
-        .frame(width: 74, height: 86)
+        .frame(maxWidth: .infinity)
+        .frame(height: 128)
+        .clipped()
         .overlay(
             RoundedRectangle(cornerRadius: Theme.Layout.cardRadius, style: .continuous)
                 .stroke(.white.opacity(0.12), lineWidth: 1)
