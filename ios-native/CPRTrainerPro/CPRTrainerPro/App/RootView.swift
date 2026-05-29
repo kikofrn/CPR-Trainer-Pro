@@ -1,7 +1,12 @@
 import SwiftUI
+import UIKit
 
 struct RootView: View {
     @EnvironmentObject private var appViewModel: AppViewModel
+
+    init() {
+        Self.configureTabBarAppearance()
+    }
 
     var body: some View {
         TabView(selection: $appViewModel.selectedTab) {
@@ -29,7 +34,42 @@ struct RootView: View {
                 }
                 .tag(AppTab.sendCerts)
         }
-        .tint(Theme.Colors.peach)
+        .tint(Theme.Colors.selectedTabItem)
         .preferredColorScheme(.dark)
+    }
+}
+
+private extension RootView {
+    static func configureTabBarAppearance() {
+        let normalColor = UIColor(red: 0x78 / 255, green: 0xA3 / 255, blue: 0xC1 / 255, alpha: 1)
+        let selectedColor = UIColor(red: 0x30 / 255, green: 0x51 / 255, blue: 0x64 / 255, alpha: 1)
+        let glassRed = UIColor(red: 0.78, green: 0.02, blue: 0.06, alpha: 0.34)
+
+        let itemAppearance = UITabBarItemAppearance()
+        itemAppearance.normal.iconColor = normalColor
+        itemAppearance.normal.titleTextAttributes = [
+            .foregroundColor: normalColor,
+            .font: UIFont.systemFont(ofSize: 10, weight: .semibold)
+        ]
+        itemAppearance.selected.iconColor = selectedColor
+        itemAppearance.selected.titleTextAttributes = [
+            .foregroundColor: selectedColor,
+            .font: UIFont.systemFont(ofSize: 10, weight: .bold)
+        ]
+
+        let appearance = UITabBarAppearance()
+        appearance.configureWithTransparentBackground()
+        appearance.backgroundEffect = UIBlurEffect(style: .systemUltraThinMaterialDark)
+        appearance.backgroundColor = glassRed
+        appearance.shadowColor = UIColor.white.withAlphaComponent(0.12)
+        appearance.stackedLayoutAppearance = itemAppearance
+        appearance.inlineLayoutAppearance = itemAppearance
+        appearance.compactInlineLayoutAppearance = itemAppearance
+
+        UITabBar.appearance().standardAppearance = appearance
+        UITabBar.appearance().scrollEdgeAppearance = appearance
+        UITabBar.appearance().tintColor = selectedColor
+        UITabBar.appearance().unselectedItemTintColor = normalColor
+        UITabBar.appearance().isTranslucent = true
     }
 }

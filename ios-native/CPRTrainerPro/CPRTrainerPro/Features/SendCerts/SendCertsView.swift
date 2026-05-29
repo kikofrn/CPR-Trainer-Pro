@@ -5,39 +5,29 @@ struct SendCertsView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 22) {
-                Spacer(minLength: 18)
-
-                Image(systemName: "safari.fill")
-                    .font(.system(size: 60, weight: .semibold))
-                    .foregroundStyle(Theme.Colors.peach)
-
-                VStack(spacing: 8) {
-                    Text("Send Certs")
-                        .font(.largeTitle.weight(.bold))
-                        .foregroundStyle(.white)
+            StickyBrandScrollView(title: "Send Certs") {
+                VStack(spacing: 22) {
+                    Image(systemName: "safari.fill")
+                        .font(.system(size: 58, weight: .semibold))
+                        .foregroundStyle(Theme.Colors.peach)
 
                     Text("Open the EH Academy portal in the phone browser to manage classes and issue cards.")
                         .font(.body)
                         .multilineTextAlignment(.center)
                         .foregroundStyle(.white.opacity(0.68))
+
+                    PrimaryActionButton(
+                        title: "Open Portal",
+                        systemImage: "arrow.up.right.square.fill",
+                        action: {
+                            openURL(URLHelpers.sendCertsURL)
+                        }
+                    )
                 }
-
-                PrimaryActionButton(
-                    title: "Open Portal",
-                    systemImage: "arrow.up.right.square.fill",
-                    action: {
-                        openURL(URLHelpers.sendCertsURL)
-                    }
-                )
-
-                Spacer()
+                .padding(.top, 54)
             }
-            .padding(Theme.Layout.screenPadding)
-            .appBackground()
-            .navigationTitle("Send Certs")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarColorScheme(.dark, for: .navigationBar)
+            .navigationTitle("")
+            .toolbar(.hidden, for: .navigationBar)
         }
     }
 }

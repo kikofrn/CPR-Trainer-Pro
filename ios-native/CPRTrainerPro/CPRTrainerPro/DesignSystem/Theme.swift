@@ -8,6 +8,8 @@ enum Theme {
         static let red = Color(red: 0.72, green: 0.05, blue: 0.08)
         static let peach = Color(red: 1.00, green: 0.70, blue: 0.53)
         static let blue = Color(red: 0.15, green: 0.50, blue: 0.78)
+        static let tabItem = Color(red: 0.47, green: 0.64, blue: 0.76)
+        static let selectedTabItem = Color(red: 0.19, green: 0.32, blue: 0.40)
         static let success = Color(red: 0.18, green: 0.67, blue: 0.38)
         static let warning = Color(red: 0.95, green: 0.66, blue: 0.20)
         static let failure = Color(red: 0.90, green: 0.19, blue: 0.22)
@@ -33,4 +35,3 @@ extension View {
         modifier(AppBackground())
     }
 }
-

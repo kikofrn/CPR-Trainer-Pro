@@ -2,14 +2,18 @@ import SwiftUI
 import UIKit
 
 struct BrandHeader: View {
+    var logoHeight: CGFloat = 58
+    var alignment: Alignment = .center
+    var showsSubtitle = false
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .center, spacing: 8) {
             if let logo = Self.logoImage {
                 Image(uiImage: logo)
                     .resizable()
                     .scaledToFit()
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .frame(height: 58, alignment: .leading)
+                    .frame(maxWidth: .infinity, alignment: alignment)
+                    .frame(height: logoHeight, alignment: alignment)
                     .accessibilityLabel("Everyday Hero Academy")
             } else {
                 Text("Everyday Hero Academy")
@@ -17,10 +21,13 @@ struct BrandHeader: View {
                     .foregroundStyle(.white)
             }
 
-            Text("Choose the course mode before class, download it once, then train offline with confidence.")
-                .font(.footnote)
-                .foregroundStyle(.white.opacity(0.70))
-                .fixedSize(horizontal: false, vertical: true)
+            if showsSubtitle {
+                Text("Choose the course mode before class, download it once, then train offline with confidence.")
+                    .font(.footnote)
+                    .foregroundStyle(.white.opacity(0.70))
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
     }
 

@@ -7,7 +7,7 @@ struct ManualsView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
+            StickyBrandScrollView(title: "Manuals") {
                 VStack(spacing: 14) {
                     ForEach(appViewModel.catalog.manuals) { manual in
                         VStack(alignment: .leading, spacing: 10) {
@@ -58,12 +58,9 @@ struct ManualsView: View {
                         .clipShape(RoundedRectangle(cornerRadius: Theme.Layout.cardRadius, style: .continuous))
                     }
                 }
-                .padding(Theme.Layout.screenPadding)
             }
-            .appBackground()
-            .navigationTitle("Manuals")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarColorScheme(.dark, for: .navigationBar)
+            .navigationTitle("")
+            .toolbar(.hidden, for: .navigationBar)
         }
         .fullScreenCover(item: $activeManual) { manual in
             ManualViewerView(manual: manual, storageService: StorageService())

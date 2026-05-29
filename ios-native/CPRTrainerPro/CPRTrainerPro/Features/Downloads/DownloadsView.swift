@@ -6,18 +6,15 @@ struct DownloadsView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
+            StickyBrandScrollView(title: "Downloads") {
                 VStack(spacing: 12) {
                     ForEach(appViewModel.catalog.packages) { package in
                         packageRow(package)
                     }
                 }
-                .padding(Theme.Layout.screenPadding)
             }
-            .appBackground()
-            .navigationTitle("Downloads")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarColorScheme(.dark, for: .navigationBar)
+            .navigationTitle("")
+            .toolbar(.hidden, for: .navigationBar)
         }
     }
 

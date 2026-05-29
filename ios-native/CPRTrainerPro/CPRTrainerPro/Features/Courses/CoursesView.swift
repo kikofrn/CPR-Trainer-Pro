@@ -10,30 +10,19 @@ struct CoursesView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(alignment: .leading, spacing: 12) {
-                header
-
+            StickyBrandScrollView(showsCourseSubtitle: true) {
                 VStack(alignment: .leading, spacing: 10) {
                     ForEach(appViewModel.catalog.courses) { course in
                         courseSection(for: course)
                     }
                 }
             }
-            .padding(.horizontal, Theme.Layout.screenPadding)
-            .padding(.top, 8)
-            .padding(.bottom, 12)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .appBackground()
             .navigationTitle("")
             .toolbar(.hidden, for: .navigationBar)
         }
         .fullScreenCover(item: $activeLaunch) { request in
             launchView(for: request.mode)
         }
-    }
-
-    private var header: some View {
-        BrandHeader()
     }
 
     @ViewBuilder
