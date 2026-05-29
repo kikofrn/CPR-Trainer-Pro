@@ -27,34 +27,17 @@ struct VideoCoursePlayerView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                playerArea
+            GeometryReader { proxy in
+                let isLandscape = proxy.size.width > proxy.size.height
 
-                List(playableChapters) { chapter in
-                    Button {
-                        select(chapter)
-                    } label: {
-                        HStack(spacing: 12) {
-                            Image(systemName: selectedChapter?.id == chapter.id ? "play.circle.fill" : "circle")
-                                .foregroundStyle(selectedChapter?.id == chapter.id ? Theme.Colors.peach : .secondary)
+                VStack(spacing: 0) {
+                    playerArea(fillsAvailableSpace: isLandscape)
 
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text(chapter.title)
-                                    .font(.body.weight(.semibold))
-                                if let duration = chapter.duration {
-                                    Text(duration)
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
-                            }
-
-                            Spacer()
-                        }
+                    if !isLandscape {
+                        chaptersList
                     }
-                    .listRowBackground(Theme.Colors.surface)
-                    .foregroundStyle(.white)
                 }
-                .scrollContentBackground(.hidden)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .appBackground()
             .navigationTitle(videoCourse.shortTitle)
@@ -91,7 +74,18 @@ struct VideoCoursePlayerView: View {
     }
 
     @ViewBuilder
-    private var playerArea: some View {
+    private func playerArea(fillsAvailableSpace: Bool) -> some View {
+        if fillsAvailableSpace {
+            playerSurface
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            playerSurface
+                .frame(maxWidth: .infinity)
+                .aspectRatio(16 / 9, contentMode: .fit)
+        }
+    }
+
+    private var playerSurface: some View {
         ZStack {
             Color.black
 
@@ -123,8 +117,34 @@ struct VideoCoursePlayerView: View {
                 .padding()
             }
         }
-        .frame(maxWidth: .infinity)
-        .aspectRatio(16 / 9, contentMode: .fit)
+    }
+
+    private var chaptersList: some View {
+        List(playableChapters) { chapter in
+            Button {
+                select(chapter)
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: selectedChapter?.id == chapter.id ? "play.circle.fill" : "circle")
+                        .foregroundStyle(selectedChapter?.id == chapter.id ? Theme.Colors.peach : .secondary)
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(chapter.title)
+                            .font(.body.weight(.semibold))
+                        if let duration = chapter.duration {
+                            Text(duration)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
+                    Spacer()
+                }
+            }
+            .listRowBackground(Theme.Colors.surface)
+            .foregroundStyle(.white)
+        }
+        .scrollContentBackground(.hidden)
     }
 
     private func select(_ chapter: Chapter) {

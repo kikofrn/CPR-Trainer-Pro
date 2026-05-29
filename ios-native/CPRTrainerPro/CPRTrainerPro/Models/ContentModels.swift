@@ -133,6 +133,42 @@ enum DownloadState: Equatable {
         if case .ready = self { return true }
         return false
     }
+
+    var isActiveDownload: Bool {
+        switch self {
+        case .queued, .downloading:
+            true
+        default:
+            false
+        }
+    }
+
+    var progressFraction: Double? {
+        if case .downloading(let progress) = self {
+            return progress
+        }
+
+        return nil
+    }
+}
+
+extension DownloadPackage {
+    var estimatedDownloadText: String {
+        switch id {
+        case .cprSlideshow:
+            "about 700 MB"
+        case .cprVideo:
+            "about 900 MB"
+        case .firstAidSlideshow:
+            "about 750 MB"
+        case .firstAidVideo:
+            "about 1.4 GB"
+        case .pediatricSlideshow:
+            "about 750 MB"
+        case .instructorManual, .studentManual, .pediatricManual:
+            "less than 25 MB"
+        }
+    }
 }
 
 extension TrainingCatalog {

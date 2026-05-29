@@ -41,8 +41,8 @@ struct RootView: View {
 
 private extension RootView {
     static func configureTabBarAppearance() {
-        let normalColor = UIColor(red: 0x78 / 255, green: 0xA3 / 255, blue: 0xC1 / 255, alpha: 1)
-        let selectedColor = UIColor(red: 0x30 / 255, green: 0x51 / 255, blue: 0x64 / 255, alpha: 1)
+        let normalColor = UIColor(red: 0x2E / 255, green: 0x9D / 255, blue: 0xFA / 255, alpha: 1)
+        let selectedColor = UIColor(red: 0x0B / 255, green: 0x52 / 255, blue: 0x90 / 255, alpha: 1)
         let glassRed = UIColor(red: 0.78, green: 0.02, blue: 0.06, alpha: 0.34)
 
         let itemAppearance = UITabBarItemAppearance()

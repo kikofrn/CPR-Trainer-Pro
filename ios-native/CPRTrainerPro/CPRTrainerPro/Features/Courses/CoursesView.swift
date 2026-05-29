@@ -7,6 +7,7 @@ struct CoursesView: View {
     @State private var firstAidVAEnabled = false
     @State private var expandedCourseID: Course.ID?
     @State private var activeLaunch: CourseLaunchRequest?
+    @State private var pendingDownloadPrompt: DownloadPromptContext?
 
     var body: some View {
         NavigationStack {
@@ -22,6 +23,30 @@ struct CoursesView: View {
         }
         .fullScreenCover(item: $activeLaunch) { request in
             launchView(for: request.mode)
+        }
+        .alert(
+            pendingDownloadPrompt?.title ?? "Course Not Downloaded",
+            isPresented: Binding(
+                get: { pendingDownloadPrompt != nil },
+                set: { isPresented in
+                    if !isPresented {
+                        pendingDownloadPrompt = nil
+                    }
+                }
+            )
+        ) {
+            if let prompt = pendingDownloadPrompt, prompt.canStartDownload {
+                Button("Download Now") {
+                    downloadService.enqueue(prompt.package, baseURL: appViewModel.catalog.mediaBaseURL)
+                    pendingDownloadPrompt = nil
+                }
+            }
+
+            Button("Not Now", role: .cancel) {
+                pendingDownloadPrompt = nil
+            }
+        } message: {
+            Text(pendingDownloadPrompt?.message ?? "")
         }
     }
 
@@ -50,23 +75,39 @@ struct CoursesView: View {
                 modeControls(for: course, vaEnabled: vaBinding)
 
                 PrimaryActionButton(
-                    title: state.isReady ? "Start" : "Download",
-                    systemImage: state.isReady ? "play.fill" : "arrow.down.circle.fill",
+                    title: "Launch Course",
+                    systemImage: "play.fill",
                     action: {
-                        guard let selectedMode else { return }
-
-                        if state.isReady {
-                            activeLaunch = CourseLaunchRequest(mode: selectedMode)
-                            return
-                        }
-
-                        if let package = appViewModel.catalog.package(with: selectedMode.packageID) {
-                            downloadService.enqueue(package, baseURL: appViewModel.catalog.mediaBaseURL)
-                        }
+                        launchOrPromptDownload(
+                            course: course,
+                            mode: selectedMode,
+                            state: state
+                        )
                     }
                 )
             }
         }
+    }
+
+    private func launchOrPromptDownload(course: Course, mode: CourseLaunchMode?, state: DownloadState) {
+        guard
+            let mode,
+            let package = appViewModel.catalog.package(with: mode.packageID)
+        else {
+            return
+        }
+
+        if state.isReady {
+            activeLaunch = CourseLaunchRequest(mode: mode)
+            return
+        }
+
+        pendingDownloadPrompt = DownloadPromptContext(
+            courseTitle: course.title,
+            modeTitle: mode.kind == .video ? "Virtual Assistant" : mode.title,
+            package: package,
+            state: state
+        )
     }
 
     @ViewBuilder
@@ -118,6 +159,34 @@ private struct CourseLaunchRequest: Identifiable {
 
     var id: String {
         mode.id.rawValue
+    }
+}
+
+private struct DownloadPromptContext: Identifiable {
+    let courseTitle: String
+    let modeTitle: String
+    let package: DownloadPackage
+    let state: DownloadState
+
+    var id: String {
+        package.id.rawValue
+    }
+
+    var title: String {
+        state.isActiveDownload ? "Download In Progress" : "Course Not Downloaded"
+    }
+
+    var canStartDownload: Bool {
+        !state.isActiveDownload
+    }
+
+    var message: String {
+        if state.isActiveDownload {
+            let progress = state.progressFraction.map { " Current progress: \(Int(($0 * 100).rounded()))%." } ?? ""
+            return "\(courseTitle) is still downloading.\(progress) The course cannot launch until every required file is saved locally, which prevents playback from failing mid-class."
+        }
+
+        return "\(courseTitle) (\(modeTitle)) is not downloaded yet. This app launches courses only after all required media is stored locally so classroom playback remains smooth offline. This download is \(package.estimatedDownloadText). Download now?"
     }
 }
 

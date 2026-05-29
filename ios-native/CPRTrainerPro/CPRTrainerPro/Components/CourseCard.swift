@@ -10,13 +10,13 @@ struct CourseCard: View {
 
     var body: some View {
         Button(action: onSelect) {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(alignment: .center, spacing: 12) {
-                    artwork
+            VStack(alignment: .leading, spacing: 12) {
+                artwork
 
-                    VStack(alignment: .leading, spacing: 8) {
+                HStack(alignment: .top, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 6) {
                         Text(course.title)
-                            .font(.title3.weight(.bold))
+                            .font(.title2.weight(.bold))
                             .foregroundStyle(.white)
                             .lineLimit(2)
                             .fixedSize(horizontal: false, vertical: true)
@@ -27,7 +27,7 @@ struct CourseCard: View {
                             .lineLimit(1)
                     }
 
-                    Spacer(minLength: 6)
+                    Spacer(minLength: 8)
 
                     DownloadStatusBadge(state: downloadState)
                 }
@@ -64,7 +64,13 @@ struct CourseCard: View {
             name: artworkName,
             placeholderSystemName: course.id == .cprAED ? "heart.text.square.fill" : "cross.case.fill"
         )
-        .frame(width: 124, height: 72)
+        .frame(maxWidth: .infinity)
+        .frame(height: 164)
+        .overlay {
+            if downloadState.isActiveDownload {
+                DownloadAnimationOverlay(progress: downloadState.progressFraction)
+            }
+        }
         .overlay(
             RoundedRectangle(cornerRadius: Theme.Layout.cardRadius, style: .continuous)
                 .stroke(.white.opacity(0.12), lineWidth: 1)

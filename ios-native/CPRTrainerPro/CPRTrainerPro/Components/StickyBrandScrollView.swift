@@ -92,7 +92,7 @@ private struct ScrollOffsetReader: View {
                 value: proxy.frame(in: .named(StickyBrandScrollSpace.name)).minY
             )
         }
-        .frame(height: 0)
+        .frame(height: 1)
     }
 }
 
