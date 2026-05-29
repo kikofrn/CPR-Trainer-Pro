@@ -11,6 +11,7 @@ struct VideoCoursePlayerView: View {
     @State private var timeObserver: Any?
     @State private var subtitleCues: [SubtitleCue] = []
     @State private var currentSubtitleText: String?
+    @State private var isFullScreen = false
 
     private var playableChapters: [Chapter] {
         videoCourse.chapters.filter { !$0.isSectionHeader }
@@ -29,11 +30,12 @@ struct VideoCoursePlayerView: View {
         NavigationStack {
             GeometryReader { proxy in
                 let isLandscape = proxy.size.width > proxy.size.height
+                let playerShouldFill = isLandscape || isFullScreen
 
                 VStack(spacing: 0) {
-                    playerArea(fillsAvailableSpace: isLandscape)
+                    playerArea(fillsAvailableSpace: playerShouldFill)
 
-                    if !isLandscape {
+                    if !playerShouldFill {
                         chaptersList
                     }
                 }
@@ -53,8 +55,12 @@ struct VideoCoursePlayerView: View {
                 }
 
                 ToolbarItem(placement: .topBarTrailing) {
-                    AirPlayRoutePicker()
-                        .frame(width: 34, height: 34)
+                    HStack(spacing: 10) {
+                        AirPlayRoutePicker()
+                            .frame(width: 34, height: 34)
+
+                        FullScreenToggleButton(isFullScreen: $isFullScreen)
+                    }
                 }
             }
             .onAppear {

@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct SendCertsView: View {
     @Environment(\.openURL) private var openURL
@@ -67,26 +68,16 @@ struct SendCertsView: View {
                 .textCase(.uppercase)
                 .foregroundStyle(.white.opacity(0.82))
 
-            SampleCertificationCard(
+            ExactCertificationCardImage(
                 title: "CPR AED & First Aid for All Ages",
-                leftTitle: "CPR\nAED\nFirst Aid",
-                sampleTitle: "Sample Card",
-                name: "Ashley Carrero",
-                instructorNumber: "AC-9593NC",
-                phone: "4692989593",
-                cardNumber: "EH-26562270390102",
+                filename: "CPRAEDFAAllAgesSampleCard.png",
                 accent: Theme.Colors.blue
             )
 
-            SampleCertificationCard(
+            ExactCertificationCardImage(
                 title: "Pediatric Specific",
                 subtitle: "Perfect for Childcare Facilities",
-                leftTitle: "Pediatric\nCPR\nFirst Aid",
-                sampleTitle: "Sample Pediatric Cert.",
-                name: "Mann Equinn",
-                instructorNumber: "ME-1234",
-                phone: "(972) 362-9113",
-                cardNumber: "0987654321",
+                filename: "PediatricCPRFASampleCard.png",
                 accent: Theme.Colors.failure
             )
         }
@@ -152,15 +143,10 @@ private struct PortalStepCard: View {
     }
 }
 
-private struct SampleCertificationCard: View {
+private struct ExactCertificationCardImage: View {
     let title: String
     var subtitle: String?
-    let leftTitle: String
-    let sampleTitle: String
-    let name: String
-    let instructorNumber: String
-    let phone: String
-    let cardNumber: String
+    let filename: String
     let accent: Color
 
     var body: some View {
@@ -178,81 +164,29 @@ private struct SampleCertificationCard: View {
                 }
             }
 
-            HStack(spacing: 0) {
-                VStack(spacing: 10) {
-                    Text(leftTitle)
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(.white)
-                        .multilineTextAlignment(.center)
-
-                    Image(systemName: "heart.circle")
-                        .font(.title2.weight(.semibold))
-                        .foregroundStyle(.white)
-                }
-                .frame(width: 82)
-                .frame(maxHeight: .infinity)
-                .background(Color(red: 0.25, green: 0.29, blue: 0.50))
-
-                VStack(alignment: .leading, spacing: 5) {
-                    Text(sampleTitle)
-                        .font(.headline.weight(.medium))
-                        .foregroundStyle(.black)
-                    Divider()
-                    certificationRow("Issue Date", "5/15/2026")
-                    certificationRow("Expiration Date", "5/15/2028")
-                    checkRow("AED")
-                    checkRow("Adult CPR")
-                    checkRow("Child CPR")
-                    checkRow("First Aid")
-                }
-                .padding(8)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(.white)
-
-                VStack(alignment: .leading, spacing: 5) {
-                    certificationRow("Instructor Name", name)
-                    certificationRow("Instructor Number", instructorNumber)
-                    certificationRow("Instructor Phone", phone)
-                    certificationRow("Digital Card Number", cardNumber)
-                    Spacer(minLength: 2)
-                    Text("www.EHAcademy.com")
-                        .font(.system(size: 7, weight: .bold))
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 4)
-                        .background(Color(red: 0.25, green: 0.29, blue: 0.50))
-                }
-                .padding(8)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                .background(Color(red: 0.94, green: 0.95, blue: 0.98))
+            if let image {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFit()
+                    .background(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+                    .shadow(color: .black.opacity(0.34), radius: 8, y: 5)
+            } else {
+                Label("Sample card image missing", systemImage: "exclamationmark.triangle.fill")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(Theme.Colors.warning)
+                    .frame(maxWidth: .infinity, minHeight: 110)
+                    .background(Theme.Colors.elevatedSurface)
+                    .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
             }
-            .frame(height: 112)
-            .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
-            .shadow(color: .black.opacity(0.34), radius: 8, y: 5)
         }
     }
 
-    private func certificationRow(_ label: String, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 1) {
-            Text(label)
-                .font(.system(size: 6, weight: .bold))
-                .foregroundStyle(.black.opacity(0.62))
-            Text(value)
-                .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(.black)
-                .lineLimit(1)
-                .minimumScaleFactor(0.72)
+    private var image: UIImage? {
+        guard let url = Bundle.main.url(forResource: filename, withExtension: nil, subdirectory: "Artwork") else {
+            return nil
         }
-    }
 
-    private func checkRow(_ label: String) -> some View {
-        HStack(spacing: 3) {
-            Text(label)
-                .font(.system(size: 7, weight: .bold))
-                .foregroundStyle(.black)
-            Image(systemName: "checkmark.square")
-                .font(.system(size: 8, weight: .bold))
-                .foregroundStyle(Color(red: 0.12, green: 0.18, blue: 0.36))
-        }
+        return UIImage(contentsOfFile: url.path)
     }
 }

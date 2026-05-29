@@ -109,7 +109,7 @@ final class ContentManifestContractTests: XCTestCase {
 
         let cprVideo = try XCTUnwrap(catalog.package(with: .cprVideo))
         XCTAssertTrue(cprVideo.assets.contains { $0.filename == "05__EHAcademy - CPR AED Course Video-Recognizing the Emergency.mp4" })
-        XCTAssertTrue(cprVideo.assets.contains { $0.filename == "31_EHAcademy - CPR AED Course Video-Conclusion.mp4" })
+        XCTAssertTrue(cprVideo.assets.contains { $0.filename == "31_EHAcademy - CPR AED Course Video-Conclusion.mp4.mp4" })
         XCTAssertTrue(cprVideo.assets.contains { $0.filename == "subtitles/31_EHAcademy - CPR AED Course Video-Conclusion.mp4.vtt" })
     }
 
@@ -178,12 +178,12 @@ final class ContentManifestContractTests: XCTestCase {
 
     func testSubtitleFilenameCandidatesIncludeLegacyMp4VTTQuirk() {
         let candidates = SubtitleService.candidateSubtitleFilenames(
-            forMediaFilename: "31_EHAcademy - CPR AED Course Video-Conclusion.mp4"
+            forMediaFilename: "31_EHAcademy - CPR AED Course Video-Conclusion.mp4.mp4"
         )
 
         XCTAssertEqual(candidates, [
-            "subtitles/31_EHAcademy - CPR AED Course Video-Conclusion.vtt",
-            "subtitles/31_EHAcademy - CPR AED Course Video-Conclusion.mp4.vtt"
+            "subtitles/31_EHAcademy - CPR AED Course Video-Conclusion.mp4.vtt",
+            "subtitles/31_EHAcademy - CPR AED Course Video-Conclusion.mp4.mp4.vtt"
         ])
     }
 

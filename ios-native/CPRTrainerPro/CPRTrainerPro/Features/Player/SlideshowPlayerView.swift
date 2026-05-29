@@ -12,6 +12,7 @@ struct SlideshowPlayerView: View {
     @State private var timeObserver: Any?
     @State private var subtitleCues: [SubtitleCue] = []
     @State private var currentSubtitleText: String?
+    @State private var isFullScreen = false
 
     private var activeSlide: Slide? {
         guard slideshow.slides.indices.contains(slideIndex) else { return nil }
@@ -27,7 +28,9 @@ struct SlideshowPlayerView: View {
             VStack(spacing: 0) {
                 slideArea
 
-                controls
+                if !isFullScreen {
+                    controls
+                }
             }
             .appBackground()
             .navigationTitle(slideshow.title)
@@ -43,8 +46,12 @@ struct SlideshowPlayerView: View {
                 }
 
                 ToolbarItem(placement: .topBarTrailing) {
-                    AirPlayRoutePicker()
-                        .frame(width: 34, height: 34)
+                    HStack(spacing: 10) {
+                        AirPlayRoutePicker()
+                            .frame(width: 34, height: 34)
+
+                        FullScreenToggleButton(isFullScreen: $isFullScreen)
+                    }
                 }
             }
             .onAppear(perform: loadActiveSlide)
