@@ -3,13 +3,13 @@ import UIKit
 
 struct BrandHeader: View {
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 8) {
             if let logo = Self.logoImage {
                 Image(uiImage: logo)
                     .resizable()
                     .scaledToFit()
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .frame(height: 76, alignment: .leading)
+                    .frame(height: 58, alignment: .leading)
                     .accessibilityLabel("Everyday Hero Academy")
             } else {
                 Text("Everyday Hero Academy")
@@ -18,7 +18,7 @@ struct BrandHeader: View {
             }
 
             Text("Choose the course mode before class, download it once, then train offline with confidence.")
-                .font(.subheadline)
+                .font(.footnote)
                 .foregroundStyle(.white.opacity(0.70))
                 .fixedSize(horizontal: false, vertical: true)
         }

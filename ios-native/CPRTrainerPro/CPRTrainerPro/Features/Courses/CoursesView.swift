@@ -5,20 +5,24 @@ struct CoursesView: View {
     @EnvironmentObject private var downloadService: DownloadService
     @State private var cprVAEnabled = false
     @State private var firstAidVAEnabled = false
+    @State private var expandedCourseID: Course.ID?
     @State private var activeLaunch: CourseLaunchRequest?
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    header
+            VStack(alignment: .leading, spacing: 12) {
+                header
 
+                VStack(alignment: .leading, spacing: 10) {
                     ForEach(appViewModel.catalog.courses) { course in
                         courseSection(for: course)
                     }
                 }
-                .padding(Theme.Layout.screenPadding)
             }
+            .padding(.horizontal, Theme.Layout.screenPadding)
+            .padding(.top, 8)
+            .padding(.bottom, 12)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .appBackground()
             .navigationTitle("")
             .toolbar(.hidden, for: .navigationBar)
@@ -44,7 +48,13 @@ struct CoursesView: View {
                 selectedMode: selectedMode,
                 downloadState: state,
                 isSelected: appViewModel.selectedCourseID == course.id,
-                onSelect: { appViewModel.select(course) }
+                isExpanded: expandedCourseID == course.id,
+                onSelect: {
+                    appViewModel.select(course)
+                    withAnimation(.snappy(duration: 0.18)) {
+                        expandedCourseID = expandedCourseID == course.id ? nil : course.id
+                    }
+                }
             )
 
             if appViewModel.selectedCourseID == course.id {
@@ -83,7 +93,7 @@ struct CoursesView: View {
                     }
             }
 
-            Toggle("VA Video", isOn: vaEnabled)
+            Toggle("Virtual Assistant?", isOn: vaEnabled)
                 .tint(Theme.Colors.peach)
                 .disabled(course.id == .firstAid && appViewModel.firstAidPediatricFocused)
                 .opacity(course.id == .firstAid && appViewModel.firstAidPediatricFocused ? 0.45 : 1)

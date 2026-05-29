@@ -18,7 +18,7 @@
         {
           "id": "cpr-aed",
           "kind": "video",
-          "title": "VA Video",
+          "title": "Virtual Assistant?",
           "packageID": "package.cpr-aed.video"
         }
       ]
@@ -38,7 +38,7 @@
         {
           "id": "first-aid",
           "kind": "video",
-          "title": "VA Video",
+          "title": "Virtual Assistant?",
           "packageID": "package.first-aid.video"
         },
         {

@@ -335,6 +335,24 @@ final class DownloadService: NSObject, ObservableObject {
         pumpQueue()
     }
 
+    nonisolated private static func stageDownloadedFile(from location: URL, taskIdentifier: Int) throws -> URL {
+        // URLSession removes its download temp file after this delegate callback returns.
+        let fileManager = FileManager.default
+        let stagingDirectory = fileManager.temporaryDirectory
+            .appendingPathComponent("CPRTrainerProDownloads", isDirectory: true)
+        try fileManager.createDirectory(at: stagingDirectory, withIntermediateDirectories: true)
+
+        let stagedURL = stagingDirectory
+            .appendingPathComponent("\(taskIdentifier)-\(UUID().uuidString)", isDirectory: false)
+
+        if fileManager.fileExists(atPath: stagedURL.path) {
+            try fileManager.removeItem(at: stagedURL)
+        }
+
+        try fileManager.moveItem(at: location, to: stagedURL)
+        return stagedURL
+    }
+
     private func retryOrFail(_ activeDownload: ActiveDownload, message: String) {
         guard activeDownload.attempt < maxRetryAttempts else {
             failPackage(activeDownload.packageID, message: message)
@@ -476,12 +494,24 @@ extension DownloadService: URLSessionDownloadDelegate {
         downloadTask: URLSessionDownloadTask,
         didFinishDownloadingTo location: URL
     ) {
-        Task { @MainActor in
-            self.finishDownload(
-                taskIdentifier: downloadTask.taskIdentifier,
-                temporaryURL: location,
-                response: downloadTask.response
+        let response = downloadTask.response
+
+        do {
+            let stagedURL = try Self.stageDownloadedFile(
+                from: location,
+                taskIdentifier: downloadTask.taskIdentifier
             )
+            Task { @MainActor in
+                self.finishDownload(
+                    taskIdentifier: downloadTask.taskIdentifier,
+                    temporaryURL: stagedURL,
+                    response: response
+                )
+            }
+        } catch {
+            Task { @MainActor in
+                self.completeWithError(taskIdentifier: downloadTask.taskIdentifier, error: error)
+            }
         }
     }
 

@@ -64,7 +64,7 @@ struct StorageService {
         let destinationURL = try localURL(for: filename)
         try ensureDirectory(destinationURL.deletingLastPathComponent())
 
-        let byteCount = (try? temporaryURL.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+        let byteCount = try fileSize(at: temporaryURL)
         guard byteCount > 0 else {
             throw StorageError.emptyDownloadedFile(filename)
         }
@@ -124,6 +124,12 @@ struct StorageService {
 
     private func ensureDirectory(_ url: URL) throws {
         try fileManager.createDirectory(at: url, withIntermediateDirectories: true)
+    }
+
+    private func fileSize(at url: URL) throws -> UInt64 {
+        let attributes = try fileManager.attributesOfItem(atPath: url.path)
+        guard let size = attributes[.size] as? NSNumber else { return 0 }
+        return size.uint64Value
     }
 
     private func excludeFromBackup(_ url: URL) throws {

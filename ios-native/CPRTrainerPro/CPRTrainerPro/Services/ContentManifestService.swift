@@ -30,7 +30,7 @@ private extension ContentManifestService {
                 artworkName: "CPR AED for All Ages Cover.webp",
                 modes: [
                     CourseLaunchMode(id: .cprSlideshow, kind: .slideshow, title: "Slideshow", packageID: .cprSlideshow),
-                    CourseLaunchMode(id: .cprVideo, kind: .video, title: "VA Video", packageID: .cprVideo)
+                    CourseLaunchMode(id: .cprVideo, kind: .video, title: "Virtual Assistant?", packageID: .cprVideo)
                 ]
             ),
             Course(
@@ -40,7 +40,7 @@ private extension ContentManifestService {
                 artworkName: "First Aid for All Ages Cover.webp",
                 modes: [
                     CourseLaunchMode(id: .firstAidSlideshow, kind: .slideshow, title: "Slideshow", packageID: .firstAidSlideshow),
-                    CourseLaunchMode(id: .firstAidVideo, kind: .video, title: "VA Video", packageID: .firstAidVideo),
+                    CourseLaunchMode(id: .firstAidVideo, kind: .video, title: "Virtual Assistant?", packageID: .firstAidVideo),
                     CourseLaunchMode(id: .pediatricSlideshow, kind: .slideshow, title: "Pediatric Focused", packageID: .pediatricSlideshow)
                 ]
             )
@@ -51,4 +51,3 @@ private extension ContentManifestService {
         packages: []
     )
 }
-

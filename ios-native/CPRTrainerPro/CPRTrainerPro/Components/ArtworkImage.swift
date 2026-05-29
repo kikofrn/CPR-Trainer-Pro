@@ -8,10 +8,12 @@ struct ArtworkImage: View {
 
     var body: some View {
         ZStack {
+            Theme.Colors.elevatedSurface
+
             if let image = Self.image(named: name) {
                 Image(uiImage: image)
                     .resizable()
-                    .scaledToFill()
+                    .scaledToFit()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .clipped()
             } else {

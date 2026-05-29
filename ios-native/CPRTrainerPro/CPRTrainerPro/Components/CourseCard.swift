@@ -5,50 +5,50 @@ struct CourseCard: View {
     let selectedMode: CourseLaunchMode?
     let downloadState: DownloadState
     let isSelected: Bool
+    let isExpanded: Bool
     let onSelect: () -> Void
 
     var body: some View {
         Button(action: onSelect) {
-            VStack(alignment: .leading, spacing: 12) {
-                artwork
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .center, spacing: 12) {
+                    artwork
 
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack(alignment: .top, spacing: 10) {
+                    VStack(alignment: .leading, spacing: 8) {
                         Text(course.title)
                             .font(.title3.weight(.bold))
                             .foregroundStyle(.white)
-                            .lineLimit(3)
+                            .lineLimit(2)
                             .fixedSize(horizontal: false, vertical: true)
 
-                        Spacer(minLength: 8)
-
-                        DownloadStatusBadge(state: downloadState)
+                        Text(modeTitle)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(Theme.Colors.peach)
+                            .lineLimit(1)
                     }
 
+                    Spacer(minLength: 6)
+
+                    DownloadStatusBadge(state: downloadState)
+                }
+
+                if isExpanded {
                     Text(course.subtitle)
                         .font(.subheadline)
                         .foregroundStyle(.white.opacity(0.70))
-                        .lineLimit(3)
+                        .lineLimit(2)
                         .fixedSize(horizontal: false, vertical: true)
+                }
 
-                    HStack {
-                        Text(selectedMode?.title ?? "Select Mode")
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(Theme.Colors.peach)
-
-                        Spacer()
-                    }
-
-                    if case .failed(let message) = downloadState {
-                        Text(message)
-                            .font(.caption)
-                            .foregroundStyle(Theme.Colors.failure)
-                            .lineLimit(2)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
+                if case .failed(let message) = downloadState, isSelected {
+                    Text(message)
+                        .font(.caption)
+                        .foregroundStyle(Theme.Colors.failure)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            .padding(16)
+            .padding(12)
             .background(isSelected ? Theme.Colors.elevatedSurface : Theme.Colors.surface)
             .overlay(
                 RoundedRectangle(cornerRadius: Theme.Layout.cardRadius, style: .continuous)
@@ -64,13 +64,16 @@ struct CourseCard: View {
             name: artworkName,
             placeholderSystemName: course.id == .cprAED ? "heart.text.square.fill" : "cross.case.fill"
         )
-        .frame(maxWidth: .infinity)
-        .frame(height: 128)
-        .clipped()
+        .frame(width: 124, height: 72)
         .overlay(
             RoundedRectangle(cornerRadius: Theme.Layout.cardRadius, style: .continuous)
                 .stroke(.white.opacity(0.12), lineWidth: 1)
         )
+    }
+
+    private var modeTitle: String {
+        guard let selectedMode else { return "Select Mode" }
+        return selectedMode.kind == .video ? "Virtual Assistant?" : selectedMode.title
     }
 
     private var artworkName: String {
