@@ -1146,59 +1146,104 @@ export default function App() {
             )}
           </div>
 
-          {/* Download Overlay Container (Sibling to all tabs) */}
-          {(downloadingChapterIndex !== null || downloadingManualId !== null || downloadingSlideIndex !== null) ? (
-            <div className="absolute inset-0 z-[60] flex flex-col items-center justify-center bg-black/90 backdrop-blur-sm">
-              <div className="relative w-32 h-32 mb-6">
-                <div className="absolute inset-0 border-4 border-white/10 rounded-full" />
-                <div 
-                  className="absolute inset-0 border-4 border-eh-blue rounded-full transition-all duration-300"
-                  style={{ 
-                    clipPath: `polygon(50% 50%, 50% 0, ${dlState.currentFileTotalBytes ? (dlState.currentFileBytesWritten / dlState.currentFileTotalBytes * 100 > 12.5 ? '100% 0,' : '') : ''} ${dlState.currentFileTotalBytes ? (dlState.currentFileBytesWritten / dlState.currentFileTotalBytes * 100 > 37.5 ? '100% 100%,' : '') : ''} ${dlState.currentFileTotalBytes ? (dlState.currentFileBytesWritten / dlState.currentFileTotalBytes * 100 > 62.5 ? '0 100%,' : '') : ''} ${dlState.currentFileTotalBytes ? (dlState.currentFileBytesWritten / dlState.currentFileTotalBytes * 100 > 87.5 ? '0 0,' : '') : ''} ${dlState.currentFileTotalBytes ? (
-                      dlState.currentFileBytesWritten / dlState.currentFileTotalBytes * 100 <= 12.5 ? 50 + (dlState.currentFileBytesWritten / dlState.currentFileTotalBytes * 100 * 4) + '% 0' :
-                      dlState.currentFileBytesWritten / dlState.currentFileTotalBytes * 100 <= 37.5 ? '100% ' + ((dlState.currentFileBytesWritten / dlState.currentFileTotalBytes * 100 - 12.5) * 4) + '%' :
-                      dlState.currentFileBytesWritten / dlState.currentFileTotalBytes * 100 <= 62.5 ? (100 - (dlState.currentFileBytesWritten / dlState.currentFileTotalBytes * 100 - 37.5) * 4) + '% 100%' :
-                      dlState.currentFileBytesWritten / dlState.currentFileTotalBytes * 100 <= 87.5 ? '0 ' + (100 - (dlState.currentFileBytesWritten / dlState.currentFileTotalBytes * 100 - 62.5) * 4) + '%' :
-                      (dlState.currentFileBytesWritten / dlState.currentFileTotalBytes * 100 - 87.5) * 4 + '% 0'
-                    ) : '50% 0'})` 
+          {/* Download Overlay Container (Tab-Aware) */}
+          {/* Only show the overlay when the user is on the relevant tab for the active download */}
+          {(() => {
+            // Determine if we should show the overlay based on current tab context
+            const showChapterOverlay = downloadingChapterIndex !== null && activeTab === 'video';
+            const showManualOverlay = downloadingManualId !== null && activeTab === 'manual';
+            const showSlideOverlay = downloadingSlideIndex !== null && activeTab === 'slideshow';
+            const showOverlay = showChapterOverlay || showManualOverlay || showSlideOverlay;
+
+            if (!showOverlay) return null;
+
+            // Determine the target filename being waited on
+            let targetFilename = '';
+            let overlayLabel = '';
+            if (showChapterOverlay && activeCourse) {
+              const chapter = activeCourse.chapters[downloadingChapterIndex];
+              targetFilename = chapter?.filename?.trim().replace(/^\//, '') || '';
+              overlayLabel = 'Course Chapter';
+            } else if (showManualOverlay) {
+              const manual = MANUALS.find((m: any) => m.id === downloadingManualId);
+              targetFilename = manual?.filename?.trim().replace(/^\//, '') || '';
+              overlayLabel = 'Training Manual';
+            } else if (showSlideOverlay && activeSlideshow) {
+              const slide = activeSlideshow.slides[downloadingSlideIndex];
+              targetFilename = slide?.filename?.trim().replace(/^\//, '') || '';
+              overlayLabel = 'Slideshow Video';
+            }
+
+            // Check if the target file is the one currently being downloaded
+            const currentFileClean = dlState.currentFile?.trim().replace(/^\//, '') || '';
+            const isTargetActivelyDownloading = targetFilename && currentFileClean === targetFilename;
+            const progressPct = isTargetActivelyDownloading && dlState.currentFileTotalBytes > 0
+              ? Math.round((dlState.currentFileBytesWritten / dlState.currentFileTotalBytes) * 100)
+              : 0;
+
+            return (
+              <div className="absolute inset-0 z-[60] flex flex-col items-center justify-center bg-black/90 backdrop-blur-sm">
+                <div className="relative w-32 h-32 mb-6">
+                  <div className="absolute inset-0 border-4 border-white/10 rounded-full" />
+                  {isTargetActivelyDownloading ? (
+                    <div 
+                      className="absolute inset-0 border-4 border-eh-blue rounded-full transition-all duration-300"
+                      style={{ 
+                        clipPath: `polygon(50% 50%, 50% 0, ${progressPct > 12.5 ? '100% 0,' : ''} ${progressPct > 37.5 ? '100% 100%,' : ''} ${progressPct > 62.5 ? '0 100%,' : ''} ${progressPct > 87.5 ? '0 0,' : ''} ${
+                          progressPct <= 12.5 ? 50 + (progressPct * 4) + '% 0' :
+                          progressPct <= 37.5 ? '100% ' + ((progressPct - 12.5) * 4) + '%' :
+                          progressPct <= 62.5 ? (100 - (progressPct - 37.5) * 4) + '% 100%' :
+                          progressPct <= 87.5 ? '0 ' + (100 - (progressPct - 62.5) * 4) + '%' :
+                          (progressPct - 87.5) * 4 + '% 0'
+                        })` 
+                      }}
+                    />
+                  ) : (
+                    <div className="absolute inset-0 border-4 border-eh-blue/30 rounded-full animate-pulse" />
+                  )}
+                  <video 
+                    src="/CPR-Dummies.mp4"
+                    autoPlay 
+                    loop 
+                    muted 
+                    playsInline 
+                    className="absolute inset-2 w-28 h-28 object-cover rounded-full"
+                  />
+                </div>
+                <h3 className="text-eh-peach font-bold text-lg mb-2">
+                  {isTargetActivelyDownloading 
+                    ? `Downloading ${overlayLabel}...` 
+                    : `Preparing ${overlayLabel}...`}
+                </h3>
+                <p className="text-white/60 mb-4 text-center max-w-md text-sm">
+                  {isTargetActivelyDownloading 
+                    ? 'This media must be downloaded before playback can begin. It will automatically play once the download completes.'
+                    : 'Your download is queued and will begin shortly. Other files are being downloaded first.'}
+                </p>
+                <div className="flex flex-col items-center space-y-1">
+                  <span className="text-eh-blue-light font-mono font-bold text-xl">
+                    {isTargetActivelyDownloading ? `${progressPct}%` : 'Queued'}
+                  </span>
+                  {isTargetActivelyDownloading && (
+                    <span className="text-white/40 text-xs font-mono uppercase tracking-widest">
+                      {formatSpeed(dlState.currentSpeed)}
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={() => {
+                    downloadManager.cancelDownload();
+                    setDownloadingChapterIndex(null);
+                    setDownloadingManualId(null);
+                    setDownloadingSlideIndex(null);
                   }}
-                />
-                <video 
-                  src="/CPR-Dummies.mp4"
-                  autoPlay 
-                  loop 
-                  muted 
-                  playsInline 
-                  className="absolute inset-2 w-28 h-28 object-cover rounded-full"
-                />
+                  className="mt-8 px-6 py-2 rounded-full border border-white/20 text-white/70 hover:bg-white/10 hover:text-white transition-all text-sm font-bold tracking-wider cursor-pointer"
+                >
+                  Cancel Download
+                </button>
               </div>
-              <h3 className="text-eh-peach font-bold text-lg mb-2">Downloading {downloadingChapterIndex !== null ? 'Course Chapter' : downloadingManualId !== null ? 'Training Manual' : 'Slideshow Video'}...</h3>
-              <p className="text-white/60 mb-4 text-center max-w-md text-sm">
-                This media must be downloaded before playback can begin. It will automatically play once the download completes.
-              </p>
-              <div className="flex flex-col items-center space-y-1">
-                <span className="text-eh-blue-light font-mono font-bold text-xl">
-                  {dlState.currentFileTotalBytes > 0 
-                    ? Math.round((dlState.currentFileBytesWritten / dlState.currentFileTotalBytes) * 100) 
-                    : 0}%
-                </span>
-                <span className="text-white/40 text-xs font-mono uppercase tracking-widest">
-                  {formatSpeed(dlState.currentSpeed)}
-                </span>
-              </div>
-              <button
-                onClick={() => {
-                  downloadManager.cancelDownload();
-                  setDownloadingChapterIndex(null);
-                  setDownloadingManualId(null);
-                  setDownloadingSlideIndex(null);
-                }}
-                className="mt-8 px-6 py-2 rounded-full border border-white/20 text-white/70 hover:bg-white/10 hover:text-white transition-all text-sm font-bold tracking-wider cursor-pointer"
-              >
-                Cancel Download
-              </button>
-            </div>
-          ) : null}
+            );
+          })()}
 
           {/* Video Tab Container */}
           <div className={`w-full h-full relative z-10 flex items-center justify-center ${activeTab === 'video' && activeCourse ? '' : 'hidden'}`}>
@@ -1253,6 +1298,7 @@ export default function App() {
               slideshowIsPlaying={slideshowIsPlaying}
               toggleSlideshowPlay={toggleSlideshowPlay}
               m={m}
+              fileStatuses={dlState.fileStatuses}
             />
           </div>
         </div>

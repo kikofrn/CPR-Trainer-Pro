@@ -124,8 +124,7 @@ export const VideoPlayer = React.memo(function VideoPlayer({
               }
             }}
             onError={(e) => {
-              console.error('[VideoPlayer] Video A playback error:', e);
-              setIsPlaying(false);
+              console.warn('[VideoPlayer] Video A load/playback error:', e);
             }}
           />
           {/* Video Player B */}
@@ -150,8 +149,7 @@ export const VideoPlayer = React.memo(function VideoPlayer({
               }
             }}
             onError={(e) => {
-              console.error('[VideoPlayer] Video B playback error:', e);
-              setIsPlaying(false);
+              console.warn('[VideoPlayer] Video B load/playback error:', e);
             }}
           />
         </div>

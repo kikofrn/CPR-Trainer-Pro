@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, SkipBack, SkipForward, Play, Pause, Projector, VolumeX, Volume2, Maximize2 } from 'lucide-react';
+import { cdnUrl } from '../media-resolver';
 
 interface SlideshowPlayerProps {
   activeSlideshow: any;
@@ -24,6 +25,23 @@ interface SlideshowPlayerProps {
   toggleSlideshowPlay: () => void;
   
   m: (path: string) => string;
+  fileStatuses: Record<string, boolean>;
+}
+
+/**
+ * Resolve the display URL for a slide.
+ * - If the file is downloaded locally, use the local media:// protocol URL (works offline).
+ * - If NOT downloaded and it's an image, use the CDN URL (loads instantly from Cloudflare).
+ * - Videos always use local URL (they must be downloaded first to stream).
+ */
+function resolveSlideUrl(slide: any, m: (path: string) => string, fileStatuses: Record<string, boolean>): string {
+  const clean = slide.filename?.trim().replace(/^\//, '') || '';
+  const isDownloaded = !!fileStatuses[clean];
+  
+  if (slide.type === 'image' && !isDownloaded) {
+    return cdnUrl(slide.filename);
+  }
+  return m(slide.filename);
 }
 
 export function SlideshowPlayer({
@@ -32,7 +50,7 @@ export function SlideshowPlayer({
   isMuted, setIsMuted, volume, setVolume,
   prevSlide, nextSlide,
   slideshowIsPlaying, toggleSlideshowPlay,
-  m
+  m, fileStatuses
 }: SlideshowPlayerProps) {
   if (!activeSlideshow || !activeSlide) return null;
 
@@ -67,14 +85,14 @@ export function SlideshowPlayer({
           >
             {activeSlide.type === 'image' ? (
               <img 
-                src={m(activeSlide.filename)} 
+                src={resolveSlideUrl(activeSlide, m, fileStatuses)} 
                 alt={activeSlide.title} 
                 className="w-full h-full object-contain"
               />
             ) : (
               <video
                 ref={slideVideoRef}
-                src={m(activeSlide.filename)}
+                src={resolveSlideUrl(activeSlide, m, fileStatuses)}
                 className="w-full h-full object-contain"
                 muted={isMuted}
               />
@@ -87,9 +105,9 @@ export function SlideshowPlayer({
           {activeSlideshow.slides.map((s: any, idx: number) => {
             if (Math.abs(idx - activeSlideIndex) <= 1 && idx !== activeSlideIndex) {
               return s.type === 'image' ? (
-                <img key={s.id} src={m(s.filename)} loading="eager" alt="preload" />
+                <img key={s.id} src={resolveSlideUrl(s, m, fileStatuses)} loading="eager" alt="preload" />
               ) : (
-                <video key={s.id} src={m(s.filename)} preload="auto" muted />
+                <video key={s.id} src={resolveSlideUrl(s, m, fileStatuses)} preload="auto" muted />
               );
             }
             return null;
