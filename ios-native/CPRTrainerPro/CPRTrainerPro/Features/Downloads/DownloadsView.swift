@@ -40,7 +40,7 @@ struct DownloadsView: View {
                     Text(message)
                         .font(.caption2)
                         .foregroundStyle(Theme.Colors.failure)
-                        .lineLimit(2)
+                        .lineLimit(4)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
