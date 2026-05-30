@@ -23,6 +23,7 @@ export interface DownloadState {
   isPaused: boolean;
   isPausing: boolean;
   failedFiles: string[];
+  isMockingFiles: boolean;
 }
 
 export type DownloadStateListener = (state: DownloadState) => void;
@@ -58,6 +59,7 @@ class DownloadManager {
     isPaused: false,
     isPausing: false,
     failedFiles: [],
+    isMockingFiles: false,
   };
 
   private listeners: Set<DownloadStateListener> = new Set();
@@ -68,6 +70,7 @@ class DownloadManager {
 
   public toggleMockMissingFiles() {
     this.mockMissingFiles = !this.mockMissingFiles;
+    this.state.isMockingFiles = this.mockMissingFiles;
     if (this.mockMissingFiles) {
       Object.keys(this.state.fileStatuses).forEach(key => {
         this.state.fileStatuses[key] = false;
@@ -567,24 +570,24 @@ class DownloadManager {
   }
 
   public async checkAllStatuses() {
-    // Gather all possible files in the app
+    // Gather all possible files in the app, normalizing filenames to match getFilesForCategory output
     const allFiles: string[] = [];
     
     COURSES.forEach((course) => {
       course.chapters.forEach((ch) => {
-        if (ch.filename) allFiles.push(ch.filename);
+        if (ch.filename) allFiles.push(this.normalizeFilename(ch.filename));
       });
     });
 
     SLIDESHOWS.forEach((slideshow) => {
       if (slideshow.isComingSoon || COMING_SOON_IDS.includes(slideshow.id)) return; // Skip coming-soon slideshows
       slideshow.slides.forEach((slide) => {
-        if (slide.filename) allFiles.push(slide.filename);
+        if (slide.filename) allFiles.push(this.normalizeFilename(slide.filename));
       });
     });
 
     MANUALS.forEach((manual) => {
-      if (manual.filename) allFiles.push(manual.filename);
+      if (manual.filename) allFiles.push(this.normalizeFilename(manual.filename));
     });
 
     const deduplicated = Array.from(new Set(allFiles));

@@ -702,18 +702,18 @@ export const Sidebar = React.memo(function Sidebar({
                         </div>
                         <div className="flex items-center justify-between mt-2">
                           <div className="flex items-center gap-2">
-                            <div className={`w-2 h-2 rounded-full ${downloadManager.isMockingMissingFiles() ? 'bg-red-500 animate-pulse' : 'bg-white/20'}`} />
+                            <div className={`w-2 h-2 rounded-full ${dlState.isMockingFiles ? 'bg-red-500 animate-pulse' : 'bg-white/20'}`} />
                             <span className="text-xs font-bold uppercase tracking-widest text-eh-peach/80">Mock Missing Files</span>
                           </div>
                           <button 
                             onClick={() => downloadManager.toggleMockMissingFiles()}
                             className={`px-3 py-1 rounded border text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                              downloadManager.isMockingMissingFiles()
+                              dlState.isMockingFiles
                                 ? 'bg-red-500/20 border-red-500 text-red-400 hover:bg-red-500/30' 
                                 : 'border-white/10 text-white/50 hover:bg-white/5 hover:text-white/80'
                             }`}
                           >
-                            {downloadManager.isMockingMissingFiles() ? 'Mocking ON' : 'Toggle'}
+                            {dlState.isMockingFiles ? 'Mocking ON' : 'Toggle'}
                           </button>
                         </div>
                       </div>
