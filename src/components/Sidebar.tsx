@@ -504,7 +504,7 @@ export const Sidebar = React.memo(function Sidebar({
                       Instructor Onboarding /<br />Bridge Program
                     </h3>
                     <p className="text-[11px] text-eh-peach/60 leading-relaxed">
-                      Whether you're brand new to teaching or bridging your instructor credentials from AHA, Red Cross, or HSI, please take a moment to complete these two courses below. Each course will guide you through how to teach each section and cover important topics to discuss with your students. To receive credit please sign the agreement form at the end of each course.
+                      New to teaching or bridging your instructor credentials from AHA, Red Cross, or HSI? Before teaching your first EH Academy course, please take a moment complete the two onboarding courses below. To receive credit please sign the agreement form at the end of each course.
                     </p>
                     
                     <div className="space-y-4">
@@ -514,7 +514,7 @@ export const Sidebar = React.memo(function Sidebar({
                           Instructor Onboarding: CPR &amp; AED Course
                         </h4>
                         <p className="text-[11px] text-eh-peach/60 italic leading-snug">
-                          Instructor's step by step guide to teaching this course
+                          Instructor's how-to guide to teaching CPR & AED one step at a time.
                         </p>
                       </div>
 
@@ -524,7 +524,7 @@ export const Sidebar = React.memo(function Sidebar({
                           First Aid Instructor Onboarding
                         </h4>
                         <p className="text-[11px] text-eh-peach/60 italic leading-snug">
-                          Instructor's step by step guide to teaching this course
+                          Instructor's how-to guide to teaching First Aid one step at a time.
                         </p>
                       </div>
                     </div>
