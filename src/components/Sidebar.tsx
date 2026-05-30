@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, ChevronDown, CheckCircle2, Download, Play, Pause, Clock, MonitorPlay, Settings, Info, HelpCircle } from 'lucide-react';
 import { mediaUrl as m } from '../media-resolver';
 import { formatSpeed } from '../download-manager';
+import { DownloadHub } from './DownloadHub';
 
 interface SidebarProps {
   showSidebar: boolean;
@@ -498,10 +499,14 @@ export const Sidebar = React.memo(function Sidebar({
                   );
                 })
               ) : (
-                <div className="w-full text-center py-10 opacity-30 flex flex-col items-center">
-                  <MonitorPlay size={48} className="mb-4" />
-                  <p className="text-eh-peach/60 text-xs font-bold uppercase tracking-widest">No Course Selected</p>
-                </div>
+                activeTab === 'video' ? (
+                  <DownloadHub dlState={dlState} downloadManager={downloadManager} isTauri={isTauri} />
+                ) : (
+                  <div className="w-full text-center py-10 opacity-30 flex flex-col items-center">
+                    <MonitorPlay size={48} className="mb-4" />
+                    <p className="text-eh-peach/60 text-xs font-bold uppercase tracking-widest">No Course Selected</p>
+                  </div>
+                )
               )
             )}
           </div>
