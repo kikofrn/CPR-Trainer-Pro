@@ -24,7 +24,7 @@ const CATEGORIES = [
   {
     id: 'everything' as const,
     label: 'Download All Teaching Content',
-    description: 'Downloads everything — all courses, presentations, and training manuals',
+    description: 'Downloads all course videos, presentations, and training manuals',
     estimatedSize: '~4 GB',
     isEverything: true,
   },
@@ -53,13 +53,13 @@ export const DownloadHub = React.memo(function DownloadHub({ dlState, downloadMa
               className={`p-4 rounded-xl border ${cat.isEverything ? 'border-eh-blue/20 bg-eh-blue/5' : 'border-eh-peach/10 bg-white/[0.02]'} transition-all`}
             >
               {/* Card header: title */}
-              <div className="flex items-center gap-3 mb-1">
-                <h4 className={`font-bold leading-snug ${cat.isEverything ? 'text-[17px] text-eh-blue' : 'text-[15px] text-eh-peach'}`}>
+              <div className={`flex items-center gap-3 mb-1 ${cat.isEverything ? 'justify-center' : ''}`}>
+                <h4 className={`font-bold leading-snug ${cat.isEverything ? 'text-[17px] text-eh-blue text-center' : 'text-[15px] text-eh-peach'}`}>
                   {cat.label}
                 </h4>
               </div>
 
-              <p className="text-[11px] text-eh-peach/60 italic leading-snug mb-3">
+              <p className={`text-[11px] text-eh-peach/60 italic leading-snug mb-3 ${cat.isEverything ? 'text-center' : ''}`}>
                 {cat.description}
               </p>
               
