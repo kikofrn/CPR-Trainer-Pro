@@ -14,21 +14,18 @@ const CATEGORIES = [
     label: 'Download CPR & AED Courses',
     description: 'Includes all videos, presentations, and manuals needed to teach Adult CPR & AED and Pediatric CPR & AED courses',
     estimatedSize: '~1.5 GB',
-    thumbnail: '/CPR AED for All Ages Cover.webp',
   },
   {
     id: 'first-aid' as const,
     label: 'Download First-Aid Courses',
     description: 'Includes all videos, presentations, and manuals needed to teach First-Aid and Pediatric-focused First-Aid',
     estimatedSize: '~2.5 GB',
-    thumbnail: '/First Aid for All Ages Cover.webp',
   },
   {
     id: 'everything' as const,
     label: 'Download All Teaching Content',
     description: 'Downloads everything — all courses, presentations, and training manuals',
     estimatedSize: '~4 GB',
-    thumbnail: null,
     isEverything: true,
   },
 ];
@@ -38,10 +35,6 @@ export const DownloadHub = React.memo(function DownloadHub({ dlState, downloadMa
 
   return (
     <div className="px-5 py-8 flex flex-col gap-6">
-      <h3 className="text-sm font-black uppercase tracking-[0.2em] text-eh-red text-center">
-        For Offline Use
-      </h3>
-      
       <div className="space-y-4">
         {CATEGORIES.map((cat) => {
           const files = downloadManager.getFilesForCategory(cat.id);
@@ -59,29 +52,22 @@ export const DownloadHub = React.memo(function DownloadHub({ dlState, downloadMa
               key={cat.id} 
               className={`p-4 rounded-xl border ${cat.isEverything ? 'border-eh-blue/20 bg-eh-blue/5' : 'border-eh-peach/10 bg-white/[0.02]'} transition-all`}
             >
-              {/* Card header: thumbnail + title */}
+              {/* Card header: title */}
               <div className="flex items-center gap-3 mb-1">
-                {cat.thumbnail && (
-                  <img 
-                    src={cat.thumbnail} 
-                    alt={cat.label} 
-                    className="w-7 h-7 rounded object-cover shrink-0 border border-white/10"
-                  />
-                )}
-                <h4 className={`font-bold leading-snug ${cat.isEverything ? 'text-[15px] text-eh-blue' : 'text-[13px] text-eh-peach'}`}>
+                <h4 className={`font-bold leading-snug ${cat.isEverything ? 'text-[17px] text-eh-blue' : 'text-[15px] text-eh-peach'}`}>
                   {cat.label}
                 </h4>
               </div>
 
-              <p className={`text-[11px] text-eh-peach/60 italic leading-snug mb-3 ${cat.thumbnail ? 'pl-10' : ''}`}>
+              <p className="text-[11px] text-eh-peach/60 italic leading-snug mb-3">
                 {cat.description}
               </p>
               
-              <div className={`mt-2 pt-3 border-t border-white/5 ${cat.thumbnail ? 'ml-0' : ''}`}>
+              <div className="mt-2 pt-3 border-t border-white/5">
                 {isComplete ? (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-center gap-2 py-1">
                     <CheckCircle2 size={16} className="text-green-500" />
-                    <span className="text-xs font-bold text-green-500">All Downloaded</span>
+                    <span className="text-[13px] font-bold text-green-500">All Downloaded</span>
                   </div>
                 ) : isPaused ? (
                   <div className="space-y-2.5">
@@ -156,7 +142,7 @@ export const DownloadHub = React.memo(function DownloadHub({ dlState, downloadMa
                         className="flex items-center gap-2 text-[#ff4b4b] hover:text-[#ff3333] transition-colors cursor-pointer"
                       >
                         <Download size={16} />
-                        <span className="text-xs font-bold">Download ({remainingFiles} files)</span>
+                        <span className="text-[13px] font-bold">Download ({remainingFiles} files)</span>
                       </button>
                       <span className="text-[10px] font-mono text-eh-peach/40">{cat.estimatedSize}</span>
                     </div>
