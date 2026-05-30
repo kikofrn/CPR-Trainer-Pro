@@ -172,6 +172,15 @@ class DownloadManager {
   }
 
   private handleFileComplete(filename: string) {
+    // Idempotency guard: if this file is already marked as downloaded and is NOT
+    // the current file or head of the queue, this is a duplicate call — skip it.
+    if (this.state.fileStatuses[filename] &&
+        this.state.currentFile !== filename &&
+        (this.state.queue.length === 0 || this.state.queue[0] !== filename)) {
+      console.log(`[DownloadManager] Ignoring duplicate completion for: ${filename}`);
+      return;
+    }
+
     console.log(`[DownloadManager] completed file: ${filename}`);
     
     // Mark file as downloaded
@@ -183,7 +192,10 @@ class DownloadManager {
       this.state.completedQueueCount += 1;
     } else {
       // Remove from queue wherever it is just in case
-      this.state.queue = this.state.queue.filter(f => f !== filename);
+      const idx = this.state.queue.indexOf(filename);
+      if (idx !== -1) {
+        this.state.queue.splice(idx, 1);
+      }
     }
 
     this.state.currentFile = null;

@@ -642,13 +642,23 @@ export const Sidebar = React.memo(function Sidebar({
                           </div>
                         </div>
                       ) : (
-                        <button
-                          onClick={() => downloadManager.startBulkDownload('everything')}
-                          className="flex items-center gap-2 text-[#ff4b4b] hover:text-[#ff3333] transition-colors cursor-pointer"
-                        >
-                          <Download size={18} />
-                          <span className="text-sm font-bold">Download All Offline Media ({Math.max(0, dlState.globalTotalCount - dlState.globalDownloadedCount)} left)</span>
-                        </button>
+                        <div className="space-y-2">
+                          <button
+                            onClick={() => downloadManager.startBulkDownload('everything')}
+                            className="flex items-center gap-2 text-[#ff4b4b] hover:text-[#ff3333] transition-colors cursor-pointer"
+                          >
+                            <Download size={18} />
+                            <span className="text-sm font-bold">Download All Offline Media ({Math.max(0, dlState.globalTotalCount - dlState.globalDownloadedCount)} left)</span>
+                          </button>
+                          {dlState.failedFiles && dlState.failedFiles.length > 0 && (
+                            <p className="text-[10px] text-red-400/60 pl-[26px] leading-snug">
+                              {dlState.failedFiles.length} file{dlState.failedFiles.length > 1 ? 's' : ''} failed
+                              {dlState.failedFiles.length <= 2 && (
+                                <span className="text-white/20"> — {dlState.failedFiles[0].split('-').pop()?.replace('.mp4','').replace('.png','').trim()}</span>
+                              )}
+                            </p>
+                          )}
+                        </div>
                       )}
                     </div>
 
