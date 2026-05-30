@@ -18,6 +18,9 @@ export interface DownloadState {
   globalDownloadedCount: number;
   globalTotalCount: number;
   fileAttempts: Record<string, number>;
+  isPaused: boolean;
+  isPausing: boolean;
+  failedFiles: string[];
 }
 
 export type DownloadStateListener = (state: DownloadState) => void;
@@ -45,6 +48,9 @@ class DownloadManager {
     globalDownloadedCount: 0,
     globalTotalCount: 0,
     fileAttempts: {},
+    isPaused: false,
+    isPausing: false,
+    failedFiles: [],
   };
 
   private listeners: Set<DownloadStateListener> = new Set();
@@ -191,8 +197,17 @@ class DownloadManager {
     this.updateGlobalCounts();
     this.notify();
 
-    // Start next file
-    if (this.state.queue.length > 0) {
+    // Start next file (unless pausing)
+    if (this.state.isPausing) {
+      // Transition from "pausing" to fully "paused"
+      this.state.isPausing = false;
+      this.state.isPaused = true;
+      this.state.currentFile = null;
+      this.state.currentSpeed = 0;
+      this.state.currentTimeRemaining = -1;
+      console.log('[DownloadManager] Downloads paused after completing current file.');
+      this.notify();
+    } else if (this.state.queue.length > 0) {
       this.downloadNext();
     } else {
       this.state.isDownloading = false;
@@ -201,6 +216,8 @@ class DownloadManager {
       this.state.completedQueueCount = 0;
       this.state.currentSpeed = 0;
       console.log('[DownloadManager] Bulk download queue completed successfully!');
+      // Re-check all disk statuses to catch any missed events
+      this.checkAllStatuses();
       this.notify();
     }
   }
@@ -221,6 +238,13 @@ class DownloadManager {
         baseUrl: this.state.activeBaseUrl,
         filename: nextFile
       });
+      // Guarded fallback: if invoke succeeded but download-complete event was missed,
+      // handle completion here to prevent the queue from getting stuck.
+      if (!this.state.fileStatuses[nextFile] &&
+          (this.state.currentFile === nextFile || (this.state.queue.length > 0 && this.state.queue[0] === nextFile))) {
+        console.log(`[DownloadManager] ⚡ Guarded fallback: completing ${nextFile} (download-complete event may have been missed)`);
+        this.handleFileComplete(nextFile);
+      }
     } catch (e) {
       console.error(`[DownloadManager] ❌ Download failed for ${nextFile}:`, e);
       
@@ -242,6 +266,11 @@ class DownloadManager {
         // Give up after 5 attempts
         console.error(`[DownloadManager] ❌ Gave up on ${nextFile} after 5 attempts.`);
         this.state.fileStatuses[nextFile] = false;
+        
+        // Track the failed file for UI visibility
+        if (!this.state.failedFiles.includes(nextFile)) {
+          this.state.failedFiles.push(nextFile);
+        }
         
         // Reset attempts for future bulk downloads
         this.state.fileAttempts[nextFile] = 0;
@@ -280,6 +309,7 @@ class DownloadManager {
 
     // 2. Slideshow Files
     SLIDESHOWS.forEach((slideshow) => {
+      if (slideshow.isComingSoon) return; // Skip coming-soon slideshows
       const isCpr = slideshow.id.startsWith('cpr-aed');
       const isFa = slideshow.id.startsWith('first-aid') || slideshow.id.startsWith('pedi');
 
@@ -331,6 +361,11 @@ class DownloadManager {
     }
 
     console.log(`[DownloadManager] Starting bulk download for: ${category}`);
+    // Reset retry state for a fresh start
+    this.state.fileAttempts = {};
+    this.state.failedFiles = [];
+    this.state.isPaused = false;
+    this.state.isPausing = false;
     const allFiles = this.getFilesForCategory(category);
     
     // Check which ones are already downloaded
@@ -439,7 +474,47 @@ class DownloadManager {
     this.state.currentFileTotalBytes = 0;
     this.state.currentSpeed = 0;
     this.state.currentTimeRemaining = -1;
+    this.state.isPaused = false;
+    this.state.isPausing = false;
     this.notify();
+  }
+
+  public pauseDownload() {
+    if (!this.state.isDownloading || this.state.isPaused) return;
+    
+    if (this.state.currentFile) {
+      // A file is actively downloading — transition to "pausing" state
+      this.state.isPausing = true;
+      console.log(`[DownloadManager] Pausing after current file completes: ${this.state.currentFile}`);
+    } else {
+      // No file actively downloading — pause immediately
+      this.state.isPaused = true;
+      this.state.isPausing = false;
+      console.log('[DownloadManager] Downloads paused immediately.');
+    }
+    this.notify();
+  }
+
+  public resumeDownload() {
+    if (!this.state.isPaused) return;
+    
+    this.state.isPaused = false;
+    this.state.isPausing = false;
+    console.log('[DownloadManager] Downloads resumed.');
+    this.notify();
+    
+    if (this.state.queue.length > 0) {
+      this.downloadNext();
+    } else {
+      this.state.isDownloading = false;
+      this.state.activeCategory = null;
+      this.state.totalQueueSize = 0;
+      this.state.completedQueueCount = 0;
+      this.state.currentSpeed = 0;
+      console.log('[DownloadManager] No files left in queue after resume.');
+      this.checkAllStatuses();
+      this.notify();
+    }
   }
 
   public async checkStatusesForFiles(filenames: string[]): Promise<Record<string, boolean>> {
@@ -473,6 +548,7 @@ class DownloadManager {
     });
 
     SLIDESHOWS.forEach((slideshow) => {
+      if (slideshow.isComingSoon) return; // Skip coming-soon slideshows
       slideshow.slides.forEach((slide) => {
         if (slide.filename) allFiles.push(slide.filename);
       });

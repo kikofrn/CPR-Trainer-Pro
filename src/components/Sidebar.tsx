@@ -2,6 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, ChevronDown, CheckCircle2, Download, Play, Pause, Clock, MonitorPlay, Settings, Info, HelpCircle } from 'lucide-react';
 import { mediaUrl as m } from '../media-resolver';
+import { formatSpeed } from '../download-manager';
 
 interface SidebarProps {
   showSidebar: boolean;
@@ -574,12 +575,72 @@ export const Sidebar = React.memo(function Sidebar({
                       </button>
                     </div>
                     
-                    <div className="flex items-center gap-2 pt-2">
+                    <div className="pt-2 space-y-2">
                       {dlState.globalTotalCount === dlState.globalDownloadedCount && dlState.globalTotalCount > 0 ? (
-                        <>
+                        <div className="flex items-center gap-2">
                           <CheckCircle2 size={18} className="text-green-500" />
                           <span className="text-sm font-bold text-green-500">All Offline Media Downloaded</span>
-                        </>
+                        </div>
+                      ) : dlState.isPaused ? (
+                        <div className="space-y-2.5">
+                          <div className="flex items-center gap-2">
+                            <Pause size={18} className="text-amber-400" />
+                            <span className="text-sm font-bold text-amber-400">
+                              Downloads Paused ({Math.max(0, dlState.globalTotalCount - dlState.globalDownloadedCount)} left)
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <button
+                              onClick={() => downloadManager.resumeDownload()}
+                              className="flex items-center gap-1.5 text-xs font-bold text-[#4ae5bd] hover:text-white transition-colors cursor-pointer"
+                            >
+                              <Play size={12} fill="currentColor" />
+                              Resume
+                            </button>
+                            <span className="text-white/15">|</span>
+                            <button
+                              onClick={() => downloadManager.cancelDownload()}
+                              className="text-xs font-bold text-white/30 hover:text-white/50 transition-colors cursor-pointer"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : dlState.isDownloading ? (
+                        <div className="space-y-2.5">
+                          <div className="flex items-center gap-2">
+                            <video src="/CPR-Dummies.mp4" autoPlay loop muted playsInline className="w-5 h-5 rounded-sm object-cover shrink-0" />
+                            <span className="text-sm font-bold text-[#ff4b4b]">
+                              {dlState.isPausing 
+                                ? 'Pausing after current file\u2026' 
+                                : `Downloading\u2026 ${dlState.completedQueueCount} of ${dlState.totalQueueSize}`
+                              }
+                            </span>
+                          </div>
+                          
+                          {/* Progress bar */}
+                          <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-gradient-to-r from-[#ff4b4b] to-[#ff6b6b] rounded-full transition-all duration-500 ease-out"
+                              style={{ width: `${dlState.totalQueueSize > 0 ? Math.max(1, ((dlState.completedQueueCount + (dlState.currentFileTotalBytes > 0 ? dlState.currentFileBytesWritten / dlState.currentFileTotalBytes : 0)) / dlState.totalQueueSize) * 100) : 0}%` }}
+                            />
+                          </div>
+                          
+                          {/* Speed + Pause button */}
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] text-white/40 font-mono">
+                              {formatSpeed(dlState.currentSpeed)}
+                            </span>
+                            <button
+                              onClick={() => downloadManager.pauseDownload()}
+                              disabled={dlState.isPausing}
+                              className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-amber-400/80 hover:text-amber-300 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-default"
+                            >
+                              <Pause size={10} />
+                              {dlState.isPausing ? 'Pausing\u2026' : 'Pause'}
+                            </button>
+                          </div>
+                        </div>
                       ) : (
                         <button
                           onClick={() => downloadManager.startBulkDownload('everything')}
