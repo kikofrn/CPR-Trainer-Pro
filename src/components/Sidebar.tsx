@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, ChevronDown, CheckCircle2, Download, Play, Pause, Clock, MonitorPlay, Settings, Info, HelpCircle } from 'lucide-react';
 import { mediaUrl as m } from '../media-resolver';
 import { formatSpeed } from '../download-manager';
-import { DownloadHub } from './DownloadHub';
 
 interface SidebarProps {
   showSidebar: boolean;
@@ -500,7 +499,36 @@ export const Sidebar = React.memo(function Sidebar({
                 })
               ) : (
                 activeTab === 'video' ? (
-                  <DownloadHub dlState={dlState} downloadManager={downloadManager} isTauri={isTauri} />
+                  <div className="px-5 py-8 flex flex-col gap-5">
+                    <h3 className="text-sm font-bold uppercase tracking-widest text-white text-center leading-snug">
+                      Instructor Onboarding /<br />Bridge Program
+                    </h3>
+                    <p className="text-[11px] text-eh-peach/60 leading-relaxed">
+                      Whether you're brand new to teaching or bridging your instructor credentials from AHA, Red Cross, or HSI, please take a moment to complete these two courses below. Each course will guide you through how to teach each section and cover important topics to discuss with your students. To receive credit please sign the agreement form at the end of each course.
+                    </p>
+                    
+                    <div className="space-y-4">
+                      {/* CPR & AED Onboarding Card */}
+                      <div className="p-4 rounded-xl border border-eh-peach/10 bg-white/[0.02] transition-all">
+                        <h4 className="text-[15px] font-bold text-eh-peach mb-1">
+                          Instructor Onboarding: CPR &amp; AED Course
+                        </h4>
+                        <p className="text-[11px] text-eh-peach/60 italic leading-snug">
+                          Instructor's step by step guide to teaching this course
+                        </p>
+                      </div>
+
+                      {/* First Aid Onboarding Card */}
+                      <div className="p-4 rounded-xl border border-eh-peach/10 bg-white/[0.02] transition-all">
+                        <h4 className="text-[15px] font-bold text-eh-peach mb-1">
+                          First Aid Instructor Onboarding
+                        </h4>
+                        <p className="text-[11px] text-eh-peach/60 italic leading-snug">
+                          Instructor's step by step guide to teaching this course
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 ) : (
                   <div className="w-full text-center py-10 opacity-30 flex flex-col items-center">
                     <MonitorPlay size={48} className="mb-4" />
