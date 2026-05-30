@@ -11,13 +11,13 @@ interface DownloadHubProps {
 const CATEGORIES = [
   {
     id: 'cpr-aed' as const,
-    label: 'Download CPR & AED Courses',
+    label: 'Download CPR & AED Content',
     description: 'Includes all videos, presentations, and manuals needed to teach Adult CPR & AED and Pediatric CPR & AED courses',
     estimatedSize: '~1.5 GB',
   },
   {
     id: 'first-aid' as const,
-    label: 'Download First-Aid Courses',
+    label: 'Download First Aid Content',
     description: 'Includes all videos, presentations, and manuals needed to teach First-Aid and Pediatric-focused First-Aid',
     estimatedSize: '~2.5 GB',
   },
