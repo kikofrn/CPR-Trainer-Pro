@@ -530,7 +530,7 @@ export const Sidebar = React.memo(function Sidebar({
                         <img 
                           src="/CPRAEDOnboardingCover.png" 
                           alt="CPR &amp; AED Instructor Course" 
-                          className="w-full aspect-video rounded-lg object-cover border border-white/10 group-hover/card:border-eh-red/30 transition-colors mb-3"
+                          className="w-4/5 mx-auto rounded-lg object-contain border border-white/10 group-hover/card:border-eh-red/30 transition-colors mb-3"
                         />
                         <h4 className="text-[14px] font-bold text-eh-peach group-hover/card:text-white transition-colors leading-snug mb-1">
                           CPR &amp; AED Instructor Course
@@ -556,7 +556,7 @@ export const Sidebar = React.memo(function Sidebar({
                         <img 
                           src="/FAOnboardingCover.png" 
                           alt="First Aid Instructor Course" 
-                          className="w-full aspect-video rounded-lg object-cover border border-white/10 group-hover/card:border-eh-red/30 transition-colors mb-3"
+                          className="w-4/5 mx-auto rounded-lg object-contain border border-white/10 group-hover/card:border-eh-red/30 transition-colors mb-3"
                         />
                         <h4 className="text-[14px] font-bold text-eh-peach group-hover/card:text-white transition-colors leading-snug mb-1">
                           First Aid Instructor Course
