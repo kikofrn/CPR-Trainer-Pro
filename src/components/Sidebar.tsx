@@ -535,10 +535,10 @@ export const Sidebar = React.memo(function Sidebar({
                           alt="CPR &amp; AED Instructor Course" 
                           className="w-4/5 mx-auto rounded-lg object-contain border border-white/10 group-hover/card:border-eh-red/30 transition-colors mb-3"
                         />
-                        <h4 className="text-[14px] font-bold text-eh-peach group-hover/card:text-white transition-colors leading-snug mb-1">
-                          CPR &amp; AED Instructor Course
+                        <h4 className="text-[14px] font-bold text-eh-peach group-hover/card:text-white transition-colors leading-snug mb-1 text-center">
+                          CPR &amp; AED Onboarding Course
                         </h4>
-                        <p className="text-[11px] text-eh-peach/50 italic leading-snug">
+                        <p className="text-[11px] text-eh-peach/50 italic leading-snug text-center">
                           Instructor's how-to guide to teaching CPR &amp; AED one step at a time. Opens in browser.
                         </p>
                       </div>
@@ -561,10 +561,10 @@ export const Sidebar = React.memo(function Sidebar({
                           alt="First Aid Instructor Course" 
                           className="w-4/5 mx-auto rounded-lg object-contain border border-white/10 group-hover/card:border-eh-red/30 transition-colors mb-3"
                         />
-                        <h4 className="text-[14px] font-bold text-eh-peach group-hover/card:text-white transition-colors leading-snug mb-1">
-                          First Aid Instructor Course
+                        <h4 className="text-[14px] font-bold text-eh-peach group-hover/card:text-white transition-colors leading-snug mb-1 text-center">
+                          First Aid Onboarding Course
                         </h4>
-                        <p className="text-[11px] text-eh-peach/50 italic leading-snug">
+                        <p className="text-[11px] text-eh-peach/50 italic leading-snug text-center">
                           Instructor's how-to guide to teaching First Aid one step at a time. Opens in browser.
                         </p>
                       </div>
