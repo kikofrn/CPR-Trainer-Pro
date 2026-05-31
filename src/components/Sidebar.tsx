@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, ChevronDown, CheckCircle2, Download, Play, Pause, Clock, MonitorPlay, Settings, Info, HelpCircle } from 'lucide-react';
 import { mediaUrl as m } from '../media-resolver';
 import { formatSpeed } from '../download-manager';
+import { invoke } from '@tauri-apps/api/core';
 
 interface SidebarProps {
   showSidebar: boolean;
@@ -499,31 +500,72 @@ export const Sidebar = React.memo(function Sidebar({
                 })
               ) : (
                 activeTab === 'video' ? (
-                  <div className="px-5 py-8 flex flex-col gap-5">
-                    <h3 className="text-sm font-bold uppercase tracking-widest text-white text-center leading-snug">
-                      Instructor Onboarding /<br />Bridge Program
+                  <div className="px-5 py-8 flex flex-col gap-4">
+                    <h3 className="text-base font-black uppercase tracking-[0.15em] text-white text-center leading-snug">
+                      Instructor Courses
                     </h3>
-                    <p className="text-[11px] text-eh-peach/60 leading-relaxed">
-                      New to teaching or bridging your instructor credentials from AHA, Red Cross, or HSI? Before teaching your first EH Academy course, please take a moment complete the two onboarding courses below. To receive credit please sign the agreement form at the end of each course.
-                    </p>
                     
-                    <div className="space-y-4">
-                      {/* CPR & AED Onboarding Card */}
-                      <div className="p-4 rounded-xl border border-eh-peach/10 bg-white/[0.02] transition-all">
-                        <h4 className="text-[15px] font-bold text-eh-peach mb-1">
-                          Instructor Onboarding: CPR &amp; AED Course
-                        </h4>
-                        <p className="text-[11px] text-eh-peach/60 italic leading-snug">
-                          Instructor's how-to guide to teaching CPR & AED one step at a time.
+                    {/* What is this? tooltip */}
+                    <div className="group relative w-full text-center">
+                      <button className="text-xs font-bold tracking-wider text-white/70 hover:text-white transition-colors flex items-center gap-1 mx-auto cursor-pointer"><HelpCircle size={12} /><span>What is this?</span></button>
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-4 py-3 bg-[#1a1a1a] border border-white/10 rounded-xl text-[11px] text-[#aaa] leading-relaxed w-56 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                        New to teaching?  Bridging your instructor credentials from AHA, Red Cross, or HSI? Before teaching your first EH Academy class, please take a moment complete the two instructor courses below. To receive credit please sign the agreement form at the end of each course.
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-4 mt-1">
+                      {/* CPR & AED Instructor Course Card */}
+                      <div 
+                        className="p-4 rounded-xl border border-eh-peach/10 bg-white/[0.02] hover:bg-white/[0.05] hover:border-eh-peach/20 transition-all cursor-pointer group/card"
+                        onClick={() => {
+                          if (isTauri) {
+                            invoke('open_browser', { url: 'https://ehacademy.hflip.co/InstructorOnboardingCPRAED' }).catch(() => {
+                              window.open('https://ehacademy.hflip.co/InstructorOnboardingCPRAED', '_blank');
+                            });
+                          } else {
+                            window.open('https://ehacademy.hflip.co/InstructorOnboardingCPRAED', '_blank');
+                          }
+                        }}
+                      >
+                        <div className="flex items-center gap-3 mb-2">
+                          <img 
+                            src="/CPRAEDOnboardingCover.png" 
+                            alt="CPR & AED Instructor Course" 
+                            className="w-12 h-12 rounded-lg object-cover shrink-0 border border-white/10 group-hover/card:border-eh-red/30 transition-colors"
+                          />
+                          <h4 className="text-[14px] font-bold text-eh-peach group-hover/card:text-white transition-colors leading-snug">
+                            CPR &amp; AED Instructors Course
+                          </h4>
+                        </div>
+                        <p className="text-[11px] text-eh-peach/50 italic leading-snug pl-[60px]">
+                          Instructor's how-to guide to teaching CPR &amp; AED one step at a time.
                         </p>
                       </div>
 
-                      {/* First Aid Onboarding Card */}
-                      <div className="p-4 rounded-xl border border-eh-peach/10 bg-white/[0.02] transition-all">
-                        <h4 className="text-[15px] font-bold text-eh-peach mb-1">
-                          First Aid Instructor Onboarding
-                        </h4>
-                        <p className="text-[11px] text-eh-peach/60 italic leading-snug">
+                      {/* First Aid Instructor Course Card */}
+                      <div 
+                        className="p-4 rounded-xl border border-eh-peach/10 bg-white/[0.02] hover:bg-white/[0.05] hover:border-eh-peach/20 transition-all cursor-pointer group/card"
+                        onClick={() => {
+                          if (isTauri) {
+                            invoke('open_browser', { url: 'https://ehacademy.hflip.co/InstructorOnboardingFirstAid' }).catch(() => {
+                              window.open('https://ehacademy.hflip.co/InstructorOnboardingFirstAid', '_blank');
+                            });
+                          } else {
+                            window.open('https://ehacademy.hflip.co/InstructorOnboardingFirstAid', '_blank');
+                          }
+                        }}
+                      >
+                        <div className="flex items-center gap-3 mb-2">
+                          <img 
+                            src="/FAOnboardingCover.png" 
+                            alt="First Aid Instructor Course" 
+                            className="w-12 h-12 rounded-lg object-cover shrink-0 border border-white/10 group-hover/card:border-eh-red/30 transition-colors"
+                          />
+                          <h4 className="text-[14px] font-bold text-eh-peach group-hover/card:text-white transition-colors leading-snug">
+                            First Aid Instructor Course
+                          </h4>
+                        </div>
+                        <p className="text-[11px] text-eh-peach/50 italic leading-snug pl-[60px]">
                           Instructor's how-to guide to teaching First Aid one step at a time.
                         </p>
                       </div>
