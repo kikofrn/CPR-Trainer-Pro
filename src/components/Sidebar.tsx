@@ -516,7 +516,7 @@ export const Sidebar = React.memo(function Sidebar({
                     <div className="space-y-4 mt-1">
                       {/* CPR & AED Instructor Course Card */}
                       <div 
-                        className="p-4 rounded-xl border border-eh-peach/10 bg-white/[0.02] hover:bg-white/[0.05] hover:border-eh-peach/20 transition-all cursor-pointer group/card"
+                        className="p-4 rounded-xl border border-transparent bg-white/[0.02] hover:bg-white/[0.05] hover:border-eh-peach/20 transition-all cursor-pointer group/card"
                         onClick={() => {
                           if (isTauri) {
                             invoke('open_browser', { url: 'https://ehacademy.hflip.co/InstructorOnboardingCPRAED' }).catch(() => {
@@ -542,7 +542,7 @@ export const Sidebar = React.memo(function Sidebar({
 
                       {/* First Aid Instructor Course Card */}
                       <div 
-                        className="p-4 rounded-xl border border-eh-peach/10 bg-white/[0.02] hover:bg-white/[0.05] hover:border-eh-peach/20 transition-all cursor-pointer group/card"
+                        className="p-4 rounded-xl border border-transparent bg-white/[0.02] hover:bg-white/[0.05] hover:border-eh-peach/20 transition-all cursor-pointer group/card"
                         onClick={() => {
                           if (isTauri) {
                             invoke('open_browser', { url: 'https://ehacademy.hflip.co/InstructorOnboardingFirstAid' }).catch(() => {
