@@ -433,6 +433,7 @@ export function HeaderNav({
             <button 
               onClick={() => {
                 setActiveTab('send-certs');
+                setShowSidebar(false);
                 setShowCprSelector(false);
                 setShowFaSelector(false);
                 setShowManualSelector(false);
