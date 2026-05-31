@@ -505,10 +505,10 @@ export const Sidebar = React.memo(function Sidebar({
                       Instructor Courses
                     </h3>
                     
-                    {/* What is this? tooltip */}
+                    {/* What is this? tooltip — positioned BELOW to avoid sidebar clipping */}
                     <div className="group relative w-full text-center">
                       <button className="text-xs font-bold tracking-wider text-white/70 hover:text-white transition-colors flex items-center gap-1 mx-auto cursor-pointer"><HelpCircle size={12} /><span>What is this?</span></button>
-                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-4 py-3 bg-[#1a1a1a] border border-white/10 rounded-xl text-[11px] text-[#aaa] leading-relaxed w-56 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-4 py-3 bg-[#1a1a1a] border border-white/10 rounded-xl text-xs text-[#bbb] leading-relaxed w-[220px] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-lg">
                         New to teaching?  Bridging your instructor credentials from AHA, Red Cross, or HSI? Before teaching your first EH Academy class, please take a moment complete the two instructor courses below. To receive credit please sign the agreement form at the end of each course.
                       </div>
                     </div>
@@ -527,18 +527,16 @@ export const Sidebar = React.memo(function Sidebar({
                           }
                         }}
                       >
-                        <div className="flex items-center gap-3 mb-2">
-                          <img 
-                            src="/CPRAEDOnboardingCover.png" 
-                            alt="CPR & AED Instructor Course" 
-                            className="w-12 h-12 rounded-lg object-cover shrink-0 border border-white/10 group-hover/card:border-eh-red/30 transition-colors"
-                          />
-                          <h4 className="text-[14px] font-bold text-eh-peach group-hover/card:text-white transition-colors leading-snug">
-                            CPR &amp; AED Instructors Course
-                          </h4>
-                        </div>
-                        <p className="text-[11px] text-eh-peach/50 italic leading-snug pl-[60px]">
-                          Instructor's how-to guide to teaching CPR &amp; AED one step at a time.
+                        <img 
+                          src="/CPRAEDOnboardingCover.png" 
+                          alt="CPR &amp; AED Instructor Course" 
+                          className="w-full aspect-video rounded-lg object-cover border border-white/10 group-hover/card:border-eh-red/30 transition-colors mb-3"
+                        />
+                        <h4 className="text-[14px] font-bold text-eh-peach group-hover/card:text-white transition-colors leading-snug mb-1">
+                          CPR &amp; AED Instructor Course
+                        </h4>
+                        <p className="text-[11px] text-eh-peach/50 italic leading-snug">
+                          Instructor's how-to guide to teaching CPR &amp; AED one step at a time. Opens in browser.
                         </p>
                       </div>
 
@@ -555,18 +553,16 @@ export const Sidebar = React.memo(function Sidebar({
                           }
                         }}
                       >
-                        <div className="flex items-center gap-3 mb-2">
-                          <img 
-                            src="/FAOnboardingCover.png" 
-                            alt="First Aid Instructor Course" 
-                            className="w-12 h-12 rounded-lg object-cover shrink-0 border border-white/10 group-hover/card:border-eh-red/30 transition-colors"
-                          />
-                          <h4 className="text-[14px] font-bold text-eh-peach group-hover/card:text-white transition-colors leading-snug">
-                            First Aid Instructor Course
-                          </h4>
-                        </div>
-                        <p className="text-[11px] text-eh-peach/50 italic leading-snug pl-[60px]">
-                          Instructor's how-to guide to teaching First Aid one step at a time.
+                        <img 
+                          src="/FAOnboardingCover.png" 
+                          alt="First Aid Instructor Course" 
+                          className="w-full aspect-video rounded-lg object-cover border border-white/10 group-hover/card:border-eh-red/30 transition-colors mb-3"
+                        />
+                        <h4 className="text-[14px] font-bold text-eh-peach group-hover/card:text-white transition-colors leading-snug mb-1">
+                          First Aid Instructor Course
+                        </h4>
+                        <p className="text-[11px] text-eh-peach/50 italic leading-snug">
+                          Instructor's how-to guide to teaching First Aid one step at a time. Opens in browser.
                         </p>
                       </div>
                     </div>
