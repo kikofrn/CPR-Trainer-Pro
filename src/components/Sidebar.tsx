@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, ChevronDown, CheckCircle2, Download, Play, Pause, Clock, MonitorPlay, Settings, Info, HelpCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, CheckCircle2, Download, Play, Pause, Clock, MonitorPlay, Settings, Info, HelpCircle, AlertCircle } from 'lucide-react';
 import { mediaUrl as m } from '../media-resolver';
 import { formatSpeed } from '../download-manager';
 import { invoke } from '@tauri-apps/api/core';
@@ -501,15 +501,18 @@ export const Sidebar = React.memo(function Sidebar({
               ) : (
                 activeTab === 'video' ? (
                   <div className="px-5 py-8 flex flex-col gap-4">
-                    <h3 className="text-base font-black uppercase tracking-[0.15em] text-white text-center leading-snug">
+                    <h3 className="text-xl font-black uppercase tracking-[0.15em] text-eh-red text-center leading-snug whitespace-nowrap">
                       Instructor Courses
                     </h3>
                     
-                    {/* What is this? tooltip — positioned BELOW to avoid sidebar clipping */}
-                    <div className="group relative w-full text-center">
-                      <button className="text-xs font-bold tracking-wider text-white/70 hover:text-white transition-colors flex items-center gap-1 mx-auto cursor-pointer"><HelpCircle size={12} /><span>What is this?</span></button>
-                      <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-4 py-3 bg-[#1a1a1a] border border-white/10 rounded-xl text-xs text-[#bbb] leading-relaxed w-[220px] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-lg">
-                        New to teaching?  Bridging your instructor credentials from AHA, Red Cross, or HSI? Before teaching your first EH Academy class, please take a moment complete the two instructor courses below. To receive credit please sign the agreement form at the end of each course.
+                    {/* IMPORTANT tooltip — positioned BELOW to avoid sidebar clipping */}
+                    <div className="group relative w-full text-center mt-2">
+                      <button className="text-[13px] font-bold tracking-widest text-eh-red/80 hover:text-eh-red transition-colors flex items-center gap-1.5 mx-auto cursor-pointer">
+                        <AlertCircle size={14} strokeWidth={2.5} />
+                        <span>IMPORTANT</span>
+                      </button>
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 px-5 py-4 bg-[#1a1a1a] border border-eh-red/20 rounded-xl text-[13px] text-eh-peach/90 leading-relaxed w-[280px] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-2xl">
+                        New to teaching? Bridging your instructor credentials from AHA, Red Cross, or HSI? Before teaching your first EH Academy class, please take a moment to complete the two instructor courses below. <span className="block mt-2 font-bold text-white tracking-wide drop-shadow-md">To receive credit please sign the agreement form at the end of each course.</span>
                       </div>
                     </div>
                     
