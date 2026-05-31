@@ -109,7 +109,7 @@ export function HeaderNav({
           <div className="relative h-full flex items-end">
             <button 
               onClick={() => {
-                if (lastCprView && (activeTab === 'manual' || activeTab === 'send-certs')) {
+                if (lastCprView && activeTab === 'manual') {
                   setActiveTab(lastCprView);
                   setShowSidebar(true);
                   setShowCprSelector(false);
@@ -210,7 +210,7 @@ export function HeaderNav({
           <div className="relative h-full flex items-end">
             <button 
               onClick={() => {
-                if (lastFaView && (activeTab === 'manual' || activeTab === 'send-certs')) {
+                if (lastFaView && activeTab === 'manual') {
                   setActiveTab(lastFaView);
                   setShowSidebar(true);
                   setShowFaSelector(false);

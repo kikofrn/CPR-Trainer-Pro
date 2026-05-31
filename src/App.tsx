@@ -363,6 +363,7 @@ export default function App() {
       switchSlideshow(index);
       setActiveTab('slideshow');
     }
+    setShowSidebar(true);
     setShowCprSelector(false);
     setShowFaSelector(false);
     setShowManualSelector(false);
