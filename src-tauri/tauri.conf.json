@@ -1,6 +1,6 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "CPR Trainer Pro",
+  "productName": "CPRTrainerPro",
   "version": "2.3.0",
   "identifier": "com.ehacademy.cpr-trainer-pro",
   "build": {
