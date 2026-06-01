@@ -3,7 +3,7 @@ import Foundation
 @MainActor
 final class AppViewModel: ObservableObject {
     @Published private(set) var catalog: TrainingCatalog
-    @Published var selectedTab: AppTab = .courses
+    @Published var selectedTab: AppTab = .cprAED
     @Published var selectedCourseID: Course.ID?
     @Published var firstAidPediatricFocused = false
 
@@ -36,8 +36,9 @@ final class AppViewModel: ObservableObject {
 }
 
 enum AppTab: Hashable {
-    case courses
-    case downloads
+    case cprAED
+    case firstAid
     case manuals
     case sendCerts
+    case settings
 }

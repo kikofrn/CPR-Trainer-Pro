@@ -27,17 +27,17 @@ struct RootView: View {
 
     private var tabContent: some View {
         TabView(selection: $appViewModel.selectedTab) {
-            CoursesView()
+            CoursesView(courseID: .cprAED, title: "CPR/AED")
                 .tabItem {
-                    Label("Courses", systemImage: "play.rectangle.fill")
+                    Label("CPR/AED", systemImage: "heart.text.square.fill")
                 }
-                .tag(AppTab.courses)
+                .tag(AppTab.cprAED)
 
-            DownloadsView()
+            CoursesView(courseID: .firstAid, title: "First Aid")
                 .tabItem {
-                    Label("Downloads", systemImage: "arrow.down.circle.fill")
+                    Label("First Aid", systemImage: "cross.case.fill")
                 }
-                .tag(AppTab.downloads)
+                .tag(AppTab.firstAid)
 
             ManualsView()
                 .tabItem {
@@ -50,6 +50,12 @@ struct RootView: View {
                     Label("Send Certs", systemImage: "safari.fill")
                 }
                 .tag(AppTab.sendCerts)
+
+            SettingsView()
+                .tabItem {
+                    Label("Settings", systemImage: "questionmark.circle.fill")
+                }
+                .tag(AppTab.settings)
         }
         .tint(Theme.Colors.selectedTabItem)
     }

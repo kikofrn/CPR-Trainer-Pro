@@ -39,6 +39,7 @@
 		001000000000000000000130 /* StickyBrandScrollView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000031 /* StickyBrandScrollView.swift */; };
 		001000000000000000000131 /* DownloadAnimationOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000032 /* DownloadAnimationOverlay.swift */; };
 		001000000000000000000132 /* FullScreenToggleButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000033 /* FullScreenToggleButton.swift */; };
+		001000000000000000000133 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000035 /* SettingsView.swift */; };
 		002000000000000000000101 /* ContentManifestContractTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 002000000000000000000001 /* ContentManifestContractTests.swift */; };
 		002000000000000000000102 /* content-manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000016 /* content-manifest.json */; };
 /* End PBXBuildFile section */
@@ -88,6 +89,7 @@
 		001000000000000000000032 /* DownloadAnimationOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadAnimationOverlay.swift; sourceTree = "<group>"; };
 		001000000000000000000033 /* FullScreenToggleButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullScreenToggleButton.swift; sourceTree = "<group>"; };
 		001000000000000000000034 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		001000000000000000000035 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		002000000000000000000001 /* ContentManifestContractTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentManifestContractTests.swift; sourceTree = "<group>"; };
 		002000000000000000000020 /* CPRTrainerProTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CPRTrainerProTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -169,6 +171,7 @@
 				001000000000000000000323 /* Manuals */,
 				001000000000000000000324 /* SendCerts */,
 				001000000000000000000325 /* Player */,
+				001000000000000000000326 /* Settings */,
 			);
 			path = Features;
 			sourceTree = "<group>";
@@ -213,6 +216,14 @@
 				001000000000000000000021 /* SlideshowPlayerView.swift */,
 			);
 			path = Player;
+			sourceTree = "<group>";
+		};
+		001000000000000000000326 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				001000000000000000000035 /* SettingsView.swift */,
+			);
+			path = Settings;
 			sourceTree = "<group>";
 		};
 		001000000000000000000330 /* Components */ = {
@@ -412,6 +423,7 @@
 				001000000000000000000130 /* StickyBrandScrollView.swift in Sources */,
 				001000000000000000000131 /* DownloadAnimationOverlay.swift in Sources */,
 				001000000000000000000132 /* FullScreenToggleButton.swift in Sources */,
+				001000000000000000000133 /* SettingsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -1,6 +1,9 @@
 import SwiftUI
 
 struct CoursesView: View {
+    let courseID: Course.ID
+    let title: String
+
     @EnvironmentObject private var appViewModel: AppViewModel
     @EnvironmentObject private var downloadService: DownloadService
     @State private var cprVAEnabled = false
@@ -11,11 +14,16 @@ struct CoursesView: View {
 
     var body: some View {
         NavigationStack {
-            StickyBrandScrollView(showsCourseSubtitle: true) {
-                VStack(alignment: .leading, spacing: 10) {
-                    ForEach(appViewModel.catalog.courses) { course in
+            StickyBrandScrollView(title: title, showsCourseSubtitle: true) {
+                if let course = appViewModel.catalog.courses.first(where: { $0.id == courseID }) {
+                    VStack(alignment: .leading, spacing: 10) {
                         courseSection(for: course)
                     }
+                    .onAppear {
+                        appViewModel.select(course)
+                    }
+                } else {
+                    MissingCourseView()
                 }
             }
             .navigationTitle("")
@@ -61,7 +69,7 @@ struct CoursesView: View {
                 course: course,
                 selectedMode: selectedMode,
                 downloadState: state,
-                isSelected: appViewModel.selectedCourseID == course.id,
+                isSelected: true,
                 isExpanded: expandedCourseID == course.id,
                 onSelect: {
                     appViewModel.select(course)
@@ -71,21 +79,19 @@ struct CoursesView: View {
                 }
             )
 
-            if appViewModel.selectedCourseID == course.id {
-                modeControls(for: course, vaEnabled: vaBinding)
+            modeControls(for: course, vaEnabled: vaBinding)
 
-                PrimaryActionButton(
-                    title: "Launch Course",
-                    systemImage: "play.fill",
-                    action: {
-                        launchOrPromptDownload(
-                            course: course,
-                            mode: selectedMode,
-                            state: state
-                        )
-                    }
-                )
-            }
+            PrimaryActionButton(
+                title: "Launch Course",
+                systemImage: "play.fill",
+                action: {
+                    launchOrPromptDownload(
+                        course: course,
+                        mode: selectedMode,
+                        state: state
+                    )
+                }
+            )
         }
     }
 
@@ -221,5 +227,28 @@ private struct MissingLaunchView: View {
                 }
             }
         }
+    }
+}
+
+private struct MissingCourseView: View {
+    var body: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.largeTitle)
+                .foregroundStyle(Theme.Colors.warning)
+
+            Text("Course Missing")
+                .font(.headline)
+                .foregroundStyle(.white)
+
+            Text("The selected course is not available in the local manifest.")
+                .font(.subheadline)
+                .foregroundStyle(.white.opacity(0.68))
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(24)
+        .background(Theme.Colors.surface)
+        .clipShape(RoundedRectangle(cornerRadius: Theme.Layout.cardRadius, style: .continuous))
     }
 }
