@@ -117,13 +117,16 @@ private struct LaunchExperienceView: View {
                     }
                     .opacity(settlesLogo ? 0 : 1)
                     .scaleEffect(showsLogo ? 0.72 : 1)
-                    .offset(y: showsLogo ? -96 : 0)
+                    .position(
+                        x: proxy.size.width / 2,
+                        y: showsLogo ? proxy.size.height / 2 + 86 : proxy.size.height / 2
+                    )
 
                 BrandHeader(logoHeight: settlesLogo ? 66 : 100)
                     .frame(maxWidth: settlesLogo ? 420 : 560)
                     .position(
                         x: proxy.size.width / 2,
-                        y: settlesLogo ? proxy.safeAreaInsets.top + 46 : proxy.size.height / 2
+                        y: settlesLogo ? proxy.safeAreaInsets.top + 46 : proxy.size.height / 2 - 74
                     )
                     .opacity(showsLogo ? 1 : 0)
             }

@@ -9,10 +9,12 @@ struct VideoCoursePlayerView: View {
     @State private var selectedChapterID: Chapter.ID?
     @State private var player: AVPlayer?
     @State private var timeObserver: Any?
+    @State private var endObserver: NSObjectProtocol?
     @State private var subtitleCues: [SubtitleCue] = []
     @State private var currentSubtitleText: String?
     @State private var isFullScreen = false
     @State private var captionsEnabled = true
+    @State private var continuousPlayEnabled = false
     @State private var overlayControlsVisible = true
     @State private var overlayControlsHideToken = UUID()
 
@@ -40,10 +42,14 @@ struct VideoCoursePlayerView: View {
                         playerArea(fillsAvailableSpace: playerShouldFill)
 
                         if !playerShouldFill {
-                            chaptersList
+                            chaptersPanel
                         }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                    if playerShouldFill && overlayControlsVisible {
+                        chapterControlsOverlay(bottomInset: proxy.safeAreaInsets.bottom)
+                    }
 
                     if isFullScreen && overlayControlsVisible {
                         fullScreenToolbar(topInset: proxy.safeAreaInsets.top)
@@ -72,6 +78,8 @@ struct VideoCoursePlayerView: View {
 
                 ToolbarItem(placement: .topBarTrailing) {
                     HStack(spacing: 10) {
+                        ContinuousPlayToggleButton(isEnabled: $continuousPlayEnabled)
+
                         CaptionToggleButton(captionsEnabled: $captionsEnabled)
 
                         AirPlayRoutePicker()
@@ -98,6 +106,7 @@ struct VideoCoursePlayerView: View {
             }
             .onDisappear {
                 removeTimeObserver()
+                removeEndObserver()
                 player?.pause()
             }
         }
@@ -151,6 +160,42 @@ struct VideoCoursePlayerView: View {
         }
     }
 
+    private var chaptersPanel: some View {
+        VStack(spacing: 0) {
+            continuousPlayRow
+            chaptersList
+        }
+    }
+
+    private var continuousPlayRow: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "repeat")
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(continuousPlayEnabled ? Theme.Colors.peach : .white.opacity(0.56))
+                .frame(width: 34, height: 34)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Continuous Play")
+                    .font(.headline.weight(.semibold))
+                    .foregroundStyle(.white)
+
+                Text("Automatically advance to the next video chapter.")
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.58))
+                    .lineLimit(2)
+            }
+
+            Spacer(minLength: 8)
+
+            Toggle("", isOn: $continuousPlayEnabled)
+                .labelsHidden()
+                .tint(Theme.Colors.peach)
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 12)
+        .background(Theme.Colors.surface)
+    }
+
     private var chaptersList: some View {
         List(playableChapters) { chapter in
             Button {
@@ -172,11 +217,69 @@ struct VideoCoursePlayerView: View {
 
                     Spacer()
                 }
+                .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
             .listRowBackground(Theme.Colors.surface)
             .foregroundStyle(.white)
         }
         .scrollContentBackground(.hidden)
+    }
+
+    private func chapterControlsOverlay(bottomInset: CGFloat) -> some View {
+        VStack {
+            Spacer()
+
+            HStack(spacing: 14) {
+                chapterControlButton(systemImage: "backward.end.fill", label: "Previous chapter", isDisabled: !hasPreviousChapter) {
+                    previousChapter()
+                }
+
+                VStack(spacing: 3) {
+                    Text(selectedChapter?.title ?? "Video Chapter")
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
+
+                    Text(continuousPlayEnabled ? "Continuous Play On" : "Continuous Play Off")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(Theme.Colors.peach)
+                }
+                .frame(maxWidth: .infinity)
+
+                ContinuousPlayToggleButton(isEnabled: $continuousPlayEnabled)
+
+                chapterControlButton(systemImage: "forward.end.fill", label: "Next chapter", isDisabled: !hasNextChapter) {
+                    nextChapter()
+                }
+            }
+            .padding(10)
+            .background(.black.opacity(0.62))
+            .clipShape(Capsule())
+            .padding(.horizontal, 18)
+            .padding(.bottom, bottomInset + 18)
+        }
+        .transition(.opacity)
+    }
+
+    private func chapterControlButton(
+        systemImage: String,
+        label: String,
+        isDisabled: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Image(systemName: systemImage)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(isDisabled ? .white.opacity(0.30) : .white)
+                .frame(width: 38, height: 38)
+                .background(.white.opacity(isDisabled ? 0.06 : 0.14))
+                .clipShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .disabled(isDisabled)
+        .accessibilityLabel(label)
     }
 
     private func fullScreenToolbar(topInset: CGFloat) -> some View {
@@ -203,6 +306,8 @@ struct VideoCoursePlayerView: View {
                 Spacer(minLength: 12)
 
                 HStack(spacing: 8) {
+                    ContinuousPlayToggleButton(isEnabled: $continuousPlayEnabled)
+
                     CaptionToggleButton(captionsEnabled: $captionsEnabled)
 
                     AirPlayRoutePicker()
@@ -232,11 +337,43 @@ struct VideoCoursePlayerView: View {
     }
 
     private func select(_ chapter: Chapter) {
+        if selectedChapterID == chapter.id {
+            player?.seek(to: .zero)
+            player?.play()
+            return
+        }
+
         selectedChapterID = chapter.id
+    }
+
+    private var selectedChapterIndex: Int? {
+        guard let selectedChapter else { return nil }
+        return playableChapters.firstIndex { $0.id == selectedChapter.id }
+    }
+
+    private var hasPreviousChapter: Bool {
+        guard let selectedChapterIndex else { return false }
+        return selectedChapterIndex > playableChapters.startIndex
+    }
+
+    private var hasNextChapter: Bool {
+        guard let selectedChapterIndex else { return false }
+        return playableChapters.index(after: selectedChapterIndex) < playableChapters.endIndex
+    }
+
+    private func previousChapter() {
+        guard let selectedChapterIndex, hasPreviousChapter else { return }
+        selectedChapterID = playableChapters[playableChapters.index(before: selectedChapterIndex)].id
+    }
+
+    private func nextChapter() {
+        guard let selectedChapterIndex, hasNextChapter else { return }
+        selectedChapterID = playableChapters[playableChapters.index(after: selectedChapterIndex)].id
     }
 
     private func closePlayer() {
         removeTimeObserver()
+        removeEndObserver()
         player?.pause()
         dismiss()
     }
@@ -265,8 +402,8 @@ struct VideoCoursePlayerView: View {
 
     private func loadSelectedChapter() {
         removeTimeObserver()
+        removeEndObserver()
         player?.pause()
-        player = nil
         subtitleCues = []
         currentSubtitleText = nil
 
@@ -275,14 +412,31 @@ struct VideoCoursePlayerView: View {
             storageService.fileExists(selectedChapter.filename),
             let url = try? storageService.localURL(for: selectedChapter.filename)
         else {
+            player?.replaceCurrentItem(with: nil)
+            player = nil
             return
         }
 
-        let nextPlayer = AVPlayer(url: url)
+        let playerItem = AVPlayerItem(url: url)
+        let nextPlayer = player ?? AVPlayer()
+        nextPlayer.replaceCurrentItem(with: playerItem)
         subtitleCues = subtitleService.cues(forMediaFilename: selectedChapter.filename)
+        attachEndObserver(to: playerItem)
         attachSubtitleObserver(to: nextPlayer)
         player = nextPlayer
         nextPlayer.play()
+    }
+
+    private func attachEndObserver(to item: AVPlayerItem) {
+        endObserver = NotificationCenter.default.addObserver(
+            forName: .AVPlayerItemDidPlayToEndTime,
+            object: item,
+            queue: .main
+        ) { _ in
+            Task { @MainActor in
+                handleChapterEnded()
+            }
+        }
     }
 
     private func attachSubtitleObserver(to player: AVPlayer) {
@@ -298,6 +452,23 @@ struct VideoCoursePlayerView: View {
         if let timeObserver {
             player?.removeTimeObserver(timeObserver)
             self.timeObserver = nil
+        }
+    }
+
+    private func removeEndObserver() {
+        if let endObserver {
+            NotificationCenter.default.removeObserver(endObserver)
+            self.endObserver = nil
+        }
+    }
+
+    private func handleChapterEnded() {
+        currentSubtitleText = nil
+
+        guard continuousPlayEnabled else { return }
+
+        if hasNextChapter {
+            nextChapter()
         }
     }
 }
