@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, SkipBack, SkipForward, Play, Pause, Projector, VolumeX, Volume2, Maximize2 } from 'lucide-react';
+import { X, SkipBack, SkipForward, Play, Pause, Projector, VolumeX, Volume2, Maximize2, Lightbulb } from 'lucide-react';
 import { cdnUrl } from '../media-resolver';
+import { INSTRUCTOR_TIPS } from '../instructor-tips';
 
 interface SlideshowPlayerProps {
   activeSlideshow: any;
@@ -52,12 +53,14 @@ export function SlideshowPlayer({
   slideshowIsPlaying, toggleSlideshowPlay,
   m, fileStatuses
 }: SlideshowPlayerProps) {
+  const [showTips, setShowTips] = useState(false);
+
   if (!activeSlideshow || !activeSlide) return null;
 
   return (
     <div ref={slideshowContainerRef} className="w-full h-full relative z-10">
       <div className={`w-full h-full relative bg-black flex flex-col items-center justify-center ${!isUiVisible ? 'cursor-none' : ''}`}>
-        <div className={`absolute top-6 right-6 z-50 flex items-center gap-4 transition-opacity duration-500 ${!isUiVisible ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+        <div className={`absolute top-6 right-6 z-50 flex items-center gap-4 transition-opacity duration-500 ${!isUiVisible || showTips ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
           <button 
             onClick={() => {
               if (document.fullscreenElement) {
@@ -114,6 +117,63 @@ export function SlideshowPlayer({
           })}
         </div>
 
+        {/* Instructor Tips Overlay */}
+        <AnimatePresence>
+          {showTips && (
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ duration: 0.3 }}
+              className={`absolute top-0 right-0 w-full md:w-1/3 max-w-md h-full bg-black/70 backdrop-blur-xl border-l border-white/10 p-8 pt-24 overflow-y-auto z-40 transition-opacity duration-500 ${!isUiVisible ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+            >
+              <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/10">
+                <div className="flex items-center gap-3">
+                  <Lightbulb className="text-eh-peach" size={24} />
+                  <h2 className="text-xl font-semibold text-white tracking-wide">Instructor Tips</h2>
+                </div>
+                <button
+                  onClick={() => setShowTips(false)}
+                  className="p-2 hover:bg-white/10 rounded-full transition-colors text-white/60 hover:text-white cursor-pointer"
+                  title="Close Tips"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <div className="space-y-4 text-eh-peach/90 text-sm leading-relaxed pb-32">
+                {INSTRUCTOR_TIPS[activeSlideshow.id]?.[activeSlide.id] ? (
+                  INSTRUCTOR_TIPS[activeSlideshow.id][activeSlide.id].map((paragraph, idx) => {
+                    const renderText = (text: string) => {
+                      let parts = text.split(/(\*\*.*?\*\*)/g);
+                      return parts.map((part, i) => {
+                        if (part.startsWith('**') && part.endsWith('**')) {
+                          return <strong key={i} className="text-white font-bold">{part.slice(2, -2)}</strong>;
+                        }
+                        let italicParts = part.split(/(\*.*?\*)/g);
+                        return italicParts.map((ip, j) => {
+                          if (ip.startsWith('*') && ip.endsWith('*')) {
+                            return <em key={`${i}-${j}`} className="text-eh-blue italic">{ip.slice(1, -1)}</em>;
+                          }
+                          return ip;
+                        });
+                      });
+                    };
+                    
+                    return (
+                      <p key={idx} className={paragraph.startsWith('-') ? 'pl-4 relative before:content-["•"] before:absolute before:left-0 before:text-eh-peach/50' : ''}>
+                        {renderText(paragraph.startsWith('- ') ? paragraph.substring(2) : paragraph)}
+                      </p>
+                    );
+                  })
+                ) : (
+                  <p className="text-white/40 italic">No notes available for this slide.</p>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Controls Overlay */}
         <div className={`absolute bottom-0 left-0 right-0 p-8 pt-20 bg-gradient-to-t from-black via-black/60 to-transparent z-20 pointer-events-none transition-opacity duration-500 ${!isUiVisible ? 'opacity-0' : 'opacity-100'}`}>
           <div className="max-w-4xl mx-auto pointer-events-auto">
@@ -153,14 +213,27 @@ export function SlideshowPlayer({
                 >
                   <SkipForward size={28} />
                 </button>
+
+                <div className="w-px h-8 bg-white/10 mx-2 hidden sm:block"></div>
+
+                <div className="hidden md:block">
+                  <p className="text-eh-peach/40 text-[10px] uppercase tracking-widest font-bold mb-1">Slide {activeSlideIndex + 1} of {activeSlideshow.slides.length}</p>
+                  <p className="text-sm font-medium text-eh-peach/80 line-clamp-1">
+                    {activeSlide.title}
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => setShowTips(!showTips)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all cursor-pointer ${showTips ? 'bg-green-500/5 border border-green-500/20 shadow-[0_0_15px_rgba(34,197,94,0.15)]' : 'hover:bg-eh-peach/10 border border-transparent'}`}
+                  title="Toggle Instructor Tips"
+                >
+                  <Lightbulb size={24} className={showTips ? 'text-green-500 fill-green-500/20 drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]' : 'text-eh-peach/80'} />
+                  <span className="text-sm font-medium hidden lg:block text-eh-peach/80">Tips</span>
+                </button>
               </div>
 
-              <div className="flex-1 px-8 hidden md:block">
-                <p className="text-eh-peach/40 text-[10px] uppercase tracking-widest font-bold mb-1">Slide {activeSlideIndex + 1} of {activeSlideshow.slides.length}</p>
-                <p className="text-sm font-medium text-eh-peach/80 line-clamp-1">
-                  {activeSlide.title}
-                </p>
-              </div>
+              <div className="flex-1"></div>
 
               <div className="flex items-center gap-6">
                 {activeSlide.type === 'video' && (
