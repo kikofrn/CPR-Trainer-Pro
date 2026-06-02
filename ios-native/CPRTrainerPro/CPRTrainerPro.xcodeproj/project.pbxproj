@@ -43,6 +43,7 @@
 		001000000000000000000134 /* InstructorTipsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000036 /* InstructorTipsService.swift */; };
 		001000000000000000000135 /* SlideshowInstructorOverlays.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000037 /* SlideshowInstructorOverlays.swift */; };
 		001000000000000000000136 /* instructor-tips.json in Resources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000038 /* instructor-tips.json */; };
+		001000000000000000000137 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000039 /* Assets.xcassets */; };
 		002000000000000000000101 /* ContentManifestContractTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 002000000000000000000001 /* ContentManifestContractTests.swift */; };
 		002000000000000000000102 /* content-manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000016 /* content-manifest.json */; };
 		002000000000000000000103 /* instructor-tips.json in Resources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000038 /* instructor-tips.json */; };
@@ -97,6 +98,7 @@
 		001000000000000000000036 /* InstructorTipsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InstructorTipsService.swift; sourceTree = "<group>"; };
 		001000000000000000000037 /* SlideshowInstructorOverlays.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlideshowInstructorOverlays.swift; sourceTree = "<group>"; };
 		001000000000000000000038 /* instructor-tips.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "instructor-tips.json"; sourceTree = "<group>"; };
+		001000000000000000000039 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		002000000000000000000001 /* ContentManifestContractTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentManifestContractTests.swift; sourceTree = "<group>"; };
 		002000000000000000000020 /* CPRTrainerProTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CPRTrainerProTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -294,6 +296,7 @@
 			children = (
 				001000000000000000000016 /* content-manifest.json */,
 				001000000000000000000038 /* instructor-tips.json */,
+				001000000000000000000039 /* Assets.xcassets */,
 				001000000000000000000034 /* Info.plist */,
 				001000000000000000000023 /* Subtitles */,
 				001000000000000000000028 /* Artwork */,
@@ -385,6 +388,7 @@
 			files = (
 				001000000000000000000116 /* content-manifest.json in Resources */,
 				001000000000000000000136 /* instructor-tips.json in Resources */,
+				001000000000000000000137 /* Assets.xcassets in Resources */,
 				001000000000000000000122 /* Subtitles in Resources */,
 				001000000000000000000127 /* Artwork in Resources */,
 			);
@@ -574,6 +578,7 @@
 		001000000000000000000711 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -601,6 +606,7 @@
 		001000000000000000000712 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
