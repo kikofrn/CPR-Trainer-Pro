@@ -13,7 +13,7 @@ struct VideoCoursePlayerView: View {
     @State private var subtitleCues: [SubtitleCue] = []
     @State private var currentSubtitleText: String?
     @State private var isFullScreen = false
-    @State private var captionsEnabled = true
+    @State private var captionsEnabled = false
     @State private var continuousPlayEnabled = false
     @State private var overlayControlsVisible = true
     @State private var overlayControlsHideToken = UUID()
