@@ -89,6 +89,24 @@ final class ContentManifestContractTests: XCTestCase {
         XCTAssertTrue(pediatricSlideshow.slides.contains { $0.type == .video })
     }
 
+    func testInstructorTipsCoverEveryBundledSlideshowSlide() throws {
+        let bundle = Bundle(for: ContentManifestContractTests.self)
+        let tips = try InstructorTipsService.loadTips(from: bundle)
+
+        XCTAssertEqual(Set(tips.keys), Set(catalog.slideshows.map(\.id)))
+
+        for slideshow in catalog.slideshows {
+            let slideshowTips = try XCTUnwrap(tips[slideshow.id])
+            XCTAssertEqual(slideshowTips.count, slideshow.slides.count)
+
+            for (slide, tip) in zip(slideshow.slides, slideshowTips) {
+                XCTAssertEqual(tip.slideID, slide.id)
+                XCTAssertFalse(tip.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                XCTAssertFalse(tip.body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+        }
+    }
+
     func testDownloadPackagesPreserveExpectedAssets() throws {
         let expectedCounts: [DownloadPackage.ID: Int] = [
             .cprSlideshow: 44,

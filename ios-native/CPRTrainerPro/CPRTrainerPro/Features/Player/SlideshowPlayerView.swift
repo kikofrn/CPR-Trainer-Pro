@@ -16,10 +16,19 @@ struct SlideshowPlayerView: View {
     @State private var captionsEnabled = true
     @State private var overlayControlsVisible = true
     @State private var overlayControlsHideToken = UUID()
+    @State private var instructorTipsVisible = false
+    @State private var slidePickerVisible = false
+
+    private let instructorTipsService = InstructorTipsService.shared
 
     private var activeSlide: Slide? {
         guard slideshow.slides.indices.contains(slideIndex) else { return nil }
         return slideshow.slides[slideIndex]
+    }
+
+    private var activeInstructorTip: InstructorSlideTip? {
+        guard let activeSlide else { return nil }
+        return instructorTipsService.tip(for: slideshow.id, slideID: activeSlide.id)
     }
 
     private var subtitleService: SubtitleService {
@@ -42,6 +51,8 @@ struct SlideshowPlayerView: View {
                     if isFullScreen && overlayControlsVisible {
                         fullScreenToolbar(topInset: proxy.safeAreaInsets.top)
                     }
+
+                    instructorDeviceOverlay(bottomInset: proxy.safeAreaInsets.bottom)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .ignoresSafeArea(isFullScreen ? .all : [], edges: .all)
@@ -75,6 +86,9 @@ struct SlideshowPlayerView: View {
             .onAppear(perform: loadActiveSlide)
             .onChange(of: slideIndex) { _, _ in
                 loadActiveSlide()
+                if activeInstructorTip == nil {
+                    instructorTipsVisible = false
+                }
             }
             .onChange(of: isFullScreen) { _, isFullScreen in
                 overlayControlsVisible = true
@@ -140,11 +154,21 @@ struct SlideshowPlayerView: View {
     private var controls: some View {
         VStack(spacing: 12) {
             if let activeSlide {
-                Text(activeSlide.title)
-                    .font(.headline)
-                    .foregroundStyle(.white)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.center)
+                Button(action: showSlidePicker) {
+                    HStack(spacing: 8) {
+                        Text(activeSlide.title)
+                            .font(.headline)
+                            .foregroundStyle(.white)
+                            .lineLimit(2)
+                            .multilineTextAlignment(.center)
+
+                        Image(systemName: "chevron.up")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(Theme.Colors.peach)
+                    }
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Choose a slide")
             }
 
             HStack(spacing: 18) {
@@ -190,11 +214,15 @@ struct SlideshowPlayerView: View {
 
                 Spacer(minLength: 12)
 
-                Text(slideshow.title)
-                    .font(.headline.weight(.bold))
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
+                Button(action: showSlidePicker) {
+                    Text(slideshow.title)
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Choose a slide")
 
                 Spacer(minLength: 12)
 
@@ -229,6 +257,48 @@ struct SlideshowPlayerView: View {
         .transition(.opacity)
     }
 
+    @ViewBuilder
+    private func instructorDeviceOverlay(bottomInset: CGFloat) -> some View {
+        if shouldShowInstructorOverlay {
+            VStack(spacing: 12) {
+                Spacer(minLength: 0)
+
+                if slidePickerVisible {
+                    SlidePickerPanel(
+                        slideshow: slideshow,
+                        selectedIndex: slideIndex,
+                        selectSlide: selectSlide,
+                        close: hideSlidePicker
+                    )
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                } else if instructorTipsVisible, let activeInstructorTip {
+                    InstructorTipsPanel(
+                        tip: activeInstructorTip,
+                        close: hideInstructorTips
+                    )
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+
+                if activeInstructorTip != nil && !slidePickerVisible {
+                    HStack {
+                        Spacer()
+
+                        InstructorTipsToggleButton(
+                            isPresented: instructorTipsVisible,
+                            action: toggleInstructorTips
+                        )
+                    }
+                    .padding(.trailing, 20)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.bottom, bottomInset + 14)
+            .animation(.spring(response: 0.28, dampingFraction: 0.86), value: instructorTipsVisible)
+            .animation(.spring(response: 0.28, dampingFraction: 0.86), value: slidePickerVisible)
+            .zIndex(3)
+        }
+    }
+
     private func missingSlideView(_ slide: Slide) -> some View {
         VStack(spacing: 12) {
             Image(systemName: "exclamationmark.triangle.fill")
@@ -255,6 +325,47 @@ struct SlideshowPlayerView: View {
     private func nextSlide() {
         guard slideIndex < slideshow.slides.count - 1 else { return }
         slideIndex += 1
+    }
+
+    private var shouldShowInstructorOverlay: Bool {
+        !isFullScreen || overlayControlsVisible || instructorTipsVisible || slidePickerVisible
+    }
+
+    private func toggleInstructorTips() {
+        guard activeInstructorTip != nil else { return }
+        slidePickerVisible = false
+        withAnimation {
+            instructorTipsVisible.toggle()
+        }
+        revealFullScreenControls()
+    }
+
+    private func hideInstructorTips() {
+        withAnimation {
+            instructorTipsVisible = false
+        }
+        revealFullScreenControls()
+    }
+
+    private func showSlidePicker() {
+        instructorTipsVisible = false
+        withAnimation {
+            slidePickerVisible = true
+        }
+        revealFullScreenControls()
+    }
+
+    private func hideSlidePicker() {
+        withAnimation {
+            slidePickerVisible = false
+        }
+        revealFullScreenControls()
+    }
+
+    private func selectSlide(_ index: Int) {
+        guard slideshow.slides.indices.contains(index) else { return }
+        slideIndex = index
+        hideSlidePicker()
     }
 
     private func handleSwipe(_ value: DragGesture.Value) {

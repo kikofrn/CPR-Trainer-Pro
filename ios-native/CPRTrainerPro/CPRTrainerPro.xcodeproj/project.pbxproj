@@ -40,8 +40,12 @@
 		001000000000000000000131 /* DownloadAnimationOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000032 /* DownloadAnimationOverlay.swift */; };
 		001000000000000000000132 /* FullScreenToggleButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000033 /* FullScreenToggleButton.swift */; };
 		001000000000000000000133 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000035 /* SettingsView.swift */; };
+		001000000000000000000134 /* InstructorTipsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000036 /* InstructorTipsService.swift */; };
+		001000000000000000000135 /* SlideshowInstructorOverlays.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000037 /* SlideshowInstructorOverlays.swift */; };
+		001000000000000000000136 /* instructor-tips.json in Resources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000038 /* instructor-tips.json */; };
 		002000000000000000000101 /* ContentManifestContractTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 002000000000000000000001 /* ContentManifestContractTests.swift */; };
 		002000000000000000000102 /* content-manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000016 /* content-manifest.json */; };
+		002000000000000000000103 /* instructor-tips.json in Resources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000038 /* instructor-tips.json */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -90,6 +94,9 @@
 		001000000000000000000033 /* FullScreenToggleButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullScreenToggleButton.swift; sourceTree = "<group>"; };
 		001000000000000000000034 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		001000000000000000000035 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		001000000000000000000036 /* InstructorTipsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InstructorTipsService.swift; sourceTree = "<group>"; };
+		001000000000000000000037 /* SlideshowInstructorOverlays.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlideshowInstructorOverlays.swift; sourceTree = "<group>"; };
+		001000000000000000000038 /* instructor-tips.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "instructor-tips.json"; sourceTree = "<group>"; };
 		002000000000000000000001 /* ContentManifestContractTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentManifestContractTests.swift; sourceTree = "<group>"; };
 		002000000000000000000020 /* CPRTrainerProTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CPRTrainerProTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -214,6 +221,7 @@
 			children = (
 				001000000000000000000019 /* VideoCoursePlayerView.swift */,
 				001000000000000000000021 /* SlideshowPlayerView.swift */,
+				001000000000000000000037 /* SlideshowInstructorOverlays.swift */,
 			);
 			path = Player;
 			sourceTree = "<group>";
@@ -258,6 +266,7 @@
 				001000000000000000000006 /* ContentManifestService.swift */,
 				001000000000000000000007 /* DownloadService.swift */,
 				001000000000000000000024 /* DownloadQueueStore.swift */,
+				001000000000000000000036 /* InstructorTipsService.swift */,
 				001000000000000000000026 /* SubtitleService.swift */,
 				001000000000000000000017 /* StorageService.swift */,
 			);
@@ -284,6 +293,7 @@
 			isa = PBXGroup;
 			children = (
 				001000000000000000000016 /* content-manifest.json */,
+				001000000000000000000038 /* instructor-tips.json */,
 				001000000000000000000034 /* Info.plist */,
 				001000000000000000000023 /* Subtitles */,
 				001000000000000000000028 /* Artwork */,
@@ -374,6 +384,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				001000000000000000000116 /* content-manifest.json in Resources */,
+				001000000000000000000136 /* instructor-tips.json in Resources */,
 				001000000000000000000122 /* Subtitles in Resources */,
 				001000000000000000000127 /* Artwork in Resources */,
 			);
@@ -384,6 +395,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				002000000000000000000102 /* content-manifest.json in Resources */,
+				002000000000000000000103 /* instructor-tips.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -424,6 +436,8 @@
 				001000000000000000000131 /* DownloadAnimationOverlay.swift in Sources */,
 				001000000000000000000132 /* FullScreenToggleButton.swift in Sources */,
 				001000000000000000000133 /* SettingsView.swift in Sources */,
+				001000000000000000000134 /* InstructorTipsService.swift in Sources */,
+				001000000000000000000135 /* SlideshowInstructorOverlays.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
