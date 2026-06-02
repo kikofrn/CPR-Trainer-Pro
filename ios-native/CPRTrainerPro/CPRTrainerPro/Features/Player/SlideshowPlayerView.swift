@@ -154,21 +154,36 @@ struct SlideshowPlayerView: View {
     private var controls: some View {
         VStack(spacing: 12) {
             if let activeSlide {
-                Button(action: showSlidePicker) {
-                    HStack(spacing: 8) {
-                        Text(activeSlide.title)
-                            .font(.headline)
-                            .foregroundStyle(.white)
-                            .lineLimit(2)
-                            .multilineTextAlignment(.center)
+                ZStack {
+                    Button(action: showSlidePicker) {
+                        HStack(spacing: 8) {
+                            Text(activeSlide.title)
+                                .font(.headline)
+                                .foregroundStyle(.white)
+                                .lineLimit(2)
+                                .multilineTextAlignment(.center)
 
-                        Image(systemName: "chevron.up")
-                            .font(.caption.weight(.bold))
-                            .foregroundStyle(Theme.Colors.peach)
+                            Image(systemName: "chevron.up")
+                                .font(.caption.weight(.bold))
+                                .foregroundStyle(Theme.Colors.peach)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Choose a slide")
+                    .padding(.horizontal, activeInstructorTip == nil ? 0 : 92)
+
+                    if activeInstructorTip != nil {
+                        HStack {
+                            Spacer(minLength: 0)
+
+                            InstructorTipsToggleButton(
+                                isPresented: instructorTipsVisible,
+                                action: toggleInstructorTips
+                            )
+                            .fixedSize()
+                        }
                     }
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Choose a slide")
             }
 
             HStack(spacing: 18) {
@@ -177,23 +192,26 @@ struct SlideshowPlayerView: View {
                 } label: {
                     Image(systemName: "chevron.left.circle.fill")
                         .font(.system(size: 36))
+                        .frame(width: 56, height: 56)
                 }
                 .disabled(slideIndex == 0)
 
                 Text("\(slideIndex + 1) / \(slideshow.slides.count)")
                     .font(.subheadline.monospacedDigit().weight(.semibold))
                     .foregroundStyle(.white.opacity(0.74))
-                    .frame(minWidth: 80)
+                    .frame(minWidth: 88)
 
                 Button {
                     nextSlide()
                 } label: {
                     Image(systemName: "chevron.right.circle.fill")
                         .font(.system(size: 36))
+                        .frame(width: 56, height: 56)
                 }
                 .disabled(slideIndex >= slideshow.slides.count - 1)
             }
             .foregroundStyle(Theme.Colors.peach)
+            .frame(maxWidth: .infinity)
         }
         .padding(16)
         .background(Theme.Colors.surface)
@@ -279,7 +297,7 @@ struct SlideshowPlayerView: View {
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
 
-                if activeInstructorTip != nil && !slidePickerVisible {
+                if isFullScreen && activeInstructorTip != nil && !slidePickerVisible {
                     HStack {
                         Spacer()
 
@@ -292,7 +310,7 @@ struct SlideshowPlayerView: View {
                 }
             }
             .padding(.horizontal, 16)
-            .padding(.bottom, bottomInset + 14)
+            .padding(.bottom, isFullScreen ? bottomInset + 14 : bottomInset + 128)
             .animation(.spring(response: 0.28, dampingFraction: 0.86), value: instructorTipsVisible)
             .animation(.spring(response: 0.28, dampingFraction: 0.86), value: slidePickerVisible)
             .zIndex(3)
