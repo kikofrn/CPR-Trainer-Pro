@@ -2,6 +2,8 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen, Event } from '@tauri-apps/api/event';
 import { COURSES, MANUALS, SLIDESHOWS } from './chapters';
 
+const COMING_SOON_IDS = ['cpr-aed-spanish-course', 'first-aid-spanish-course'];
+
 export interface DownloadState {
   isDownloading: boolean;
   activeCategory: 'everything' | 'cpr-aed' | 'first-aid' | 'manuals' | 'single' | null;
@@ -18,6 +20,10 @@ export interface DownloadState {
   globalDownloadedCount: number;
   globalTotalCount: number;
   fileAttempts: Record<string, number>;
+  isPaused: boolean;
+  isPausing: boolean;
+  failedFiles: string[];
+  isMockingFiles: boolean;
 }
 
 export type DownloadStateListener = (state: DownloadState) => void;
@@ -29,6 +35,11 @@ interface DownloadProgressPayload {
 }
 
 class DownloadManager {
+  private normalizeFilename(filename: string): string {
+    const trimmed = filename.trim();
+    return trimmed.startsWith('/') ? trimmed.slice(1) : trimmed;
+  }
+
   private state: DownloadState = {
     isDownloading: false,
     activeCategory: null,
@@ -45,12 +56,35 @@ class DownloadManager {
     globalDownloadedCount: 0,
     globalTotalCount: 0,
     fileAttempts: {},
+    isPaused: false,
+    isPausing: false,
+    failedFiles: [],
+    isMockingFiles: false,
   };
 
   private listeners: Set<DownloadStateListener> = new Set();
   private speedSamples: { time: number; bytes: number }[] = [];
   private lastProgressTime = 0;
   private lastBytesWritten = 0;
+  private mockMissingFiles = false;
+
+  public toggleMockMissingFiles() {
+    this.mockMissingFiles = !this.mockMissingFiles;
+    this.state.isMockingFiles = this.mockMissingFiles;
+    if (this.mockMissingFiles) {
+      Object.keys(this.state.fileStatuses).forEach(key => {
+        this.state.fileStatuses[key] = false;
+      });
+      this.state.globalDownloadedCount = 0;
+      this.notify();
+    } else {
+      this.checkAllStatuses();
+    }
+  }
+
+  public isMockingMissingFiles(): boolean {
+    return this.mockMissingFiles;
+  }
 
   constructor() {
     this.setupListeners();
@@ -104,7 +138,8 @@ class DownloadManager {
     }
   }
 
-  private handleProgress(filename: string, bytesWritten: number, totalBytes: number) {
+  private handleProgress(rawFilename: string, bytesWritten: number, totalBytes: number) {
+    const filename = this.normalizeFilename(rawFilename);
     if (!this.state.isDownloading || this.state.currentFile !== filename) {
       this.state.currentFile = filename;
     }
@@ -147,7 +182,17 @@ class DownloadManager {
     this.notify();
   }
 
-  private handleFileComplete(filename: string) {
+  private handleFileComplete(rawFilename: string) {
+    const filename = this.normalizeFilename(rawFilename);
+    // Idempotency guard: if this file is already marked as downloaded and is NOT
+    // the current file or head of the queue, this is a duplicate call — skip it.
+    if (this.state.fileStatuses[filename] &&
+        this.state.currentFile !== filename &&
+        (this.state.queue.length === 0 || this.state.queue[0] !== filename)) {
+      console.log(`[DownloadManager] Ignoring duplicate completion for: ${filename}`);
+      return;
+    }
+
     console.log(`[DownloadManager] completed file: ${filename}`);
     
     // Mark file as downloaded
@@ -159,7 +204,10 @@ class DownloadManager {
       this.state.completedQueueCount += 1;
     } else {
       // Remove from queue wherever it is just in case
-      this.state.queue = this.state.queue.filter(f => f !== filename);
+      const idx = this.state.queue.indexOf(filename);
+      if (idx !== -1) {
+        this.state.queue.splice(idx, 1);
+      }
     }
 
     this.state.currentFile = null;
@@ -173,8 +221,17 @@ class DownloadManager {
     this.updateGlobalCounts();
     this.notify();
 
-    // Start next file
-    if (this.state.queue.length > 0) {
+    // Start next file (unless pausing)
+    if (this.state.isPausing) {
+      // Transition from "pausing" to fully "paused"
+      this.state.isPausing = false;
+      this.state.isPaused = true;
+      this.state.currentFile = null;
+      this.state.currentSpeed = 0;
+      this.state.currentTimeRemaining = -1;
+      console.log('[DownloadManager] Downloads paused after completing current file.');
+      this.notify();
+    } else if (this.state.queue.length > 0) {
       this.downloadNext();
     } else {
       this.state.isDownloading = false;
@@ -183,14 +240,17 @@ class DownloadManager {
       this.state.completedQueueCount = 0;
       this.state.currentSpeed = 0;
       console.log('[DownloadManager] Bulk download queue completed successfully!');
+      // Re-check all disk statuses to catch any missed events
+      this.checkAllStatuses();
       this.notify();
     }
   }
 
   private async downloadNext() {
     if (this.state.queue.length === 0) return;
+    if (this.state.isPaused || this.state.isPausing) return; // Don't start new downloads while pausing/paused
 
-    const nextFile = this.state.queue[0];
+    const nextFile = this.normalizeFilename(this.state.queue[0]);
     this.state.currentFile = nextFile;
     this.lastProgressTime = Date.now();
     this.lastBytesWritten = 0;
@@ -203,6 +263,13 @@ class DownloadManager {
         baseUrl: this.state.activeBaseUrl,
         filename: nextFile
       });
+      // Guarded fallback: if invoke succeeded but download-complete event was missed,
+      // handle completion here to prevent the queue from getting stuck.
+      if (!this.state.fileStatuses[nextFile] &&
+          (this.state.currentFile === nextFile || (this.state.queue.length > 0 && this.state.queue[0] === nextFile))) {
+        console.log(`[DownloadManager] ⚡ Guarded fallback: completing ${nextFile} (download-complete event may have been missed)`);
+        this.handleFileComplete(nextFile);
+      }
     } catch (e) {
       console.error(`[DownloadManager] ❌ Download failed for ${nextFile}:`, e);
       
@@ -224,6 +291,11 @@ class DownloadManager {
         // Give up after 5 attempts
         console.error(`[DownloadManager] ❌ Gave up on ${nextFile} after 5 attempts.`);
         this.state.fileStatuses[nextFile] = false;
+        
+        // Track the failed file for UI visibility
+        if (!this.state.failedFiles.includes(nextFile)) {
+          this.state.failedFiles.push(nextFile);
+        }
         
         // Reset attempts for future bulk downloads
         this.state.fileAttempts[nextFile] = 0;
@@ -262,6 +334,7 @@ class DownloadManager {
 
     // 2. Slideshow Files
     SLIDESHOWS.forEach((slideshow) => {
+      if (slideshow.isComingSoon || COMING_SOON_IDS.includes(slideshow.id)) return; // Skip coming-soon slideshows
       const isCpr = slideshow.id.startsWith('cpr-aed');
       const isFa = slideshow.id.startsWith('first-aid') || slideshow.id.startsWith('pedi');
 
@@ -272,11 +345,7 @@ class DownloadManager {
       ) {
         slideshow.slides.forEach((slide) => {
           if (slide.filename && slide.filename.trim()) {
-            // Strip leading slash
-            const clean = slide.filename.trim().startsWith('/')
-              ? slide.filename.trim().slice(1)
-              : slide.filename.trim();
-            files.push(clean);
+            files.push(this.normalizeFilename(slide.filename));
           }
         });
       }
@@ -303,7 +372,13 @@ class DownloadManager {
 
     try {
       const spaceBytes = await invoke<number>('check_disk_space');
-      const requiredBytes = category === 'everything' ? 5 * 1024 * 1024 * 1024 : 1.5 * 1024 * 1024 * 1024;
+      const CATEGORY_DISK_REQUIREMENTS: Record<string, number> = {
+        'everything': 4 * 1024 * 1024 * 1024,   // ~4 GB
+        'cpr-aed':    1.5 * 1024 * 1024 * 1024,  // ~1.5 GB
+        'first-aid':  2.5 * 1024 * 1024 * 1024,  // ~2.5 GB
+        'manuals':    0.1 * 1024 * 1024 * 1024,   // ~100 MB
+      };
+      const requiredBytes = CATEGORY_DISK_REQUIREMENTS[category] || 1.5 * 1024 * 1024 * 1024;
       if (spaceBytes > 0 && spaceBytes < requiredBytes) {
         window.alert(`Insufficient disk space! You have ${Math.max(1, Math.round(spaceBytes / 1024 / 1024 / 1024))}GB free, but this bulk download requires approx ${Math.round(requiredBytes / 1024 / 1024 / 1024)}GB. Please free up some space and try again.`);
         return;
@@ -313,6 +388,11 @@ class DownloadManager {
     }
 
     console.log(`[DownloadManager] Starting bulk download for: ${category}`);
+    // Reset retry state for a fresh start
+    this.state.fileAttempts = {};
+    this.state.failedFiles = [];
+    this.state.isPaused = false;
+    this.state.isPausing = false;
     const allFiles = this.getFilesForCategory(category);
     
     // Check which ones are already downloaded
@@ -343,7 +423,8 @@ class DownloadManager {
     this.downloadNext();
   }
 
-  public async startSingleDownload(filename: string) {
+  public async startSingleDownload(rawFilename: string) {
+    const filename = this.normalizeFilename(rawFilename);
     if (this.state.isDownloading) {
       // Add to queue if we're already bulk downloading or single downloading
       if (!this.state.queue.includes(filename) && this.state.currentFile !== filename) {
@@ -365,17 +446,42 @@ class DownloadManager {
       console.warn('[DownloadManager] Could not check disk space:', e);
     }
 
-    const clean = filename.trim().startsWith('/') ? filename.trim().slice(1) : filename.trim();
-    const exists = await invoke<boolean>('check_media_file_exists', { filename: clean });
+    // --- MOCK LOGIC ---
+    if ((import.meta as any).env.DEV && this.mockMissingFiles) {
+      this.state.isDownloading = true;
+      this.state.activeCategory = 'single';
+      this.state.queue = [filename];
+      this.state.totalQueueSize = 1;
+      this.state.completedQueueCount = 0;
+      this.state.currentFile = filename;
+      this.state.currentFileTotalBytes = 1000000;
+      this.state.currentFileBytesWritten = 0;
+      this.notify();
+      
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += 200000; // 20% per second
+        this.state.currentFileBytesWritten = progress;
+        this.notify();
+        if (progress >= 1000000) {
+          clearInterval(interval);
+          this.handleFileComplete(filename);
+        }
+      }, 1000);
+      return;
+    }
+    // ------------------
+
+    const exists = await invoke<boolean>('check_media_file_exists', { filename });
     if (exists) {
-      this.state.fileStatuses[clean] = true;
+      this.state.fileStatuses[filename] = true;
       this.notify();
       return;
     }
 
     this.state.isDownloading = true;
     this.state.activeCategory = 'single';
-    this.state.queue = [clean];
+    this.state.queue = [filename];
     this.state.totalQueueSize = 1;
     this.state.completedQueueCount = 0;
     this.notify();
@@ -383,6 +489,12 @@ class DownloadManager {
     this.downloadNext();
   }
 
+  /**
+   * Cancels the download queue. The currently active Rust download will finish
+   * in the background (we don't abort HTTP streams), but its completion is
+   * harmless — the file just gets saved to disk and fileStatuses is updated.
+   * From the user's perspective, downloads stop immediately.
+   */
   public cancelDownload() {
     this.state.isDownloading = false;
     this.state.activeCategory = null;
@@ -394,17 +506,59 @@ class DownloadManager {
     this.state.currentFileTotalBytes = 0;
     this.state.currentSpeed = 0;
     this.state.currentTimeRemaining = -1;
+    this.state.isPaused = false;
+    this.state.isPausing = false;
     this.notify();
+  }
+
+  public pauseDownload() {
+    if (!this.state.isDownloading || this.state.isPaused) return;
+    
+    if (this.state.currentFile) {
+      // A file is actively downloading — transition to "pausing" state
+      this.state.isPausing = true;
+      console.log(`[DownloadManager] Pausing after current file completes: ${this.state.currentFile}`);
+    } else {
+      // No file actively downloading — pause immediately
+      this.state.isPaused = true;
+      this.state.isPausing = false;
+      console.log('[DownloadManager] Downloads paused immediately.');
+    }
+    this.notify();
+  }
+
+  public resumeDownload() {
+    if (!this.state.isPaused) return;
+    
+    this.state.isPaused = false;
+    this.state.isPausing = false;
+    console.log('[DownloadManager] Downloads resumed.');
+    this.notify();
+    
+    if (this.state.queue.length > 0) {
+      this.downloadNext();
+    } else {
+      this.state.isDownloading = false;
+      this.state.activeCategory = null;
+      this.state.totalQueueSize = 0;
+      this.state.completedQueueCount = 0;
+      this.state.currentSpeed = 0;
+      console.log('[DownloadManager] No files left in queue after resume.');
+      this.checkAllStatuses();
+      this.notify();
+    }
   }
 
   public async checkStatusesForFiles(filenames: string[]): Promise<Record<string, boolean>> {
     try {
-      const cleanList = filenames.map(f => f.trim().startsWith('/') ? f.trim().slice(1) : f.trim());
+      const cleanList = filenames.map(f => this.normalizeFilename(f));
       const statusMap = await invoke<Record<string, boolean>>('check_media_files_status', { filenames: cleanList });
       
       // Update local state statuses
       Object.entries(statusMap).forEach(([file, exists]) => {
-        this.state.fileStatuses[file] = exists;
+        const effectiveExists = this.mockMissingFiles ? false : exists;
+        this.state.fileStatuses[file] = effectiveExists;
+        statusMap[file] = effectiveExists;
       });
       this.updateGlobalCounts();
       this.notify();
@@ -416,23 +570,24 @@ class DownloadManager {
   }
 
   public async checkAllStatuses() {
-    // Gather all possible files in the app
+    // Gather all possible files in the app, normalizing filenames to match getFilesForCategory output
     const allFiles: string[] = [];
     
     COURSES.forEach((course) => {
       course.chapters.forEach((ch) => {
-        if (ch.filename) allFiles.push(ch.filename);
+        if (ch.filename) allFiles.push(this.normalizeFilename(ch.filename));
       });
     });
 
     SLIDESHOWS.forEach((slideshow) => {
+      if (slideshow.isComingSoon || COMING_SOON_IDS.includes(slideshow.id)) return; // Skip coming-soon slideshows
       slideshow.slides.forEach((slide) => {
-        if (slide.filename) allFiles.push(slide.filename);
+        if (slide.filename) allFiles.push(this.normalizeFilename(slide.filename));
       });
     });
 
     MANUALS.forEach((manual) => {
-      if (manual.filename) allFiles.push(manual.filename);
+      if (manual.filename) allFiles.push(this.normalizeFilename(manual.filename));
     });
 
     const deduplicated = Array.from(new Set(allFiles));
@@ -446,9 +601,9 @@ class DownloadManager {
   }
 
   // Check if a specific file is downloaded
-  public isFileDownloaded(filename: string): boolean {
-    const clean = filename.trim().startsWith('/') ? filename.trim().slice(1) : filename.trim();
-    return !!this.state.fileStatuses[clean];
+  public isFileDownloaded(rawFilename: string): boolean {
+    const filename = this.normalizeFilename(rawFilename);
+    return !!this.state.fileStatuses[filename];
   }
 
   // Check if an entire course (videos only) is downloaded
@@ -479,11 +634,6 @@ class DownloadManager {
       .map((s) => s.filename)
       .filter(Boolean)
       .map((f) => (f.trim().startsWith('/') ? f.trim().slice(1) : f.trim()));
-
-    // Also include manuals with the slideshow download as requested
-    MANUALS.forEach((m) => {
-      if (m.filename) files.push(m.filename.trim());
-    });
 
     const statusMap = await this.checkStatusesForFiles(files);
     const pending = files.filter((f) => !statusMap[f]);

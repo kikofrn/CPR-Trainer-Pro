@@ -1,7 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, ChevronDown, CheckCircle2, HelpCircle, BookOpen, ChevronRight, GraduationCap, Baby, Book, Award, Heart } from 'lucide-react';
-import { mediaUrl as m } from '../media-resolver';
 
 interface HeaderNavProps {
   showSidebar: boolean;
@@ -51,7 +50,7 @@ interface HeaderNavProps {
   FirstAidIcon: any;
 }
 
-export const HeaderNav = React.memo(function HeaderNav({
+export function HeaderNav({
   showSidebar, setShowSidebar,
   setActiveCourseIndex, setActiveSlideshowIndex, setSelectedManual, setActiveTab,
   lastCprView, showCprSelector, setShowCprSelector, isCprActive, cprVaEnabled, setCprVaEnabled,
@@ -110,7 +109,7 @@ export const HeaderNav = React.memo(function HeaderNav({
           <div className="relative h-full flex items-end">
             <button 
               onClick={() => {
-                if (lastCprView && (activeTab === 'manual' || activeTab === 'send-certs')) {
+                if (lastCprView && activeTab === 'manual') {
                   setActiveTab(lastCprView);
                   setShowSidebar(true);
                   setShowCprSelector(false);
@@ -177,7 +176,7 @@ export const HeaderNav = React.memo(function HeaderNav({
                           <AnimatePresence mode="popLayout">
                             <motion.img 
                               key={cprVaEnabled ? 'cpr-va' : 'cpr-std'}
-                              src={m(cprVaEnabled ? "/CPR AED for All Ages with VA.webp" : "/CPR AED for All Ages Cover.webp")} 
+                              src={cprVaEnabled ? "/CPR AED for All Ages with VA.webp" : "/CPR AED for All Ages Cover.webp"} 
                               alt="CPR AED Course Cover" 
                               className="w-full h-full object-cover absolute inset-0"
                               initial={{ opacity: 0, scale: 0.98, filter: 'blur(4px)' }}
@@ -211,7 +210,7 @@ export const HeaderNav = React.memo(function HeaderNav({
           <div className="relative h-full flex items-end">
             <button 
               onClick={() => {
-                if (lastFaView && (activeTab === 'manual' || activeTab === 'send-certs')) {
+                if (lastFaView && activeTab === 'manual') {
                   setActiveTab(lastFaView);
                   setShowSidebar(true);
                   setShowFaSelector(false);
@@ -285,7 +284,7 @@ export const HeaderNav = React.memo(function HeaderNav({
                           <AnimatePresence mode="popLayout">
                             <motion.img 
                               key={faPediatric ? 'fa-pedi' : faVaEnabled ? 'fa-va' : 'fa-std'}
-                              src={m(faPediatric ? "/Pediatric First Aid Cover.webp" : faVaEnabled ? "/First Aid for All Ages with VA.webp" : "/First Aid for All Ages Cover.webp")} 
+                              src={faPediatric ? "/Pediatric First Aid Cover.webp" : faVaEnabled ? "/First Aid for All Ages with VA.webp" : "/First Aid for All Ages Cover.webp"} 
                               alt="First Aid Course Cover" 
                               className="w-full h-full object-cover absolute inset-0"
                               initial={{ opacity: 0, scale: 0.98, filter: 'blur(4px)' }}
@@ -396,7 +395,7 @@ export const HeaderNav = React.memo(function HeaderNav({
                           <AnimatePresence mode="popLayout">
                             <motion.img 
                               key={previewManualIndex}
-                              src={m(MANUALS[previewManualIndex].thumbnail)} 
+                              src={MANUALS[previewManualIndex].thumbnail} 
                               alt={MANUALS[previewManualIndex].title} 
                               className="w-full h-full object-cover absolute inset-0"
                               initial={{ opacity: 0, scale: 0.98, filter: 'blur(4px)' }}
@@ -434,6 +433,7 @@ export const HeaderNav = React.memo(function HeaderNav({
             <button 
               onClick={() => {
                 setActiveTab('send-certs');
+                setShowSidebar(false);
                 setShowCprSelector(false);
                 setShowFaSelector(false);
                 setShowManualSelector(false);
@@ -452,7 +452,7 @@ export const HeaderNav = React.memo(function HeaderNav({
               <div 
                 className={`absolute h-8 w-auto rounded overflow-hidden transition-all duration-1000 ease-in-out ${easterEggLevel === 1 ? 'opacity-100 scale-100' : 'opacity-0 scale-75 pointer-events-none'}`}
               >
-                <video src={m("/CPR-Dummies.mp4")} autoPlay loop muted playsInline className="h-full w-auto object-cover" />
+                <video src="/CPR-Dummies.mp4" autoPlay loop muted playsInline className="h-full w-auto object-cover" />
               </div>
               
               <div 
@@ -462,7 +462,7 @@ export const HeaderNav = React.memo(function HeaderNav({
                   maskImage: 'radial-gradient(circle, black 40%, transparent 70%)' 
                 }}
               >
-                <video src={m("/WakeUp-Friends-SpaceStars.mp4")} autoPlay loop muted playsInline className="h-full w-full object-cover" />
+                <video src="/WakeUp-Friends-SpaceStars.mp4" autoPlay loop muted playsInline className="h-full w-full object-cover" />
               </div>
             </div>
           )}
@@ -507,4 +507,4 @@ export const HeaderNav = React.memo(function HeaderNav({
       </div>
     </header>
   );
-});
+}

@@ -40,6 +40,7 @@ export interface Slideshow {
   id: string;
   title: string;
   slides: Slide[];
+  isComingSoon?: boolean;
 }
 
 export let SLIDESHOWS: Slideshow[] = [
@@ -644,6 +645,7 @@ export let SLIDESHOWS: Slideshow[] = [
   {
   "id": "cpr-aed-spanish-course",
   "title": "CPR AED Course - SPANISH EDITION",
+  "isComingSoon": true,
   "slides": [
     {
       "id": "slide-1",
@@ -890,6 +892,7 @@ export let SLIDESHOWS: Slideshow[] = [
   {
   "id": "first-aid-spanish-course",
   "title": "FIRST AID Course - SPANISH EDITION",
+  "isComingSoon": true,
   "slides": [
     {
       "id": "slide-1",

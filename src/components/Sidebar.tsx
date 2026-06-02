@@ -1,7 +1,9 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, ChevronDown, CheckCircle2, Download, Play, Pause, MonitorPlay, Settings, Info, HelpCircle, Clock } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, CheckCircle2, Download, Play, Pause, Clock, MonitorPlay, Settings, Info, HelpCircle, AlertCircle } from 'lucide-react';
 import { mediaUrl as m } from '../media-resolver';
+import { formatSpeed } from '../download-manager';
+import { invoke } from '@tauri-apps/api/core';
 
 interface SidebarProps {
   showSidebar: boolean;
@@ -25,6 +27,7 @@ interface SidebarProps {
   expandedSections: Record<string, boolean>;
   setExpandedSections: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
   setActiveSlideIndex: (i: number) => void;
+  selectSlide: (i: number) => void;
   slideshowIsPlaying: boolean;
   setSlideshowIsPlaying: (v: boolean) => void;
   toggleSlideshowPlay: () => void;
@@ -62,7 +65,7 @@ interface SidebarProps {
 export const Sidebar = React.memo(function Sidebar({
   showSidebar, setShowSidebar, setActiveCourseIndex, setActiveSlideshowIndex, setSelectedManual, setActiveTab,
   activeTab, activeCourse, activeSlideshow, selectedManual, manualOutline, expandedManualSections, setExpandedManualSections, flipbookRef, MANUALS,
-  activeSlideIndex, expandedSections, setExpandedSections, setActiveSlideIndex, slideshowIsPlaying, setSlideshowIsPlaying, toggleSlideshowPlay,
+  activeSlideIndex, expandedSections, setExpandedSections, setActiveSlideIndex, selectSlide, slideshowIsPlaying, setSlideshowIsPlaying, toggleSlideshowPlay,
   activeChapterIndex, selectChapter, isPlaying, togglePlay,
   isTauri, dlState, easterEggLevel, downloadManager,
   isSettingsExpanded, setIsSettingsExpanded, isContinuousPlay, setIsContinuousPlay,
@@ -270,7 +273,18 @@ export const Sidebar = React.memo(function Sidebar({
                               <h4 className="text-sm font-bold text-eh-peach group-hover:text-eh-red transition-colors duration-300 leading-snug line-clamp-1">
                                 {manual.title.replace("EHA ", "")}
                               </h4>
-                              <span className="text-xs text-eh-blue/60 font-mono opacity-0 group-hover:opacity-100 transition-opacity duration-300 shrink-0">
+                              {isTauri && manual.filename && (
+                                dlState.fileStatuses[manual.filename.trim().replace(/^\//, '')] ? (
+                                  <CheckCircle2 size={14} className="text-green-500 shrink-0 ml-1" title="Downloaded" />
+                                ) : dlState.isDownloading && dlState.currentFile === manual.filename.trim().replace(/^\//, '') ? (
+                                  <video src="/CPR-Dummies.mp4" autoPlay loop muted playsInline className="w-4 h-4 shrink-0 rounded-sm object-cover ml-1" title="Downloading..." />
+                                ) : dlState.queue.includes(manual.filename.trim().replace(/^\//, '')) ? (
+                                  <Clock size={14} className="text-eh-blue/70 shrink-0 ml-1" title="Queued for download" />
+                                ) : (
+                                  <Download size={14} className="text-eh-blue/50 shrink-0 ml-1" title="Not downloaded" />
+                                )
+                              )}
+                              <span className="text-xs text-eh-blue/60 font-mono opacity-0 group-hover:opacity-100 transition-opacity duration-300 shrink-0 ml-auto">
                                 {details.pages}
                               </span>
                             </div>
@@ -307,11 +321,7 @@ export const Sidebar = React.memo(function Sidebar({
                       }`}
                     >
                       <button
-                        onClick={() => {
-                          setActiveSlideIndex(index);
-                          setSlideshowIsPlaying(true);
-                          setActiveTab('slideshow');
-                        }}
+                        onClick={() => selectSlide(index)}
                         className={`shrink-0 w-5 h-5 rounded-full border flex items-center justify-center text-[10px] font-mono transition-colors cursor-pointer ${
                           isActiveSlide 
                             ? 'bg-eh-red border-eh-red text-eh-peach' 
@@ -322,11 +332,7 @@ export const Sidebar = React.memo(function Sidebar({
                       </button>
                       
                       <button 
-                        onClick={() => {
-                          setActiveSlideIndex(index);
-                          if (slide.type === 'video') setSlideshowIsPlaying(true);
-                          setActiveTab('slideshow');
-                        }}
+                        onClick={() => selectSlide(index)}
                         className="flex-1 min-w-0 text-left cursor-pointer"
                       >
                         <h3 className={`text-base font-bold truncate ${isActiveSlide ? 'text-eh-peach' : 'text-eh-peach/60 group-hover:text-eh-peach/80'}`}>
@@ -365,7 +371,23 @@ export const Sidebar = React.memo(function Sidebar({
                             <Play size={14} className="text-eh-red ml-0.5" fill="currentColor" />
                           )}
                         </button>
-                      ) : null}
+                      ) : (
+                        // Download status for non-active, non-header slides
+                        isTauri ? (
+                          dlState.fileStatuses[slide.filename?.trim().replace(/^\//, '') || ''] ? (
+                            <CheckCircle2 size={16} className="text-green-500 shrink-0" title="Downloaded" />
+                          ) : dlState.isDownloading && dlState.currentFile === slide.filename?.trim().replace(/^\//, '') ? (
+                            <video src="/CPR-Dummies.mp4" autoPlay loop muted playsInline className="w-6 h-6 shrink-0 rounded-md object-cover" title="Downloading..." />
+                          ) : dlState.queue.includes(slide.filename?.trim().replace(/^\//, '') || '') ? (
+                            <Clock size={16} className="text-eh-blue/70 shrink-0" title="Queued" />
+                          ) : (
+                            <button onClick={(e) => { e.stopPropagation(); if (slide.filename) downloadManager.startSingleDownload(slide.filename); }}
+                              className="p-1 hover:bg-eh-blue/10 rounded-full transition-colors cursor-pointer" title="Download this slide">
+                              <Download size={14} className="text-eh-blue/50 hover:text-eh-blue" />
+                            </button>
+                          )
+                        ) : null
+                      )}
                     </div>
                   </div>
                 );
@@ -453,9 +475,9 @@ export const Sidebar = React.memo(function Sidebar({
                             dlState.fileStatuses[chapter.filename?.trim().replace(/^\//, '') || ''] ? (
                               <CheckCircle2 size={16} className="text-green-500 shrink-0" title="Downloaded" />
                             ) : dlState.isDownloading && dlState.currentFile === chapter.filename?.trim().replace(/^\//, '') ? (
-                              <video src={m("/CPR-Dummies.mp4")} autoPlay loop muted playsInline className="w-6 h-6 shrink-0 rounded-md object-cover" title="Downloading..." />
+                              <video src="/CPR-Dummies.mp4" autoPlay loop muted playsInline className="w-6 h-6 shrink-0 rounded-md object-cover" title="Downloading..." />
                             ) : dlState.queue.includes(chapter.filename?.trim().replace(/^\//, '') || '') ? (
-                              <Clock size={16} className="text-eh-blue shrink-0" title="Queued for download" />
+                              <Clock size={16} className="text-eh-blue/70 shrink-0" title="Queued for download" />
                             ) : (
                               <button
                                 onClick={(e) => {
@@ -477,10 +499,83 @@ export const Sidebar = React.memo(function Sidebar({
                   );
                 })
               ) : (
-                <div className="w-full text-center py-10 opacity-30 flex flex-col items-center">
-                  <MonitorPlay size={48} className="mb-4" />
-                  <p className="text-eh-peach/60 text-xs font-bold uppercase tracking-widest">No Course Selected</p>
-                </div>
+                activeTab !== 'send-certs' ? (
+                  <div className="px-5 py-8 flex flex-col gap-4">
+                    <h3 className="text-xl font-black uppercase tracking-[0.15em] text-eh-red text-center leading-snug whitespace-nowrap">
+                      Instructor Courses
+                    </h3>
+                    
+                    {/* IMPORTANT tooltip — positioned BELOW to avoid sidebar clipping */}
+                    <div className="group relative w-full text-center mt-2">
+                      <button className="text-[13px] font-bold tracking-widest text-eh-red/80 hover:text-eh-red transition-colors flex items-center gap-1.5 mx-auto cursor-pointer">
+                        <AlertCircle size={14} strokeWidth={2.5} />
+                        <span>IMPORTANT</span>
+                      </button>
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 px-5 py-4 bg-[#1a1a1a] border border-eh-red/20 rounded-xl text-[13px] text-eh-peach/90 leading-relaxed w-[280px] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-2xl">
+                        New to teaching? Bridging your instructor credentials from AHA, Red Cross, or HSI? Before teaching your first EH Academy class, please take a moment to complete the two instructor courses below. <span className="block mt-2 font-bold text-white tracking-wide drop-shadow-md">To receive credit please sign the agreement form at the end of each course.</span>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-4 mt-1">
+                      {/* CPR & AED Instructor Course Card */}
+                      <div 
+                        className="p-4 rounded-xl border border-transparent bg-white/[0.02] hover:bg-white/[0.05] hover:border-eh-peach/20 transition-all cursor-pointer group/card"
+                        onClick={() => {
+                          if (isTauri) {
+                            invoke('open_browser', { url: 'https://ehacademy.hflip.co/InstructorOnboardingCPRAED' }).catch(() => {
+                              window.open('https://ehacademy.hflip.co/InstructorOnboardingCPRAED', '_blank');
+                            });
+                          } else {
+                            window.open('https://ehacademy.hflip.co/InstructorOnboardingCPRAED', '_blank');
+                          }
+                        }}
+                      >
+                        <img 
+                          src="/CPRAEDOnboardingCover.png" 
+                          alt="CPR &amp; AED Instructor Course" 
+                          className="w-4/5 mx-auto rounded-lg object-contain border border-white/10 group-hover/card:border-eh-red/30 transition-colors mb-3"
+                        />
+                        <h4 className="text-[14px] font-bold text-eh-peach group-hover/card:text-white transition-colors leading-snug mb-1 text-center">
+                          CPR &amp; AED Onboarding Course
+                        </h4>
+                        <p className="text-[11px] text-eh-peach/50 italic leading-snug text-center">
+                          Instructor's how-to guide to teaching CPR &amp; AED one step at a time. Opens in browser.
+                        </p>
+                      </div>
+
+                      {/* First Aid Instructor Course Card */}
+                      <div 
+                        className="p-4 rounded-xl border border-transparent bg-white/[0.02] hover:bg-white/[0.05] hover:border-eh-peach/20 transition-all cursor-pointer group/card"
+                        onClick={() => {
+                          if (isTauri) {
+                            invoke('open_browser', { url: 'https://ehacademy.hflip.co/InstructorOnboardingFirstAid' }).catch(() => {
+                              window.open('https://ehacademy.hflip.co/InstructorOnboardingFirstAid', '_blank');
+                            });
+                          } else {
+                            window.open('https://ehacademy.hflip.co/InstructorOnboardingFirstAid', '_blank');
+                          }
+                        }}
+                      >
+                        <img 
+                          src="/FAOnboardingCover.png" 
+                          alt="First Aid Instructor Course" 
+                          className="w-4/5 mx-auto rounded-lg object-contain border border-white/10 group-hover/card:border-eh-red/30 transition-colors mb-3"
+                        />
+                        <h4 className="text-[14px] font-bold text-eh-peach group-hover/card:text-white transition-colors leading-snug mb-1 text-center">
+                          First Aid Onboarding Course
+                        </h4>
+                        <p className="text-[11px] text-eh-peach/50 italic leading-snug text-center">
+                          Instructor's how-to guide to teaching First Aid one step at a time. Opens in browser.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="w-full text-center py-10 opacity-30 flex flex-col items-center">
+                    <MonitorPlay size={48} className="mb-4" />
+                    <p className="text-eh-peach/60 text-xs font-bold uppercase tracking-widest">No Course Selected</p>
+                  </div>
+                )
               )
             )}
           </div>
@@ -554,20 +649,90 @@ export const Sidebar = React.memo(function Sidebar({
                       </button>
                     </div>
                     
-                    <div className="flex items-center gap-2 pt-2">
+                    <div className="pt-2 space-y-2">
                       {dlState.globalTotalCount === dlState.globalDownloadedCount && dlState.globalTotalCount > 0 ? (
-                        <>
+                        <div className="flex items-center gap-2">
                           <CheckCircle2 size={18} className="text-green-500" />
                           <span className="text-sm font-bold text-green-500">All Offline Media Downloaded</span>
-                        </>
+                        </div>
+                      ) : dlState.isPaused ? (
+                        <div className="space-y-2.5">
+                          <div className="flex items-center gap-2">
+                            <Pause size={18} className="text-amber-400" />
+                            <span className="text-sm font-bold text-amber-400">
+                              Downloads Paused ({Math.max(0, dlState.globalTotalCount - dlState.globalDownloadedCount)} left)
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <button
+                              onClick={() => downloadManager.resumeDownload()}
+                              className="flex items-center gap-1.5 text-xs font-bold text-[#4ae5bd] hover:text-white transition-colors cursor-pointer"
+                            >
+                              <Play size={12} fill="currentColor" />
+                              Resume
+                            </button>
+                            <span className="text-white/15">|</span>
+                            <button
+                              onClick={() => downloadManager.cancelDownload()}
+                              className="text-xs font-bold text-white/30 hover:text-white/50 transition-colors cursor-pointer"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : dlState.isDownloading ? (
+                        <div className="space-y-2.5">
+                          <div className="flex items-center gap-2">
+                            <video src="/CPR-Dummies.mp4" autoPlay loop muted playsInline className="w-5 h-5 rounded-sm object-cover shrink-0" />
+                            <span className="text-sm font-bold text-[#ff4b4b]">
+                              {dlState.isPausing 
+                                ? 'Pausing after current file\u2026' 
+                                : `Downloading\u2026 ${dlState.completedQueueCount} of ${dlState.totalQueueSize}`
+                              }
+                            </span>
+                          </div>
+                          
+                          {/* Progress bar */}
+                          <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-gradient-to-r from-[#ff4b4b] to-[#ff6b6b] rounded-full transition-all duration-500 ease-out"
+                              style={{ width: `${dlState.totalQueueSize > 0 ? Math.max(1, ((dlState.completedQueueCount + (dlState.currentFileTotalBytes > 0 ? dlState.currentFileBytesWritten / dlState.currentFileTotalBytes : 0)) / dlState.totalQueueSize) * 100) : 0}%` }}
+                            />
+                          </div>
+                          
+                          {/* Speed + Pause button */}
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] text-white/40 font-mono">
+                              {formatSpeed(dlState.currentSpeed)}
+                            </span>
+                            <button
+                              onClick={() => downloadManager.pauseDownload()}
+                              disabled={dlState.isPausing}
+                              className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-amber-400/80 hover:text-amber-300 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-default"
+                            >
+                              <Pause size={10} />
+                              {dlState.isPausing ? 'Pausing\u2026' : 'Pause'}
+                            </button>
+                          </div>
+                        </div>
                       ) : (
-                        <button
-                          onClick={() => downloadManager.startBulkDownload('everything')}
-                          className="flex items-center gap-2 text-[#ff4b4b] hover:text-[#ff3333] transition-colors cursor-pointer"
-                        >
-                          <Download size={18} />
-                          <span className="text-sm font-bold">Download All Offline Media ({Math.max(0, dlState.globalTotalCount - dlState.globalDownloadedCount)} left)</span>
-                        </button>
+                        <div className="space-y-2">
+                          <button
+                            onClick={() => downloadManager.startBulkDownload('everything')}
+                            className="flex items-center gap-2 text-[#ff4b4b] hover:text-[#ff3333] transition-colors cursor-pointer"
+                          >
+                            <Download size={18} />
+                            <span className="text-sm font-bold">Download All Offline Media ({Math.max(0, dlState.globalTotalCount - dlState.globalDownloadedCount)} left)</span>
+                          </button>
+                          {dlState.failedFiles && dlState.failedFiles.length > 0 && (
+                            <p className="text-[10px] text-red-400/60 pl-[26px] leading-snug">
+                              {dlState.failedFiles.length} file{dlState.failedFiles.length > 1 ? 's' : ''} failed
+                              {dlState.failedFiles.length <= 2 && (
+                                <span className="text-white/20"> — {dlState.failedFiles[0].split('-').pop()?.replace('.mp4','').replace('.png','').trim()}</span>
+                              )}
+                            </p>
+                          )}
+                        </div>
                       )}
                     </div>
 
@@ -601,7 +766,23 @@ export const Sidebar = React.memo(function Sidebar({
                                 : 'bg-white/5 border-white/20 text-white/70 hover:bg-white/10 hover:text-white'
                             }`}
                           >
-                            {updateAvailable ? 'Hide Banner' : 'Show Banner'}
+                            {updateAvailable ? 'Mocking ON' : 'Toggle'}
+                          </button>
+                        </div>
+                        <div className="flex items-center justify-between mt-2">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-2 h-2 rounded-full ${dlState.isMockingFiles ? 'bg-red-500 animate-pulse' : 'bg-white/20'}`} />
+                            <span className="text-xs font-bold uppercase tracking-widest text-eh-peach/80">Mock Missing Files</span>
+                          </div>
+                          <button 
+                            onClick={() => downloadManager.toggleMockMissingFiles()}
+                            className={`px-3 py-1 rounded border text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                              dlState.isMockingFiles
+                                ? 'bg-red-500/20 border-red-500 text-red-400 hover:bg-red-500/30' 
+                                : 'border-white/10 text-white/50 hover:bg-white/5 hover:text-white/80'
+                            }`}
+                          >
+                            {dlState.isMockingFiles ? 'Mocking ON' : 'Toggle'}
                           </button>
                         </div>
                       </div>

@@ -15,6 +15,10 @@ jobs:
         settings:
           - platform: 'windows-latest'
             args: ''
+          - platform: 'macos-latest'
+            args: '--target aarch64-apple-darwin'
+          - platform: 'macos-15-intel'
+            args: '--target x86_64-apple-darwin'
 
     runs-on: ${{ matrix.settings.platform }}
     steps:
@@ -31,19 +35,17 @@ jobs:
       - name: install frontend dependencies
         run: npm install
 
-      - name: install tauri cli
-        run: npm install -g @tauri-apps/cli
-
       - name: build and sign tauri app
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
-          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'CPR Trainer Pro ${{ github.ref_name }}'
           releaseBody: 'See the assets to download this version and install.'
           releaseDraft: false
           prerelease: false
+          includeUpdaterJson: true
           args: ${{ matrix.settings.args }}

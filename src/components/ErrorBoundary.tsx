@@ -1,4 +1,4 @@
-import React, { type ReactNode } from 'react';
+import React, { Component, type ReactNode } from 'react';
 
 interface ErrorBoundaryProps {
   children: ReactNode;

@@ -65,5 +65,17 @@ export async function waitForMediaResolver(): Promise<void> {
   await initPromise;
 }
 
-export { isTauri };
+/**
+ * Get the CDN URL for a media file (used as fallback when file isn't downloaded locally).
+ * Always returns the remote Cloudflare CDN URL regardless of platform.
+ *
+ * Example: "/slide-heart-attack.png" -> "https://media.ehacademy.com/slide-heart-attack.png"
+ */
+const CDN_BASE = 'https://media.ehacademy.com/';
 
+export function cdnUrl(filename: string): string {
+  const clean = filename.startsWith('/') ? filename.slice(1) : filename;
+  return CDN_BASE + encodeURIComponent(clean);
+}
+
+export { isTauri };

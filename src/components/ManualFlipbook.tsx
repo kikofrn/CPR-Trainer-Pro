@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
-import { isTauri, mediaUrl as m } from '../media-resolver';
+import { isTauri } from '../media-resolver';
 
 // Set up worker for react-pdf to work offline in both dev and prod
 // @ts-ignore: Vite syntax for importing worker URL
@@ -98,7 +98,6 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
     const ro = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const { width, height } = entry.contentRect;
-        console.log('[FS-DEBUG] ManualFlipbook ResizeObserver:', Math.round(width), 'x', Math.round(height));
         setContainerWidth(Math.round(width));
         setContainerHeight(Math.round(height));
       }
@@ -324,7 +323,7 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
               )}
               <button type="submit" disabled={isSearching} className="absolute right-3 text-white/40 hover:text-white transition-colors">
                 {isSearching ? (
-                  showEasterEgg ? <video src={m("/CPR-Dummies.mp4")} autoPlay loop muted playsInline className="w-4 h-4 object-cover" /> : <Loader2 size={14} className="animate-spin" />
+                  showEasterEgg ? <video src="/CPR-Dummies.mp4" autoPlay loop muted playsInline className="w-4 h-4 object-cover" /> : <Loader2 size={14} className="animate-spin" />
                 ) : <Search size={14} />}
               </button>
             </form>
@@ -403,7 +402,7 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
           onLoadSuccess={onDocumentLoadSuccess}
           loading={
             <div className="flex flex-col items-center gap-4">
-              <video src={m("/CPR-Dummies.mp4")} autoPlay loop muted playsInline className="w-32 h-32 object-cover rounded-2xl shadow-2xl" />
+              <video src="/CPR-Dummies.mp4" autoPlay loop muted playsInline className="w-32 h-32 object-cover rounded-2xl shadow-2xl" />
               <p className="text-white/40 text-xs font-mono uppercase tracking-[0.2em] font-bold">Loading Training Manual...</p>
             </div>
           }
@@ -422,7 +421,6 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
               showCover={true}
               mobileScrollSupport={true}
               onFlip={(e) => {
-                console.log('[FS-DEBUG] Manual page turned to:', e.data);
                 setCurrentPage(e.data);
               }}
               className="flipbook-canvas"
