@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct StickyBrandScrollView<Content: View>: View {
     let title: String?
@@ -65,7 +66,7 @@ struct StickyBrandScrollView<Content: View>: View {
         let logoHeight = expandedLogoHeight - ((expandedLogoHeight - collapsedLogoHeight) * progress)
         let headerHeight = expandedHeaderHeight - ((expandedHeaderHeight - collapsedHeaderHeight) * progress)
 
-        return BrandHeader(logoHeight: logoHeight)
+        return HeartbeatBrandHeader(logoHeight: logoHeight)
             .padding(.horizontal, Theme.Layout.screenPadding)
             .frame(maxWidth: .infinity)
             .frame(height: headerHeight)
@@ -82,6 +83,70 @@ struct StickyBrandScrollView<Content: View>: View {
     private var collapsedHeaderHeight: CGFloat { 46 }
     private var expandedLogoHeight: CGFloat { 66 }
     private var collapsedLogoHeight: CGFloat { 33 }
+}
+
+private struct HeartbeatBrandHeader: View {
+    let logoHeight: CGFloat
+
+    @State private var heartbeatScale: CGFloat = 1
+    @State private var heartbeatGlow = false
+    @State private var heartbeatTask: Task<Void, Never>?
+
+    var body: some View {
+        Button(action: triggerHeartbeat) {
+            BrandHeader(logoHeight: logoHeight)
+                .scaleEffect(heartbeatScale)
+                .shadow(
+                    color: Theme.Colors.red.opacity(heartbeatGlow ? 0.48 : 0),
+                    radius: heartbeatGlow ? 16 : 0,
+                    y: heartbeatGlow ? 2 : 0
+                )
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Everyday Hero Academy heartbeat logo")
+        .accessibilityHint("Tap repeatedly to simulate a heartbeat rhythm.")
+    }
+
+    private func triggerHeartbeat() {
+        heartbeatTask?.cancel()
+        heartbeatTask = Task { @MainActor in
+            let firstBeat = UIImpactFeedbackGenerator(style: .heavy)
+            firstBeat.prepare()
+            firstBeat.impactOccurred(intensity: 0.88)
+
+            withAnimation(.easeOut(duration: 0.08)) {
+                heartbeatScale = 1.10
+                heartbeatGlow = true
+            }
+
+            try? await Task.sleep(nanoseconds: 85_000_000)
+            guard !Task.isCancelled else { return }
+
+            withAnimation(.easeInOut(duration: 0.08)) {
+                heartbeatScale = 0.98
+            }
+
+            try? await Task.sleep(nanoseconds: 95_000_000)
+            guard !Task.isCancelled else { return }
+
+            let secondBeat = UIImpactFeedbackGenerator(style: .soft)
+            secondBeat.prepare()
+            secondBeat.impactOccurred(intensity: 0.55)
+
+            withAnimation(.easeOut(duration: 0.09)) {
+                heartbeatScale = 1.055
+            }
+
+            try? await Task.sleep(nanoseconds: 115_000_000)
+            guard !Task.isCancelled else { return }
+
+            withAnimation(.spring(response: 0.24, dampingFraction: 0.72)) {
+                heartbeatScale = 1
+                heartbeatGlow = false
+            }
+        }
+    }
 }
 
 private struct ScrollOffsetReader: View {
