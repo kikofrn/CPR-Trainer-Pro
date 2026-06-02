@@ -4,6 +4,7 @@ import UIKit
 struct RootView: View {
     @EnvironmentObject private var appViewModel: AppViewModel
     @State private var showsLaunchExperience = true
+    @State private var launchExperienceMode = LaunchExperienceMode.startup
 
     init() {
         Self.configureTabBarAppearance()
@@ -12,10 +13,18 @@ struct RootView: View {
     var body: some View {
         ZStack {
             tabContent
+                .environment(\.launchExperienceTrigger) {
+                    launchExperienceMode = .practice
+                    withAnimation(.easeInOut(duration: 0.22)) {
+                        showsLaunchExperience = true
+                    }
+                }
 
             if showsLaunchExperience {
-                LaunchExperienceView {
-                    showsLaunchExperience = false
+                LaunchExperienceView(mode: launchExperienceMode) {
+                    withAnimation(.easeInOut(duration: 0.22)) {
+                        showsLaunchExperience = false
+                    }
                 }
                 .transition(.opacity)
                 .zIndex(10)
@@ -61,6 +70,11 @@ struct RootView: View {
     }
 }
 
+private enum LaunchExperienceMode: Equatable {
+    case startup
+    case practice
+}
+
 private extension RootView {
     static func configureTabBarAppearance() {
         let normalColor = UIColor(red: 0x2E / 255, green: 0x9D / 255, blue: 0xFA / 255, alpha: 1)
@@ -97,6 +111,7 @@ private extension RootView {
 }
 
 private struct LaunchExperienceView: View {
+    let mode: LaunchExperienceMode
     let onFinished: () -> Void
 
     @State private var showsLogo = false
@@ -108,31 +123,85 @@ private struct LaunchExperienceView: View {
             ZStack {
                 Color.black.ignoresSafeArea()
 
-                LoopingVideoView(resourceName: "DummiesDoingCPR", fileExtension: "mp4")
-                    .frame(width: 160, height: 160)
+                switch mode {
+                case .startup:
+                    startupContent(proxy: proxy)
+                case .practice:
+                    practiceContent(proxy: proxy)
+                }
+            }
+            .opacity(fadesOut ? 0 : 1)
+            .onAppear {
+                if mode == .startup {
+                    runLaunchSequence()
+                } else {
+                    showsLogo = true
+                }
+            }
+        }
+    }
+
+    private func startupContent(proxy: GeometryProxy) -> some View {
+        ZStack {
+            dummiesAnimation(size: 160)
+                .opacity(settlesLogo ? 0 : 1)
+                .scaleEffect(showsLogo ? 0.72 : 1)
+                .position(
+                    x: proxy.size.width / 2,
+                    y: showsLogo ? proxy.size.height / 2 + 86 : proxy.size.height / 2
+                )
+
+            BrandHeader(logoHeight: settlesLogo ? 66 : 100)
+                .frame(maxWidth: settlesLogo ? 420 : 560)
+                .position(
+                    x: proxy.size.width / 2,
+                    y: settlesLogo ? proxy.safeAreaInsets.top + 46 : proxy.size.height / 2 - 74
+                )
+                .opacity(showsLogo ? 1 : 0)
+        }
+    }
+
+    private func practiceContent(proxy: GeometryProxy) -> some View {
+        ZStack(alignment: .topTrailing) {
+            VStack(spacing: 28) {
+                HeartbeatBrandHeader(logoHeight: 110)
+                    .frame(maxWidth: 560)
+
+                dummiesAnimation(size: 188)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding(.horizontal, 28)
+            .opacity(showsLogo ? 1 : 0)
+
+            Button {
+                onFinished()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(width: 44, height: 44)
+                    .background(.white.opacity(0.12))
                     .clipShape(Circle())
                     .overlay {
                         Circle()
-                            .stroke(.white.opacity(0.18), lineWidth: 1)
+                            .stroke(.white.opacity(0.16), lineWidth: 1)
                     }
-                    .opacity(settlesLogo ? 0 : 1)
-                    .scaleEffect(showsLogo ? 0.72 : 1)
-                    .position(
-                        x: proxy.size.width / 2,
-                        y: showsLogo ? proxy.size.height / 2 + 86 : proxy.size.height / 2
-                    )
-
-                BrandHeader(logoHeight: settlesLogo ? 66 : 100)
-                    .frame(maxWidth: settlesLogo ? 420 : 560)
-                    .position(
-                        x: proxy.size.width / 2,
-                        y: settlesLogo ? proxy.safeAreaInsets.top + 46 : proxy.size.height / 2 - 74
-                    )
-                    .opacity(showsLogo ? 1 : 0)
             }
-            .opacity(fadesOut ? 0 : 1)
-            .onAppear(perform: runLaunchSequence)
+            .buttonStyle(.plain)
+            .accessibilityLabel("Close launch screen")
+            .padding(.top, proxy.safeAreaInsets.top + 12)
+            .padding(.trailing, 18)
         }
+    }
+
+    private func dummiesAnimation(size: CGFloat) -> some View {
+        LoopingVideoView(resourceName: "DummiesDoingCPR", fileExtension: "mp4")
+            .frame(width: size, height: size)
+            .clipShape(Circle())
+            .overlay {
+                Circle()
+                    .stroke(.white.opacity(0.18), lineWidth: 1)
+            }
     }
 
     private func runLaunchSequence() {
