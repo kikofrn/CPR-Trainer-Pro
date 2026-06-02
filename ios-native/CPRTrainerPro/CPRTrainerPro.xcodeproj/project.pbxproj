@@ -154,14 +154,6 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		002000000000000000000301 /* CPRTrainerProTests */ = {
-			isa = PBXGroup;
-			children = (
-				002000000000000000000001 /* ContentManifestContractTests.swift */,
-			);
-			path = CPRTrainerProTests;
-			sourceTree = "<group>";
-		};
 		001000000000000000000310 /* App */ = {
 			isa = PBXGroup;
 			children = (
@@ -302,6 +294,14 @@
 				001000000000000000000028 /* Artwork */,
 			);
 			path = Resources;
+			sourceTree = "<group>";
+		};
+		002000000000000000000301 /* CPRTrainerProTests */ = {
+			isa = PBXGroup;
+			children = (
+				002000000000000000000001 /* ContentManifestContractTests.swift */,
+			);
+			path = CPRTrainerProTests;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -582,7 +582,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 8ZGSY5NJPJ;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = CPRTrainerPro/Resources/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "CPR Trainer Pro";
@@ -610,7 +610,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 8ZGSY5NJPJ;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = CPRTrainerPro/Resources/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "CPR Trainer Pro";
