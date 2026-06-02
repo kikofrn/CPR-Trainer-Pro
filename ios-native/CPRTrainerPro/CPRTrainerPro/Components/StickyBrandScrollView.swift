@@ -1,3 +1,4 @@
+import CoreHaptics
 import SwiftUI
 import UIKit
 
@@ -88,6 +89,8 @@ struct StickyBrandScrollView<Content: View>: View {
 private struct HeartbeatBrandHeader: View {
     let logoHeight: CGFloat
 
+    private static let hapticPlayer = HeartbeatHapticPlayer()
+
     @State private var heartbeatScale: CGFloat = 1
     @State private var heartbeatGlow = false
     @State private var heartbeatTask: Task<Void, Never>?
@@ -111,40 +114,78 @@ private struct HeartbeatBrandHeader: View {
     private func triggerHeartbeat() {
         heartbeatTask?.cancel()
         heartbeatTask = Task { @MainActor in
-            let firstBeat = UIImpactFeedbackGenerator(style: .heavy)
-            firstBeat.prepare()
-            firstBeat.impactOccurred(intensity: 0.88)
+            Self.hapticPlayer.playBeat()
 
-            withAnimation(.easeOut(duration: 0.08)) {
-                heartbeatScale = 1.10
+            heartbeatScale = 1
+            heartbeatGlow = false
+
+            withAnimation(.easeOut(duration: 0.10)) {
+                heartbeatScale = 1.12
                 heartbeatGlow = true
             }
 
-            try? await Task.sleep(nanoseconds: 85_000_000)
+            try? await Task.sleep(nanoseconds: 170_000_000)
             guard !Task.isCancelled else { return }
 
-            withAnimation(.easeInOut(duration: 0.08)) {
-                heartbeatScale = 0.98
-            }
-
-            try? await Task.sleep(nanoseconds: 95_000_000)
-            guard !Task.isCancelled else { return }
-
-            let secondBeat = UIImpactFeedbackGenerator(style: .soft)
-            secondBeat.prepare()
-            secondBeat.impactOccurred(intensity: 0.55)
-
-            withAnimation(.easeOut(duration: 0.09)) {
-                heartbeatScale = 1.055
-            }
-
-            try? await Task.sleep(nanoseconds: 115_000_000)
-            guard !Task.isCancelled else { return }
-
-            withAnimation(.spring(response: 0.24, dampingFraction: 0.72)) {
+            withAnimation(.spring(response: 0.20, dampingFraction: 0.78)) {
                 heartbeatScale = 1
                 heartbeatGlow = false
             }
+        }
+    }
+}
+
+private final class HeartbeatHapticPlayer {
+    private var engine: CHHapticEngine?
+    private let fallbackGenerator = UIImpactFeedbackGenerator(style: .heavy)
+
+    init() {
+        prepareEngine()
+    }
+
+    func playBeat() {
+        guard CHHapticEngine.capabilitiesForHardware().supportsHaptics, let engine else {
+            fallbackGenerator.prepare()
+            fallbackGenerator.impactOccurred(intensity: 0.82)
+            return
+        }
+
+        do {
+            try engine.start()
+
+            let intensity = CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.86)
+            let sharpness = CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.34)
+            let event = CHHapticEvent(
+                eventType: .hapticContinuous,
+                parameters: [intensity, sharpness],
+                relativeTime: 0,
+                duration: 0.18
+            )
+            let pattern = try CHHapticPattern(events: [event], parameters: [])
+            let player = try engine.makePlayer(with: pattern)
+            try player.start(atTime: CHHapticTimeImmediate)
+        } catch {
+            fallbackGenerator.prepare()
+            fallbackGenerator.impactOccurred(intensity: 0.82)
+            prepareEngine()
+        }
+    }
+
+    private func prepareEngine() {
+        guard CHHapticEngine.capabilitiesForHardware().supportsHaptics else { return }
+
+        do {
+            let engine = try CHHapticEngine()
+            engine.stoppedHandler = { [weak self] _ in
+                self?.prepareEngine()
+            }
+            engine.resetHandler = { [weak self] in
+                self?.prepareEngine()
+            }
+            try engine.start()
+            self.engine = engine
+        } catch {
+            self.engine = nil
         }
     }
 }
