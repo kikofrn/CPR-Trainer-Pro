@@ -62,11 +62,13 @@ struct CoursesView: View {
         let vaBinding = course.id == .cprAED ? $cprVAEnabled : $firstAidVAEnabled
         let selectedMode = appViewModel.primaryMode(for: course, vaEnabled: vaBinding.wrappedValue)
         let state = selectedMode.map { downloadService.state(for: $0.packageID) } ?? .notDownloaded
+        let cardCopy = courseCardCopy(for: course, selectedMode: selectedMode)
 
         VStack(alignment: .leading, spacing: 12) {
             CourseCard(
                 course: course,
                 selectedMode: selectedMode,
+                copy: cardCopy,
                 downloadState: state,
                 isSelected: true,
                 onSelect: {
@@ -114,6 +116,11 @@ struct CoursesView: View {
     @ViewBuilder
     private func modeControls(for course: Course, vaEnabled: Binding<Bool>) -> some View {
         VStack(spacing: 10) {
+            Toggle("Enable Virtual Assistant", isOn: vaEnabled)
+                .tint(Theme.Colors.peach)
+                .disabled(course.id == .firstAid && appViewModel.firstAidPediatricFocused)
+                .opacity(course.id == .firstAid && appViewModel.firstAidPediatricFocused ? 0.45 : 1)
+
             if course.id == .firstAid {
                 Toggle("Pediatric Focused", isOn: $appViewModel.firstAidPediatricFocused)
                     .tint(Theme.Colors.peach)
@@ -123,11 +130,6 @@ struct CoursesView: View {
                         }
                     }
             }
-
-            Toggle("Virtual Assistant?", isOn: vaEnabled)
-                .tint(Theme.Colors.peach)
-                .disabled(course.id == .firstAid && appViewModel.firstAidPediatricFocused)
-                .opacity(course.id == .firstAid && appViewModel.firstAidPediatricFocused ? 0.45 : 1)
         }
         .font(.subheadline.weight(.semibold))
         .foregroundStyle(.white)
@@ -153,6 +155,62 @@ struct CoursesView: View {
             }
         }
     }
+
+    private func courseCardCopy(for course: Course, selectedMode: CourseLaunchMode?) -> CourseCardCopy {
+        let isVideo = selectedMode?.kind == .video
+        let isPediatric = selectedMode?.id == .pediatricSlideshow
+
+        return CourseCardCopy(
+            title: isPediatric ? "Pediatric First Aid" : course.title,
+            modeTitle: modeTitle(for: course, selectedMode: selectedMode),
+            bluebellBubbles: isVideo ? Self.videoBluebellBubbles : Self.slideshowBluebellBubbles,
+            collapsibleDescription: collapsibleDescription(for: course, isPediatric: isPediatric)
+        )
+    }
+
+    private func modeTitle(for course: Course, selectedMode: CourseLaunchMode?) -> String {
+        guard let selectedMode else { return "Select Mode" }
+
+        if selectedMode.kind == .video {
+            return "Video style"
+        }
+
+        if course.id == .cprAED || selectedMode.id == .pediatricSlideshow {
+            return "Slideshow style"
+        }
+
+        return selectedMode.title
+    }
+
+    private func collapsibleDescription(for course: Course, isPediatric: Bool) -> String {
+        if course.id == .cprAED {
+            return Self.cprCertificationDescription
+        }
+
+        if isPediatric {
+            return Self.pediatricCertificationDescription
+        }
+
+        return Self.firstAidCertificationDescription
+    }
+}
+
+private extension CoursesView {
+    static let slideshowBluebellBubbles = [
+        "Teach at your own pace",
+        "Includes slide-by-slide teaching tips"
+    ]
+
+    static let videoBluebellBubbles = [
+        "Narrated course guided by a virtual assistant",
+        "Hands-free automation for classroom delivery"
+    ]
+
+    static let cprCertificationDescription = "Course content includes Adult, Child, and Infant CPR as well as choking relief. This is a full certification course built strictly on the latest 2025 AHA/ILCOR guidelines. All certifications meet or exceed federal OSHA workplace safety requirements and satisfy state licensing mandates including pediatric hands-on skills validation. Official certification cards are valid for 2 years and can only be issued through the EHAcademy.com web portal by an approved EHAcademy Instructor with valid credentials."
+
+    static let firstAidCertificationDescription = "Course content includes up-to-date First Aid education for all ages. This is a full certification course built strictly on the latest 2025 AHA/ILCOR guidelines. All certifications meet or exceed federal OSHA workplace safety requirements and satisfy state licensing mandates including pediatric hands-on skills validation. Official certification cards are valid for 2 years and can only be issued through the EHAcademy.com web portal by an approved EHAcademy Instructor with valid credentials."
+
+    static let pediatricCertificationDescription = "Course content includes up-to-date pediatric First Aid education. This is a full certification course built strictly on the latest 2025 AHA/ILCOR guidelines. All certifications meet or exceed federal OSHA workplace safety requirements and satisfy state licensing mandates including pediatric hands-on skills validation. Official certification cards are valid for 2 years and can only be issued through the EHAcademy.com web portal by an approved EHAcademy Instructor with valid credentials."
 }
 
 private struct CourseLaunchRequest: Identifiable {

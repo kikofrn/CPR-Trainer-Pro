@@ -1,52 +1,68 @@
 import SwiftUI
 
+struct CourseCardCopy: Equatable {
+    let title: String
+    let modeTitle: String
+    let bluebellBubbles: [String]
+    let collapsibleDescription: String
+}
+
 struct CourseCard: View {
     let course: Course
     let selectedMode: CourseLaunchMode?
+    let copy: CourseCardCopy
     let downloadState: DownloadState
     let isSelected: Bool
     let onSelect: () -> Void
 
+    @State private var descriptionExpanded = false
+
     var body: some View {
-        Button(action: onSelect) {
-            VStack(alignment: .leading, spacing: 10) {
-                artwork
+        VStack(alignment: .leading, spacing: 10) {
+            artwork
 
-                HStack(alignment: .top, spacing: 12) {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(course.title)
-                            .font(.title2.weight(.bold))
-                            .foregroundStyle(.white)
-                            .lineLimit(2)
-                            .fixedSize(horizontal: false, vertical: true)
-
-                        Text(modeTitle)
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(Theme.Colors.peach)
-                            .lineLimit(1)
-                    }
-
-                    Spacer(minLength: 8)
-
-                    DownloadStatusBadge(state: downloadState)
-                }
-
-                Text(course.subtitle)
-                    .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.70))
-                    .fixedSize(horizontal: false, vertical: true)
-
-                if case .failed(let message) = downloadState, isSelected {
-                    Text(message)
-                        .font(.caption)
-                        .foregroundStyle(Theme.Colors.failure)
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(copy.title)
+                        .font(.title2.weight(.bold))
+                        .foregroundStyle(.white)
                         .lineLimit(2)
                         .fixedSize(horizontal: false, vertical: true)
+
+                    Text(copy.modeTitle)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Theme.Colors.peach)
+                        .lineLimit(1)
+                }
+
+                Spacer(minLength: 8)
+
+                DownloadStatusBadge(state: downloadState)
+            }
+
+            VStack(alignment: .leading, spacing: 7) {
+                ForEach(copy.bluebellBubbles, id: \.self) { bubbleText in
+                    BluebellBubble(text: bubbleText)
                 }
             }
-            .padding(.vertical, 2)
+
+            collapsibleDescription
+
+            if case .failed(let message) = downloadState, isSelected {
+                Text(message)
+                    .font(.caption)
+                    .foregroundStyle(Theme.Colors.failure)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
         .buttonStyle(.plain)
+        .padding(.vertical, 2)
+        .contentShape(Rectangle())
+        .onTapGesture(perform: onSelect)
+        .onChange(of: copy) { _, _ in
+            descriptionExpanded = false
+        }
     }
 
     private var artwork: some View {
@@ -68,9 +84,32 @@ struct CourseCard: View {
         )
     }
 
-    private var modeTitle: String {
-        guard let selectedMode else { return "Select Mode" }
-        return selectedMode.kind == .video ? "Virtual Assistant?" : selectedMode.title
+    private var collapsibleDescription: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    descriptionExpanded.toggle()
+                }
+            } label: {
+                HStack(spacing: 8) {
+                    Text("Course details")
+                        .font(.subheadline.weight(.semibold))
+
+                    Image(systemName: descriptionExpanded ? "chevron.up" : "chevron.down")
+                        .font(.caption.weight(.bold))
+                }
+                .foregroundStyle(.white.opacity(0.72))
+            }
+            .buttonStyle(.plain)
+
+            if descriptionExpanded {
+                Text(copy.collapsibleDescription)
+                    .font(.subheadline)
+                    .foregroundStyle(.white.opacity(0.70))
+                    .fixedSize(horizontal: false, vertical: true)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
     }
 
     private var artworkName: String {
@@ -84,5 +123,30 @@ struct CourseCard: View {
         default:
             course.artworkName
         }
+    }
+}
+
+private struct BluebellBubble: View {
+    let text: String
+
+    var body: some View {
+        Label {
+            Text(text)
+                .fixedSize(horizontal: false, vertical: true)
+        } icon: {
+            Image(systemName: "checkmark.circle.fill")
+                .imageScale(.small)
+        }
+        .font(.caption.weight(.semibold))
+        .foregroundStyle(.white)
+        .padding(.horizontal, 9)
+        .padding(.vertical, 6)
+        .background(Theme.Colors.tabItem.opacity(0.82))
+        .clipShape(RoundedRectangle(cornerRadius: Theme.Layout.controlRadius, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.Layout.controlRadius, style: .continuous)
+                .stroke(.white.opacity(0.18), lineWidth: 1)
+        )
+        .shadow(color: Theme.Colors.tabItem.opacity(0.45), radius: 8, x: 0, y: 0)
     }
 }
