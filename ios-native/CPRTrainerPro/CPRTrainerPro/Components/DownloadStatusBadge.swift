@@ -21,7 +21,7 @@ struct DownloadStatusBadge: View {
         case .queued:
             "Queued"
         case .downloading(let progress):
-            "\(Int((progress * 100).rounded()))%"
+            progress.percentText
         case .ready:
             "Ready"
         case .failed:

@@ -122,10 +122,51 @@ struct DownloadPackage: Identifiable, Codable, Equatable {
     let assets: [MediaAsset]
 }
 
+struct DownloadProgressSnapshot: Equatable {
+    let fractionComplete: Double
+    let completedAssetCount: Int
+    let totalAssetCount: Int
+    let activeAssetCount: Int
+    let etaSeconds: TimeInterval?
+
+    var percent: Int {
+        Int((fractionComplete * 100).rounded())
+    }
+
+    var percentText: String {
+        "\(percent)%"
+    }
+
+    var etaText: String? {
+        guard let etaSeconds, etaSeconds.isFinite, etaSeconds > 0 else { return nil }
+
+        if etaSeconds < 60 {
+            return "less than 1 min left"
+        }
+
+        let totalMinutes = max(1, Int((etaSeconds / 60).rounded()))
+        if totalMinutes < 60 {
+            return "\(totalMinutes) min left"
+        }
+
+        let hours = totalMinutes / 60
+        let minutes = totalMinutes % 60
+        if minutes == 0 {
+            return "\(hours) hr left"
+        }
+
+        return "\(hours) hr \(minutes) min left"
+    }
+
+    var fileCountText: String {
+        "\(completedAssetCount) of \(totalAssetCount) files"
+    }
+}
+
 enum DownloadState: Equatable {
     case notDownloaded
     case queued
-    case downloading(progress: Double)
+    case downloading(progress: DownloadProgressSnapshot)
     case ready
     case failed(message: String)
 
@@ -144,6 +185,10 @@ enum DownloadState: Equatable {
     }
 
     var progressFraction: Double? {
+        progressSnapshot?.fractionComplete
+    }
+
+    var progressSnapshot: DownloadProgressSnapshot? {
         if case .downloading(let progress) = self {
             return progress
         }

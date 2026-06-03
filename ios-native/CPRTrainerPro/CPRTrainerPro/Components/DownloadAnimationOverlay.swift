@@ -3,14 +3,14 @@ import SwiftUI
 import UIKit
 
 struct DownloadAnimationOverlay: View {
-    let progress: Double?
+    let progress: DownloadProgressSnapshot?
 
     var body: some View {
         ZStack {
             Rectangle()
-                .fill(.black.opacity(0.46))
+                .fill(.black.opacity(0.56))
 
-            VStack(spacing: 12) {
+            VStack(spacing: 6) {
                 LoopingVideoView(resourceName: "DummiesDoingCPR", fileExtension: "mp4")
                     .frame(width: 132, height: 132)
                     .clipShape(Circle())
@@ -19,7 +19,7 @@ struct DownloadAnimationOverlay: View {
                             .stroke(.white.opacity(0.22), lineWidth: 1)
                     }
 
-                ProgressView(value: progress ?? 0)
+                ProgressView(value: progress?.fractionComplete ?? 0)
                     .progressViewStyle(.linear)
                     .tint(Theme.Colors.tabItem)
                     .frame(maxWidth: 190)
@@ -27,17 +27,27 @@ struct DownloadAnimationOverlay: View {
                 Text(progressText)
                     .font(.caption.monospacedDigit().weight(.semibold))
                     .foregroundStyle(.white)
+
+                if let secondaryText {
+                    Text(secondaryText)
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.white.opacity(0.72))
+                }
             }
-            .padding(16)
-            .background(.black.opacity(0.38))
-            .clipShape(RoundedRectangle(cornerRadius: Theme.Layout.cardRadius, style: .continuous))
+            .padding(8)
+            .offset(y: 8)
         }
         .allowsHitTesting(false)
     }
 
     private var progressText: String {
         guard let progress else { return "Queued" }
-        return "\(Int((progress * 100).rounded()))% downloaded"
+        return "\(progress.percentText) downloaded"
+    }
+
+    private var secondaryText: String? {
+        guard let progress else { return nil }
+        return progress.etaText ?? "Estimating time..."
     }
 }
 

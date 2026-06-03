@@ -8,7 +8,6 @@ struct CoursesView: View {
     @EnvironmentObject private var downloadService: DownloadService
     @State private var cprVAEnabled = false
     @State private var firstAidVAEnabled = false
-    @State private var expandedCourseID: Course.ID?
     @State private var activeLaunch: CourseLaunchRequest?
     @State private var pendingDownloadPrompt: DownloadPromptContext?
 
@@ -70,12 +69,8 @@ struct CoursesView: View {
                 selectedMode: selectedMode,
                 downloadState: state,
                 isSelected: true,
-                isExpanded: expandedCourseID == course.id,
                 onSelect: {
                     appViewModel.select(course)
-                    withAnimation(.snappy(duration: 0.18)) {
-                        expandedCourseID = expandedCourseID == course.id ? nil : course.id
-                    }
                 }
             )
 
@@ -188,8 +183,9 @@ private struct DownloadPromptContext: Identifiable {
 
     var message: String {
         if state.isActiveDownload {
-            let progress = state.progressFraction.map { " Current progress: \(Int(($0 * 100).rounded()))%." } ?? ""
-            return "\(courseTitle) is still downloading.\(progress) The course cannot launch until every required file is saved locally, which prevents playback from failing mid-class."
+            let progressText = state.progressSnapshot.map { " Current progress: \($0.percentText)." } ?? ""
+            let etaText = state.progressSnapshot?.etaText.map { " Estimated time remaining: \($0)." } ?? ""
+            return "\(courseTitle) is still downloading.\(progressText)\(etaText) The course cannot launch until every required file is saved locally, which prevents playback from failing mid-class."
         }
 
         return "\(courseTitle) (\(modeTitle)) is not downloaded yet. This app launches courses only after all required media is stored locally so classroom playback remains smooth offline. This download is \(package.estimatedDownloadText). Download now?"

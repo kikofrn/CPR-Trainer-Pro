@@ -5,12 +5,11 @@ struct CourseCard: View {
     let selectedMode: CourseLaunchMode?
     let downloadState: DownloadState
     let isSelected: Bool
-    let isExpanded: Bool
     let onSelect: () -> Void
 
     var body: some View {
         Button(action: onSelect) {
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 10) {
                 artwork
 
                 HStack(alignment: .top, spacing: 12) {
@@ -32,13 +31,10 @@ struct CourseCard: View {
                     DownloadStatusBadge(state: downloadState)
                 }
 
-                if isExpanded {
-                    Text(course.subtitle)
-                        .font(.subheadline)
-                        .foregroundStyle(.white.opacity(0.70))
-                        .lineLimit(2)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
+                Text(course.subtitle)
+                    .font(.subheadline)
+                    .foregroundStyle(.white.opacity(0.70))
+                    .fixedSize(horizontal: false, vertical: true)
 
                 if case .failed(let message) = downloadState, isSelected {
                     Text(message)
@@ -48,13 +44,7 @@ struct CourseCard: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            .padding(12)
-            .background(isSelected ? Theme.Colors.elevatedSurface : Theme.Colors.surface)
-            .overlay(
-                RoundedRectangle(cornerRadius: Theme.Layout.cardRadius, style: .continuous)
-                    .stroke(isSelected ? Theme.Colors.peach : Color.white.opacity(0.08), lineWidth: 1)
-            )
-            .clipShape(RoundedRectangle(cornerRadius: Theme.Layout.cardRadius, style: .continuous))
+            .padding(.vertical, 2)
         }
         .buttonStyle(.plain)
     }
@@ -65,15 +55,16 @@ struct CourseCard: View {
             placeholderSystemName: course.id == .cprAED ? "heart.text.square.fill" : "cross.case.fill"
         )
         .frame(maxWidth: .infinity)
-        .frame(height: 164)
+        .frame(height: 208)
         .overlay {
             if downloadState.isActiveDownload {
-                DownloadAnimationOverlay(progress: downloadState.progressFraction)
+                DownloadAnimationOverlay(progress: downloadState.progressSnapshot)
             }
         }
+        .clipShape(RoundedRectangle(cornerRadius: Theme.Layout.cardRadius, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: Theme.Layout.cardRadius, style: .continuous)
-                .stroke(.white.opacity(0.12), lineWidth: 1)
+                .stroke(isSelected ? Theme.Colors.peach : .white.opacity(0.12), lineWidth: 1)
         )
     }
 

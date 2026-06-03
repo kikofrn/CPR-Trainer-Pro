@@ -16,15 +16,75 @@ final class DownloadService: NSObject, ObservableObject {
         let attempt: Int
     }
 
+    private struct ProgressSample {
+        let date: Date
+        let fractionComplete: Double
+    }
+
     private struct PackageProgress {
-        let totalAssetCount: Int
+        var totalAssetCount: Int
         var completedAssetCount: Int
         var activeFractions: [String: Double] = [:]
+        var samples: [ProgressSample] = []
 
         var fractionComplete: Double {
             guard totalAssetCount > 0 else { return 1 }
             let activeTotal = activeFractions.values.reduce(0, +)
             return min(1, Double(completedAssetCount) + activeTotal) / Double(totalAssetCount)
+        }
+
+        var snapshot: DownloadProgressSnapshot {
+            DownloadProgressSnapshot(
+                fractionComplete: max(0, min(1, fractionComplete)),
+                completedAssetCount: completedAssetCount,
+                totalAssetCount: totalAssetCount,
+                activeAssetCount: activeFractions.count,
+                etaSeconds: estimatedSecondsRemaining
+            )
+        }
+
+        var estimatedSecondsRemaining: TimeInterval? {
+            guard
+                let current = samples.last,
+                current.fractionComplete > 0,
+                current.fractionComplete < 1
+            else {
+                return nil
+            }
+
+            guard let baseline = samples.dropLast().last(where: { sample in
+                let elapsed = current.date.timeIntervalSince(sample.date)
+                let progressDelta = current.fractionComplete - sample.fractionComplete
+                return elapsed >= 3 && progressDelta >= 0.004
+            }) else {
+                return nil
+            }
+
+            let elapsed = current.date.timeIntervalSince(baseline.date)
+            let progressDelta = current.fractionComplete - baseline.fractionComplete
+            guard elapsed > 0, progressDelta > 0 else { return nil }
+
+            let secondsRemaining = (1 - current.fractionComplete) / (progressDelta / elapsed)
+            guard secondsRemaining.isFinite, secondsRemaining > 0, secondsRemaining < 86_400 else {
+                return nil
+            }
+
+            return secondsRemaining
+        }
+
+        mutating func recordSample(at date: Date = Date()) {
+            let nextFraction = max(0, min(1, fractionComplete))
+
+            if let last = samples.last {
+                let elapsed = date.timeIntervalSince(last.date)
+                let progressDelta = abs(nextFraction - last.fractionComplete)
+                guard progressDelta >= 0.001 || elapsed >= 5 else { return }
+            }
+
+            samples.append(ProgressSample(date: date, fractionComplete: nextFraction))
+
+            let cutoff = date.addingTimeInterval(-45)
+            samples.removeAll { $0.date < cutoff }
         }
     }
 
@@ -41,6 +101,8 @@ final class DownloadService: NSObject, ObservableObject {
     private var activeDownloads: [Int: ActiveDownload] = [:]
     private var packageProgress: [DownloadPackage.ID: PackageProgress] = [:]
     private var persistedPlans: [DownloadPackage.ID: DownloadQueueStore.PackagePlan] = [:]
+    private var knownPackages: [DownloadPackage.ID: DownloadPackage] = [:]
+    private var progressTickerTask: Task<Void, Never>?
 
     @Published private var states: [DownloadPackage.ID: DownloadState] = [:]
 
@@ -78,12 +140,15 @@ final class DownloadService: NSObject, ObservableObject {
     }
 
     func refreshPackageStates(for packages: [DownloadPackage]) {
+        remember(packages)
+
         for package in packages where storageService.packageIsReady(package) {
             states[package.id] = .ready
         }
     }
 
     func synchronizeForegroundState(for packages: [DownloadPackage]) {
+        remember(packages)
         loadPersistedPlans()
 
         session.getAllTasks { [weak self] tasks in
@@ -93,11 +158,14 @@ final class DownloadService: NSObject, ObservableObject {
                 self.restore(tasks)
                 self.restorePersistedDownloads()
                 self.refreshVisiblePackageProgress(for: packages, tasks: tasks)
+                self.startProgressTickerIfNeeded()
             }
         }
     }
 
     func enqueue(_ package: DownloadPackage, baseURL: URL) {
+        remember([package])
+
         if storageService.packageIsReady(package) {
             states[package.id] = .ready
             removePersistedPlan(package.id)
@@ -113,10 +181,12 @@ final class DownloadService: NSObject, ObservableObject {
 
         persistPlan(for: package, baseURL: baseURL)
         states[package.id] = .queued
-        packageProgress[package.id] = PackageProgress(
+        var progress = PackageProgress(
             totalAssetCount: package.assets.count,
             completedAssetCount: package.assets.count - pendingAssets.count
         )
+        progress.recordSample()
+        packageProgress[package.id] = progress
 
         let queuedAssets = pendingAssets.map { asset in
             QueuedAsset(
@@ -130,6 +200,7 @@ final class DownloadService: NSObject, ObservableObject {
         queue.removeAll { $0.packageID == package.id }
         queue.append(contentsOf: queuedAssets)
         pumpQueue()
+        startProgressTickerIfNeeded()
     }
 
     func cancel(_ packageID: DownloadPackage.ID) {
@@ -152,9 +223,11 @@ final class DownloadService: NSObject, ObservableObject {
         states[packageID] = .notDownloaded
         packageProgress[packageID] = nil
         removePersistedPlan(packageID)
+        stopProgressTickerIfIdle()
     }
 
     func delete(_ package: DownloadPackage) {
+        remember([package])
         cancel(package.id)
 
         do {
@@ -220,11 +293,22 @@ final class DownloadService: NSObject, ObservableObject {
                 ),
                 attempt: 0
             )
-            packageProgress[decoded.packageID] = packageProgress[decoded.packageID] ?? PackageProgress(
-                totalAssetCount: 1,
-                completedAssetCount: 0
-            )
-            states[decoded.packageID] = .downloading(progress: 0)
+            if packageProgress[decoded.packageID] == nil {
+                let package = persistedPlans[decoded.packageID]?.package ?? knownPackages[decoded.packageID]
+                let totalAssetCount = package?.assets.count ?? 1
+                let completedAssetCount = package?.assets.filter {
+                    storageService.fileExists($0.filename)
+                }.count ?? 0
+
+                var progress = PackageProgress(
+                    totalAssetCount: totalAssetCount,
+                    completedAssetCount: completedAssetCount
+                )
+                progress.recordSample()
+                packageProgress[decoded.packageID] = progress
+            }
+
+            setPackageStateDownloading(decoded.packageID)
         }
     }
 
@@ -250,7 +334,8 @@ final class DownloadService: NSObject, ObservableObject {
                 excludingCompletedAssetsIn: package
             )
 
-            packageProgress[package.id] = PackageProgress(
+            updatePackageProgress(
+                packageID: package.id,
                 totalAssetCount: package.assets.count,
                 completedAssetCount: completedAssetCount,
                 activeFractions: activeFractions
@@ -325,9 +410,13 @@ final class DownloadService: NSObject, ObservableObject {
                 continue
             }
 
-            packageProgress[package.id] = PackageProgress(
+            updatePackageProgress(
+                packageID: package.id,
                 totalAssetCount: package.assets.count,
-                completedAssetCount: completedAssetCount
+                completedAssetCount: completedAssetCount,
+                activeFractions: packageProgress[package.id]?.activeFractions.filter {
+                    activeFilenames.contains($0.key)
+                } ?? [:]
             )
 
             if !pendingAssets.isEmpty {
@@ -369,6 +458,15 @@ final class DownloadService: NSObject, ObservableObject {
         }
 
         let fraction = max(0, min(1, Double(totalBytesWritten) / Double(totalBytesExpectedToWrite)))
+        if packageProgress[activeDownload.packageID] == nil {
+            let package = knownPackages[activeDownload.packageID] ?? persistedPlans[activeDownload.packageID]?.package
+            packageProgress[activeDownload.packageID] = PackageProgress(
+                totalAssetCount: package?.assets.count ?? 1,
+                completedAssetCount: package?.assets.filter {
+                    storageService.fileExists($0.filename)
+                }.count ?? 0
+            )
+        }
         packageProgress[activeDownload.packageID]?.activeFractions[activeDownload.asset.filename] = fraction
         setPackageStateDownloading(activeDownload.packageID)
     }
@@ -403,6 +501,7 @@ final class DownloadService: NSObject, ObservableObject {
                 states[activeDownload.packageID] = .ready
                 packageProgress[activeDownload.packageID] = nil
                 removePersistedPlan(activeDownload.packageID)
+                stopProgressTickerIfIdle()
             }
 
             pumpQueue()
@@ -485,6 +584,7 @@ final class DownloadService: NSObject, ObservableObject {
         packageProgress[packageID] = nil
         states[packageID] = .failed(message: message)
         removePersistedPlan(packageID)
+        stopProgressTickerIfIdle()
     }
 
     private func packageHasActiveOrQueuedWork(_ packageID: DownloadPackage.ID) -> Bool {
@@ -498,9 +598,99 @@ final class DownloadService: NSObject, ObservableObject {
             || states[packageID]?.isActiveDownload == true
     }
 
+    private func updatePackageProgress(
+        packageID: DownloadPackage.ID,
+        totalAssetCount: Int,
+        completedAssetCount: Int,
+        activeFractions: [String: Double]
+    ) {
+        var progress = packageProgress[packageID] ?? PackageProgress(
+            totalAssetCount: totalAssetCount,
+            completedAssetCount: completedAssetCount
+        )
+        progress.totalAssetCount = totalAssetCount
+        progress.completedAssetCount = completedAssetCount
+        progress.activeFractions = activeFractions
+        progress.recordSample()
+        packageProgress[packageID] = progress
+    }
+
     private func setPackageStateDownloading(_ packageID: DownloadPackage.ID) {
-        let progress = packageProgress[packageID]?.fractionComplete ?? 0
-        states[packageID] = .downloading(progress: progress)
+        guard var progress = packageProgress[packageID] else {
+            var emptyProgress = PackageProgress(totalAssetCount: 1, completedAssetCount: 0)
+            emptyProgress.recordSample()
+            packageProgress[packageID] = emptyProgress
+            states[packageID] = .downloading(progress: emptyProgress.snapshot)
+            startProgressTickerIfNeeded()
+            return
+        }
+
+        progress.recordSample()
+        packageProgress[packageID] = progress
+        states[packageID] = .downloading(progress: progress.snapshot)
+        startProgressTickerIfNeeded()
+    }
+
+    private func remember(_ packages: [DownloadPackage]) {
+        for package in packages {
+            knownPackages[package.id] = package
+        }
+    }
+
+    private func trackedPackages() -> [DownloadPackage] {
+        var trackedIDs = Set<DownloadPackage.ID>()
+        trackedIDs.formUnion(persistedPlans.keys)
+        trackedIDs.formUnion(packageProgress.keys)
+        trackedIDs.formUnion(queue.map(\.packageID))
+        trackedIDs.formUnion(activeDownloads.values.map(\.packageID))
+        trackedIDs.formUnion(states.filter { $0.value.isActiveDownload }.map(\.key))
+
+        return trackedIDs.compactMap { id in
+            knownPackages[id] ?? persistedPlans[id]?.package
+        }
+    }
+
+    private func startProgressTickerIfNeeded() {
+        guard progressTickerTask == nil, hasTrackedDownloadWork else { return }
+
+        progressTickerTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
+                self?.refreshTrackedDownloadProgress()
+            }
+        }
+    }
+
+    private func stopProgressTickerIfIdle() {
+        guard !hasTrackedDownloadWork else { return }
+        progressTickerTask?.cancel()
+        progressTickerTask = nil
+    }
+
+    private var hasTrackedDownloadWork: Bool {
+        !queue.isEmpty
+            || !activeDownloads.isEmpty
+            || !persistedPlans.isEmpty
+            || states.values.contains { $0.isActiveDownload }
+    }
+
+    private func refreshTrackedDownloadProgress() {
+        let packages = trackedPackages()
+        guard !packages.isEmpty else {
+            stopProgressTickerIfIdle()
+            return
+        }
+
+        session.getAllTasks { [weak self] tasks in
+            Task { @MainActor in
+                guard let self else { return }
+
+                self.restore(tasks)
+                self.restorePersistedDownloads()
+                self.refreshVisiblePackageProgress(for: packages, tasks: tasks)
+                self.stopProgressTickerIfIdle()
+            }
+        }
     }
 
     private func encodeTaskDescription(_ description: TaskDescription) throws -> String {
@@ -524,6 +714,7 @@ final class DownloadService: NSObject, ObservableObject {
             persistedPlans = plans.reduce(into: [:]) { result, plan in
                 result[plan.package.id] = plan
             }
+            remember(plans.map(\.package))
         } catch {
             persistedPlans = [:]
             assertionFailure("Failed to load persisted download queue: \(error)")
