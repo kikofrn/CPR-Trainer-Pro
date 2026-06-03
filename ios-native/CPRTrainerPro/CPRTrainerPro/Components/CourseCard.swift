@@ -14,6 +14,7 @@ struct CourseCard: View {
     let downloadState: DownloadState
     let isSelected: Bool
     let onSelect: () -> Void
+    let onStatusTap: () -> Void
 
     @State private var descriptionExpanded = false
 
@@ -37,7 +38,7 @@ struct CourseCard: View {
 
                 Spacer(minLength: 8)
 
-                DownloadStatusBadge(state: downloadState)
+                statusBadge
             }
 
             VStack(alignment: .leading, spacing: 7) {
@@ -62,6 +63,19 @@ struct CourseCard: View {
         .onTapGesture(perform: onSelect)
         .onChange(of: copy) { _, _ in
             descriptionExpanded = false
+        }
+    }
+
+    @ViewBuilder
+    private var statusBadge: some View {
+        if downloadState.isReady {
+            DownloadStatusBadge(state: downloadState)
+        } else {
+            Button(action: onStatusTap) {
+                DownloadStatusBadge(state: downloadState)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Download course")
         }
     }
 

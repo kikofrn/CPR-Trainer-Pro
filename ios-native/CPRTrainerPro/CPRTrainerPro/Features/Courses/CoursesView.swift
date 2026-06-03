@@ -73,6 +73,13 @@ struct CoursesView: View {
                 isSelected: true,
                 onSelect: {
                     appViewModel.select(course)
+                },
+                onStatusTap: {
+                    launchOrPromptDownload(
+                        course: course,
+                        mode: selectedMode,
+                        state: state
+                    )
                 }
             )
 
@@ -175,11 +182,7 @@ struct CoursesView: View {
             return "Video style"
         }
 
-        if course.id == .cprAED || selectedMode.id == .pediatricSlideshow {
-            return "Slideshow style"
-        }
-
-        return selectedMode.title
+        return "Slideshow style"
     }
 
     private func collapsibleDescription(for course: Course, isPediatric: Bool) -> String {
