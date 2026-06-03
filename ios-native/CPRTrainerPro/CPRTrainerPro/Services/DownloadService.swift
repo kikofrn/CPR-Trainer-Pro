@@ -21,16 +21,44 @@ final class DownloadService: NSObject, ObservableObject {
         let fractionComplete: Double
     }
 
+    private struct ActiveAssetProgress {
+        let bytesWritten: Int64
+        let bytesExpected: Int64
+
+        var fractionComplete: Double {
+            guard bytesExpected > 0 else { return 0 }
+            return max(0, min(1, Double(bytesWritten) / Double(bytesExpected)))
+        }
+    }
+
     private struct PackageProgress {
         var totalAssetCount: Int
         var completedAssetCount: Int
-        var activeFractions: [String: Double] = [:]
+        var expectedByteCount: Int64 = 0
+        var completedByteCount: Int64 = 0
+        var activeAssetProgress: [String: ActiveAssetProgress] = [:]
         var samples: [ProgressSample] = []
 
         var fractionComplete: Double {
+            let activeBytesWritten = activeAssetProgress.values.reduce(Int64(0)) { total, progress in
+                total + max(0, progress.bytesWritten)
+            }
+            let activeBytesExpected = activeAssetProgress.values.reduce(Int64(0)) { total, progress in
+                total + max(0, progress.bytesExpected)
+            }
+            let byteDenominator = max(expectedByteCount, completedByteCount + activeBytesExpected)
+
+            if byteDenominator > 0 {
+                let byteFraction = Double(max(0, completedByteCount) + activeBytesWritten)
+                    / Double(byteDenominator)
+                return min(0.99, max(0, byteFraction))
+            }
+
             guard totalAssetCount > 0 else { return 1 }
-            let activeTotal = activeFractions.values.reduce(0, +)
-            return min(1, Double(completedAssetCount) + activeTotal) / Double(totalAssetCount)
+            let activeTotal = activeAssetProgress.values.reduce(0) { total, progress in
+                total + progress.fractionComplete
+            }
+            return min(0.99, (Double(completedAssetCount) + activeTotal) / Double(totalAssetCount))
         }
 
         var snapshot: DownloadProgressSnapshot {
@@ -38,7 +66,7 @@ final class DownloadService: NSObject, ObservableObject {
                 fractionComplete: max(0, min(1, fractionComplete)),
                 completedAssetCount: completedAssetCount,
                 totalAssetCount: totalAssetCount,
-                activeAssetCount: activeFractions.count,
+                activeAssetCount: activeAssetProgress.count,
                 etaSeconds: estimatedSecondsRemaining
             )
         }
@@ -183,7 +211,9 @@ final class DownloadService: NSObject, ObservableObject {
         states[package.id] = .queued
         var progress = PackageProgress(
             totalAssetCount: package.assets.count,
-            completedAssetCount: package.assets.count - pendingAssets.count
+            completedAssetCount: package.assets.count - pendingAssets.count,
+            expectedByteCount: package.estimatedDownloadBytes,
+            completedByteCount: completedByteCount(for: package)
         )
         progress.recordSample()
         packageProgress[package.id] = progress
@@ -302,7 +332,9 @@ final class DownloadService: NSObject, ObservableObject {
 
                 var progress = PackageProgress(
                     totalAssetCount: totalAssetCount,
-                    completedAssetCount: completedAssetCount
+                    completedAssetCount: completedAssetCount,
+                    expectedByteCount: package?.estimatedDownloadBytes ?? 0,
+                    completedByteCount: package.map { completedByteCount(for: $0) } ?? 0
                 )
                 progress.recordSample()
                 packageProgress[decoded.packageID] = progress
@@ -328,34 +360,36 @@ final class DownloadService: NSObject, ObservableObject {
             guard isTrackingDownload(for: package.id) else { continue }
 
             let completedAssetCount = package.assets.filter { storageService.fileExists($0.filename) }.count
-            let activeFractions = refreshedActiveFractions(
+            let activeAssetProgress = refreshedActiveAssetProgress(
                 for: package.id,
                 using: tasks,
                 excludingCompletedAssetsIn: package
             )
 
             updatePackageProgress(
+                package: package,
                 packageID: package.id,
                 totalAssetCount: package.assets.count,
                 completedAssetCount: completedAssetCount,
-                activeFractions: activeFractions
+                completedByteCount: completedByteCount(for: package),
+                activeAssetProgress: activeAssetProgress
             )
             setPackageStateDownloading(package.id)
         }
     }
 
-    private func refreshedActiveFractions(
+    private func refreshedActiveAssetProgress(
         for packageID: DownloadPackage.ID,
         using tasks: [URLSessionTask],
         excludingCompletedAssetsIn package: DownloadPackage
-    ) -> [String: Double] {
+    ) -> [String: ActiveAssetProgress] {
         let completedFilenames = Set(
             package.assets
                 .filter { storageService.fileExists($0.filename) }
                 .map(\.filename)
         )
 
-        var fractions = packageProgress[packageID]?.activeFractions.filter {
+        var activeProgress = packageProgress[packageID]?.activeAssetProgress.filter {
             !completedFilenames.contains($0.key)
         } ?? [:]
 
@@ -369,19 +403,18 @@ final class DownloadService: NSObject, ObservableObject {
             }
 
             let taskProgress = task.progress
-            let fraction: Double
-            if taskProgress.totalUnitCount > 0 {
-                fraction = Double(taskProgress.completedUnitCount) / Double(taskProgress.totalUnitCount)
-            } else {
-                fraction = taskProgress.fractionCompleted
-            }
+            let bytesWritten = max(task.countOfBytesReceived, taskProgress.completedUnitCount, 0)
+            let bytesExpected = max(task.countOfBytesExpectedToReceive, taskProgress.totalUnitCount, 0)
 
-            if fraction.isFinite {
-                fractions[activeDownload.asset.filename] = max(0, min(1, fraction))
+            if bytesWritten > 0 || bytesExpected > 0 {
+                activeProgress[activeDownload.asset.filename] = ActiveAssetProgress(
+                    bytesWritten: bytesWritten,
+                    bytesExpected: bytesExpected
+                )
             }
         }
 
-        return fractions
+        return activeProgress
     }
 
     private func restorePersistedDownloads() {
@@ -411,10 +444,12 @@ final class DownloadService: NSObject, ObservableObject {
             }
 
             updatePackageProgress(
+                package: package,
                 packageID: package.id,
                 totalAssetCount: package.assets.count,
                 completedAssetCount: completedAssetCount,
-                activeFractions: packageProgress[package.id]?.activeFractions.filter {
+                completedByteCount: completedByteCount(for: package),
+                activeAssetProgress: packageProgress[package.id]?.activeAssetProgress.filter {
                     activeFilenames.contains($0.key)
                 } ?? [:]
             )
@@ -457,17 +492,21 @@ final class DownloadService: NSObject, ObservableObject {
             return
         }
 
-        let fraction = max(0, min(1, Double(totalBytesWritten) / Double(totalBytesExpectedToWrite)))
         if packageProgress[activeDownload.packageID] == nil {
             let package = knownPackages[activeDownload.packageID] ?? persistedPlans[activeDownload.packageID]?.package
             packageProgress[activeDownload.packageID] = PackageProgress(
                 totalAssetCount: package?.assets.count ?? 1,
                 completedAssetCount: package?.assets.filter {
                     storageService.fileExists($0.filename)
-                }.count ?? 0
+                }.count ?? 0,
+                expectedByteCount: package?.estimatedDownloadBytes ?? 0,
+                completedByteCount: package.map { completedByteCount(for: $0) } ?? 0
             )
         }
-        packageProgress[activeDownload.packageID]?.activeFractions[activeDownload.asset.filename] = fraction
+        packageProgress[activeDownload.packageID]?.activeAssetProgress[activeDownload.asset.filename] = ActiveAssetProgress(
+            bytesWritten: totalBytesWritten,
+            bytesExpected: totalBytesExpectedToWrite
+        )
         setPackageStateDownloading(activeDownload.packageID)
     }
 
@@ -492,7 +531,10 @@ final class DownloadService: NSObject, ObservableObject {
         do {
             try storageService.moveDownloadedFile(from: temporaryURL, toExactFilename: activeDownload.asset.filename)
             packageProgress[activeDownload.packageID]?.completedAssetCount += 1
-            packageProgress[activeDownload.packageID]?.activeFractions[activeDownload.asset.filename] = nil
+            packageProgress[activeDownload.packageID]?.completedByteCount += storageService.fileSizeIfExists(
+                activeDownload.asset.filename
+            )
+            packageProgress[activeDownload.packageID]?.activeAssetProgress[activeDownload.asset.filename] = nil
             activeDownloads[taskIdentifier] = nil
 
             if packageHasActiveOrQueuedWork(activeDownload.packageID) {
@@ -514,7 +556,7 @@ final class DownloadService: NSObject, ObservableObject {
     private func completeWithError(taskIdentifier: Int, error: Error?) {
         guard let error, let activeDownload = activeDownloads[taskIdentifier] else { return }
         activeDownloads[taskIdentifier] = nil
-        packageProgress[activeDownload.packageID]?.activeFractions[activeDownload.asset.filename] = nil
+        packageProgress[activeDownload.packageID]?.activeAssetProgress[activeDownload.asset.filename] = nil
         retryOrFail(activeDownload, message: message(for: error, asset: activeDownload.asset))
         pumpQueue()
     }
@@ -598,11 +640,19 @@ final class DownloadService: NSObject, ObservableObject {
             || states[packageID]?.isActiveDownload == true
     }
 
+    private func completedByteCount(for package: DownloadPackage) -> Int64 {
+        package.assets.reduce(Int64(0)) { total, asset in
+            total + storageService.fileSizeIfExists(asset.filename)
+        }
+    }
+
     private func updatePackageProgress(
+        package: DownloadPackage?,
         packageID: DownloadPackage.ID,
         totalAssetCount: Int,
         completedAssetCount: Int,
-        activeFractions: [String: Double]
+        completedByteCount: Int64,
+        activeAssetProgress: [String: ActiveAssetProgress]
     ) {
         var progress = packageProgress[packageID] ?? PackageProgress(
             totalAssetCount: totalAssetCount,
@@ -610,7 +660,9 @@ final class DownloadService: NSObject, ObservableObject {
         )
         progress.totalAssetCount = totalAssetCount
         progress.completedAssetCount = completedAssetCount
-        progress.activeFractions = activeFractions
+        progress.expectedByteCount = package?.estimatedDownloadBytes ?? progress.expectedByteCount
+        progress.completedByteCount = completedByteCount
+        progress.activeAssetProgress = activeAssetProgress
         progress.recordSample()
         packageProgress[packageID] = progress
     }

@@ -198,6 +198,23 @@ enum DownloadState: Equatable {
 }
 
 extension DownloadPackage {
+    var estimatedDownloadBytes: Int64 {
+        switch id {
+        case .cprSlideshow:
+            700_000_000
+        case .cprVideo:
+            900_000_000
+        case .firstAidSlideshow:
+            750_000_000
+        case .firstAidVideo:
+            1_400_000_000
+        case .pediatricSlideshow:
+            750_000_000
+        case .instructorManual, .studentManual, .pediatricManual:
+            25_000_000
+        }
+    }
+
     var estimatedDownloadText: String {
         switch id {
         case .cprSlideshow:

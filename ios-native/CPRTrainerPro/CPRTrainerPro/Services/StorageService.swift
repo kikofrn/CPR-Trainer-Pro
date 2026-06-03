@@ -95,6 +95,19 @@ struct StorageService {
         package.assets.allSatisfy { fileExists($0.filename) }
     }
 
+    func fileSizeIfExists(_ filename: String) -> Int64 {
+        guard
+            let url = try? localURL(for: filename),
+            fileManager.fileExists(atPath: url.path),
+            let attributes = try? fileManager.attributesOfItem(atPath: url.path),
+            let size = attributes[.size] as? NSNumber
+        else {
+            return 0
+        }
+
+        return size.int64Value
+    }
+
     func availableDiskBytes() -> Int64? {
         guard let root = try? downloadedMediaRoot else { return nil }
         let values = try? root.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey])

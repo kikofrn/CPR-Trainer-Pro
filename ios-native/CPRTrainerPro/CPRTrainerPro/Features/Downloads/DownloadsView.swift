@@ -3,6 +3,7 @@ import SwiftUI
 struct DownloadsView: View {
     @EnvironmentObject private var appViewModel: AppViewModel
     @EnvironmentObject private var downloadService: DownloadService
+    @State private var packagePendingDeletion: DownloadPackage?
 
     var body: some View {
         NavigationStack {
@@ -15,7 +16,39 @@ struct DownloadsView: View {
             }
             .navigationTitle("")
             .toolbar(.hidden, for: .navigationBar)
+            .alert("Delete Download?", isPresented: deleteConfirmationIsPresented) {
+                Button("Cancel", role: .cancel) {
+                    packagePendingDeletion = nil
+                }
+                Button("Delete", role: .destructive) {
+                    if let package = packagePendingDeletion {
+                        downloadService.delete(package)
+                    }
+                    packagePendingDeletion = nil
+                }
+            } message: {
+                Text(deleteConfirmationMessage)
+            }
         }
+    }
+
+    private var deleteConfirmationIsPresented: Binding<Bool> {
+        Binding(
+            get: { packagePendingDeletion != nil },
+            set: { isPresented in
+                if !isPresented {
+                    packagePendingDeletion = nil
+                }
+            }
+        )
+    }
+
+    private var deleteConfirmationMessage: String {
+        guard let package = packagePendingDeletion else {
+            return "Are you sure you want to delete this download from this device?"
+        }
+
+        return "Are you sure you want to delete \(package.title) from this device?"
     }
 
     private func packageRow(_ package: DownloadPackage) -> some View {
@@ -67,7 +100,7 @@ struct DownloadsView: View {
     private func performAction(for package: DownloadPackage, state: DownloadState) {
         switch state {
         case .ready:
-            downloadService.delete(package)
+            packagePendingDeletion = package
         case .queued, .downloading:
             downloadService.cancel(package.id)
         case .notDownloaded, .failed:
