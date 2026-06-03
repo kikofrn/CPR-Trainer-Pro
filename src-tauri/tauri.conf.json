@@ -43,7 +43,6 @@
   "bundle": {
     "active": true,
     "targets": "all",
-    "createUpdaterArtifacts": true,
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -58,14 +57,10 @@
       "nsis": {
         "installerIcon": "installer-icon.ico"
       }
-    }
-  },
-  "plugins": {
-    "updater": {
-      "endpoints": [
-        "https://github.com/kikofrn/CPR-Trainer-Pro/releases/latest/download/latest.json"
-      ],
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDZFNkNEMkVBMTE5MzI3QUQKUldTdEo1TVI2dEpzYnVzbmF1UURxM2k0a29KQWNqVTZWT0dGM296WTNhS2Y3RmYvbFFudDU2VHQK"
+    },
+    "macOS": {
+      "entitlements": "entitlements.mac.plist",
+      "exceptionDomain": "media.localhost"
     }
   }
 }
