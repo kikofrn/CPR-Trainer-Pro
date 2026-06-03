@@ -167,6 +167,12 @@ final class DownloadService: NSObject, ObservableObject {
         states[packageID] ?? .notDownloaded
     }
 
+    func downloadedSizeText(for package: DownloadPackage) -> String? {
+        let byteCount = storageService.downloadedPackageByteCount(package)
+        guard byteCount > 0 else { return nil }
+        return ByteCountFormatter.string(fromByteCount: byteCount, countStyle: .file)
+    }
+
     func refreshPackageStates(for packages: [DownloadPackage]) {
         remember(packages)
 

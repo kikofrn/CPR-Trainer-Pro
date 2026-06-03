@@ -66,6 +66,12 @@ struct DownloadsView: View {
                     .font(.caption)
                     .foregroundStyle(.white.opacity(0.58))
 
+                if state.isReady, let sizeText = downloadService.downloadedSizeText(for: package) {
+                    Text("Saved size: \(sizeText)")
+                        .font(.caption)
+                        .foregroundStyle(Theme.Colors.peach)
+                }
+
                 if case .failed(let message) = state {
                     Text(message)
                         .font(.caption2)

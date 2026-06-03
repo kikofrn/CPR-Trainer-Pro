@@ -51,8 +51,7 @@ struct StorageService {
             return bundledURL
         }
 
-        let clean = try sanitizedRelativePath(filename)
-        return try downloadedMediaRoot.appendingPathComponent(clean, isDirectory: false)
+        return try downloadedURL(for: filename)
     }
 
     func prepareParentDirectory(for filename: String) throws {
@@ -108,10 +107,35 @@ struct StorageService {
         return size.int64Value
     }
 
+    func downloadedPackageByteCount(_ package: DownloadPackage) -> Int64 {
+        package.assets.reduce(Int64(0)) { total, asset in
+            total + downloadedFileSizeIfExists(asset.filename)
+        }
+    }
+
     func availableDiskBytes() -> Int64? {
         guard let root = try? downloadedMediaRoot else { return nil }
         let values = try? root.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey])
         return values?.volumeAvailableCapacityForImportantUsage
+    }
+
+    private func downloadedFileSizeIfExists(_ filename: String) -> Int64 {
+        guard (try? bundledResourceURL(for: filename)) == nil else { return 0 }
+        guard
+            let url = try? downloadedURL(for: filename),
+            fileManager.fileExists(atPath: url.path),
+            let attributes = try? fileManager.attributesOfItem(atPath: url.path),
+            let size = attributes[.size] as? NSNumber
+        else {
+            return 0
+        }
+
+        return size.int64Value
+    }
+
+    private func downloadedURL(for filename: String) throws -> URL {
+        let clean = try sanitizedRelativePath(filename)
+        return try downloadedMediaRoot.appendingPathComponent(clean, isDirectory: false)
     }
 
     private func sanitizedRelativePath(_ filename: String) throws -> String {
