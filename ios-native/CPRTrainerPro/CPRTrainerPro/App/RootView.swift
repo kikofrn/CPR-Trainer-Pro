@@ -2,6 +2,7 @@ import SwiftUI
 import UIKit
 
 struct RootView: View {
+    @Environment(\.scenePhase) private var scenePhase
     @EnvironmentObject private var appViewModel: AppViewModel
     @State private var showsLaunchExperience = true
     @State private var launchExperienceMode = LaunchExperienceMode.startup
@@ -32,6 +33,14 @@ struct RootView: View {
         }
         .background(Color.black)
         .preferredColorScheme(.dark)
+        .onAppear {
+            appViewModel.synchronizeDownloadsAfterForeground()
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                appViewModel.synchronizeDownloadsAfterForeground()
+            }
+        }
     }
 
     private var tabContent: some View {

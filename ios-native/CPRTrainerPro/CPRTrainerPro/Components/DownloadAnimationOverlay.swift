@@ -61,7 +61,7 @@ struct LoopingVideoView: UIViewRepresentable {
         let player = AVQueuePlayer(playerItem: item)
         player.isMuted = true
         player.actionAtItemEnd = .none
-        context.coordinator.player = player
+        context.coordinator.attach(player)
         context.coordinator.looper = AVPlayerLooper(player: player, templateItem: item)
         view.playerLayer.player = player
         player.play()
@@ -69,7 +69,13 @@ struct LoopingVideoView: UIViewRepresentable {
     }
 
     func updateUIView(_ uiView: PlayerUIView, context: Context) {
-        context.coordinator.player?.play()
+        uiView.playerLayer.player = context.coordinator.player
+        context.coordinator.playIfActive()
+    }
+
+    static func dismantleUIView(_ uiView: PlayerUIView, coordinator: Coordinator) {
+        coordinator.stop()
+        uiView.playerLayer.player = nil
     }
 
     func makeCoordinator() -> Coordinator {
@@ -79,6 +85,60 @@ struct LoopingVideoView: UIViewRepresentable {
     final class Coordinator {
         var player: AVQueuePlayer?
         var looper: AVPlayerLooper?
+        private var observers: [NSObjectProtocol] = []
+
+        func attach(_ player: AVQueuePlayer) {
+            self.player = player
+            observeAppLifecycleIfNeeded()
+        }
+
+        func playIfActive() {
+            guard UIApplication.shared.applicationState != .background else { return }
+            player?.play()
+        }
+
+        func stop() {
+            player?.pause()
+            observers.forEach(NotificationCenter.default.removeObserver)
+            observers.removeAll()
+        }
+
+        deinit {
+            stop()
+        }
+
+        private func observeAppLifecycleIfNeeded() {
+            guard observers.isEmpty else { return }
+
+            let center = NotificationCenter.default
+            observers.append(
+                center.addObserver(
+                    forName: UIApplication.didBecomeActiveNotification,
+                    object: nil,
+                    queue: .main
+                ) { [weak self] _ in
+                    self?.playIfActive()
+                }
+            )
+            observers.append(
+                center.addObserver(
+                    forName: UIApplication.willEnterForegroundNotification,
+                    object: nil,
+                    queue: .main
+                ) { [weak self] _ in
+                    self?.playIfActive()
+                }
+            )
+            observers.append(
+                center.addObserver(
+                    forName: UIApplication.didEnterBackgroundNotification,
+                    object: nil,
+                    queue: .main
+                ) { [weak self] _ in
+                    self?.player?.pause()
+                }
+            )
+        }
     }
 }
 

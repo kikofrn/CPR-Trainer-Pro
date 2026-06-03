@@ -83,6 +83,20 @@ final class DownloadService: NSObject, ObservableObject {
         }
     }
 
+    func synchronizeForegroundState(for packages: [DownloadPackage]) {
+        loadPersistedPlans()
+
+        session.getAllTasks { [weak self] tasks in
+            Task { @MainActor in
+                guard let self else { return }
+
+                self.restore(tasks)
+                self.restorePersistedDownloads()
+                self.refreshVisiblePackageProgress(for: packages, tasks: tasks)
+            }
+        }
+    }
+
     func enqueue(_ package: DownloadPackage, baseURL: URL) {
         if storageService.packageIsReady(package) {
             states[package.id] = .ready
@@ -212,6 +226,77 @@ final class DownloadService: NSObject, ObservableObject {
             )
             states[decoded.packageID] = .downloading(progress: 0)
         }
+    }
+
+    private func refreshVisiblePackageProgress(
+        for packages: [DownloadPackage],
+        tasks: [URLSessionTask]
+    ) {
+        for package in packages {
+            if storageService.packageIsReady(package) {
+                queue.removeAll { $0.packageID == package.id }
+                states[package.id] = .ready
+                packageProgress[package.id] = nil
+                removePersistedPlan(package.id)
+                continue
+            }
+
+            guard isTrackingDownload(for: package.id) else { continue }
+
+            let completedAssetCount = package.assets.filter { storageService.fileExists($0.filename) }.count
+            let activeFractions = refreshedActiveFractions(
+                for: package.id,
+                using: tasks,
+                excludingCompletedAssetsIn: package
+            )
+
+            packageProgress[package.id] = PackageProgress(
+                totalAssetCount: package.assets.count,
+                completedAssetCount: completedAssetCount,
+                activeFractions: activeFractions
+            )
+            setPackageStateDownloading(package.id)
+        }
+    }
+
+    private func refreshedActiveFractions(
+        for packageID: DownloadPackage.ID,
+        using tasks: [URLSessionTask],
+        excludingCompletedAssetsIn package: DownloadPackage
+    ) -> [String: Double] {
+        let completedFilenames = Set(
+            package.assets
+                .filter { storageService.fileExists($0.filename) }
+                .map(\.filename)
+        )
+
+        var fractions = packageProgress[packageID]?.activeFractions.filter {
+            !completedFilenames.contains($0.key)
+        } ?? [:]
+
+        for task in tasks {
+            guard
+                let activeDownload = activeDownloads[task.taskIdentifier],
+                activeDownload.packageID == packageID,
+                !completedFilenames.contains(activeDownload.asset.filename)
+            else {
+                continue
+            }
+
+            let taskProgress = task.progress
+            let fraction: Double
+            if taskProgress.totalUnitCount > 0 {
+                fraction = Double(taskProgress.completedUnitCount) / Double(taskProgress.totalUnitCount)
+            } else {
+                fraction = taskProgress.fractionCompleted
+            }
+
+            if fraction.isFinite {
+                fractions[activeDownload.asset.filename] = max(0, min(1, fraction))
+            }
+        }
+
+        return fractions
     }
 
     private func restorePersistedDownloads() {
@@ -405,6 +490,12 @@ final class DownloadService: NSObject, ObservableObject {
     private func packageHasActiveOrQueuedWork(_ packageID: DownloadPackage.ID) -> Bool {
         activeDownloads.values.contains { $0.packageID == packageID }
             || queue.contains { $0.packageID == packageID }
+    }
+
+    private func isTrackingDownload(for packageID: DownloadPackage.ID) -> Bool {
+        persistedPlans[packageID] != nil
+            || packageHasActiveOrQueuedWork(packageID)
+            || states[packageID]?.isActiveDownload == true
     }
 
     private func setPackageStateDownloading(_ packageID: DownloadPackage.ID) {

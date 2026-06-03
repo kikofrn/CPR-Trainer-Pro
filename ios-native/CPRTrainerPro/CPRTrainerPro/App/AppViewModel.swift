@@ -25,6 +25,10 @@ final class AppViewModel: ObservableObject {
         selectedCourseID = course.id
     }
 
+    func synchronizeDownloadsAfterForeground() {
+        downloadService.synchronizeForegroundState(for: catalog.packages)
+    }
+
     func primaryMode(for course: Course, vaEnabled: Bool) -> CourseLaunchMode? {
         if course.id == .firstAid && firstAidPediatricFocused {
             return course.modes.first { $0.id == .pediatricSlideshow }
