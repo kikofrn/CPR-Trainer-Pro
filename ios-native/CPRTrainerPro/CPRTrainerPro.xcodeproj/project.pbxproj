@@ -44,6 +44,13 @@
 		001000000000000000000135 /* SlideshowInstructorOverlays.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000037 /* SlideshowInstructorOverlays.swift */; };
 		001000000000000000000136 /* instructor-tips.json in Resources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000038 /* instructor-tips.json */; };
 		001000000000000000000137 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000039 /* Assets.xcassets */; };
+		001000000000000000000138 /* ExternalDisplayAppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000040 /* ExternalDisplayAppDelegate.swift */; };
+		001000000000000000000139 /* ExternalDisplaySceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000041 /* ExternalDisplaySceneDelegate.swift */; };
+		001000000000000000000140 /* PresentationSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000042 /* PresentationSession.swift */; };
+		001000000000000000000141 /* CoursePlayerLayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000043 /* CoursePlayerLayerView.swift */; };
+		001000000000000000000142 /* ExternalPresentationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000044 /* ExternalPresentationView.swift */; };
+		001000000000000000000143 /* VideoCoursePlaybackCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000045 /* VideoCoursePlaybackCoordinator.swift */; };
+		001000000000000000000144 /* SlideshowPlaybackCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000046 /* SlideshowPlaybackCoordinator.swift */; };
 		002000000000000000000101 /* ContentManifestContractTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 002000000000000000000001 /* ContentManifestContractTests.swift */; };
 		002000000000000000000102 /* content-manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000016 /* content-manifest.json */; };
 		002000000000000000000103 /* instructor-tips.json in Resources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000038 /* instructor-tips.json */; };
@@ -99,6 +106,13 @@
 		001000000000000000000037 /* SlideshowInstructorOverlays.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlideshowInstructorOverlays.swift; sourceTree = "<group>"; };
 		001000000000000000000038 /* instructor-tips.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "instructor-tips.json"; sourceTree = "<group>"; };
 		001000000000000000000039 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		001000000000000000000040 /* ExternalDisplayAppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalDisplayAppDelegate.swift; sourceTree = "<group>"; };
+		001000000000000000000041 /* ExternalDisplaySceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalDisplaySceneDelegate.swift; sourceTree = "<group>"; };
+		001000000000000000000042 /* PresentationSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresentationSession.swift; sourceTree = "<group>"; };
+		001000000000000000000043 /* CoursePlayerLayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoursePlayerLayerView.swift; sourceTree = "<group>"; };
+		001000000000000000000044 /* ExternalPresentationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalPresentationView.swift; sourceTree = "<group>"; };
+		001000000000000000000045 /* VideoCoursePlaybackCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoCoursePlaybackCoordinator.swift; sourceTree = "<group>"; };
+		001000000000000000000046 /* SlideshowPlaybackCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlideshowPlaybackCoordinator.swift; sourceTree = "<group>"; };
 		002000000000000000000001 /* ContentManifestContractTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentManifestContractTests.swift; sourceTree = "<group>"; };
 		002000000000000000000020 /* CPRTrainerProTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CPRTrainerProTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -158,6 +172,8 @@
 			isa = PBXGroup;
 			children = (
 				001000000000000000000001 /* CPRTrainerProApp.swift */,
+				001000000000000000000040 /* ExternalDisplayAppDelegate.swift */,
+				001000000000000000000041 /* ExternalDisplaySceneDelegate.swift */,
 				001000000000000000000002 /* AppViewModel.swift */,
 				001000000000000000000003 /* RootView.swift */,
 			);
@@ -216,6 +232,9 @@
 				001000000000000000000019 /* VideoCoursePlayerView.swift */,
 				001000000000000000000021 /* SlideshowPlayerView.swift */,
 				001000000000000000000037 /* SlideshowInstructorOverlays.swift */,
+				001000000000000000000044 /* ExternalPresentationView.swift */,
+				001000000000000000000045 /* VideoCoursePlaybackCoordinator.swift */,
+				001000000000000000000046 /* SlideshowPlaybackCoordinator.swift */,
 			);
 			path = Player;
 			sourceTree = "<group>";
@@ -241,6 +260,7 @@
 				001000000000000000000031 /* StickyBrandScrollView.swift */,
 				001000000000000000000032 /* DownloadAnimationOverlay.swift */,
 				001000000000000000000033 /* FullScreenToggleButton.swift */,
+				001000000000000000000043 /* CoursePlayerLayerView.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -261,6 +281,7 @@
 				001000000000000000000007 /* DownloadService.swift */,
 				001000000000000000000024 /* DownloadQueueStore.swift */,
 				001000000000000000000036 /* InstructorTipsService.swift */,
+				001000000000000000000042 /* PresentationSession.swift */,
 				001000000000000000000026 /* SubtitleService.swift */,
 				001000000000000000000017 /* StorageService.swift */,
 			);
@@ -442,6 +463,13 @@
 				001000000000000000000133 /* SettingsView.swift in Sources */,
 				001000000000000000000134 /* InstructorTipsService.swift in Sources */,
 				001000000000000000000135 /* SlideshowInstructorOverlays.swift in Sources */,
+				001000000000000000000138 /* ExternalDisplayAppDelegate.swift in Sources */,
+				001000000000000000000139 /* ExternalDisplaySceneDelegate.swift in Sources */,
+				001000000000000000000140 /* PresentationSession.swift in Sources */,
+				001000000000000000000141 /* CoursePlayerLayerView.swift in Sources */,
+				001000000000000000000142 /* ExternalPresentationView.swift in Sources */,
+				001000000000000000000143 /* VideoCoursePlaybackCoordinator.swift in Sources */,
+				001000000000000000000144 /* SlideshowPlaybackCoordinator.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -587,7 +615,7 @@
 				INFOPLIST_FILE = CPRTrainerPro/Resources/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "CPR Trainer Pro";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = NO;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -615,7 +643,7 @@
 				INFOPLIST_FILE = CPRTrainerPro/Resources/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "CPR Trainer Pro";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = NO;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";

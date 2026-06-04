@@ -1,34 +1,36 @@
 import AVKit
 import SwiftUI
 
+@MainActor
 struct VideoCoursePlayerView: View {
     let videoCourse: VideoCourse
     let storageService: StorageService
 
     @Environment(\.dismiss) private var dismiss
-    @State private var selectedChapterID: Chapter.ID?
-    @State private var player: AVPlayer?
-    @State private var timeObserver: Any?
-    @State private var endObserver: NSObjectProtocol?
-    @State private var subtitleCues: [SubtitleCue] = []
-    @State private var currentSubtitleText: String?
+    @StateObject private var coordinator: VideoCoursePlaybackCoordinator
+    @ObservedObject private var presentationSession = PresentationHub.shared.session
     @State private var isFullScreen = false
-    @State private var captionsEnabled = false
-    @State private var continuousPlayEnabled = false
     @State private var overlayControlsVisible = true
     @State private var overlayControlsHideToken = UUID()
 
-    private var playableChapters: [Chapter] {
-        videoCourse.chapters.filter { !$0.isSectionHeader }
+    init(videoCourse: VideoCourse, storageService: StorageService) {
+        self.videoCourse = videoCourse
+        self.storageService = storageService
+        _coordinator = StateObject(
+            wrappedValue: VideoCoursePlaybackCoordinator(
+                videoCourse: videoCourse,
+                storageService: storageService
+            )
+        )
     }
 
     private var selectedChapter: Chapter? {
-        guard let selectedChapterID else { return playableChapters.first }
-        return playableChapters.first { $0.id == selectedChapterID }
+        coordinator.selectedChapter
     }
 
-    private var subtitleService: SubtitleService {
-        SubtitleService(storageService: storageService)
+    private var isPresentingExternally: Bool {
+        presentationSession.state.externalSceneActive &&
+            presentationSession.state.activeOwnerID == coordinator.ownerID
     }
 
     var body: some View {
@@ -78,9 +80,9 @@ struct VideoCoursePlayerView: View {
 
                 ToolbarItem(placement: .topBarTrailing) {
                     HStack(spacing: 10) {
-                        ContinuousPlayToggleButton(isEnabled: $continuousPlayEnabled)
+                        ContinuousPlayToggleButton(isEnabled: $coordinator.continuousPlayEnabled)
 
-                        CaptionToggleButton(captionsEnabled: $captionsEnabled)
+                        CaptionToggleButton(captionsEnabled: $coordinator.captionsEnabled)
 
                         AirPlayRoutePicker()
                             .frame(width: 34, height: 34)
@@ -90,13 +92,7 @@ struct VideoCoursePlayerView: View {
                 }
             }
             .onAppear {
-                if selectedChapterID == nil {
-                    selectedChapterID = playableChapters.first?.id
-                }
-                loadSelectedChapter()
-            }
-            .onChange(of: selectedChapterID) { _, _ in
-                loadSelectedChapter()
+                coordinator.appear()
             }
             .onChange(of: isFullScreen) { _, isFullScreen in
                 overlayControlsVisible = true
@@ -105,9 +101,7 @@ struct VideoCoursePlayerView: View {
                 }
             }
             .onDisappear {
-                removeTimeObserver()
-                removeEndObserver()
-                player?.pause()
+                coordinator.tearDown()
             }
         }
     }
@@ -128,36 +122,70 @@ struct VideoCoursePlayerView: View {
         ZStack {
             Color.black
 
-            if let player {
-                VideoPlayer(player: player)
+            if let player = coordinator.player {
+                if isPresentingExternally {
+                    externalPlaybackStatusSurface
+                } else {
+                    VideoPlayer(player: player)
 
-                if captionsEnabled {
-                    VStack {
-                        Spacer()
-                        SubtitleOverlay(text: currentSubtitleText)
-                            .padding(.horizontal, 18)
-                            .padding(.bottom, 12)
+                    if coordinator.captionsEnabled {
+                        VStack {
+                            Spacer()
+                            SubtitleOverlay(text: coordinator.currentSubtitleText)
+                                .padding(.horizontal, 18)
+                                .padding(.bottom, 12)
+                        }
+                        .allowsHitTesting(false)
                     }
-                    .allowsHitTesting(false)
                 }
             } else {
-                VStack(spacing: 12) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .font(.largeTitle)
-                        .foregroundStyle(Theme.Colors.warning)
-
-                    Text("Media Not Available")
-                        .font(.headline)
-                        .foregroundStyle(.white)
-
-                    Text("This chapter is not available in local storage yet.")
-                        .font(.subheadline)
-                        .multilineTextAlignment(.center)
-                        .foregroundStyle(.white.opacity(0.68))
-                }
-                .padding()
+                mediaUnavailableView
             }
         }
+    }
+
+    private var mediaUnavailableView: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.largeTitle)
+                .foregroundStyle(Theme.Colors.warning)
+
+            Text("Media Not Available")
+                .font(.headline)
+                .foregroundStyle(.white)
+
+            Text("This chapter is not available in local storage yet.")
+                .font(.subheadline)
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.white.opacity(0.68))
+        }
+        .padding()
+    }
+
+    private var externalPlaybackStatusSurface: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "tv.and.mediabox")
+                .font(.system(size: 42, weight: .semibold))
+                .foregroundStyle(Theme.Colors.peach)
+
+            Text("Playing on External Display")
+                .font(.headline.weight(.semibold))
+                .foregroundStyle(.white)
+
+            Text(selectedChapter?.title ?? videoCourse.shortTitle)
+                .font(.subheadline)
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.white.opacity(0.66))
+                .lineLimit(2)
+
+            Text(coordinator.playbackStatus.displayText)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Theme.Colors.peach)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(.white.opacity(0.08), in: Capsule())
+        }
+        .padding(20)
     }
 
     private var chaptersPanel: some View {
@@ -171,7 +199,7 @@ struct VideoCoursePlayerView: View {
         HStack(spacing: 12) {
             Image(systemName: "repeat")
                 .font(.title3.weight(.semibold))
-                .foregroundStyle(continuousPlayEnabled ? Theme.Colors.peach : .white.opacity(0.56))
+                .foregroundStyle(coordinator.continuousPlayEnabled ? Theme.Colors.peach : .white.opacity(0.56))
                 .frame(width: 34, height: 34)
 
             VStack(alignment: .leading, spacing: 2) {
@@ -187,7 +215,7 @@ struct VideoCoursePlayerView: View {
 
             Spacer(minLength: 8)
 
-            Toggle("", isOn: $continuousPlayEnabled)
+            Toggle("", isOn: $coordinator.continuousPlayEnabled)
                 .labelsHidden()
                 .tint(Theme.Colors.peach)
         }
@@ -197,9 +225,9 @@ struct VideoCoursePlayerView: View {
     }
 
     private var chaptersList: some View {
-        List(playableChapters) { chapter in
+        List(coordinator.playableChapters) { chapter in
             Button {
-                select(chapter)
+                coordinator.select(chapter)
             } label: {
                 HStack(spacing: 12) {
                     Image(systemName: selectedChapter?.id == chapter.id ? "play.circle.fill" : "circle")
@@ -231,8 +259,12 @@ struct VideoCoursePlayerView: View {
             Spacer()
 
             HStack(spacing: 14) {
-                chapterControlButton(systemImage: "backward.end.fill", label: "Previous chapter", isDisabled: !hasPreviousChapter) {
-                    previousChapter()
+                chapterControlButton(
+                    systemImage: "backward.end.fill",
+                    label: "Previous chapter",
+                    isDisabled: !coordinator.hasPreviousChapter
+                ) {
+                    coordinator.previousChapter()
                 }
 
                 VStack(spacing: 3) {
@@ -242,16 +274,20 @@ struct VideoCoursePlayerView: View {
                         .lineLimit(1)
                         .minimumScaleFactor(0.75)
 
-                    Text(continuousPlayEnabled ? "Continuous Play On" : "Continuous Play Off")
+                    Text(coordinator.continuousPlayEnabled ? "Continuous Play On" : "Continuous Play Off")
                         .font(.caption2.weight(.semibold))
                         .foregroundStyle(Theme.Colors.peach)
                 }
                 .frame(maxWidth: .infinity)
 
-                ContinuousPlayToggleButton(isEnabled: $continuousPlayEnabled)
+                ContinuousPlayToggleButton(isEnabled: $coordinator.continuousPlayEnabled)
 
-                chapterControlButton(systemImage: "forward.end.fill", label: "Next chapter", isDisabled: !hasNextChapter) {
-                    nextChapter()
+                chapterControlButton(
+                    systemImage: "forward.end.fill",
+                    label: "Next chapter",
+                    isDisabled: !coordinator.hasNextChapter
+                ) {
+                    coordinator.nextChapter()
                 }
             }
             .padding(10)
@@ -306,9 +342,9 @@ struct VideoCoursePlayerView: View {
                 Spacer(minLength: 12)
 
                 HStack(spacing: 8) {
-                    ContinuousPlayToggleButton(isEnabled: $continuousPlayEnabled)
+                    ContinuousPlayToggleButton(isEnabled: $coordinator.continuousPlayEnabled)
 
-                    CaptionToggleButton(captionsEnabled: $captionsEnabled)
+                    CaptionToggleButton(captionsEnabled: $coordinator.captionsEnabled)
 
                     AirPlayRoutePicker()
                         .frame(width: 34, height: 34)
@@ -336,45 +372,8 @@ struct VideoCoursePlayerView: View {
         .transition(.opacity)
     }
 
-    private func select(_ chapter: Chapter) {
-        if selectedChapterID == chapter.id {
-            player?.seek(to: .zero)
-            player?.play()
-            return
-        }
-
-        selectedChapterID = chapter.id
-    }
-
-    private var selectedChapterIndex: Int? {
-        guard let selectedChapter else { return nil }
-        return playableChapters.firstIndex { $0.id == selectedChapter.id }
-    }
-
-    private var hasPreviousChapter: Bool {
-        guard let selectedChapterIndex else { return false }
-        return selectedChapterIndex > playableChapters.startIndex
-    }
-
-    private var hasNextChapter: Bool {
-        guard let selectedChapterIndex else { return false }
-        return playableChapters.index(after: selectedChapterIndex) < playableChapters.endIndex
-    }
-
-    private func previousChapter() {
-        guard let selectedChapterIndex, hasPreviousChapter else { return }
-        selectedChapterID = playableChapters[playableChapters.index(before: selectedChapterIndex)].id
-    }
-
-    private func nextChapter() {
-        guard let selectedChapterIndex, hasNextChapter else { return }
-        selectedChapterID = playableChapters[playableChapters.index(after: selectedChapterIndex)].id
-    }
-
     private func closePlayer() {
-        removeTimeObserver()
-        removeEndObserver()
-        player?.pause()
+        coordinator.tearDown()
         dismiss()
     }
 
@@ -397,78 +396,6 @@ struct VideoCoursePlayerView: View {
                     overlayControlsVisible = false
                 }
             }
-        }
-    }
-
-    private func loadSelectedChapter() {
-        removeTimeObserver()
-        removeEndObserver()
-        player?.pause()
-        subtitleCues = []
-        currentSubtitleText = nil
-
-        guard
-            let selectedChapter,
-            storageService.fileExists(selectedChapter.filename),
-            let url = try? storageService.localURL(for: selectedChapter.filename)
-        else {
-            player?.replaceCurrentItem(with: nil)
-            player = nil
-            return
-        }
-
-        let playerItem = AVPlayerItem(url: url)
-        let nextPlayer = player ?? AVPlayer()
-        nextPlayer.replaceCurrentItem(with: playerItem)
-        subtitleCues = subtitleService.cues(forMediaFilename: selectedChapter.filename)
-        attachEndObserver(to: playerItem)
-        attachSubtitleObserver(to: nextPlayer)
-        player = nextPlayer
-        nextPlayer.play()
-    }
-
-    private func attachEndObserver(to item: AVPlayerItem) {
-        endObserver = NotificationCenter.default.addObserver(
-            forName: .AVPlayerItemDidPlayToEndTime,
-            object: item,
-            queue: .main
-        ) { _ in
-            Task { @MainActor in
-                handleChapterEnded()
-            }
-        }
-    }
-
-    private func attachSubtitleObserver(to player: AVPlayer) {
-        timeObserver = player.addPeriodicTimeObserver(
-            forInterval: CMTime(seconds: 0.25, preferredTimescale: 600),
-            queue: .main
-        ) { time in
-            currentSubtitleText = subtitleCues.first { $0.contains(time.seconds) }?.text
-        }
-    }
-
-    private func removeTimeObserver() {
-        if let timeObserver {
-            player?.removeTimeObserver(timeObserver)
-            self.timeObserver = nil
-        }
-    }
-
-    private func removeEndObserver() {
-        if let endObserver {
-            NotificationCenter.default.removeObserver(endObserver)
-            self.endObserver = nil
-        }
-    }
-
-    private func handleChapterEnded() {
-        currentSubtitleText = nil
-
-        guard continuousPlayEnabled else { return }
-
-        if hasNextChapter {
-            nextChapter()
         }
     }
 }

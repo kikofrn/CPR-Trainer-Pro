@@ -2,18 +2,15 @@ import AVKit
 import SwiftUI
 import UIKit
 
+@MainActor
 struct SlideshowPlayerView: View {
     let slideshow: Slideshow
     let storageService: StorageService
 
     @Environment(\.dismiss) private var dismiss
-    @State private var slideIndex = 0
-    @State private var videoPlayer: AVPlayer?
-    @State private var timeObserver: Any?
-    @State private var subtitleCues: [SubtitleCue] = []
-    @State private var currentSubtitleText: String?
+    @StateObject private var coordinator: SlideshowPlaybackCoordinator
+    @ObservedObject private var presentationSession = PresentationHub.shared.session
     @State private var isFullScreen = false
-    @State private var captionsEnabled = true
     @State private var overlayControlsVisible = true
     @State private var overlayControlsHideToken = UUID()
     @State private var instructorTipsVisible = false
@@ -21,9 +18,19 @@ struct SlideshowPlayerView: View {
 
     private let instructorTipsService = InstructorTipsService.shared
 
+    init(slideshow: Slideshow, storageService: StorageService) {
+        self.slideshow = slideshow
+        self.storageService = storageService
+        _coordinator = StateObject(
+            wrappedValue: SlideshowPlaybackCoordinator(
+                slideshow: slideshow,
+                storageService: storageService
+            )
+        )
+    }
+
     private var activeSlide: Slide? {
-        guard slideshow.slides.indices.contains(slideIndex) else { return nil }
-        return slideshow.slides[slideIndex]
+        coordinator.activeSlide
     }
 
     private var activeInstructorTip: InstructorSlideTip? {
@@ -31,8 +38,9 @@ struct SlideshowPlayerView: View {
         return instructorTipsService.tip(for: slideshow.id, slideID: activeSlide.id)
     }
 
-    private var subtitleService: SubtitleService {
-        SubtitleService(storageService: storageService)
+    private var isPresentingExternally: Bool {
+        presentationSession.state.externalSceneActive &&
+            presentationSession.state.activeOwnerID == coordinator.ownerID
     }
 
     var body: some View {
@@ -73,7 +81,7 @@ struct SlideshowPlayerView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     HStack(spacing: 10) {
                         if activeSlide?.type == .video {
-                            CaptionToggleButton(captionsEnabled: $captionsEnabled)
+                            CaptionToggleButton(captionsEnabled: $coordinator.captionsEnabled)
                         }
 
                         AirPlayRoutePicker()
@@ -83,9 +91,10 @@ struct SlideshowPlayerView: View {
                     }
                 }
             }
-            .onAppear(perform: loadActiveSlide)
-            .onChange(of: slideIndex) { _, _ in
-                loadActiveSlide()
+            .onAppear {
+                coordinator.appear()
+            }
+            .onChange(of: coordinator.slideIndex) { _, _ in
                 if activeInstructorTip == nil {
                     instructorTipsVisible = false
                 }
@@ -97,8 +106,7 @@ struct SlideshowPlayerView: View {
                 }
             }
             .onDisappear {
-                removeTimeObserver()
-                videoPlayer?.pause()
+                coordinator.tearDown()
             }
         }
     }
@@ -111,25 +119,31 @@ struct SlideshowPlayerView: View {
             if let activeSlide {
                 switch activeSlide.type {
                 case .image:
-                    if let image = image(for: activeSlide) {
+                    if let image = coordinator.currentImage {
                         Image(uiImage: image)
                             .resizable()
                             .scaledToFit()
+                    } else if storageService.fileExists(activeSlide.filename) {
+                        preparingSlideView(activeSlide)
                     } else {
                         missingSlideView(activeSlide)
                     }
                 case .video:
-                    if let videoPlayer {
-                        VideoPlayer(player: videoPlayer)
+                    if let videoPlayer = coordinator.videoPlayer {
+                        if isPresentingExternally {
+                            externalPlaybackStatusSurface
+                        } else {
+                            VideoPlayer(player: videoPlayer)
 
-                        if captionsEnabled {
-                            VStack {
-                                Spacer()
-                                SubtitleOverlay(text: currentSubtitleText)
-                                    .padding(.horizontal, 18)
-                                    .padding(.bottom, 12)
+                            if coordinator.captionsEnabled {
+                                VStack {
+                                    Spacer()
+                                    SubtitleOverlay(text: coordinator.currentSubtitleText)
+                                        .padding(.horizontal, 18)
+                                        .padding(.bottom, 12)
+                                }
+                                .allowsHitTesting(false)
                             }
-                            .allowsHitTesting(false)
                         }
                     } else {
                         missingSlideView(activeSlide)
@@ -188,27 +202,27 @@ struct SlideshowPlayerView: View {
 
             HStack(spacing: 18) {
                 Button {
-                    previousSlide()
+                    coordinator.previousSlide()
                 } label: {
                     Image(systemName: "chevron.left.circle.fill")
                         .font(.system(size: 36))
                         .frame(width: 56, height: 56)
                 }
-                .disabled(slideIndex == 0)
+                .disabled(coordinator.slideIndex == 0)
 
-                Text("\(slideIndex + 1) / \(slideshow.slides.count)")
+                Text("\(coordinator.slideIndex + 1) / \(slideshow.slides.count)")
                     .font(.subheadline.monospacedDigit().weight(.semibold))
                     .foregroundStyle(.white.opacity(0.74))
                     .frame(minWidth: 88)
 
                 Button {
-                    nextSlide()
+                    coordinator.nextSlide()
                 } label: {
                     Image(systemName: "chevron.right.circle.fill")
                         .font(.system(size: 36))
                         .frame(width: 56, height: 56)
                 }
-                .disabled(slideIndex >= slideshow.slides.count - 1)
+                .disabled(coordinator.slideIndex >= slideshow.slides.count - 1)
             }
             .foregroundStyle(Theme.Colors.peach)
             .frame(maxWidth: .infinity)
@@ -246,7 +260,7 @@ struct SlideshowPlayerView: View {
 
                 HStack(spacing: 8) {
                     if activeSlide?.type == .video {
-                        CaptionToggleButton(captionsEnabled: $captionsEnabled)
+                        CaptionToggleButton(captionsEnabled: $coordinator.captionsEnabled)
                     }
 
                     AirPlayRoutePicker()
@@ -284,7 +298,7 @@ struct SlideshowPlayerView: View {
                 if slidePickerVisible {
                     SlidePickerPanel(
                         slideshow: slideshow,
-                        selectedIndex: slideIndex,
+                        selectedIndex: coordinator.slideIndex,
                         selectSlide: selectSlide,
                         close: hideSlidePicker
                     )
@@ -317,6 +331,24 @@ struct SlideshowPlayerView: View {
         }
     }
 
+    private func preparingSlideView(_ slide: Slide) -> some View {
+        VStack(spacing: 12) {
+            ProgressView()
+                .tint(Theme.Colors.peach)
+                .scaleEffect(1.2)
+
+            Text("Preparing Slide")
+                .font(.headline)
+                .foregroundStyle(.white)
+
+            Text(slide.title)
+                .font(.caption)
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.white.opacity(0.58))
+                .padding(.horizontal)
+        }
+    }
+
     private func missingSlideView(_ slide: Slide) -> some View {
         VStack(spacing: 12) {
             Image(systemName: "exclamationmark.triangle.fill")
@@ -335,14 +367,30 @@ struct SlideshowPlayerView: View {
         }
     }
 
-    private func previousSlide() {
-        guard slideIndex > 0 else { return }
-        slideIndex -= 1
-    }
+    private var externalPlaybackStatusSurface: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "tv.and.mediabox")
+                .font(.system(size: 42, weight: .semibold))
+                .foregroundStyle(Theme.Colors.peach)
 
-    private func nextSlide() {
-        guard slideIndex < slideshow.slides.count - 1 else { return }
-        slideIndex += 1
+            Text("Playing on External Display")
+                .font(.headline.weight(.semibold))
+                .foregroundStyle(.white)
+
+            Text(activeSlide?.title ?? slideshow.title)
+                .font(.subheadline)
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.white.opacity(0.66))
+                .lineLimit(2)
+
+            Text(coordinator.playbackStatus.displayText)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Theme.Colors.peach)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(.white.opacity(0.08), in: Capsule())
+        }
+        .padding(20)
     }
 
     private var shouldShowInstructorOverlay: Bool {
@@ -381,8 +429,7 @@ struct SlideshowPlayerView: View {
     }
 
     private func selectSlide(_ index: Int) {
-        guard slideshow.slides.indices.contains(index) else { return }
-        slideIndex = index
+        coordinator.selectSlide(index)
         hideSlidePicker()
     }
 
@@ -395,15 +442,14 @@ struct SlideshowPlayerView: View {
         }
 
         if horizontalDistance < 0 {
-            nextSlide()
+            coordinator.nextSlide()
         } else {
-            previousSlide()
+            coordinator.previousSlide()
         }
     }
 
     private func closePlayer() {
-        removeTimeObserver()
-        videoPlayer?.pause()
+        coordinator.tearDown()
         dismiss()
     }
 
@@ -426,56 +472,6 @@ struct SlideshowPlayerView: View {
                     overlayControlsVisible = false
                 }
             }
-        }
-    }
-
-    private func loadActiveSlide() {
-        removeTimeObserver()
-        videoPlayer?.pause()
-        videoPlayer = nil
-        subtitleCues = []
-        currentSubtitleText = nil
-
-        guard
-            let activeSlide,
-            activeSlide.type == .video,
-            storageService.fileExists(activeSlide.filename),
-            let url = try? storageService.localURL(for: activeSlide.filename)
-        else {
-            return
-        }
-
-        let nextPlayer = AVPlayer(url: url)
-        subtitleCues = subtitleService.cues(forMediaFilename: activeSlide.filename)
-        attachSubtitleObserver(to: nextPlayer)
-        videoPlayer = nextPlayer
-        nextPlayer.play()
-    }
-
-    private func image(for slide: Slide) -> UIImage? {
-        guard
-            storageService.fileExists(slide.filename),
-            let url = try? storageService.localURL(for: slide.filename)
-        else {
-            return nil
-        }
-
-        return UIImage(contentsOfFile: url.path)
-    }
-
-    private func attachSubtitleObserver(to player: AVPlayer) {
-        timeObserver = player.addPeriodicTimeObserver(
-            forInterval: CMTime(seconds: 0.25, preferredTimescale: 600),
-            queue: .main
-        ) { time in
-            currentSubtitleText = subtitleCues.first { $0.contains(time.seconds) }?.text
-        }
-    }
-
-    private func removeTimeObserver() {
-        if let timeObserver {
-            videoPlayer?.removeTimeObserver(timeObserver)
-            self.timeObserver = nil
         }
     }
 }
