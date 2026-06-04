@@ -12,6 +12,7 @@ struct VideoCoursePlayerView: View {
     @State private var isFullScreen = false
     @State private var overlayControlsVisible = true
     @State private var overlayControlsHideToken = UUID()
+    @State private var isExternalChapterListCollapsed = false
 
     init(videoCourse: VideoCourse, storageService: StorageService) {
         self.videoCourse = videoCourse
@@ -102,6 +103,11 @@ struct VideoCoursePlayerView: View {
                 overlayControlsVisible = true
                 if isFullScreen {
                     scheduleFullScreenControlsHide()
+                }
+            }
+            .onChange(of: isPresentingExternally) { _, isPresentingExternally in
+                if !isPresentingExternally {
+                    isExternalChapterListCollapsed = false
                 }
             }
             .onDisappear {
@@ -260,8 +266,16 @@ struct VideoCoursePlayerView: View {
     private var chaptersPanel: some View {
         VStack(spacing: 0) {
             continuousPlayRow
-            chaptersList
+            if isPresentingExternally {
+                externalChaptersCollapseRow
+            }
+
+            if !isPresentingExternally || !isExternalChapterListCollapsed {
+                chaptersList
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+            }
         }
+        .animation(.easeInOut(duration: 0.22), value: isExternalChapterListCollapsed)
     }
 
     private var continuousPlayRow: some View {
@@ -291,6 +305,47 @@ struct VideoCoursePlayerView: View {
         .padding(.horizontal, 18)
         .padding(.vertical, 12)
         .background(Theme.Colors.surface)
+    }
+
+    private var externalChaptersCollapseRow: some View {
+        Button {
+            isExternalChapterListCollapsed.toggle()
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "list.bullet")
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(Theme.Colors.peach)
+                    .frame(width: 34, height: 34)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(isExternalChapterListCollapsed ? "Show Chapters" : "Hide Chapters")
+                        .font(.headline.weight(.semibold))
+                        .foregroundStyle(.white)
+
+                    Text(isExternalChapterListCollapsed ? "Chapter list is collapsed." : "Collapse the list while the TV keeps playing.")
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.58))
+                        .lineLimit(2)
+                }
+
+                Spacer(minLength: 8)
+
+                Image(systemName: isExternalChapterListCollapsed ? "chevron.down.circle.fill" : "chevron.up.circle.fill")
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(Theme.Colors.peach)
+            }
+            .padding(.horizontal, 18)
+            .padding(.vertical, 12)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .background(Theme.Colors.surface)
+        .overlay(alignment: .top) {
+            Rectangle()
+                .fill(.white.opacity(0.06))
+                .frame(height: 1)
+        }
+        .accessibilityLabel(isExternalChapterListCollapsed ? "Show chapter list" : "Hide chapter list")
     }
 
     private var chaptersList: some View {
