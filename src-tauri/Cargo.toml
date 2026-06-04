@@ -1,6 +1,6 @@
 [package]
 name = "cpr-trainer-pro"
-version = "2.3.1"
+version = "2.3.2"
 description = "EH Academy CPR Trainer Pro — Instructor Training Application"
 authors = ["EH Academy"]
 license = ""
