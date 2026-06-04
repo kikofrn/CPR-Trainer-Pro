@@ -7,30 +7,27 @@ struct ExternalPresentationView: View {
     @State private var standbyDimmed = false
 
     var body: some View {
-        GeometryReader { proxy in
-            ZStack {
-                Color.black.ignoresSafeArea()
+        ZStack {
+            Color.black.ignoresSafeArea()
 
-                if let sceneError = session.state.externalSceneErrorMessage {
-                    externalErrorView(sceneError)
-                } else {
-                    switch session.state.presentation {
-                    case .video(let videoState):
-                        videoPresentation(videoState)
-                    case .slideshow(let slideshowState):
-                        slideshowPresentation(slideshowState)
-                    case .error(let message):
-                        externalErrorView(message)
-                    case nil:
-                        standbyView
-                    }
+            if let sceneError = session.state.externalSceneErrorMessage {
+                externalErrorView(sceneError)
+            } else {
+                switch session.state.presentation {
+                case .video(let videoState):
+                    videoPresentation(videoState)
+                case .slideshow(let slideshowState):
+                    slideshowPresentation(slideshowState)
+                case .error(let message):
+                    externalErrorView(message)
+                case nil:
+                    standbyView
                 }
             }
-            .padding(.horizontal, proxy.size.width * 0.035)
-            .padding(.vertical, proxy.size.height * 0.035)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.black)
+        .ignoresSafeArea()
         .onAppear(perform: scheduleStandbyDimming)
     }
 
@@ -54,12 +51,13 @@ struct ExternalPresentationView: View {
     @ViewBuilder
     private func videoPresentation(_ videoState: VideoCourseExternalState) -> some View {
         if let player = videoState.player {
-            ZStack {
+            GeometryReader { proxy in
                 CoursePlayerLayerView(player: player)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .ignoresSafeArea()
 
                 if session.state.captionsEnabled {
-                    externalSubtitleOverlay
+                    externalSubtitleOverlay(displaySize: proxy.size)
                 }
             }
         } else {
@@ -76,6 +74,7 @@ struct ExternalPresentationView: View {
                     .resizable()
                     .scaledToFit()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .ignoresSafeArea()
             } else {
                 externalStatusView(
                     title: slideshowState.slideTitle,
@@ -84,12 +83,13 @@ struct ExternalPresentationView: View {
             }
         case .slideshowVideo:
             if let player = slideshowState.player {
-                ZStack {
+                GeometryReader { proxy in
                     CoursePlayerLayerView(player: player)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .ignoresSafeArea()
 
                     if session.state.captionsEnabled {
-                        externalSubtitleOverlay
+                        externalSubtitleOverlay(displaySize: proxy.size)
                     }
                 }
             } else {
@@ -100,16 +100,31 @@ struct ExternalPresentationView: View {
         }
     }
 
-    private var externalSubtitleOverlay: some View {
-        VStack {
+    private func externalSubtitleOverlay(displaySize: CGSize) -> some View {
+        let subtitleFontSize = min(max(displaySize.width * 0.028, 34), 58)
+        let horizontalPadding = max(displaySize.width * 0.08, 90)
+        let bottomPadding = max(displaySize.height * 0.055, 52)
+        let maxCaptionWidth = max(280, displaySize.width - horizontalPadding)
+
+        return VStack {
             Spacer()
 
-            SubtitleOverlay(text: session.state.currentSubtitleText)
-                .font(.title2.weight(.bold))
-                .padding(.horizontal, 36)
-                .padding(.bottom, 34)
+            if let text = session.state.currentSubtitleText, !text.isEmpty {
+                Text(text)
+                    .font(.system(size: subtitleFontSize, weight: .bold, design: .default))
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 28)
+                    .padding(.vertical, 16)
+                    .frame(maxWidth: maxCaptionWidth)
+                    .background(.black.opacity(0.74), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .shadow(color: .black.opacity(0.45), radius: 14, y: 5)
+                    .transition(.opacity)
+                    .padding(.bottom, bottomPadding)
+            }
         }
         .allowsHitTesting(false)
+        .ignoresSafeArea()
     }
 
     private func externalStatusView(title: String, message: String) -> some View {

@@ -321,11 +321,11 @@ final class PresentationHub {
             try AVAudioSession.sharedInstance().setCategory(
                 .playback,
                 mode: .moviePlayback,
-                options: [.allowAirPlay]
+                options: []
             )
             audioSessionConfigured = true
         } catch {
-            session.setExternalSceneError("Audio session setup failed: \(error.localizedDescription)")
+            print("Audio session setup warning: \(error.localizedDescription)")
         }
     }
 
@@ -336,7 +336,7 @@ final class PresentationHub {
         do {
             try AVAudioSession.sharedInstance().setActive(true)
         } catch {
-            session.setExternalSceneError("Audio route setup failed: \(error.localizedDescription)")
+            print("Audio route setup warning: \(error.localizedDescription)")
         }
     }
 
@@ -347,7 +347,7 @@ final class PresentationHub {
         do {
             try AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         } catch {
-            session.setExternalSceneError("Audio route cleanup failed: \(error.localizedDescription)")
+            print("Audio route cleanup warning: \(error.localizedDescription)")
         }
     }
 }
