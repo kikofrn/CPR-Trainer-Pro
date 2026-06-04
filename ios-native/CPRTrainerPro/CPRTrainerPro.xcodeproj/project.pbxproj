@@ -51,6 +51,11 @@
 		001000000000000000000142 /* ExternalPresentationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000044 /* ExternalPresentationView.swift */; };
 		001000000000000000000143 /* VideoCoursePlaybackCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000045 /* VideoCoursePlaybackCoordinator.swift */; };
 		001000000000000000000144 /* SlideshowPlaybackCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000046 /* SlideshowPlaybackCoordinator.swift */; };
+		001000000000000000000145 /* ManualNavigationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000047 /* ManualNavigationModels.swift */; };
+		001000000000000000000146 /* ManualTOCService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000048 /* ManualTOCService.swift */; };
+		001000000000000000000147 /* ManualSearchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000049 /* ManualSearchService.swift */; };
+		001000000000000000000148 /* ManualViewerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000050 /* ManualViewerViewModel.swift */; };
+		001000000000000000000149 /* ManualNavigationPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000051 /* ManualNavigationPanel.swift */; };
 		002000000000000000000101 /* ContentManifestContractTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 002000000000000000000001 /* ContentManifestContractTests.swift */; };
 		002000000000000000000102 /* content-manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000016 /* content-manifest.json */; };
 		002000000000000000000103 /* instructor-tips.json in Resources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000038 /* instructor-tips.json */; };
@@ -113,6 +118,11 @@
 		001000000000000000000044 /* ExternalPresentationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalPresentationView.swift; sourceTree = "<group>"; };
 		001000000000000000000045 /* VideoCoursePlaybackCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoCoursePlaybackCoordinator.swift; sourceTree = "<group>"; };
 		001000000000000000000046 /* SlideshowPlaybackCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlideshowPlaybackCoordinator.swift; sourceTree = "<group>"; };
+		001000000000000000000047 /* ManualNavigationModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualNavigationModels.swift; sourceTree = "<group>"; };
+		001000000000000000000048 /* ManualTOCService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualTOCService.swift; sourceTree = "<group>"; };
+		001000000000000000000049 /* ManualSearchService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualSearchService.swift; sourceTree = "<group>"; };
+		001000000000000000000050 /* ManualViewerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualViewerViewModel.swift; sourceTree = "<group>"; };
+		001000000000000000000051 /* ManualNavigationPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualNavigationPanel.swift; sourceTree = "<group>"; };
 		002000000000000000000001 /* ContentManifestContractTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentManifestContractTests.swift; sourceTree = "<group>"; };
 		002000000000000000000020 /* CPRTrainerProTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CPRTrainerProTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -214,6 +224,11 @@
 			children = (
 				001000000000000000000011 /* ManualsView.swift */,
 				001000000000000000000022 /* ManualViewerView.swift */,
+				001000000000000000000050 /* ManualViewerViewModel.swift */,
+				001000000000000000000051 /* ManualNavigationPanel.swift */,
+				001000000000000000000047 /* ManualNavigationModels.swift */,
+				001000000000000000000048 /* ManualTOCService.swift */,
+				001000000000000000000049 /* ManualSearchService.swift */,
 			);
 			path = Manuals;
 			sourceTree = "<group>";
@@ -451,6 +466,11 @@
 				001000000000000000000119 /* VideoCoursePlayerView.swift in Sources */,
 				001000000000000000000120 /* SlideshowPlayerView.swift in Sources */,
 				001000000000000000000121 /* ManualViewerView.swift in Sources */,
+				001000000000000000000145 /* ManualNavigationModels.swift in Sources */,
+				001000000000000000000146 /* ManualTOCService.swift in Sources */,
+				001000000000000000000147 /* ManualSearchService.swift in Sources */,
+				001000000000000000000148 /* ManualViewerViewModel.swift in Sources */,
+				001000000000000000000149 /* ManualNavigationPanel.swift in Sources */,
 				001000000000000000000123 /* DownloadQueueStore.swift in Sources */,
 				001000000000000000000124 /* SubtitleCue.swift in Sources */,
 				001000000000000000000125 /* SubtitleService.swift in Sources */,

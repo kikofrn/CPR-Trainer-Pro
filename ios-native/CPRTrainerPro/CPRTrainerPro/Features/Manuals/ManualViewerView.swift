@@ -6,49 +6,26 @@ struct ManualViewerView: View {
     let storageService: StorageService
 
     @Environment(\.dismiss) private var dismiss
-    @State private var pageIndex: Int
-
-    init(manual: Manual, storageService: StorageService) {
-        self.manual = manual
-        self.storageService = storageService
-        _pageIndex = State(initialValue: UserDefaults.standard.integer(forKey: Self.pageKey(for: manual.id)))
-    }
 
     var body: some View {
-        NavigationStack {
-            Group {
-                if let url = localManualURL {
-                    PDFKitDocumentView(url: url, pageIndex: $pageIndex)
-                        .ignoresSafeArea(edges: .bottom)
-                } else {
-                    VStack(spacing: 12) {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .font(.largeTitle)
-                            .foregroundStyle(Theme.Colors.warning)
-
-                        Text("Manual Not Available")
-                            .font(.headline)
-                            .foregroundStyle(.white)
-
-                        Text("This manual is not available in local storage yet.")
-                            .font(.subheadline)
-                            .foregroundStyle(.white.opacity(0.68))
+        Group {
+            if let url = localManualURL {
+                ManualReaderContentView(manual: manual, url: url)
+            } else {
+                NavigationStack {
+                    ManualErrorStateView(
+                        title: "Manual Not Available",
+                        message: "This manual is not available in local storage yet."
+                    )
+                    .toolbar {
+                        ToolbarItem(placement: .topBarLeading) {
+                            Button("Close") {
+                                dismiss()
+                            }
+                            .foregroundStyle(Theme.Colors.peach)
+                        }
                     }
-                    .appBackground()
                 }
-            }
-            .navigationTitle(manual.title)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Close") {
-                        dismiss()
-                    }
-                    .foregroundStyle(Theme.Colors.peach)
-                }
-            }
-            .onChange(of: pageIndex) { _, newValue in
-                UserDefaults.standard.set(newValue, forKey: Self.pageKey(for: manual.id))
             }
         }
     }
@@ -63,29 +40,150 @@ struct ManualViewerView: View {
 
         return url
     }
+}
 
-    private static func pageKey(for manualID: String) -> String {
-        "manual.lastPage.\(manualID)"
+private struct ManualReaderContentView: View {
+    @Environment(\.dismiss) private var dismiss
+    @StateObject private var viewModel: ManualViewerViewModel
+
+    init(manual: Manual, url: URL) {
+        _viewModel = StateObject(wrappedValue: ManualViewerViewModel(manual: manual, url: url))
+    }
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                Color.black.ignoresSafeArea()
+
+                if let document = viewModel.document {
+                    PDFKitDocumentView(
+                        document: document,
+                        currentPageIndex: $viewModel.currentPageIndex,
+                        requestedPageIndex: $viewModel.requestedPageIndex,
+                        onRequestConsumed: {
+                            viewModel.clearPendingPageRequest()
+                        }
+                    )
+                    .ignoresSafeArea(edges: .bottom)
+                    .safeAreaInset(edge: .bottom) {
+                        bottomPageControls
+                    }
+                } else if let loadErrorMessage = viewModel.loadErrorMessage {
+                    ManualErrorStateView(
+                        title: "Manual Could Not Open",
+                        message: loadErrorMessage
+                    )
+                } else {
+                    ProgressView("Opening manual...")
+                        .tint(Theme.Colors.peach)
+                        .foregroundStyle(.white)
+                }
+            }
+            .navigationTitle(viewModel.manual.title)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Close") {
+                        closeManual()
+                    }
+                    .foregroundStyle(Theme.Colors.peach)
+                }
+
+                ToolbarItem(placement: .topBarTrailing) {
+                    HStack(spacing: 12) {
+                        Button {
+                            viewModel.openNavigationPanel(tab: .contents)
+                        } label: {
+                            Image(systemName: "list.bullet.rectangle")
+                        }
+                        .accessibilityLabel("Open contents")
+
+                        Button {
+                            viewModel.openNavigationPanel(tab: .search)
+                        } label: {
+                            Image(systemName: "magnifyingglass")
+                        }
+                        .accessibilityLabel("Search manual")
+                    }
+                    .foregroundStyle(Theme.Colors.peach)
+                }
+            }
+            .task {
+                viewModel.loadDocumentIfNeeded()
+            }
+            .sheet(isPresented: $viewModel.isNavigationPanelPresented) {
+                ManualNavigationPanel(viewModel: viewModel)
+                    .preferredColorScheme(.dark)
+            }
+            .onDisappear {
+                viewModel.tearDown()
+            }
+        }
+    }
+
+    private var bottomPageControls: some View {
+        HStack(spacing: 16) {
+            Button {
+                viewModel.previousPage()
+            } label: {
+                Image(systemName: "chevron.left")
+                    .font(.headline.weight(.bold))
+                    .frame(width: 44, height: 44)
+                    .background(.white.opacity(viewModel.canGoToPreviousPage ? 0.12 : 0.05))
+                    .clipShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .disabled(!viewModel.canGoToPreviousPage)
+            .foregroundStyle(viewModel.canGoToPreviousPage ? Theme.Colors.peach : .white.opacity(0.28))
+            .accessibilityLabel("Previous page")
+
+            Text(viewModel.currentPageNumberText)
+                .font(.headline.weight(.semibold))
+                .foregroundStyle(.white)
+                .lineLimit(1)
+                .minimumScaleFactor(0.72)
+                .frame(maxWidth: .infinity)
+
+            Button {
+                viewModel.nextPage()
+            } label: {
+                Image(systemName: "chevron.right")
+                    .font(.headline.weight(.bold))
+                    .frame(width: 44, height: 44)
+                    .background(.white.opacity(viewModel.canGoToNextPage ? 0.12 : 0.05))
+                    .clipShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .disabled(!viewModel.canGoToNextPage)
+            .foregroundStyle(viewModel.canGoToNextPage ? Theme.Colors.peach : .white.opacity(0.28))
+            .accessibilityLabel("Next page")
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 12)
+        .background(.black.opacity(0.82))
+        .overlay(alignment: .top) {
+            Rectangle()
+                .fill(.white.opacity(0.08))
+                .frame(height: 1)
+        }
+    }
+
+    private func closeManual() {
+        viewModel.tearDown()
+        dismiss()
     }
 }
 
 private struct PDFKitDocumentView: UIViewRepresentable {
-    let url: URL
-    @Binding var pageIndex: Int
+    let document: PDFDocument
+    @Binding var currentPageIndex: Int
+    @Binding var requestedPageIndex: Int?
+    let onRequestConsumed: () -> Void
 
     func makeUIView(context: Context) -> PDFView {
         let pdfView = PDFView()
-        pdfView.autoScales = true
-        pdfView.displayMode = .singlePageContinuous
-        pdfView.displayDirection = .vertical
-        pdfView.backgroundColor = .black
-
-        if let document = PDFDocument(url: url) {
-            pdfView.document = document
-            if let page = document.page(at: pageIndex) {
-                pdfView.go(to: page)
-            }
-        }
+        configure(pdfView)
+        pdfView.document = document
 
         NotificationCenter.default.addObserver(
             context.coordinator,
@@ -94,12 +192,25 @@ private struct PDFKitDocumentView: UIViewRepresentable {
             object: pdfView
         )
 
+        context.coordinator.restore(pageIndex: currentPageIndex, in: pdfView)
         return pdfView
     }
 
     func updateUIView(_ pdfView: PDFView, context: Context) {
-        guard pdfView.document?.documentURL != url else { return }
-        pdfView.document = PDFDocument(url: url)
+        context.coordinator.currentPageIndex = $currentPageIndex
+        context.coordinator.onRequestConsumed = onRequestConsumed
+
+        configure(pdfView)
+
+        if pdfView.document !== document {
+            pdfView.document = document
+            context.coordinator.restore(pageIndex: currentPageIndex, in: pdfView)
+            return
+        }
+
+        if let requestedPageIndex {
+            context.coordinator.go(to: requestedPageIndex, in: pdfView, consumeRequest: true)
+        }
     }
 
     static func dismantleUIView(_ uiView: PDFView, coordinator: Coordinator) {
@@ -107,17 +218,70 @@ private struct PDFKitDocumentView: UIViewRepresentable {
     }
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(pageIndex: $pageIndex)
+        Coordinator(currentPageIndex: $currentPageIndex, onRequestConsumed: onRequestConsumed)
+    }
+
+    private func configure(_ pdfView: PDFView) {
+        pdfView.autoScales = true
+        pdfView.displayMode = .singlePage
+        pdfView.displayDirection = .horizontal
+        pdfView.displaysPageBreaks = false
+        pdfView.backgroundColor = .black
+        pdfView.usePageViewController(true, withViewOptions: nil)
     }
 
     final class Coordinator: NSObject {
-        @Binding private var pageIndex: Int
+        var currentPageIndex: Binding<Int>
+        var onRequestConsumed: () -> Void
+        private var isApplyingProgrammaticPage = false
 
-        init(pageIndex: Binding<Int>) {
-            _pageIndex = pageIndex
+        init(currentPageIndex: Binding<Int>, onRequestConsumed: @escaping () -> Void) {
+            self.currentPageIndex = currentPageIndex
+            self.onRequestConsumed = onRequestConsumed
+        }
+
+        func restore(pageIndex: Int, in pdfView: PDFView) {
+            DispatchQueue.main.async { [weak self, weak pdfView] in
+                guard let self, let pdfView else { return }
+                self.go(to: pageIndex, in: pdfView, consumeRequest: false)
+            }
+        }
+
+        func go(to pageIndex: Int, in pdfView: PDFView, consumeRequest: Bool) {
+            guard let document = pdfView.document, document.pageCount > 0 else {
+                if consumeRequest {
+                    consumePendingRequest()
+                }
+                return
+            }
+
+            let targetPageIndex = max(0, min(pageIndex, document.pageCount - 1))
+            guard let page = document.page(at: targetPageIndex) else {
+                if consumeRequest {
+                    consumePendingRequest()
+                }
+                return
+            }
+
+            isApplyingProgrammaticPage = true
+            pdfView.go(to: page)
+            isApplyingProgrammaticPage = false
+
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                if self.currentPageIndex.wrappedValue != targetPageIndex {
+                    self.currentPageIndex.wrappedValue = targetPageIndex
+                }
+
+                if consumeRequest {
+                    self.onRequestConsumed()
+                }
+            }
         }
 
         @objc func pageChanged(_ notification: Notification) {
+            guard !isApplyingProgrammaticPage else { return }
+
             guard
                 let pdfView = notification.object as? PDFView,
                 let document = pdfView.document,
@@ -126,8 +290,43 @@ private struct PDFKitDocumentView: UIViewRepresentable {
                 return
             }
 
-            pageIndex = document.index(for: currentPage)
+            let pageIndex = document.index(for: currentPage)
+            guard pageIndex != NSNotFound, pageIndex >= 0, pageIndex < document.pageCount else { return }
+
+            if currentPageIndex.wrappedValue != pageIndex {
+                currentPageIndex.wrappedValue = pageIndex
+            }
+        }
+
+        private func consumePendingRequest() {
+            DispatchQueue.main.async { [weak self] in
+                self?.onRequestConsumed()
+            }
         }
     }
 }
 
+private struct ManualErrorStateView: View {
+    let title: String
+    let message: String
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.largeTitle)
+                .foregroundStyle(Theme.Colors.warning)
+
+            Text(title)
+                .font(.headline)
+                .foregroundStyle(.white)
+
+            Text(message)
+                .font(.subheadline)
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.white.opacity(0.68))
+                .padding(.horizontal, 24)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .appBackground()
+    }
+}
