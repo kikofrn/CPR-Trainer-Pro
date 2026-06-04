@@ -1057,22 +1057,6 @@ export default function App() {
     if (video) video.currentTime = safeTime;
   };
 
-  const handleEndedCore = useCallback(() => {
-    setIsPlaying(false);
-    if (isContinuousPlay && activeCourse && activeChapterIndex < activeCourse.chapters.length - 1) {
-      handleNext();
-    } else {
-      setShowNextOverlay(true);
-    }
-  }, [isContinuousPlay, activeCourse, activeChapterIndex, handleNext]);
-
-  const handleEndedCoreRef = useRef(handleEndedCore);
-  useEffect(() => { handleEndedCoreRef.current = handleEndedCore; }, [handleEndedCore]);
-
-  const handleEnded = () => {
-    if (isPresentingExternallyRef.current) return;
-    handleEndedCoreRef.current();
-  };
 
   const handleTimeUpdate = (video: HTMLVideoElement) => {
     if (isPresentingExternallyRef.current) return;
@@ -1124,6 +1108,23 @@ export default function App() {
     if (activeCourse && activeChapterIndex < activeCourse.chapters.length - 1) {
       selectChapter(activeChapterIndex + 1);
     }
+  };
+
+  const handleEndedCore = useCallback(() => {
+    setIsPlaying(false);
+    if (isContinuousPlay && activeCourse && activeChapterIndex < activeCourse.chapters.length - 1) {
+      handleNext();
+    } else {
+      setShowNextOverlay(true);
+    }
+  }, [isContinuousPlay, activeCourse, activeChapterIndex, handleNext]);
+
+  const handleEndedCoreRef = useRef(handleEndedCore);
+  useEffect(() => { handleEndedCoreRef.current = handleEndedCore; }, [handleEndedCore]);
+
+  const handleEnded = () => {
+    if (isPresentingExternallyRef.current) return;
+    handleEndedCoreRef.current();
   };
 
   const handlePrev = () => {
@@ -1502,52 +1503,52 @@ export default function App() {
         {!isFullScreen && (
           <HeaderNav
             showSidebar={showSidebar}
-          setShowSidebar={setShowSidebar}
-          setActiveCourseIndex={setActiveCourseIndex}
-          setActiveSlideshowIndex={setActiveSlideshowIndex}
-          setSelectedManual={selectManual}
-          setActiveTab={setActiveTab}
-          lastCprView={lastCprView}
-          showCprSelector={showCprSelector}
-          setShowCprSelector={setShowCprSelector}
-          isCprActive={isCprActive}
-          cprVaEnabled={cprVaEnabled}
-          setCprVaEnabled={setCprVaEnabled}
-          lastFaView={lastFaView}
-          showFaSelector={showFaSelector}
-          setShowFaSelector={setShowFaSelector}
-          isFaActive={isFaActive}
-          faPediatric={faPediatric}
-          setFaPediatric={setFaPediatric}
-          faVaEnabled={faVaEnabled}
-          setFaVaEnabled={setFaVaEnabled}
-          setShowManualSelector={setShowManualSelector}
-          showManualSelector={showManualSelector}
-          selectedManual={selectedManual}
-          activeTab={activeTab}
-          previewManualIndex={previewManualIndex}
-          setPreviewManualIndex={setPreviewManualIndex}
-          easterEggLevel={easterEggLevel}
-          activeCourse={activeCourse}
-          activeChapterIndex={activeChapterIndex}
-          updateAvailable={updateAvailable}
-          isUpdateMinimized={isUpdateMinimized}
-          setIsUpdateMinimized={setIsUpdateMinimized}
-          handleItemClick={handleItemClick}
-          MANUALS={MANUALS}
-          EHLogo={EHLogo}
-          CprIcon={CprIcon}
-          FirstAidIcon={FirstAidIcon}
-          isFullScreen={isFullScreen}
-          isPresentingExternally={isPresentingExternally}
-          hasExternalMonitor={hasExternalMonitor}
-          isPresenterStarting={isPresenterStarting}
-          presenterError={presenterError}
-          handleStartPresenting={handleStartPresenting}
-          handleStopPresenting={handleStopPresenting}
-          handleFullscreenToggle={handleFullscreenToggle}
-          handleFullscreenExit={handleFullscreenExit}
-        />
+            setShowSidebar={setShowSidebar}
+            setActiveCourseIndex={setActiveCourseIndex}
+            setActiveSlideshowIndex={setActiveSlideshowIndex}
+            setSelectedManual={selectManual}
+            setActiveTab={setActiveTab}
+            lastCprView={lastCprView}
+            showCprSelector={showCprSelector}
+            setShowCprSelector={setShowCprSelector}
+            isCprActive={isCprActive}
+            cprVaEnabled={cprVaEnabled}
+            setCprVaEnabled={setCprVaEnabled}
+            lastFaView={lastFaView}
+            showFaSelector={showFaSelector}
+            setShowFaSelector={setShowFaSelector}
+            isFaActive={isFaActive}
+            faPediatric={faPediatric}
+            setFaPediatric={setFaPediatric}
+            faVaEnabled={faVaEnabled}
+            setFaVaEnabled={setFaVaEnabled}
+            setShowManualSelector={setShowManualSelector}
+            showManualSelector={showManualSelector}
+            selectedManual={selectedManual}
+            activeTab={activeTab}
+            previewManualIndex={previewManualIndex}
+            setPreviewManualIndex={setPreviewManualIndex}
+            easterEggLevel={easterEggLevel}
+            activeCourse={activeCourse}
+            activeChapterIndex={activeChapterIndex}
+            updateAvailable={updateAvailable}
+            isUpdateMinimized={isUpdateMinimized}
+            setIsUpdateMinimized={setIsUpdateMinimized}
+            handleItemClick={handleItemClick}
+            MANUALS={MANUALS}
+            EHLogo={EHLogo}
+            CprIcon={CprIcon}
+            FirstAidIcon={FirstAidIcon}
+            isFullScreen={isFullScreen}
+            isPresentingExternally={isPresentingExternally}
+            hasExternalMonitor={hasExternalMonitor}
+            isPresenterStarting={isPresenterStarting}
+            presenterError={presenterError}
+            handleStartPresenting={handleStartPresenting}
+            handleStopPresenting={handleStopPresenting}
+            handleFullscreenToggle={handleFullscreenToggle}
+            handleFullscreenExit={handleFullscreenExit}
+          />
         )}
         {/* Player Section */}
         <div className="flex-1 relative bg-black overflow-hidden h-full flex items-center justify-center">
@@ -1772,6 +1773,14 @@ export default function App() {
               toggleSlideshowPlay={toggleSlideshowPlay}
               m={m}
               fileStatuses={dlState.fileStatuses}
+              isFullScreen={isFullScreen}
+              onFullscreenToggle={handleFullscreenToggle}
+              onFullscreenExit={handleFullscreenExit}
+              hasExternalMonitor={hasExternalMonitor && viewerListenersReady}
+              isPresentingExternally={isPresentingExternally}
+              onStartPresenting={handleStartPresenting}
+              onStopPresenting={handleStopPresenting}
+              isPresenterStarting={isPresenterStarting}
             />
           </div>
         </div>
