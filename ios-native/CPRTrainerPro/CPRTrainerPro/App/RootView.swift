@@ -76,6 +76,34 @@ struct RootView: View {
                 .tag(AppTab.settings)
         }
         .tint(Theme.Colors.selectedTabItem)
+        .simultaneousGesture(tabSwipeGesture)
+    }
+
+    private var tabSwipeGesture: some Gesture {
+        DragGesture(minimumDistance: 52, coordinateSpace: .local)
+            .onEnded { value in
+                handleTabSwipe(value)
+            }
+    }
+
+    private func handleTabSwipe(_ value: DragGesture.Value) {
+        let horizontalDistance = value.translation.width
+        let verticalDistance = value.translation.height
+
+        guard
+            abs(horizontalDistance) > 72,
+            abs(horizontalDistance) > abs(verticalDistance) * 1.45
+        else {
+            return
+        }
+
+        let direction = horizontalDistance < 0 ? 1 : -1
+        let nextTab = appViewModel.selectedTab.adjacentTab(direction: direction)
+        guard nextTab != appViewModel.selectedTab else { return }
+
+        withAnimation(.easeOut(duration: 0.18)) {
+            appViewModel.selectedTab = nextTab
+        }
     }
 }
 

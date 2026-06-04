@@ -45,4 +45,24 @@ enum AppTab: Hashable {
     case manuals
     case sendCerts
     case settings
+
+    static let orderedTabs: [AppTab] = [
+        .cprAED,
+        .firstAid,
+        .manuals,
+        .sendCerts,
+        .settings
+    ]
+
+    func adjacentTab(direction: Int) -> AppTab {
+        guard
+            let currentIndex = Self.orderedTabs.firstIndex(of: self),
+            !Self.orderedTabs.isEmpty
+        else {
+            return self
+        }
+
+        let nextIndex = min(max(currentIndex + direction, 0), Self.orderedTabs.count - 1)
+        return Self.orderedTabs[nextIndex]
+    }
 }
