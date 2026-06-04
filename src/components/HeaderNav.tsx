@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, ChevronDown, CheckCircle2, HelpCircle, BookOpen, ChevronRight, GraduationCap, Baby, Book, Award, Heart } from 'lucide-react';
+import { Menu, ChevronDown, CheckCircle2, HelpCircle, BookOpen, ChevronRight, GraduationCap, Baby, Book, Award, Heart, MonitorPlay, MonitorX, Maximize2, Minimize2, AlertCircle } from 'lucide-react';
 
 interface HeaderNavProps {
   showSidebar: boolean;
@@ -48,6 +48,16 @@ interface HeaderNavProps {
   EHLogo: any;
   CprIcon: any;
   FirstAidIcon: any;
+
+  isFullScreen: boolean;
+  isPresentingExternally: boolean;
+  hasExternalMonitor: boolean;
+  isPresenterStarting: boolean;
+  presenterError: string | null;
+  handleStartPresenting: () => void;
+  handleStopPresenting: () => void;
+  handleFullscreenToggle: () => void;
+  handleFullscreenExit: () => void;
 }
 
 export function HeaderNav({
@@ -60,7 +70,9 @@ export function HeaderNav({
   easterEggLevel, activeCourse, activeChapterIndex,
   updateAvailable, isUpdateMinimized, setIsUpdateMinimized,
   handleItemClick, MANUALS,
-  EHLogo, CprIcon, FirstAidIcon
+  EHLogo, CprIcon, FirstAidIcon,
+  isFullScreen, isPresentingExternally, hasExternalMonitor, isPresenterStarting, presenterError,
+  handleStartPresenting, handleStopPresenting, handleFullscreenToggle, handleFullscreenExit
 }: HeaderNavProps) {
   return (
     <header className={`h-20 pr-4 xl:pr-8 border-b border-eh-peach/10 flex items-center justify-between bg-black z-[60] shrink-0 transition-[padding-left] duration-[400ms] ease-in-out relative ${
@@ -476,6 +488,46 @@ export function HeaderNav({
             <span className="font-mono text-xs text-eh-peach/80">{Math.round(((activeChapterIndex + 1) / activeCourse.chapters.length) * 100)}% Complete</span>
           </div>
         )}
+
+        <div className="flex items-center gap-2">
+          {presenterError && (
+            <div className="group relative">
+              <AlertCircle size={20} className="text-[#ff4b4b] cursor-help" />
+              <div className="absolute top-full right-0 mt-2 px-3 py-2 bg-[#ff4b4b] text-white text-[10px] rounded shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-50">
+                {presenterError}
+              </div>
+            </div>
+          )}
+
+          <button
+            onClick={isPresentingExternally ? handleStopPresenting : handleStartPresenting}
+            disabled={!hasExternalMonitor || isPresenterStarting}
+            className={`p-2 rounded-lg transition-colors flex items-center justify-center ${
+              isPresentingExternally 
+                ? 'bg-teal-500/20 text-teal-400 hover:bg-teal-500/30' 
+                : hasExternalMonitor 
+                  ? 'bg-eh-peach/10 text-eh-peach hover:bg-eh-peach/20' 
+                  : 'bg-white/5 text-white/20 cursor-not-allowed'
+            }`}
+            title={
+              isPresentingExternally ? "Stop Presenting" 
+              : !hasExternalMonitor ? "No External Monitor Detected" 
+              : "Start Presenter Display"
+            }
+          >
+            {isPresentingExternally ? <MonitorX size={20} /> : <MonitorPlay size={20} className={isPresenterStarting ? 'opacity-50' : ''} />}
+          </button>
+
+          <button
+            onClick={handleFullscreenToggle}
+            className={`p-2 rounded-lg transition-colors flex items-center justify-center ${
+              isFullScreen ? 'bg-eh-red/20 text-eh-red hover:bg-eh-red/30' : 'bg-eh-peach/10 text-eh-peach hover:bg-eh-peach/20'
+            }`}
+            title={isFullScreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+          >
+            {isFullScreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
+          </button>
+        </div>
 
         <AnimatePresence>
           {updateAvailable && isUpdateMinimized && (

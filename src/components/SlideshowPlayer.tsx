@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, SkipBack, SkipForward, Play, Pause, Projector, VolumeX, Volume2, Maximize2, Lightbulb } from 'lucide-react';
+import { X, SkipBack, SkipForward, Play, Pause, Projector, VolumeX, Volume2, Maximize2, Minimize2, Monitor, StopCircle, Lightbulb } from 'lucide-react';
 import { cdnUrl } from '../media-resolver';
+import { resolveSlideUrl } from '../utils/slide-url';
 import { INSTRUCTOR_TIPS } from '../instructor-tips';
 
 interface SlideshowPlayerProps {
@@ -27,22 +28,15 @@ interface SlideshowPlayerProps {
   
   m: (path: string) => string;
   fileStatuses: Record<string, boolean>;
-}
 
-/**
- * Resolve the display URL for a slide.
- * - If the file is downloaded locally, use the local media:// protocol URL (works offline).
- * - If NOT downloaded and it's an image, use the CDN URL (loads instantly from Cloudflare).
- * - Videos always use local URL (they must be downloaded first to stream).
- */
-function resolveSlideUrl(slide: any, m: (path: string) => string, fileStatuses: Record<string, boolean>): string {
-  const clean = slide.filename?.trim().replace(/^\//, '') || '';
-  const isDownloaded = !!fileStatuses[clean];
-  
-  if (slide.type === 'image' && !isDownloaded) {
-    return cdnUrl(slide.filename);
-  }
-  return m(slide.filename);
+  isFullScreen: boolean;
+  onFullscreenToggle: () => Promise<void>;
+  onFullscreenExit: () => Promise<void>;
+  hasExternalMonitor: boolean;
+  isPresentingExternally: boolean;
+  onStartPresenting: () => Promise<void>;
+  onStopPresenting: () => Promise<void>;
+  isPresenterStarting: boolean;
 }
 
 export function SlideshowPlayer({
@@ -51,7 +45,9 @@ export function SlideshowPlayer({
   isMuted, setIsMuted, volume, setVolume,
   prevSlide, nextSlide,
   slideshowIsPlaying, toggleSlideshowPlay,
-  m, fileStatuses
+  m, fileStatuses,
+  isFullScreen, onFullscreenToggle, onFullscreenExit, hasExternalMonitor,
+  isPresentingExternally, onStartPresenting, onStopPresenting, isPresenterStarting
 }: SlideshowPlayerProps) {
   const [showTips, setShowTips] = useState(false);
 
@@ -62,13 +58,11 @@ export function SlideshowPlayer({
       <div className={`w-full h-full relative bg-black flex flex-col items-center justify-center ${!isUiVisible ? 'cursor-none' : ''}`}>
         <div className={`absolute top-6 right-6 z-50 flex items-center gap-4 transition-opacity duration-500 ${!isUiVisible || showTips ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
           <button 
-            onClick={() => {
-              if (document.fullscreenElement) {
-                document.exitFullscreen().catch(console.error);
-              } else {
-                if (slideVideoRef.current) slideVideoRef.current.pause();
-                setActiveSlideshowIndex(null);
-              }
+            onClick={async (e) => {
+              e.stopPropagation();
+              if (isFullScreen) { await onFullscreenExit(); return; }
+              if (isPresentingExternally) await onStopPresenting();
+              setActiveSlideshowIndex(null);
             }}
             className="p-3 bg-eh-red/20 hover:bg-eh-red/30 rounded-full transition-colors text-eh-red shadow-lg backdrop-blur-md cursor-pointer"
             title="Close Slideshow"
@@ -271,18 +265,34 @@ export function SlideshowPlayer({
                     </div>
                   </div>
                 )}
-                <button 
-                  onClick={() => {
-                    if (!document.fullscreenElement) {
-                      slideshowContainerRef.current?.requestFullscreen().catch(console.error);
-                    } else {
-                      document.exitFullscreen().catch(console.error);
-                    }
-                  }}
+                {hasExternalMonitor && !isPresentingExternally && (
+                  <button
+                    type="button"
+                    aria-label="Present on external display"
+                    onClick={() => void onStartPresenting()}
+                    disabled={isPresenterStarting}
+                    className={`p-3 hover:bg-eh-peach/10 rounded-full text-eh-peach/80 transition-all cursor-pointer ${isPresenterStarting ? 'opacity-50 cursor-wait' : ''}`}
+                    title="Present on External Display">
+                    <Monitor size={24} />
+                  </button>
+                )}
+                {isPresentingExternally && (
+                  <button
+                    type="button"
+                    aria-label="Stop presenting"
+                    onClick={() => void onStopPresenting()}
+                    className="p-3 hover:bg-red-500/20 rounded-full text-red-400 transition-all cursor-pointer"
+                    title="Stop Presenting">
+                    <StopCircle size={24} />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  aria-label={isFullScreen ? "Exit fullscreen" : "Enter fullscreen"}
+                  onClick={() => void onFullscreenToggle()}
                   className="p-3 hover:bg-eh-peach/10 rounded-full text-eh-peach/80 transition-all cursor-pointer"
-                  title="Toggle Fullscreen View"
-                >
-                  <Maximize2 size={24} />
+                  title={isFullScreen ? "Exit Fullscreen" : "Enter Fullscreen"}>
+                  {isFullScreen ? <Minimize2 size={24} /> : <Maximize2 size={24} />}
                 </button>
               </div>
             </div>

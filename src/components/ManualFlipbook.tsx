@@ -37,6 +37,7 @@ interface ManualFlipbookProps {
   title: string;
   onOutlineLoaded?: (outline: any[]) => void;
   showEasterEgg?: boolean;
+  onFullscreenChange?: (isFullscreen: boolean) => void;
 }
 
 const PageContent = React.forwardRef<HTMLDivElement, { pageNumber: number; width: number; height: number; scale: number; showEasterEgg?: boolean; renderPDF?: boolean }>((props, ref) => {
@@ -70,7 +71,7 @@ const PageContent = React.forwardRef<HTMLDivElement, { pageNumber: number; width
 
 PageContent.displayName = 'PageContent';
 
-const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(({ pdfUrl, onClose, title, onOutlineLoaded, showEasterEgg }, ref) => {
+const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(({ pdfUrl, onClose, title, onOutlineLoaded, showEasterEgg, onFullscreenChange }, ref) => {
   const [numPages, setNumPages] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState(0);
   const [zoomScale, setZoomScale] = useState(1);
@@ -233,19 +234,24 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
   
   const toggleFullScreen = async () => {
     if (isTauri) {
-      const { getCurrentWindow } = await import('@tauri-apps/api/window');
-      const window = getCurrentWindow();
-      const isFs = await window.isFullscreen();
-      await window.setFullscreen(!isFs);
-      setIsFullScreen(!isFs);
-    } else {
-      if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(console.error);
-        setIsFullScreen(true);
-      } else {
-        document.exitFullscreen().catch(console.error);
-        setIsFullScreen(false);
-      }
+      try {
+        const { getCurrentWindow } = await import('@tauri-apps/api/window');
+        const tauriWin = getCurrentWindow();
+        const before = await tauriWin.isFullscreen();
+        await tauriWin.setFullscreen(!before);
+        const actual = await tauriWin.isFullscreen();
+        setIsFullScreen(actual);
+        onFullscreenChange?.(actual);
+      } catch (e) { console.error('[ManualFlipbook] Fullscreen toggle failed:', e); }
+      return;
+    }
+    const el = containerRef.current;
+    if (!document.fullscreenElement && el) {
+      await el.requestFullscreen().catch(console.error);
+      setIsFullScreen(true); onFullscreenChange?.(true);
+    } else if (document.fullscreenElement) {
+      await document.exitFullscreen().catch(console.error);
+      setIsFullScreen(false); onFullscreenChange?.(false);
     }
   };
 
@@ -253,8 +259,14 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isFullScreen) {
         if (isTauri) {
-          import('@tauri-apps/api/window').then(({ getCurrentWindow }) => {
-            getCurrentWindow().setFullscreen(false);
+          import('@tauri-apps/api/window').then(async ({ getCurrentWindow }) => {
+            const tauriWin = getCurrentWindow();
+            try {
+              await tauriWin.setFullscreen(false);
+              const actual = await tauriWin.isFullscreen();
+              setIsFullScreen(actual);
+              onFullscreenChange?.(actual);
+            } catch (e) { console.error('[ManualFlipbook] Fullscreen exit failed:', e); }
           });
         } else if (document.fullscreenElement) {
           document.exitFullscreen().catch(console.error);
@@ -264,7 +276,18 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isFullScreen]);
+  }, [isFullScreen, onFullscreenChange]);
+
+  useEffect(() => {
+    if (isTauri) return;
+    const handleBrowserFullscreenChange = () => {
+      const actual = Boolean(document.fullscreenElement);
+      setIsFullScreen(actual);
+      onFullscreenChange?.(actual);
+    };
+    document.addEventListener('fullscreenchange', handleBrowserFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleBrowserFullscreenChange);
+  }, [onFullscreenChange]);
 
   const isMobile = containerWidth < 768;
   
@@ -294,7 +317,7 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
   return (
     <div 
       ref={containerRef}
-      className={`w-full h-full bg-black flex flex-col ${isFullScreen ? 'fixed inset-0 z-[9999]' : ''}`}
+      className="w-full h-full bg-black flex flex-col"
     >
       {/* Toolbar */}
       <div className="h-14 bg-black/50 border-b border-white/10 flex items-center justify-between px-6 z-50 shrink-0">

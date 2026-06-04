@@ -457,7 +457,6 @@ fn check_disk_space(app: tauri::AppHandle) -> Result<u64, String> {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_process::init())
-        .plugin(tauri_plugin_updater::Builder::new().build())
         .invoke_handler(tauri::generate_handler![
             get_media_base_path,
             list_media_files,
