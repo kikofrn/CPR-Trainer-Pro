@@ -126,7 +126,7 @@ struct VideoCoursePlayerView: View {
                 if isPresentingExternally {
                     externalPlaybackStatusSurface
                 } else {
-                    VideoPlayer(player: player)
+                    ConfigurableVideoPlayer(player: player)
 
                     if coordinator.captionsEnabled {
                         VStack {
@@ -398,4 +398,37 @@ struct VideoCoursePlayerView: View {
             }
         }
     }
+}
+
+private struct ConfigurableVideoPlayer: UIViewControllerRepresentable {
+    let player: AVPlayer
+
+    func makeUIViewController(context: Context) -> AVPlayerViewController {
+        let controller = AVPlayerViewController()
+        controller.player = player
+        controller.showsPlaybackControls = true
+        controller.videoGravity = .resizeAspect
+        controller.speeds = Self.playbackSpeeds
+        return controller
+    }
+
+    func updateUIViewController(_ controller: AVPlayerViewController, context: Context) {
+        if controller.player !== player {
+            controller.player = player
+        }
+
+        controller.speeds = Self.playbackSpeeds
+    }
+
+    private static let playbackSpeeds: [AVPlaybackSpeed] = {
+        let customSpeed = AVPlaybackSpeed(rate: 1.15, localizedName: "1.15x")
+        var speeds = AVPlaybackSpeed.systemDefaultSpeeds
+
+        guard !speeds.contains(where: { abs($0.rate - customSpeed.rate) < 0.001 }) else {
+            return speeds
+        }
+
+        speeds.append(customSpeed)
+        return speeds.sorted { $0.rate < $1.rate }
+    }()
 }
