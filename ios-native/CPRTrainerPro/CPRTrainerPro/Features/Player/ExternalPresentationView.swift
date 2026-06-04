@@ -4,7 +4,6 @@ import UIKit
 
 struct ExternalPresentationView: View {
     @EnvironmentObject private var session: PresentationSession
-    @State private var standbyDimmed = false
 
     var body: some View {
         ZStack {
@@ -28,22 +27,21 @@ struct ExternalPresentationView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.black)
         .ignoresSafeArea()
-        .onAppear(perform: scheduleStandbyDimming)
     }
 
     private var standbyView: some View {
-        VStack(spacing: 18) {
-            if let logo = artwork(named: "EHAcademyTrainerProLogo.png") {
-                Image(uiImage: logo)
+        Group {
+            if let idleScreen = artwork(named: "eha-idle-screen.png") {
+                Image(uiImage: idleScreen)
                     .resizable()
+                    .interpolation(.high)
                     .scaledToFit()
-                    .frame(maxWidth: 520)
-                    .opacity(standbyDimmed ? 0.50 : 1)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                Text("Ready for Course Display")
+                    .font(.title2.weight(.semibold))
+                    .foregroundStyle(.white.opacity(0.62))
             }
-
-            Text("Ready for Course Display")
-                .font(.title2.weight(.semibold))
-                .foregroundStyle(.white.opacity(standbyDimmed ? 0.35 : 0.62))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -163,18 +161,6 @@ struct ExternalPresentationView: View {
         }
         .padding(30)
         .frame(maxWidth: 560)
-    }
-
-    private func scheduleStandbyDimming() {
-        standbyDimmed = false
-        Task {
-            try? await Task.sleep(nanoseconds: 300_000_000_000)
-            await MainActor.run {
-                withAnimation(.easeInOut(duration: 1.0)) {
-                    standbyDimmed = true
-                }
-            }
-        }
     }
 
     private func artwork(named name: String) -> UIImage? {

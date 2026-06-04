@@ -33,6 +33,10 @@ struct VideoCoursePlayerView: View {
             presentationSession.state.activeOwnerID == coordinator.ownerID
     }
 
+    private var isPlaybackActive: Bool {
+        coordinator.playbackStatus == .playing || coordinator.playbackStatus == .stalled
+    }
+
     var body: some View {
         NavigationStack {
             GeometryReader { proxy in
@@ -184,8 +188,73 @@ struct VideoCoursePlayerView: View {
                 .padding(.horizontal, 10)
                 .padding(.vertical, 5)
                 .background(.white.opacity(0.08), in: Capsule())
+
+            externalTransportControls
         }
         .padding(20)
+    }
+
+    private var externalTransportControls: some View {
+        VStack(spacing: 12) {
+            HStack(spacing: 18) {
+                chapterControlButton(
+                    systemImage: "backward.end.fill",
+                    label: "Previous chapter",
+                    isDisabled: !coordinator.hasPreviousChapter
+                ) {
+                    coordinator.previousChapter()
+                }
+
+                Button {
+                    coordinator.togglePlayPause()
+                } label: {
+                    Image(systemName: isPlaybackActive ? "pause.fill" : "play.fill")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundStyle(.black)
+                        .frame(width: 56, height: 56)
+                        .background(Theme.Colors.peach)
+                        .clipShape(Circle())
+                        .shadow(color: Theme.Colors.peach.opacity(0.22), radius: 12, y: 4)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(isPlaybackActive ? "Pause video" : "Play video")
+
+                chapterControlButton(
+                    systemImage: "forward.end.fill",
+                    label: "Next chapter",
+                    isDisabled: !coordinator.hasNextChapter
+                ) {
+                    coordinator.nextChapter()
+                }
+            }
+
+            playbackSpeedMenu
+        }
+        .padding(.top, 4)
+    }
+
+    private var playbackSpeedMenu: some View {
+        Menu {
+            ForEach(VideoPlaybackSpeedOption.allCases) { option in
+                Button {
+                    coordinator.selectPlaybackRate(option.rate)
+                } label: {
+                    if abs(coordinator.playbackRate - option.rate) < 0.001 {
+                        Label(option.title, systemImage: "checkmark")
+                    } else {
+                        Text(option.title)
+                    }
+                }
+            }
+        } label: {
+            Label(coordinator.selectedPlaybackSpeedTitle, systemImage: "speedometer")
+                .font(.caption.weight(.bold))
+                .foregroundStyle(Theme.Colors.peach)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 7)
+                .background(.white.opacity(0.08), in: Capsule())
+        }
+        .accessibilityLabel("Playback speed")
     }
 
     private var chaptersPanel: some View {
@@ -420,15 +489,7 @@ private struct ConfigurableVideoPlayer: UIViewControllerRepresentable {
         controller.speeds = Self.playbackSpeeds
     }
 
-    private static let playbackSpeeds: [AVPlaybackSpeed] = {
-        let customSpeed = AVPlaybackSpeed(rate: 1.15, localizedName: "1.15x")
-        var speeds = AVPlaybackSpeed.systemDefaultSpeeds
-
-        guard !speeds.contains(where: { abs($0.rate - customSpeed.rate) < 0.001 }) else {
-            return speeds
-        }
-
-        speeds.append(customSpeed)
-        return speeds.sorted { $0.rate < $1.rate }
-    }()
+    private static let playbackSpeeds: [AVPlaybackSpeed] = VideoPlaybackSpeedOption.allCases.map {
+        AVPlaybackSpeed(rate: $0.rate, localizedName: $0.title)
+    }
 }

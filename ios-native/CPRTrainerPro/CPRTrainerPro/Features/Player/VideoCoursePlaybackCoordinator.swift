@@ -1,6 +1,23 @@
 import AVFoundation
 import Foundation
 
+struct VideoPlaybackSpeedOption: Identifiable, Equatable {
+    let rate: Float
+    let title: String
+
+    var id: Float { rate }
+
+    static let allCases: [VideoPlaybackSpeedOption] = [
+        .init(rate: 0.5, title: "0.5x"),
+        .init(rate: 0.75, title: "0.75x"),
+        .init(rate: 1.0, title: "1x"),
+        .init(rate: 1.15, title: "1.15x"),
+        .init(rate: 1.25, title: "1.25x"),
+        .init(rate: 1.5, title: "1.5x"),
+        .init(rate: 2.0, title: "2x")
+    ]
+}
+
 @MainActor
 final class VideoCoursePlaybackCoordinator: ObservableObject {
     let videoCourse: VideoCourse
@@ -11,6 +28,12 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
     @Published private(set) var player: AVPlayer?
     @Published private(set) var currentSubtitleText: String?
     @Published private(set) var playbackStatus: PlaybackStatus = .idle
+    @Published var playbackRate: Float = 1.0 {
+        didSet {
+            guard abs(playbackRate - oldValue) > 0.001 else { return }
+            applyPlaybackRate()
+        }
+    }
     @Published var captionsEnabled = false {
         didSet {
             if !captionsEnabled {
@@ -86,6 +109,10 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
         return playableChapters.index(after: selectedChapterIndex) < playableChapters.endIndex
     }
 
+    var selectedPlaybackSpeedTitle: String {
+        VideoPlaybackSpeedOption.allCases.first { abs($0.rate - playbackRate) < 0.001 }?.title ?? "\(playbackRate)x"
+    }
+
     func appear() {
         isTornDown = false
         attachAudioRouteObservers()
@@ -122,12 +149,24 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
 
     func play() {
         ensurePlaybackResources()
-        player?.play()
+        player?.playImmediately(atRate: playbackRate)
     }
 
     func pause() {
         player?.pause()
         setPlaybackStatus(.paused)
+    }
+
+    func togglePlayPause() {
+        if playbackStatus == .playing || playbackStatus == .stalled {
+            pause()
+        } else {
+            play()
+        }
+    }
+
+    func selectPlaybackRate(_ rate: Float) {
+        playbackRate = rate
     }
 
     func tearDown() {
@@ -200,6 +239,7 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
 
         let nextPlayer = player ?? AVPlayer()
         nextPlayer.automaticallyWaitsToMinimizeStalling = false
+        nextPlayer.defaultRate = playbackRate
         nextPlayer.replaceCurrentItem(with: playerItem)
         player = nextPlayer
 
@@ -241,6 +281,15 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
         if !hasAcquiredAudioSession {
             PresentationHub.shared.acquireAudioSession()
             hasAcquiredAudioSession = true
+        }
+    }
+
+    private func applyPlaybackRate() {
+        guard let player else { return }
+        player.defaultRate = playbackRate
+
+        if playbackStatus == .playing || player.rate > 0 {
+            player.playImmediately(atRate: playbackRate)
         }
     }
 
