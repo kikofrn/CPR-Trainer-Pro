@@ -11,7 +11,8 @@
     "lint": "tsc --noEmit",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build"
+    "tauri:build": "tauri build",
+    "tauri:windows:build": "tauri-windows-bundle build"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",
@@ -28,6 +29,7 @@
     "react-pdf": "^10.4.1"
   },
   "devDependencies": {
+    "@choochmeque/tauri-windows-bundle": "^0.1.20",
     "@tauri-apps/cli": "^2.11.1",
     "@types/node": "^22.14.0",
     "autoprefixer": "^10.4.21",

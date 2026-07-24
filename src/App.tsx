@@ -1,15 +1,9 @@
 import { useState, useRef, useEffect, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Play, 
-  Pause, 
-  Menu, 
   X, 
-  Info,
-  Book,
   Download,
-  Loader2,
-  Settings
+  Loader2
 } from 'lucide-react';
 import { COURSES, MANUALS, Manual, SLIDESHOWS } from './chapters';
 import type { ManualFlipbookRef } from './components/ManualFlipbook';
@@ -70,14 +64,16 @@ export default function App() {
   // Manifest: fetch remote manifest on mount
   useEffect(() => {
     let unsub: (() => void) | undefined;
+    let isMounted = true;
     import('./chapters').then(({ fetchRemoteManifest, subscribeToManifest }) => {
+      if (!isMounted) return;
       fetchRemoteManifest();
       unsub = subscribeToManifest(() => {
-        // Force a re-render when manifest updates
-        setMediaReady(prev => prev);
+        // Force a re-render when manifest updates by incrementing a counter
+        setMediaReady(prev => !prev);
       });
     });
-    return () => { unsub?.(); };
+    return () => { isMounted = false; unsub?.(); };
   }, []);
 
   useEffect(() => {
@@ -158,6 +154,7 @@ export default function App() {
   
   // Elite Toggles
   const [cprVaEnabled, setCprVaEnabled] = useState(false);
+  const [cprPediatric, setCprPediatric] = useState(false);
   const [faVaEnabled, setFaVaEnabled] = useState(false);
   const [faPediatric, setFaPediatric] = useState(false);
   
@@ -352,7 +349,7 @@ export default function App() {
   const activeSlide = activeSlideshow ? activeSlideshow.slides[activeSlideIndex] : null;
 
   const handleItemClick = (type: string, index: number) => {
-    const isCpr = (type === 'video' && index === 0) || (type === 'slideshow' && (index === 0 || index === 2));
+    const isCpr = (type === 'video' && index === 0) || (type === 'slideshow' && (index === 0 || index === 2 || index === 5));
     if (isCpr) setLastCprView(type as 'video' | 'slideshow');
     else setLastFaView(type as 'video' | 'slideshow');
 
@@ -371,7 +368,7 @@ export default function App() {
 
   const isCprActive = 
     (activeTab === 'video' && activeCourseIndex === 0) || 
-    (activeTab === 'slideshow' && (activeSlideshowIndex === 0 || activeSlideshowIndex === 2));
+    (activeTab === 'slideshow' && (activeSlideshowIndex === 0 || activeSlideshowIndex === 2 || activeSlideshowIndex === 5));
 
   const isFaActive = 
     (activeTab === 'video' && (activeCourseIndex === 1 || activeCourseIndex === 2)) ||
@@ -423,7 +420,7 @@ export default function App() {
 
     const videoFilename = activeChapter.filename;
     const baseName = videoFilename.substring(0, videoFilename.lastIndexOf('.')) || videoFilename;
-    const cleanBaseName = baseName.startsWith('/') ? baseName.slice(1) : baseName;
+    const cleanBaseName = (baseName.split('/').pop() || baseName).replace(/^\/+/, '');
     const vttFilename = `${cleanBaseName}.vtt`;
 
     const loadSubtitles = async () => {
@@ -556,6 +553,7 @@ export default function App() {
 
     let activeInterval: any = null;
     let inactiveInterval: any = null;
+    let isCancelled = false;
 
     if (isPlaying) {
       // Start the new active video playing
@@ -565,6 +563,7 @@ export default function App() {
           active.volume = 0.0;
           active.play()
             .then(() => {
+              if (isCancelled) return;
               // Fade up the active player's volume
               const duration = 500; // ms
               const step = 50; // ms
@@ -613,6 +612,7 @@ export default function App() {
     }
 
     return () => {
+      isCancelled = true;
       if (activeInterval) clearInterval(activeInterval);
       if (inactiveInterval) clearInterval(inactiveInterval);
     };
@@ -627,9 +627,7 @@ export default function App() {
   const selectChapter = (index: number) => {
     if (activeCourseIndex === null || !COURSES[activeCourseIndex]) return;
     const chapter = COURSES[activeCourseIndex].chapters[index];
-    
-    // Ignore section headers
-    if (chapter.isSectionHeader) return;
+    if (!chapter) return;
 
     if (isTauri && chapter.filename) {
       const clean = chapter.filename.trim().replace(/^\//, '');
@@ -812,6 +810,10 @@ export default function App() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't intercept keyboard shortcuts when user is typing in an input
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
       // Spacebar to play/pause video
       if (e.key === ' ') {
         if (activeTab === 'video' && activeCourse && videoRef.current) {
@@ -855,8 +857,24 @@ export default function App() {
         } else if (activeTab === 'manual') {
           if (flipbookRef.current) flipbookRef.current.flipPrev();
         }
-      } else if (e.key === 'Escape' && document.fullscreenElement) {
-        document.exitFullscreen().catch(console.error);
+      } else if (e.key === 'Escape') {
+        if (document.fullscreenElement) {
+          document.exitFullscreen().catch(console.error);
+        }
+        if (isTauri) {
+          import('@tauri-apps/api/window').then(({ getCurrentWindow }) => {
+            getCurrentWindow().setFullscreen(false);
+          }).catch(console.error);
+        }
+      } else if (e.key === 'F11') {
+        e.preventDefault();
+        if (isTauri) {
+          import('@tauri-apps/api/window').then(async ({ getCurrentWindow }) => {
+            const win = getCurrentWindow();
+            const isFs = await win.isFullscreen();
+            win.setFullscreen(!isFs);
+          }).catch(console.error);
+        }
       }
     };
 
@@ -1053,7 +1071,9 @@ export default function App() {
           showSidebar={showSidebar}
           setShowSidebar={setShowSidebar}
           setActiveCourseIndex={setActiveCourseIndex}
+          activeCourseIndex={activeCourseIndex}
           setActiveSlideshowIndex={setActiveSlideshowIndex}
+          activeSlideshowIndex={activeSlideshowIndex}
           setSelectedManual={selectManual}
           setActiveTab={setActiveTab}
           lastCprView={lastCprView}
@@ -1062,6 +1082,8 @@ export default function App() {
           isCprActive={isCprActive}
           cprVaEnabled={cprVaEnabled}
           setCprVaEnabled={setCprVaEnabled}
+          cprPediatric={cprPediatric}
+          setCprPediatric={setCprPediatric}
           lastFaView={lastFaView}
           showFaSelector={showFaSelector}
           setShowFaSelector={setShowFaSelector}
@@ -1140,7 +1162,7 @@ export default function App() {
                     setSelectedManual(null);
                     setActiveTab('video');
                   }}
-                  onOutlineLoaded={(outline) => setManualOutline(outline)}
+                  onOutlineLoaded={(outline) => setManualOutline(outline.filter((item: any) => item.title !== 'Untitled'))}
                   showEasterEgg={easterEggLevel > 0}
                 />
               </ErrorBoundary>

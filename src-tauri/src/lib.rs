@@ -481,17 +481,6 @@ pub fn run() {
                 resolved_media
             );
 
-            // Migration: rename .mp4.mp4 to .mp4 for the Conclusion video
-            let old_conclusion = resolved_media.join("31_EHAcademy - CPR AED Course Video-Conclusion.mp4.mp4");
-            let new_conclusion = resolved_media.join("31_EHAcademy - CPR AED Course Video-Conclusion.mp4");
-            if old_conclusion.exists() && !new_conclusion.exists() {
-                if let Err(e) = std::fs::rename(&old_conclusion, &new_conclusion) {
-                    eprintln!("[Migration] Failed to rename conclusion video: {}", e);
-                } else {
-                    eprintln!("[Migration] Renamed conclusion video successfully");
-                }
-            }
-
             // Enable logging in production to persist errors to AppData/logs
             app.handle().plugin(
                 tauri_plugin_log::Builder::default()

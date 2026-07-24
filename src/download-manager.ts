@@ -305,7 +305,21 @@ class DownloadManager {
           this.state.completedQueueCount += 1;
         }
         this.notify();
-        this.downloadNext();
+
+        // If queue is now empty after removing failed file, properly reset state
+        if (this.state.queue.length === 0) {
+          this.state.isDownloading = false;
+          this.state.activeCategory = null;
+          this.state.currentFile = null;
+          this.state.totalQueueSize = 0;
+          this.state.completedQueueCount = 0;
+          this.state.currentSpeed = 0;
+          console.log('[DownloadManager] Bulk download completed (some files failed).');
+          this.checkAllStatuses();
+          this.notify();
+        } else {
+          this.downloadNext();
+        }
       }
     }
   }
@@ -316,8 +330,8 @@ class DownloadManager {
 
     // 1. Course Videos
     COURSES.forEach((course) => {
-      const isCpr = course.id === 'cpr-aed';
-      const isFa = course.id === 'first-aid' || course.id === 'pediatric';
+      const isCpr = course.id === 'cpr-aed' || course.id === 'pediatric-cpr-aed';
+      const isFa = course.id === 'first-aid' || course.id === 'pediatric-first-aid';
 
       if (
         category === 'everything' ||
@@ -335,8 +349,8 @@ class DownloadManager {
     // 2. Slideshow Files
     SLIDESHOWS.forEach((slideshow) => {
       if (slideshow.isComingSoon || COMING_SOON_IDS.includes(slideshow.id)) return; // Skip coming-soon slideshows
-      const isCpr = slideshow.id.startsWith('cpr-aed');
-      const isFa = slideshow.id.startsWith('first-aid') || slideshow.id.startsWith('pedi');
+      const isCpr = slideshow.id.startsWith('cpr-aed') || slideshow.id === 'pediatric-cpr-aed-course';
+      const isFa = slideshow.id.startsWith('first-aid') || (slideshow.id.startsWith('pedi') && slideshow.id !== 'pediatric-cpr-aed-course');
 
       if (
         category === 'everything' ||
@@ -373,9 +387,9 @@ class DownloadManager {
     try {
       const spaceBytes = await invoke<number>('check_disk_space');
       const CATEGORY_DISK_REQUIREMENTS: Record<string, number> = {
-        'everything': 4 * 1024 * 1024 * 1024,   // ~4 GB
-        'cpr-aed':    1.5 * 1024 * 1024 * 1024,  // ~1.5 GB
-        'first-aid':  2.5 * 1024 * 1024 * 1024,  // ~2.5 GB
+      'everything': 5 * 1024 * 1024 * 1024,   // ~5 GB
+      'cpr-aed':    2 * 1024 * 1024 * 1024,   // ~2 GB
+      'first-aid':  2.5 * 1024 * 1024 * 1024,  // ~2.5 GB
         'manuals':    0.1 * 1024 * 1024 * 1024,   // ~100 MB
       };
       const requiredBytes = CATEGORY_DISK_REQUIREMENTS[category] || 1.5 * 1024 * 1024 * 1024;

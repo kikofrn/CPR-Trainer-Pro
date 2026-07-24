@@ -6,7 +6,9 @@ interface HeaderNavProps {
   showSidebar: boolean;
   setShowSidebar: (v: boolean) => void;
   setActiveCourseIndex: (i: number | null) => void;
+  activeCourseIndex: number | null;
   setActiveSlideshowIndex: (i: number | null) => void;
+  activeSlideshowIndex: number | null;
   setSelectedManual: (m: any) => void;
   setActiveTab: (t: 'video'|'manual'|'slideshow'|'send-certs') => void;
   
@@ -16,6 +18,8 @@ interface HeaderNavProps {
   isCprActive: boolean;
   cprVaEnabled: boolean;
   setCprVaEnabled: (v: boolean) => void;
+  cprPediatric: boolean;
+  setCprPediatric: (v: boolean) => void;
   
   lastFaView: 'video'|'slideshow'|null;
   showFaSelector: boolean;
@@ -52,8 +56,8 @@ interface HeaderNavProps {
 
 export function HeaderNav({
   showSidebar, setShowSidebar,
-  setActiveCourseIndex, setActiveSlideshowIndex, setSelectedManual, setActiveTab,
-  lastCprView, showCprSelector, setShowCprSelector, isCprActive, cprVaEnabled, setCprVaEnabled,
+  setActiveCourseIndex, activeCourseIndex, setActiveSlideshowIndex, activeSlideshowIndex, setSelectedManual, setActiveTab,
+  lastCprView, showCprSelector, setShowCprSelector, isCprActive, cprVaEnabled, setCprVaEnabled, cprPediatric, setCprPediatric,
   lastFaView, showFaSelector, setShowFaSelector, isFaActive, faPediatric, setFaPediatric, faVaEnabled, setFaVaEnabled,
   setShowManualSelector, showManualSelector, selectedManual,
   activeTab, previewManualIndex, setPreviewManualIndex,
@@ -141,19 +145,26 @@ export function HeaderNav({
                   style={{ willChange: "transform, opacity", backfaceVisibility: "hidden" }}
                 >
                   <div className="p-6 bg-[#0a0a0a]/85 backdrop-blur-3xl rounded-[24px] border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.8)] w-[560px] relative z-[9999]">
-                    <h3 className="text-2xl font-black text-[#ff4b4b] uppercase tracking-tight leading-none text-center mb-5">CPR & AED FOR ALL AGES</h3>
+                    <h3 className="text-2xl font-black text-[#ff4b4b] uppercase tracking-tight leading-none text-center mb-5">{cprPediatric ? 'PEDIATRIC CPR & AED' : 'CPR & AED FOR ALL AGES'}</h3>
                     <div className="flex gap-6">
                       <div className="flex-1 flex flex-col justify-between">
                         <AnimatePresence mode="popLayout">
                           <motion.ul 
-                            key={cprVaEnabled ? 'cpr-va-list' : 'cpr-std-list'}
+                            key={cprPediatric ? 'cpr-pedi-list' : cprVaEnabled ? 'cpr-va-list' : 'cpr-std-list'}
                             initial={{ opacity: 0, scale: 0.98, filter: 'blur(4px)' }}
                             animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
                             exit={{ opacity: 0, scale: 1.02, filter: 'blur(4px)' }}
                             transition={{ duration: 0.5, ease: "easeOut" }}
                             className="space-y-4 text-sm text-white font-bold w-full"
                           >
-                            {cprVaEnabled ? (
+                            {cprPediatric ? (
+                              <>
+                                <li className="flex items-center gap-3"><CheckCircle2 size={18} className="text-[#ff4b4b] shrink-0"/><span><strong className="text-white">Pediatric Focused</strong> CPR & AED Certification</span></li>
+                                <li className="flex items-center gap-3"><CheckCircle2 size={18} className="text-[#ff4b4b] shrink-0"/><span>Designed for childcare providers & teachers</span></li>
+                                <li className="flex items-center gap-3"><CheckCircle2 size={18} className="text-[#ff4b4b] shrink-0"/><span>Covers Child & Infant CPR</span></li>
+                                <li className="flex items-center gap-3"><CheckCircle2 size={18} className="text-[#ff4b4b] shrink-0"/><span>Interactive slides with practice cues</span></li>
+                              </>
+                            ) : cprVaEnabled ? (
                               <>
                                 <li className="flex items-center gap-3"><CheckCircle2 size={18} className="text-[#ff4b4b] shrink-0"/><span><strong className="text-white">Narrated Course</strong> — Virtual Assistant guides each section</span></li>
                                 <li className="flex items-center gap-3"><CheckCircle2 size={18} className="text-[#ff4b4b] shrink-0"/><span>Hands-free automation for classroom delivery</span></li>
@@ -175,8 +186,8 @@ export function HeaderNav({
                         <div className="w-full aspect-video rounded-2xl overflow-hidden border border-white/10 relative bg-black/40">
                           <AnimatePresence mode="popLayout">
                             <motion.img 
-                              key={cprVaEnabled ? 'cpr-va' : 'cpr-std'}
-                              src={cprVaEnabled ? "/CPR AED for All Ages with VA.webp" : "/CPR AED for All Ages Cover.webp"} 
+                              key={cprPediatric ? 'cpr-pedi' : cprVaEnabled ? 'cpr-va' : 'cpr-std'}
+                              src={cprPediatric ? "/Pediatric CPR AED Cover.webp" : cprVaEnabled ? "/CPR AED for All Ages with VA.webp" : "/CPR AED for All Ages Cover.webp"} 
                               alt="CPR AED Course Cover" 
                               className="w-full h-full object-cover absolute inset-0"
                               initial={{ opacity: 0, scale: 0.98, filter: 'blur(4px)' }}
@@ -186,19 +197,27 @@ export function HeaderNav({
                             />
                           </AnimatePresence>
                         </div>
-                        <div className="flex items-center justify-between w-full">
-                          <span className="text-[13px] text-white/90 font-bold tracking-wide">Enable Virtual Assistant?</span>
-                          <button onClick={() => setCprVaEnabled(!cprVaEnabled)} className={`shrink-0 relative w-10 h-5 rounded-full transition-colors duration-300 cursor-pointer ${cprVaEnabled ? 'bg-[#ff4b4b]' : 'bg-[#333]'}`}>
-                            <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-300 ${cprVaEnabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
-                          </button>
+                        <div className="w-full flex flex-col gap-3">
+                          <div className="flex items-center justify-between w-full">
+                            <span className={`text-[13px] font-bold tracking-wide ${cprPediatric ? 'text-white/40' : 'text-white/90'}`}>Enable Virtual Assistant?</span>
+                            <button onClick={() => !cprPediatric && setCprVaEnabled(!cprVaEnabled)} disabled={cprPediatric} className={`shrink-0 relative w-10 h-5 rounded-full transition-colors duration-300 ${cprPediatric ? 'cursor-not-allowed bg-[#222]' : 'cursor-pointer'} ${!cprPediatric && cprVaEnabled ? 'bg-[#ff4b4b]' : cprPediatric ? '' : 'bg-[#333]'}`}>
+                              <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-300 ${cprVaEnabled && !cprPediatric ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                            </button>
+                          </div>
+                          <div className="flex items-center justify-between w-full">
+                            <span className={`text-[13px] font-bold tracking-wide ${cprVaEnabled ? 'text-white/40' : 'text-white/90'}`}>Pediatric Focused?</span>
+                            <button onClick={() => !cprVaEnabled && setCprPediatric(!cprPediatric)} disabled={cprVaEnabled} className={`shrink-0 relative w-10 h-5 rounded-full transition-colors duration-300 ${cprVaEnabled ? 'cursor-not-allowed bg-[#222]' : 'cursor-pointer'} ${!cprVaEnabled && cprPediatric ? 'bg-[#ff4b4b]' : cprVaEnabled ? '' : 'bg-[#333]'}`}>
+                              <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-300 ${cprPediatric && !cprVaEnabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                            </button>
+                          </div>
                         </div>
                         <div className="group relative w-full text-center">
                           <button className="text-xs font-bold tracking-wider text-white/70 hover:text-white transition-colors flex items-center gap-1 mx-auto cursor-pointer"><HelpCircle size={12} /><span>What is this?</span></button>
-                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-[#1a1a1a] border border-white/10 rounded-xl text-[10px] text-[#aaa] w-48 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">When enabled, a virtual assistant narrates each section of the course automatically, allowing hands-free teaching.</div>
+                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-[#1a1a1a] border border-white/10 rounded-xl text-[10px] text-[#aaa] w-48 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">When enabled, a virtual assistant narrates each section of the course automatically, allowing hands-free teaching. Pediatric Focused provides child & infant specific certification.</div>
                         </div>
                       </div>
                     </div>
-                    <button onClick={() => { if (cprVaEnabled) { handleItemClick('video', 0); } else { handleItemClick('slideshow', 0); } }} className="w-full mt-5 py-3 bg-[#ff4b4b] hover:bg-[#ff3333] text-white font-black text-sm uppercase tracking-wider rounded-2xl transition-all duration-300 cursor-pointer active:scale-[0.98] shadow-[0_0_20px_rgba(255,75,75,0.3)]">
+                    <button onClick={() => { if (cprPediatric) { handleItemClick('slideshow', 5); } else if (cprVaEnabled) { handleItemClick('video', 0); } else { handleItemClick('slideshow', 0); } }} className="w-full mt-5 py-3 bg-[#ff4b4b] hover:bg-[#ff3333] text-white font-black text-sm uppercase tracking-wider rounded-2xl transition-all duration-300 cursor-pointer active:scale-[0.98] shadow-[0_0_20px_rgba(255,75,75,0.3)]">
                       START COURSE
                     </button>
                   </div>

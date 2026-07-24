@@ -49,7 +49,7 @@ export function mediaUrl(filename: string): string {
   const clean = filename.startsWith('/') ? filename.slice(1) : filename;
   
   // URL-encode the filename to handle spaces and special characters
-  return mediaBase + encodeURIComponent(clean);
+  return mediaBase + clean.split('/').map(s => encodeURIComponent(s)).join('/');
 }
 
 /**
@@ -69,7 +69,7 @@ const CDN_BASE = 'https://media.ehacademy.com/';
 
 export function cdnUrl(filename: string): string {
   const clean = filename.startsWith('/') ? filename.slice(1) : filename;
-  return CDN_BASE + encodeURIComponent(clean);
+  return CDN_BASE + clean.split('/').map(s => encodeURIComponent(s)).join('/');
 }
 
 export { isTauri };

@@ -60,11 +60,12 @@ def parse_docx_blocks_with_explicit_slides(file_path):
         
     return tips
 
-base = r"c:\Users\FranciscoCarrero\Everyday Hero CPR\EHCPR Master Shared Drive - Documents\EHAcademy Private Files\EHA VIDEO VIEWER\CPR Trainer Pro\temp_docx_2"
+base = r"C:\Users\FranciscoCarrero\Everyday Hero CPR\EHCPR Master Shared Drive - Documents\EH Academy Presentations\Instructor Notes for Slideshows"
 files = {
-    "cpr-aed-course": os.path.join(base, "CPR_Course_Slideshow_Instructor_Notes.docx"),
-    "first-aid-course": os.path.join(base, "FirstAid_Course_Slideshow_Instructor_Notes.docx"),
-    "pediatric-first-aid-course": os.path.join(base, "PediatricFirstAid_Course_Slideshow_Instructor_Notes.docx")
+    "cpr-aed-course": os.path.join(base, "CPR_Course_Slideshow_Instructor_Tips.docx"),
+    "first-aid-course": os.path.join(base, "FirstAid_Course_Slideshow_Instructor_Tips.docx"),
+    "pediatric-first-aid-course": os.path.join(base, "PediatricFirstAid_Course_Slideshow_Instructor_Tips.docx"),
+    "pediatric-cpr-aed-course": os.path.join(base, "PediatricCPR_Course_Slideshow_Instructor_Tips.docx")
 }
 
 final_tips = {}

@@ -10,10 +10,7 @@ import {
   ZoomOut, 
   Maximize2, 
   Search,
-  Loader2,
-  Menu,
-  List,
-  SearchX
+  Loader2
 } from 'lucide-react';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
@@ -234,37 +231,45 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
   const toggleFullScreen = async () => {
     if (isTauri) {
       const { getCurrentWindow } = await import('@tauri-apps/api/window');
-      const window = getCurrentWindow();
-      const isFs = await window.isFullscreen();
-      await window.setFullscreen(!isFs);
+      const win = getCurrentWindow();
+      const isFs = await win.isFullscreen();
+      await win.setFullscreen(!isFs);
       setIsFullScreen(!isFs);
     } else {
       if (!document.fullscreenElement) {
         document.documentElement.requestFullscreen().catch(console.error);
-        setIsFullScreen(true);
       } else {
         document.exitFullscreen().catch(console.error);
-        setIsFullScreen(false);
       }
     }
   };
 
+  // Sync isFullScreen state with actual fullscreen changes (handles Escape, F11, App.tsx global hotkeys)
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isFullScreen) {
-        if (isTauri) {
-          import('@tauri-apps/api/window').then(({ getCurrentWindow }) => {
-            getCurrentWindow().setFullscreen(false);
-          });
-        } else if (document.fullscreenElement) {
-          document.exitFullscreen().catch(console.error);
-        }
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement) {
         setIsFullScreen(false);
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isFullScreen]);
+
+    // For Tauri native fullscreen, listen to window resize as a proxy
+    const handleTauriFullscreenSync = async () => {
+      if (isTauri) {
+        try {
+          const { getCurrentWindow } = await import('@tauri-apps/api/window');
+          const isFs = await getCurrentWindow().isFullscreen();
+          setIsFullScreen(isFs);
+        } catch { /* ignore */ }
+      }
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    window.addEventListener('resize', handleTauriFullscreenSync);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      window.removeEventListener('resize', handleTauriFullscreenSync);
+    };
+  }, []);
 
   const isMobile = containerWidth < 768;
   
