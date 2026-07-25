@@ -40,6 +40,11 @@ Add `--network` to verify every referenced video, image, and PDF against the pro
 node ios-native/CPRTrainerPro/Tools/verify-content-manifest.mjs --network
 ```
 
+Cloudflare R2 object keys are the source of truth for generated media filenames.
+The Windows Experiment 3.0 data supplies course structure and ordering only.
+Pediatric CPR intentionally reuses shared all-ages CPR objects when R2 does not
+contain a duplicate pediatric object.
+
 ## Build Check
 
 Last local compile checkpoint:
@@ -64,7 +69,6 @@ The app and test targets compile with this source-only sandbox check. Running th
 
 - Run the app in Simulator or on device and visually inspect all screens.
 - Execute XCTest on a working simulator.
-- Resolve the current production-CDN 404 responses for 14 Pediatric CPR assets; the network verifier prints the exact object paths.
 - Validate real download behavior against the CDN, including backgrounding, relaunch, network loss, and cancel/retry.
 - Add external-display clean output beyond AirPlay/screen mirroring.
 - Add package size/disk-space preflight once reliable remote sizes are available.

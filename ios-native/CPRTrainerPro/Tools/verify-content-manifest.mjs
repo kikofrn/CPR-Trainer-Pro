@@ -88,6 +88,22 @@ const expectedSlideshows = new Map([
   ["pediatric-first-aid-course", { count: 45, videoPositions: [] }],
   ["pediatric-cpr-aed-course", { count: 36, videoPositions: [11, 16, 20, 21] }],
 ]);
+const expectedPediatricCPRSharedMedia = new Map([
+  ["slide-12", "CPR AED Presentation Slides/13_EHAcademy - CPR AED Course Pres-Check Responsiveness.png"],
+  ["slide-13", "CPR AED Presentation Slides/14_EHAcademy - CPR AED Course Pres--Getting Help.png"],
+  ["slide-14", "CPR AED Presentation Slides/15_EHAcademy - CPR AED Course Pres-Check Breathing.png"],
+  ["slide-15", "CPR AED Presentation Slides/16_EHAcademy - CPR AED Course Pres-Begin Chest Compressions.png"],
+  ["slide-16", "CPR AED Presentation Slides/17_EHAcademy - CPR AED Course Pres-Chest Compressions Video.mp4"],
+  ["slide-20", "CPR AED Presentation Slides/21_EHAcademy - CPR AED Course Pres-CPR Songs.mp4"],
+  ["slide-25", "CPR AED Presentation Slides/26_EHAcademy - CPR AED Course Pres-Adult Scenario.png"],
+  ["slide-26", "CPR AED Presentation Slides/29_EHAcademy - CPR AED Course Pres-Infant CPR.png"],
+  ["slide-29", "CPR AED Presentation Slides/32_EHAcademy - CPR AED Course Pres-Infant Scenario.png"],
+  ["slide-30", "CPR AED Presentation Slides/33_EHAcademy - CPR AED Course Pres-Mild Choking.png"],
+  ["slide-31", "CPR AED Presentation Slides/34_EHAcademy - CPR AED Course Pres-Severe Choking.png"],
+  ["slide-32", "CPR AED Presentation Slides/35_EHAcademy - CPR AED Course Pres-Choking Adult.png"],
+  ["slide-33", "CPR AED Presentation Slides/36_EHAcademy - CPR AED Course Pres-Choking Child.png"],
+  ["slide-34", "CPR AED Presentation Slides/37_EHAcademy - CPR AED Course Pres-Choking Infant.png"],
+]);
 assert(manifest.slideshows.length === expectedSlideshows.size, "Unexpected slideshow count");
 for (const slideshow of manifest.slideshows) {
   const expected = expectedSlideshows.get(slideshow.id);
@@ -101,6 +117,16 @@ for (const slideshow of manifest.slideshows) {
   assert(
     JSON.stringify(videoPositions) === JSON.stringify(expected.videoPositions),
     `Unexpected video positions in ${slideshow.id}`
+  );
+}
+
+const pediatricCPR = manifest.slideshows.find(
+  (slideshow) => slideshow.id === "pediatric-cpr-aed-course"
+);
+for (const [slideID, filename] of expectedPediatricCPRSharedMedia) {
+  assert(
+    pediatricCPR?.slides.find((slide) => slide.id === slideID)?.filename === filename,
+    `Unexpected R2 shared-media mapping for pediatric-cpr-aed-course/${slideID}`
   );
 }
 
@@ -122,7 +148,7 @@ assert(firstAidVA.chapters.find((chapter) => chapter.id === "fa-10")?.duration =
 const expectedPackageCounts = new Map([
   ["package.cpr-aed.slideshow", 43],
   ["package.cpr-aed.video", 60],
-  ["package.cpr-aed.pediatric-slideshow", 36],
+  ["package.cpr-aed.pediatric-slideshow", 38],
   ["package.first-aid.slideshow", 47],
   ["package.first-aid.video", 90],
   ["package.first-aid.pediatric-slideshow", 45],
@@ -203,7 +229,7 @@ const packageAssetCount = manifest.packages.reduce(
   (total, downloadPackage) => total + downloadPackage.assets.length,
   0
 );
-assert(packageAssetCount === 324, `Unexpected total package asset count: ${packageAssetCount}`);
+assert(packageAssetCount === 326, `Unexpected total package asset count: ${packageAssetCount}`);
 
 function mediaURL(filename) {
   const encodedPath = filename

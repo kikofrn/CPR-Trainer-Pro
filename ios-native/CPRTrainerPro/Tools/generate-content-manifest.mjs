@@ -103,6 +103,32 @@ function cleanFilename(filename) {
     .replace(/^\/+/, "");
 }
 
+// R2 is authoritative for media object keys. The pediatric CPR course reuses
+// these objects from the all-ages CPR presentation instead of storing duplicate
+// copies under the pediatric folder.
+const r2SlideshowMediaOverrides = new Map([
+  ["pediatric-cpr-aed-course/slide-12", "CPR AED Presentation Slides/13_EHAcademy - CPR AED Course Pres-Check Responsiveness.png"],
+  ["pediatric-cpr-aed-course/slide-13", "CPR AED Presentation Slides/14_EHAcademy - CPR AED Course Pres--Getting Help.png"],
+  ["pediatric-cpr-aed-course/slide-14", "CPR AED Presentation Slides/15_EHAcademy - CPR AED Course Pres-Check Breathing.png"],
+  ["pediatric-cpr-aed-course/slide-15", "CPR AED Presentation Slides/16_EHAcademy - CPR AED Course Pres-Begin Chest Compressions.png"],
+  ["pediatric-cpr-aed-course/slide-16", "CPR AED Presentation Slides/17_EHAcademy - CPR AED Course Pres-Chest Compressions Video.mp4"],
+  ["pediatric-cpr-aed-course/slide-20", "CPR AED Presentation Slides/21_EHAcademy - CPR AED Course Pres-CPR Songs.mp4"],
+  ["pediatric-cpr-aed-course/slide-25", "CPR AED Presentation Slides/26_EHAcademy - CPR AED Course Pres-Adult Scenario.png"],
+  ["pediatric-cpr-aed-course/slide-26", "CPR AED Presentation Slides/29_EHAcademy - CPR AED Course Pres-Infant CPR.png"],
+  ["pediatric-cpr-aed-course/slide-29", "CPR AED Presentation Slides/32_EHAcademy - CPR AED Course Pres-Infant Scenario.png"],
+  ["pediatric-cpr-aed-course/slide-30", "CPR AED Presentation Slides/33_EHAcademy - CPR AED Course Pres-Mild Choking.png"],
+  ["pediatric-cpr-aed-course/slide-31", "CPR AED Presentation Slides/34_EHAcademy - CPR AED Course Pres-Severe Choking.png"],
+  ["pediatric-cpr-aed-course/slide-32", "CPR AED Presentation Slides/35_EHAcademy - CPR AED Course Pres-Choking Adult.png"],
+  ["pediatric-cpr-aed-course/slide-33", "CPR AED Presentation Slides/36_EHAcademy - CPR AED Course Pres-Choking Child.png"],
+  ["pediatric-cpr-aed-course/slide-34", "CPR AED Presentation Slides/37_EHAcademy - CPR AED Course Pres-Choking Infant.png"],
+]);
+
+function resolvedSlideshowFilename(slideshowID, slide) {
+  return cleanFilename(
+    r2SlideshowMediaOverrides.get(`${slideshowID}/${slide.id}`) ?? slide.filename
+  );
+}
+
 function kindForFilename(filename) {
   const lower = filename.toLowerCase();
   if (lower.endsWith(".mp4")) return "video";
@@ -159,7 +185,7 @@ const slideshows = evaluateArray("SLIDESHOWS")
         : slideshow.id === "cpr-aed-course" && slide.id === "slide-35"
           ? "Choking Adult"
           : slide.title,
-      filename: cleanFilename(slide.filename),
+      filename: resolvedSlideshowFilename(slideshow.id, slide),
       type: slide.type,
       isSectionHeader: Boolean(slide.isSectionHeader),
       parentSectionId: slide.parentSectionId ?? null,
@@ -197,10 +223,14 @@ const manuals = evaluateArray("MANUALS").map((manual) => ({
 }));
 
 const expectedSlideshowShape = new Map([
-  ["cpr-aed-course", { count: 39, prefix: "CPR AED Presentation Slides/", videos: [8, 12, 17, 21, 22] }],
-  ["first-aid-course", { count: 46, prefix: "First Aid Presentation Slides/", videos: [11] }],
-  ["pediatric-first-aid-course", { count: 45, prefix: "Pedi First Aid Presentation Slides/", videos: [] }],
-  ["pediatric-cpr-aed-course", { count: 36, prefix: "Pedi CPR Presentation Slides/", videos: [11, 16, 20, 21] }],
+  ["cpr-aed-course", { count: 39, prefixes: ["CPR AED Presentation Slides/"], videos: [8, 12, 17, 21, 22] }],
+  ["first-aid-course", { count: 46, prefixes: ["First Aid Presentation Slides/"], videos: [11] }],
+  ["pediatric-first-aid-course", { count: 45, prefixes: ["Pedi First Aid Presentation Slides/"], videos: [] }],
+  ["pediatric-cpr-aed-course", {
+    count: 36,
+    prefixes: ["Pedi CPR Presentation Slides/", "CPR AED Presentation Slides/"],
+    videos: [11, 16, 20, 21],
+  }],
 ]);
 const expectedVideoCourseShape = new Map([
   ["cpr-aed", { count: 30, prefix: "CPR AED VA Slides/" }],
@@ -237,7 +267,9 @@ function validateSourceContent() {
     assert(expected, `Unexpected native slideshow ${slideshow.id}`);
     assert(slideshow.slides.length === expected.count, `Unexpected slide count for ${slideshow.id}`);
     assert(
-      slideshow.slides.every((slide) => slide.filename.startsWith(expected.prefix)),
+      slideshow.slides.every((slide) => (
+        expected.prefixes.some((prefix) => slide.filename.startsWith(prefix))
+      )),
       `Unexpected media folder in ${slideshow.id}`
     );
     const videoPositions = slideshow.slides
@@ -455,7 +487,7 @@ const tipsManifest = {
 const expectedPackageCounts = new Map([
   ["package.cpr-aed.slideshow", 43],
   ["package.cpr-aed.video", 60],
-  ["package.cpr-aed.pediatric-slideshow", 36],
+  ["package.cpr-aed.pediatric-slideshow", 38],
   ["package.first-aid.slideshow", 47],
   ["package.first-aid.video", 90],
   ["package.first-aid.pediatric-slideshow", 45],

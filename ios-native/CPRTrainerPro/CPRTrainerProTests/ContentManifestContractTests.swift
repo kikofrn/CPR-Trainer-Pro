@@ -95,6 +95,30 @@ final class ContentManifestContractTests: XCTestCase {
         XCTAssertEqual(firstAidSlideshow.slides.filter { $0.type == .video }.count, 1)
         XCTAssertFalse(pediatricFirstAid.slides.contains { $0.type == .video })
         XCTAssertEqual(pediatricCPR.slides.filter { $0.type == .video }.count, 4)
+
+        let sharedPediatricCPRMedia: [String: String] = [
+            "slide-12": "CPR AED Presentation Slides/13_EHAcademy - CPR AED Course Pres-Check Responsiveness.png",
+            "slide-13": "CPR AED Presentation Slides/14_EHAcademy - CPR AED Course Pres--Getting Help.png",
+            "slide-14": "CPR AED Presentation Slides/15_EHAcademy - CPR AED Course Pres-Check Breathing.png",
+            "slide-15": "CPR AED Presentation Slides/16_EHAcademy - CPR AED Course Pres-Begin Chest Compressions.png",
+            "slide-16": "CPR AED Presentation Slides/17_EHAcademy - CPR AED Course Pres-Chest Compressions Video.mp4",
+            "slide-20": "CPR AED Presentation Slides/21_EHAcademy - CPR AED Course Pres-CPR Songs.mp4",
+            "slide-25": "CPR AED Presentation Slides/26_EHAcademy - CPR AED Course Pres-Adult Scenario.png",
+            "slide-26": "CPR AED Presentation Slides/29_EHAcademy - CPR AED Course Pres-Infant CPR.png",
+            "slide-29": "CPR AED Presentation Slides/32_EHAcademy - CPR AED Course Pres-Infant Scenario.png",
+            "slide-30": "CPR AED Presentation Slides/33_EHAcademy - CPR AED Course Pres-Mild Choking.png",
+            "slide-31": "CPR AED Presentation Slides/34_EHAcademy - CPR AED Course Pres-Severe Choking.png",
+            "slide-32": "CPR AED Presentation Slides/35_EHAcademy - CPR AED Course Pres-Choking Adult.png",
+            "slide-33": "CPR AED Presentation Slides/36_EHAcademy - CPR AED Course Pres-Choking Child.png",
+            "slide-34": "CPR AED Presentation Slides/37_EHAcademy - CPR AED Course Pres-Choking Infant.png"
+        ]
+        for (slideID, filename) in sharedPediatricCPRMedia {
+            XCTAssertEqual(
+                pediatricCPR.slides.first { $0.id == slideID }?.filename,
+                filename,
+                "Unexpected R2 shared-media mapping for \(slideID)"
+            )
+        }
     }
 
     func testExperimentThreeCorrectionsArePresent() throws {
@@ -131,7 +155,7 @@ final class ContentManifestContractTests: XCTestCase {
         let expectedCounts: [DownloadPackage.ID: Int] = [
             .cprSlideshow: 43,
             .cprVideo: 60,
-            .pediatricCPRSlideshow: 36,
+            .pediatricCPRSlideshow: 38,
             .firstAidSlideshow: 47,
             .firstAidVideo: 90,
             .pediatricSlideshow: 45,

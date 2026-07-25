@@ -1979,7 +1979,7 @@
         {
           "id": "slide-12",
           "title": "Check Responsiveness",
-          "filename": "Pedi CPR Presentation Slides/12_EHAcademy - Pedi CPR AED Course Pres-Check Responsiveness.png",
+          "filename": "CPR AED Presentation Slides/13_EHAcademy - CPR AED Course Pres-Check Responsiveness.png",
           "type": "image",
           "isSectionHeader": false,
           "parentSectionId": "slide-11"
@@ -1987,7 +1987,7 @@
         {
           "id": "slide-13",
           "title": "Getting Help",
-          "filename": "Pedi CPR Presentation Slides/13_EHAcademy - Pedi CPR AED Course Pres-Getting Help.png",
+          "filename": "CPR AED Presentation Slides/14_EHAcademy - CPR AED Course Pres--Getting Help.png",
           "type": "image",
           "isSectionHeader": false,
           "parentSectionId": "slide-11"
@@ -1995,7 +1995,7 @@
         {
           "id": "slide-14",
           "title": "Check Breathing",
-          "filename": "Pedi CPR Presentation Slides/14_EHAcademy - Pedi CPR AED Course Pres-Check Breathing.png",
+          "filename": "CPR AED Presentation Slides/15_EHAcademy - CPR AED Course Pres-Check Breathing.png",
           "type": "image",
           "isSectionHeader": false,
           "parentSectionId": "slide-11"
@@ -2003,7 +2003,7 @@
         {
           "id": "slide-15",
           "title": "Begin Chest Compressions",
-          "filename": "Pedi CPR Presentation Slides/15_EHAcademy - Pedi CPR AED Course Pres-Begin Chest Compressions.png",
+          "filename": "CPR AED Presentation Slides/16_EHAcademy - CPR AED Course Pres-Begin Chest Compressions.png",
           "type": "image",
           "isSectionHeader": false,
           "parentSectionId": "slide-11"
@@ -2011,7 +2011,7 @@
         {
           "id": "slide-16",
           "title": "CHEST COMPRESSIONS",
-          "filename": "Pedi CPR Presentation Slides/16_EHAcademy - Pedi CPR AED Course Pres-Chest Compressions Video.mp4",
+          "filename": "CPR AED Presentation Slides/17_EHAcademy - CPR AED Course Pres-Chest Compressions Video.mp4",
           "type": "video",
           "isSectionHeader": true,
           "parentSectionId": null
@@ -2043,7 +2043,7 @@
         {
           "id": "slide-20",
           "title": "CPR Songs",
-          "filename": "Pedi CPR Presentation Slides/20_EHAcademy - Pedi CPR AED Course Pres-CPR Songs.mp4",
+          "filename": "CPR AED Presentation Slides/21_EHAcademy - CPR AED Course Pres-CPR Songs.mp4",
           "type": "video",
           "isSectionHeader": false,
           "parentSectionId": "slide-16"
@@ -2083,7 +2083,7 @@
         {
           "id": "slide-25",
           "title": "Adult Scenario",
-          "filename": "Pedi CPR Presentation Slides/25_EHAcademy - Pedi CPR AED Course Pres-Adult Scenario.png",
+          "filename": "CPR AED Presentation Slides/26_EHAcademy - CPR AED Course Pres-Adult Scenario.png",
           "type": "image",
           "isSectionHeader": false,
           "parentSectionId": "slide-22"
@@ -2091,7 +2091,7 @@
         {
           "id": "slide-26",
           "title": "INFANT CPR",
-          "filename": "Pedi CPR Presentation Slides/26_EHAcademy - Pedi CPR AED Course Pres-Infant CPR.png",
+          "filename": "CPR AED Presentation Slides/29_EHAcademy - CPR AED Course Pres-Infant CPR.png",
           "type": "image",
           "isSectionHeader": true,
           "parentSectionId": null
@@ -2115,7 +2115,7 @@
         {
           "id": "slide-29",
           "title": "Infant Scenario",
-          "filename": "Pedi CPR Presentation Slides/29_EHAcademy - Pedi CPR AED Course Pres-Infant Scenario.png",
+          "filename": "CPR AED Presentation Slides/32_EHAcademy - CPR AED Course Pres-Infant Scenario.png",
           "type": "image",
           "isSectionHeader": false,
           "parentSectionId": "slide-26"
@@ -2123,7 +2123,7 @@
         {
           "id": "slide-30",
           "title": "CHOKING",
-          "filename": "Pedi CPR Presentation Slides/30_EHAcademy - Pedi CPR AED Course Pres-Mild Choking.png",
+          "filename": "CPR AED Presentation Slides/33_EHAcademy - CPR AED Course Pres-Mild Choking.png",
           "type": "image",
           "isSectionHeader": true,
           "parentSectionId": null
@@ -2131,7 +2131,7 @@
         {
           "id": "slide-31",
           "title": "Severe Choking",
-          "filename": "Pedi CPR Presentation Slides/31_EHAcademy - Pedi CPR AED Course Pres-Severe Choking.png",
+          "filename": "CPR AED Presentation Slides/34_EHAcademy - CPR AED Course Pres-Severe Choking.png",
           "type": "image",
           "isSectionHeader": false,
           "parentSectionId": "slide-30"
@@ -2139,7 +2139,7 @@
         {
           "id": "slide-32",
           "title": "Choking Adult",
-          "filename": "Pedi CPR Presentation Slides/32_EHAcademy - Pedi CPR AED Course Pres-Choking Adult.png",
+          "filename": "CPR AED Presentation Slides/35_EHAcademy - CPR AED Course Pres-Choking Adult.png",
           "type": "image",
           "isSectionHeader": false,
           "parentSectionId": "slide-30"
@@ -2147,7 +2147,7 @@
         {
           "id": "slide-33",
           "title": "Choking Child",
-          "filename": "Pedi CPR Presentation Slides/33_EHAcademy - Pedi CPR AED Course Pres-Choking Child.png",
+          "filename": "CPR AED Presentation Slides/36_EHAcademy - CPR AED Course Pres-Choking Child.png",
           "type": "image",
           "isSectionHeader": false,
           "parentSectionId": "slide-30"
@@ -2155,7 +2155,7 @@
         {
           "id": "slide-34",
           "title": "Choking Infant",
-          "filename": "Pedi CPR Presentation Slides/34_EHAcademy - Pedi CPR AED Course Pres-Choking Infant.png",
+          "filename": "CPR AED Presentation Slides/37_EHAcademy - CPR AED Course Pres-Choking Infant.png",
           "type": "image",
           "isSectionHeader": false,
           "parentSectionId": "slide-30"
@@ -2793,29 +2793,34 @@
           "kind": "video"
         },
         {
-          "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/12_EHAcademy - Pedi CPR AED Course Pres-Check Responsiveness.png",
-          "filename": "Pedi CPR Presentation Slides/12_EHAcademy - Pedi CPR AED Course Pres-Check Responsiveness.png",
+          "id": "package.cpr-aed.pediatric-slideshow.CPR AED Presentation Slides/13_EHAcademy - CPR AED Course Pres-Check Responsiveness.png",
+          "filename": "CPR AED Presentation Slides/13_EHAcademy - CPR AED Course Pres-Check Responsiveness.png",
           "kind": "image"
         },
         {
-          "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/13_EHAcademy - Pedi CPR AED Course Pres-Getting Help.png",
-          "filename": "Pedi CPR Presentation Slides/13_EHAcademy - Pedi CPR AED Course Pres-Getting Help.png",
+          "id": "package.cpr-aed.pediatric-slideshow.CPR AED Presentation Slides/14_EHAcademy - CPR AED Course Pres--Getting Help.png",
+          "filename": "CPR AED Presentation Slides/14_EHAcademy - CPR AED Course Pres--Getting Help.png",
           "kind": "image"
         },
         {
-          "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/14_EHAcademy - Pedi CPR AED Course Pres-Check Breathing.png",
-          "filename": "Pedi CPR Presentation Slides/14_EHAcademy - Pedi CPR AED Course Pres-Check Breathing.png",
+          "id": "package.cpr-aed.pediatric-slideshow.CPR AED Presentation Slides/15_EHAcademy - CPR AED Course Pres-Check Breathing.png",
+          "filename": "CPR AED Presentation Slides/15_EHAcademy - CPR AED Course Pres-Check Breathing.png",
           "kind": "image"
         },
         {
-          "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/15_EHAcademy - Pedi CPR AED Course Pres-Begin Chest Compressions.png",
-          "filename": "Pedi CPR Presentation Slides/15_EHAcademy - Pedi CPR AED Course Pres-Begin Chest Compressions.png",
+          "id": "package.cpr-aed.pediatric-slideshow.CPR AED Presentation Slides/16_EHAcademy - CPR AED Course Pres-Begin Chest Compressions.png",
+          "filename": "CPR AED Presentation Slides/16_EHAcademy - CPR AED Course Pres-Begin Chest Compressions.png",
           "kind": "image"
         },
         {
-          "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/16_EHAcademy - Pedi CPR AED Course Pres-Chest Compressions Video.mp4",
-          "filename": "Pedi CPR Presentation Slides/16_EHAcademy - Pedi CPR AED Course Pres-Chest Compressions Video.mp4",
+          "id": "package.cpr-aed.pediatric-slideshow.CPR AED Presentation Slides/17_EHAcademy - CPR AED Course Pres-Chest Compressions Video.mp4",
+          "filename": "CPR AED Presentation Slides/17_EHAcademy - CPR AED Course Pres-Chest Compressions Video.mp4",
           "kind": "video"
+        },
+        {
+          "id": "package.cpr-aed.pediatric-slideshow.subtitle.17_EHAcademy - CPR AED Course Pres-Chest Compressions Video.vtt",
+          "filename": "subtitles/17_EHAcademy - CPR AED Course Pres-Chest Compressions Video.vtt",
+          "kind": "subtitle"
         },
         {
           "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/17_EHAcademy - Pedi CPR AED Course Pres-Hand Placement.png",
@@ -2833,9 +2838,14 @@
           "kind": "image"
         },
         {
-          "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/20_EHAcademy - Pedi CPR AED Course Pres-CPR Songs.mp4",
-          "filename": "Pedi CPR Presentation Slides/20_EHAcademy - Pedi CPR AED Course Pres-CPR Songs.mp4",
+          "id": "package.cpr-aed.pediatric-slideshow.CPR AED Presentation Slides/21_EHAcademy - CPR AED Course Pres-CPR Songs.mp4",
+          "filename": "CPR AED Presentation Slides/21_EHAcademy - CPR AED Course Pres-CPR Songs.mp4",
           "kind": "video"
+        },
+        {
+          "id": "package.cpr-aed.pediatric-slideshow.subtitle.21_EHAcademy - CPR AED Course Pres-CPR Songs.vtt",
+          "filename": "subtitles/21_EHAcademy - CPR AED Course Pres-CPR Songs.vtt",
+          "kind": "subtitle"
         },
         {
           "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/21_EHAcademy - Pedi CPR AED Course Pres-Practice Compressions.mp4",
@@ -2858,13 +2868,13 @@
           "kind": "image"
         },
         {
-          "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/25_EHAcademy - Pedi CPR AED Course Pres-Adult Scenario.png",
-          "filename": "Pedi CPR Presentation Slides/25_EHAcademy - Pedi CPR AED Course Pres-Adult Scenario.png",
+          "id": "package.cpr-aed.pediatric-slideshow.CPR AED Presentation Slides/26_EHAcademy - CPR AED Course Pres-Adult Scenario.png",
+          "filename": "CPR AED Presentation Slides/26_EHAcademy - CPR AED Course Pres-Adult Scenario.png",
           "kind": "image"
         },
         {
-          "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/26_EHAcademy - Pedi CPR AED Course Pres-Infant CPR.png",
-          "filename": "Pedi CPR Presentation Slides/26_EHAcademy - Pedi CPR AED Course Pres-Infant CPR.png",
+          "id": "package.cpr-aed.pediatric-slideshow.CPR AED Presentation Slides/29_EHAcademy - CPR AED Course Pres-Infant CPR.png",
+          "filename": "CPR AED Presentation Slides/29_EHAcademy - CPR AED Course Pres-Infant CPR.png",
           "kind": "image"
         },
         {
@@ -2878,33 +2888,33 @@
           "kind": "image"
         },
         {
-          "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/29_EHAcademy - Pedi CPR AED Course Pres-Infant Scenario.png",
-          "filename": "Pedi CPR Presentation Slides/29_EHAcademy - Pedi CPR AED Course Pres-Infant Scenario.png",
+          "id": "package.cpr-aed.pediatric-slideshow.CPR AED Presentation Slides/32_EHAcademy - CPR AED Course Pres-Infant Scenario.png",
+          "filename": "CPR AED Presentation Slides/32_EHAcademy - CPR AED Course Pres-Infant Scenario.png",
           "kind": "image"
         },
         {
-          "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/30_EHAcademy - Pedi CPR AED Course Pres-Mild Choking.png",
-          "filename": "Pedi CPR Presentation Slides/30_EHAcademy - Pedi CPR AED Course Pres-Mild Choking.png",
+          "id": "package.cpr-aed.pediatric-slideshow.CPR AED Presentation Slides/33_EHAcademy - CPR AED Course Pres-Mild Choking.png",
+          "filename": "CPR AED Presentation Slides/33_EHAcademy - CPR AED Course Pres-Mild Choking.png",
           "kind": "image"
         },
         {
-          "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/31_EHAcademy - Pedi CPR AED Course Pres-Severe Choking.png",
-          "filename": "Pedi CPR Presentation Slides/31_EHAcademy - Pedi CPR AED Course Pres-Severe Choking.png",
+          "id": "package.cpr-aed.pediatric-slideshow.CPR AED Presentation Slides/34_EHAcademy - CPR AED Course Pres-Severe Choking.png",
+          "filename": "CPR AED Presentation Slides/34_EHAcademy - CPR AED Course Pres-Severe Choking.png",
           "kind": "image"
         },
         {
-          "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/32_EHAcademy - Pedi CPR AED Course Pres-Choking Adult.png",
-          "filename": "Pedi CPR Presentation Slides/32_EHAcademy - Pedi CPR AED Course Pres-Choking Adult.png",
+          "id": "package.cpr-aed.pediatric-slideshow.CPR AED Presentation Slides/35_EHAcademy - CPR AED Course Pres-Choking Adult.png",
+          "filename": "CPR AED Presentation Slides/35_EHAcademy - CPR AED Course Pres-Choking Adult.png",
           "kind": "image"
         },
         {
-          "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/33_EHAcademy - Pedi CPR AED Course Pres-Choking Child.png",
-          "filename": "Pedi CPR Presentation Slides/33_EHAcademy - Pedi CPR AED Course Pres-Choking Child.png",
+          "id": "package.cpr-aed.pediatric-slideshow.CPR AED Presentation Slides/36_EHAcademy - CPR AED Course Pres-Choking Child.png",
+          "filename": "CPR AED Presentation Slides/36_EHAcademy - CPR AED Course Pres-Choking Child.png",
           "kind": "image"
         },
         {
-          "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/34_EHAcademy - Pedi CPR AED Course Pres-Choking Infant.png",
-          "filename": "Pedi CPR Presentation Slides/34_EHAcademy - Pedi CPR AED Course Pres-Choking Infant.png",
+          "id": "package.cpr-aed.pediatric-slideshow.CPR AED Presentation Slides/37_EHAcademy - CPR AED Course Pres-Choking Infant.png",
+          "filename": "CPR AED Presentation Slides/37_EHAcademy - CPR AED Course Pres-Choking Infant.png",
           "kind": "image"
         },
         {
