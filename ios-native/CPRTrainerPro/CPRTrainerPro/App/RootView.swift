@@ -23,8 +23,12 @@ struct RootView: View {
 
             if showsLaunchExperience {
                 LaunchExperienceView(mode: launchExperienceMode) {
+                    let completedMode = launchExperienceMode
                     withAnimation(.easeInOut(duration: 0.22)) {
                         showsLaunchExperience = false
+                    }
+                    if completedMode == .startup {
+                        appViewModel.presentInitialDownloadPromptIfNeeded()
                     }
                 }
                 .transition(.opacity)
@@ -33,6 +37,19 @@ struct RootView: View {
         }
         .background(Color.black)
         .preferredColorScheme(.dark)
+        .sheet(isPresented: initialDownloadPromptIsPresented) {
+            if let estimate = appViewModel.initialDownloadPrompt {
+                InitialDownloadPromptView(
+                    estimate: estimate,
+                    onDownloadAll: appViewModel.downloadAllContent,
+                    onNotYet: appViewModel.dismissInitialDownloadPrompt
+                )
+                .presentationDragIndicator(.hidden)
+                .presentationDetents([.fraction(0.72), .large])
+                .presentationBackground(Theme.Colors.background)
+                .interactiveDismissDisabled()
+            }
+        }
         .onAppear {
             appViewModel.synchronizeDownloadsAfterForeground()
         }
@@ -41,6 +58,17 @@ struct RootView: View {
                 appViewModel.synchronizeDownloadsAfterForeground()
             }
         }
+    }
+
+    private var initialDownloadPromptIsPresented: Binding<Bool> {
+        Binding(
+            get: { appViewModel.initialDownloadPrompt != nil },
+            set: { isPresented in
+                if !isPresented {
+                    appViewModel.dismissInitialDownloadPrompt()
+                }
+            }
+        )
     }
 
     private var tabContent: some View {
@@ -104,6 +132,117 @@ struct RootView: View {
         withAnimation(.easeOut(duration: 0.18)) {
             appViewModel.selectedTab = nextTab
         }
+    }
+}
+
+private struct InitialDownloadPromptView: View {
+    let estimate: DownloadContentEstimate
+    let onDownloadAll: () -> Void
+    let onNotYet: () -> Void
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 18) {
+                Image(systemName: "arrow.down.circle.fill")
+                    .font(.system(size: 46, weight: .bold))
+                    .foregroundStyle(Theme.Colors.peach)
+                    .accessibilityHidden(true)
+
+                VStack(spacing: 8) {
+                    Text("Download Everything?")
+                        .font(.title2.weight(.bold))
+                        .foregroundStyle(.white)
+
+                    Text(
+                        "Give the app the full superhero treatment: download every course now for smooth, instant playback—even when classroom Wi‑Fi decides to take a coffee break."
+                    )
+                    .font(.subheadline)
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(.white.opacity(0.76))
+                    .fixedSize(horizontal: false, vertical: true)
+                }
+
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 10) {
+                        estimatePill(
+                            title: "Still to Download",
+                            value: estimate.sizeText,
+                            systemImage: "externaldrive.fill"
+                        )
+                        estimatePill(
+                            title: "Estimated Time",
+                            value: estimate.durationText,
+                            systemImage: "clock.fill"
+                        )
+                    }
+
+                    VStack(spacing: 10) {
+                        estimatePill(
+                            title: "Still to Download",
+                            value: estimate.sizeText,
+                            systemImage: "externaldrive.fill"
+                        )
+                        estimatePill(
+                            title: "Estimated Time",
+                            value: estimate.durationText,
+                            systemImage: "clock.fill"
+                        )
+                    }
+                }
+
+                Text(
+                    "*You can use other apps while it downloads. It will continue in the background, but force-quitting CPR Trainer Pro pauses the process until you reopen it."
+                )
+                .font(.caption2)
+                .foregroundStyle(.white.opacity(0.58))
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+
+                VStack(spacing: 10) {
+                    Button("Download All Courses Now", action: onDownloadAll)
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(.black)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                        .background(Theme.Colors.peach)
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+
+                    Button("Not Yet", action: onNotYet)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.white.opacity(0.82))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 42)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 22)
+            .padding(.vertical, 24)
+        }
+        .scrollIndicators(.hidden)
+    }
+
+    private func estimatePill(
+        title: String,
+        value: String,
+        systemImage: String
+    ) -> some View {
+        VStack(spacing: 5) {
+            Label(title, systemImage: systemImage)
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.white.opacity(0.58))
+                .lineLimit(1)
+
+            Text(value)
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.white)
+                .multilineTextAlignment(.center)
+                .lineLimit(3)
+                .minimumScaleFactor(0.84)
+        }
+        .frame(maxWidth: .infinity, minHeight: 72)
+        .padding(.horizontal, 8)
+        .background(Theme.Colors.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
     }
 }
 

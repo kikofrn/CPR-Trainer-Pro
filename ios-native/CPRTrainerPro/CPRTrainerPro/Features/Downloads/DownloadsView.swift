@@ -9,6 +9,8 @@ struct DownloadsView: View {
         NavigationStack {
             StickyBrandScrollView(title: "Downloads") {
                 VStack(spacing: 12) {
+                    downloadAllButton
+
                     ForEach(appViewModel.catalog.packages) { package in
                         packageRow(package)
                     }
@@ -30,6 +32,77 @@ struct DownloadsView: View {
                 Text(deleteConfirmationMessage)
             }
         }
+    }
+
+    private var downloadAllButton: some View {
+        let estimate = appViewModel.remainingDownloadEstimate
+        let isActive = downloadService.isDownloadingAll
+
+        return Button {
+            appViewModel.downloadAllContent()
+        } label: {
+            HStack(spacing: 14) {
+                Image(systemName: downloadAllIcon(estimate: estimate, isActive: isActive))
+                    .font(.title2.weight(.bold))
+                    .foregroundStyle(Theme.Colors.peach)
+                    .frame(width: 38, height: 38)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Download All")
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(.white)
+
+                    Text(downloadAllSubtitle(estimate: estimate, isActive: isActive))
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.64))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Spacer(minLength: 8)
+
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(.white.opacity(0.38))
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Theme.Colors.surface)
+            .overlay {
+                RoundedRectangle(cornerRadius: Theme.Layout.cardRadius, style: .continuous)
+                    .stroke(Theme.Colors.peach.opacity(0.46), lineWidth: 1)
+            }
+            .clipShape(
+                RoundedRectangle(cornerRadius: Theme.Layout.cardRadius, style: .continuous)
+            )
+        }
+        .buttonStyle(.plain)
+        .disabled(estimate == nil || isActive)
+        .opacity(estimate == nil ? 0.72 : 1)
+        .accessibilityLabel("Download all content")
+        .accessibilityHint(downloadAllSubtitle(estimate: estimate, isActive: isActive))
+    }
+
+    private func downloadAllIcon(
+        estimate: DownloadContentEstimate?,
+        isActive: Bool
+    ) -> String {
+        if estimate == nil {
+            return "checkmark.circle.fill"
+        }
+        return isActive ? "clock.arrow.circlepath" : "arrow.down.circle.fill"
+    }
+
+    private func downloadAllSubtitle(
+        estimate: DownloadContentEstimate?,
+        isActive: Bool
+    ) -> String {
+        if isActive {
+            return "All remaining content is queued for background download."
+        }
+        guard let estimate else {
+            return "Everything is downloaded and ready offline."
+        }
+        return "\(estimate.sizeText) remaining • \(estimate.durationText)"
     }
 
     private var deleteConfirmationIsPresented: Binding<Bool> {

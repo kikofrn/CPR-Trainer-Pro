@@ -9,20 +9,26 @@ final class AppViewModel: ObservableObject {
     @Published private(set) var cprPediatricFocused = false
     @Published private(set) var firstAidVAEnabled = false
     @Published private(set) var firstAidPediatricFocused = false
+    @Published var initialDownloadPrompt: DownloadContentEstimate?
 
     let storageService: StorageService
     let downloadService: DownloadService
+    private var didEvaluateInitialDownloadPrompt = false
 
     init(manifestService: ContentManifestService = .init()) {
         let catalog = manifestService.loadBundledCatalog()
         let storageService = StorageService(contentRevision: catalog.contentRevision)
         let queueStore = DownloadQueueStore(contentRevision: catalog.contentRevision)
+        let downloadAllQueueStore = DownloadAllQueueStore(
+            contentRevision: catalog.contentRevision
+        )
 
         self.catalog = catalog
         self.storageService = storageService
         self.downloadService = DownloadService(
             storageService: storageService,
             queueStore: queueStore,
+            downloadAllQueueStore: downloadAllQueueStore,
             contentRevision: catalog.contentRevision
         )
         self.selectedCourseID = catalog.courses.first?.id
@@ -41,6 +47,39 @@ final class AppViewModel: ObservableObject {
 
     func synchronizeDownloadsAfterForeground() {
         downloadService.synchronizeForegroundState(for: catalog.packages)
+    }
+
+    var remainingDownloadEstimate: DownloadContentEstimate? {
+        catalog.remainingDownloadEstimate(fileExists: storageService.fileExists)
+    }
+
+    func presentInitialDownloadPromptIfNeeded() {
+        guard
+            !didEvaluateInitialDownloadPrompt,
+            !downloadService.isDownloadingAll
+        else {
+            return
+        }
+
+        didEvaluateInitialDownloadPrompt = true
+        initialDownloadPrompt = remainingDownloadEstimate
+    }
+
+    func dismissInitialDownloadPrompt() {
+        initialDownloadPrompt = nil
+    }
+
+    func downloadAllContent() {
+        guard remainingDownloadEstimate != nil else {
+            initialDownloadPrompt = nil
+            return
+        }
+
+        downloadService.enqueueAll(
+            catalog.packages,
+            baseURL: catalog.mediaBaseURL
+        )
+        initialDownloadPrompt = nil
     }
 
     func vaEnabled(for courseID: Course.ID) -> Bool {

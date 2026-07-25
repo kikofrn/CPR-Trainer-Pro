@@ -122,3 +122,102 @@ struct DownloadQueueStore {
         try mutableURL.setResourceValues(values)
     }
 }
+
+struct DownloadAllQueueStore {
+    struct Plan: Codable, Equatable {
+        var packageIDs: [DownloadPackage.ID]
+        let baseURL: URL
+    }
+
+    private struct StorePayload: Codable {
+        let schemaVersion: Int
+        let plan: Plan
+    }
+
+    private let fileManager: FileManager
+    private let explicitStoreURL: URL?
+    private let contentRevision: String
+    private let explicitSupportDirectoryURL: URL?
+
+    init(
+        fileManager: FileManager = .default,
+        storeURL: URL? = nil,
+        contentRevision: String = "experiment-3.0",
+        supportDirectoryURL: URL? = nil
+    ) {
+        self.fileManager = fileManager
+        self.explicitStoreURL = storeURL
+        self.contentRevision = contentRevision
+        self.explicitSupportDirectoryURL = supportDirectoryURL
+    }
+
+    func load() throws -> Plan? {
+        let url = try resolvedStoreURL()
+        guard fileManager.fileExists(atPath: url.path) else { return nil }
+
+        let data = try Data(contentsOf: url)
+        return try JSONDecoder().decode(StorePayload.self, from: data).plan
+    }
+
+    func save(_ plan: Plan) throws {
+        let url = try resolvedStoreURL()
+        try fileManager.createDirectory(
+            at: url.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+
+        let payload = StorePayload(schemaVersion: 1, plan: plan)
+        let data = try JSONEncoder().encode(payload)
+        try data.write(to: url, options: [.atomic])
+        try excludeFromBackup(url)
+    }
+
+    func remove() throws {
+        let url = try resolvedStoreURL()
+        guard fileManager.fileExists(atPath: url.path) else { return }
+        try fileManager.removeItem(at: url)
+    }
+
+    private func resolvedStoreURL() throws -> URL {
+        if let explicitStoreURL {
+            return explicitStoreURL
+        }
+
+        return try applicationSupportDirectory()
+            .appendingPathComponent("DownloadQueue-\(sanitizedRevision)", isDirectory: true)
+            .appendingPathComponent("download-all.json", isDirectory: false)
+    }
+
+    private var sanitizedRevision: String {
+        let sanitized = contentRevision.replacingOccurrences(
+            of: "[^A-Za-z0-9._-]",
+            with: "-",
+            options: .regularExpression
+        )
+        return sanitized.isEmpty ? "current" : sanitized
+    }
+
+    private func applicationSupportDirectory() throws -> URL {
+        if let explicitSupportDirectoryURL {
+            try fileManager.createDirectory(
+                at: explicitSupportDirectoryURL,
+                withIntermediateDirectories: true
+            )
+            return explicitSupportDirectoryURL
+        }
+
+        return try fileManager.url(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask,
+            appropriateFor: nil,
+            create: true
+        )
+    }
+
+    private func excludeFromBackup(_ url: URL) throws {
+        var mutableURL = url
+        var values = URLResourceValues()
+        values.isExcludedFromBackup = true
+        try mutableURL.setResourceValues(values)
+    }
+}

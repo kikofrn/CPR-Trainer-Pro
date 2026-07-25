@@ -9,6 +9,7 @@ const manifestPath = path.join(resourcesDirectory, "content-manifest.json");
 const tipsPath = path.join(resourcesDirectory, "instructor-tips.json");
 const subtitlesDirectory = path.join(resourcesDirectory, "Subtitles");
 const artworkDirectory = path.join(resourcesDirectory, "Artwork");
+const r2ContentLengthsPath = path.join(projectDirectory, "Tools/r2-content-lengths.json");
 const shouldVerifyNetwork = process.argv.includes("--network");
 const baseURLArgument = process.argv
   .find((argument) => argument.startsWith("--base-url="))
@@ -53,6 +54,7 @@ function assertSequentialIDs(items, prefix, ownerID) {
 
 const manifest = readJSON(manifestPath);
 const tipsManifest = readJSON(tipsPath);
+const r2ContentLengths = readJSON(r2ContentLengthsPath);
 const remoteBaseURL = baseURLArgument ?? manifest.mediaBaseURL;
 
 assert(manifest.schemaVersion === 1, "Unsupported manifest schema");
@@ -170,6 +172,36 @@ for (const [packageID, expectedCount] of expectedPackageCounts) {
     new Set(downloadPackage.assets.map((asset) => asset.filename)).size === downloadPackage.assets.length,
     `Duplicate assets in ${packageID}`
   );
+  for (const asset of downloadPackage.assets) {
+    assert(
+      Number.isSafeInteger(asset.byteCount) && asset.byteCount > 0,
+      `Missing byteCount for ${packageID}/${asset.filename}`
+    );
+  }
+}
+
+const remoteAssetsByFilename = new Map();
+for (const asset of manifest.packages
+  .flatMap((downloadPackage) => downloadPackage.assets)
+  .filter((asset) => asset.kind !== "subtitle")) {
+  const existingByteCount = remoteAssetsByFilename.get(asset.filename);
+  assert(
+    existingByteCount === undefined || existingByteCount === asset.byteCount,
+    `Conflicting byteCount values for ${asset.filename}`
+  );
+  remoteAssetsByFilename.set(asset.filename, asset.byteCount);
+}
+assert(remoteAssetsByFilename.size === 230, "Unexpected unique R2 object count");
+assertSameStrings(
+  remoteAssetsByFilename.keys(),
+  Object.keys(r2ContentLengths),
+  "R2 Content-Length inventory"
+);
+for (const [filename, byteCount] of remoteAssetsByFilename) {
+  assert(
+    r2ContentLengths[filename] === byteCount,
+    `Manifest byteCount does not match R2 inventory for ${filename}`
+  );
 }
 
 const modes = manifest.courses.flatMap((course) => course.modes);
@@ -240,7 +272,14 @@ function mediaURL(filename) {
   return new URL(encodedPath, remoteBaseURL).href;
 }
 
-async function requestExists(url) {
+function responseByteCount(response) {
+  const contentRange = response.headers.get("content-range");
+  const rangeTotal = contentRange?.match(/\/(\d+)$/)?.[1];
+  const value = Number(rangeTotal ?? response.headers.get("content-length"));
+  return Number.isSafeInteger(value) && value > 0 ? value : null;
+}
+
+async function requestExists(url, expectedByteCount) {
   for (let attempt = 1; attempt <= 2; attempt += 1) {
     try {
       let response = await fetch(url, {
@@ -261,6 +300,10 @@ async function requestExists(url) {
       }
 
       if (response.status >= 200 && response.status < 400) {
+        const actualByteCount = responseByteCount(response);
+        if (actualByteCount !== expectedByteCount) {
+          return `Content-Length ${actualByteCount ?? "missing"} (expected ${expectedByteCount})`;
+        }
         return null;
       }
 
@@ -278,12 +321,7 @@ async function requestExists(url) {
 }
 
 async function verifyRemoteAssets() {
-  const filenames = sorted(new Set(
-    manifest.packages
-      .flatMap((downloadPackage) => downloadPackage.assets)
-      .filter((asset) => asset.kind !== "subtitle")
-      .map((asset) => asset.filename)
-  ));
+  const filenames = sorted(remoteAssetsByFilename.keys());
   const failures = [];
   let nextIndex = 0;
   let completed = 0;
@@ -293,7 +331,10 @@ async function verifyRemoteAssets() {
       const index = nextIndex;
       nextIndex += 1;
       const filename = filenames[index];
-      const error = await requestExists(mediaURL(filename));
+      const error = await requestExists(
+        mediaURL(filename),
+        remoteAssetsByFilename.get(filename)
+      );
       if (error) failures.push(`${filename}: ${error}`);
       completed += 1;
       if (completed % 25 === 0 || completed === filenames.length) {

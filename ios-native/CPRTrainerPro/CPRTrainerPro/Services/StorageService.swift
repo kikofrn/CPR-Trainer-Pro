@@ -4,6 +4,7 @@ struct StorageService {
     enum StorageError: LocalizedError {
         case unsafeFilename(String)
         case emptyDownloadedFile(String)
+        case unexpectedFileSize(filename: String, expected: Int64, actual: Int64)
 
         var errorDescription: String? {
             switch self {
@@ -11,6 +12,8 @@ struct StorageService {
                 "Unsafe media filename: \(filename)"
             case .emptyDownloadedFile(let filename):
                 "Downloaded file was empty: \(filename)"
+            case .unexpectedFileSize(let filename, let expected, let actual):
+                "Downloaded file size did not match \(filename) (expected \(expected) bytes, received \(actual))."
             }
         }
     }
@@ -59,6 +62,23 @@ struct StorageService {
         return fileManager.fileExists(atPath: url.path)
     }
 
+    func fileExists(_ asset: MediaAsset) -> Bool {
+        guard
+            let url = try? localURL(for: asset.filename),
+            fileManager.fileExists(atPath: url.path),
+            let byteCount = try? fileSize(at: url),
+            byteCount > 0
+        else {
+            return false
+        }
+
+        guard let expectedByteCount = asset.byteCount, expectedByteCount > 0 else {
+            return true
+        }
+
+        return byteCount == UInt64(expectedByteCount)
+    }
+
     func localURL(for filename: String) throws -> URL {
         if let bundledURL = try bundledResourceURL(for: filename) {
             return bundledURL
@@ -72,13 +92,22 @@ struct StorageService {
         try ensureDirectory(parent)
     }
 
-    func moveDownloadedFile(from temporaryURL: URL, toExactFilename filename: String) throws {
-        let destinationURL = try localURL(for: filename)
+    func moveDownloadedFile(from temporaryURL: URL, for asset: MediaAsset) throws {
+        let destinationURL = try localURL(for: asset.filename)
         try ensureDirectory(destinationURL.deletingLastPathComponent())
 
         let byteCount = try fileSize(at: temporaryURL)
         guard byteCount > 0 else {
-            throw StorageError.emptyDownloadedFile(filename)
+            throw StorageError.emptyDownloadedFile(asset.filename)
+        }
+
+        if let expectedByteCount = asset.byteCount, expectedByteCount > 0,
+           byteCount != UInt64(expectedByteCount) {
+            throw StorageError.unexpectedFileSize(
+                filename: asset.filename,
+                expected: expectedByteCount,
+                actual: Int64(byteCount)
+            )
         }
 
         if fileManager.fileExists(atPath: destinationURL.path) {
@@ -104,7 +133,7 @@ struct StorageService {
     }
 
     func packageIsReady(_ package: DownloadPackage) -> Bool {
-        package.assets.allSatisfy { fileExists($0.filename) }
+        package.assets.allSatisfy(fileExists)
     }
 
     func fileSizeIfExists(_ filename: String) -> Int64 {

@@ -182,6 +182,82 @@ final class ContentManifestContractTests: XCTestCase {
         })
     }
 
+    func testDownloadManifestIncludesExactR2ByteCounts() throws {
+        let remoteAssets = catalog.packages
+            .flatMap(\.assets)
+            .filter { $0.kind != .subtitle }
+
+        for asset in catalog.packages.flatMap(\.assets) {
+            XCTAssertGreaterThan(
+                try XCTUnwrap(asset.byteCount),
+                0,
+                "Missing byte count for \(asset.filename)"
+            )
+        }
+
+        let uniqueRemoteAssets = Dictionary(
+            remoteAssets.map { ($0.filename, $0) },
+            uniquingKeysWith: { first, duplicate in
+                XCTAssertEqual(
+                    first.byteCount,
+                    duplicate.byteCount,
+                    "Shared asset has inconsistent byte counts: \(first.filename)"
+                )
+                return first
+            }
+        )
+        let totalRemoteByteCount = uniqueRemoteAssets.values.reduce(Int64(0)) { total, asset in
+            total + (asset.byteCount ?? 0)
+        }
+
+        XCTAssertEqual(uniqueRemoteAssets.count, 230)
+        XCTAssertEqual(totalRemoteByteCount, 2_153_052_471)
+    }
+
+    func testRemainingDownloadEstimateDeduplicatesAndExcludesSavedContent() throws {
+        let allMissing = try XCTUnwrap(
+            catalog.remainingDownloadEstimate { asset in
+                asset.filename.hasPrefix("subtitles/")
+            }
+        )
+
+        XCTAssertEqual(allMissing.remainingAssetCount, 230)
+        XCTAssertEqual(allMissing.remainingByteCount, 2_153_052_471)
+        XCTAssertEqual(allMissing.durationText, "about 12 min on a typical 25 Mbps connection")
+
+        let savedAsset = try XCTUnwrap(
+            catalog.packages
+                .flatMap(\.assets)
+                .first { $0.kind != .subtitle }
+        )
+        let savedByteCount = try XCTUnwrap(savedAsset.byteCount)
+        let partiallyDownloaded = try XCTUnwrap(
+            catalog.remainingDownloadEstimate { asset in
+                asset.filename.hasPrefix("subtitles/") || asset.filename == savedAsset.filename
+            }
+        )
+
+        XCTAssertEqual(partiallyDownloaded.remainingAssetCount, 229)
+        XCTAssertEqual(
+            partiallyDownloaded.remainingByteCount,
+            allMissing.remainingByteCount - savedByteCount
+        )
+    }
+
+    func testRemainingDownloadEstimateIsNilWhenEverythingExists() {
+        XCTAssertNil(catalog.remainingDownloadEstimate { _ in true })
+    }
+
+    func testMediaAssetDecodingRemainsCompatibleWithPersistedLegacyPlans() throws {
+        let data = Data(
+            #"{"id":"legacy","filename":"legacy.mp4","kind":"video"}"#.utf8
+        )
+        let asset = try JSONDecoder().decode(MediaAsset.self, from: data)
+
+        XCTAssertNil(asset.byteCount)
+        XCTAssertEqual(asset.filename, "legacy.mp4")
+    }
+
     func testMediaURLsEncodeSpacesAndPreserveContentFolders() {
         let courseURL = URLHelpers.mediaURL(
             forExactFilename: "CPR AED VA Slides/05_EHAcademy - CPR AED Course Video-Recognizing the Emergency.mp4"
@@ -220,6 +296,25 @@ final class ContentManifestContractTests: XCTestCase {
 
         try store.remove(packageID: package.id)
         XCTAssertEqual(try store.load(), [])
+    }
+
+    func testDownloadAllQueueStoreRoundTripsAndRemovesPlans() throws {
+        let directoryURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let storeURL = directoryURL.appendingPathComponent("download-all.json", isDirectory: false)
+        let store = DownloadAllQueueStore(storeURL: storeURL)
+        defer { try? FileManager.default.removeItem(at: directoryURL) }
+
+        let plan = DownloadAllQueueStore.Plan(
+            packageIDs: [.cprSlideshow, .pediatricCPRSlideshow, .firstAidSlideshow],
+            baseURL: URL(string: "https://media.ehacademy.com/")!
+        )
+
+        try store.save(plan)
+        XCTAssertEqual(try store.load(), plan)
+
+        try store.remove()
+        XCTAssertNil(try store.load())
     }
 
     func testSubtitleParserHandlesWebVTTTimingAndText() {
@@ -283,6 +378,58 @@ final class ContentManifestContractTests: XCTestCase {
 
         try storage.removeLegacyDownloadedMedia()
         XCTAssertFalse(FileManager.default.fileExists(atPath: legacyURL.path))
+    }
+
+    func testStorageRejectsWrongSizedDownloadsAndValidatesSavedAssets() throws {
+        let directoryURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let temporaryURL = directoryURL.appendingPathComponent("incoming.tmp")
+        defer { try? FileManager.default.removeItem(at: directoryURL) }
+
+        try FileManager.default.createDirectory(
+            at: directoryURL,
+            withIntermediateDirectories: true
+        )
+
+        let asset = MediaAsset(
+            id: "test.asset",
+            filename: "Test Assets/course.mp4",
+            kind: .video,
+            byteCount: 3
+        )
+        let storage = StorageService(
+            contentRevision: "size-check",
+            supportDirectoryURL: directoryURL
+        )
+
+        try Data([0x01, 0x02]).write(to: temporaryURL)
+        XCTAssertThrowsError(
+            try storage.moveDownloadedFile(from: temporaryURL, for: asset)
+        ) { error in
+            guard case StorageService.StorageError.unexpectedFileSize(
+                let filename,
+                let expected,
+                let actual
+            ) = error else {
+                return XCTFail("Unexpected error: \(error)")
+            }
+
+            XCTAssertEqual(filename, asset.filename)
+            XCTAssertEqual(expected, 3)
+            XCTAssertEqual(actual, 2)
+        }
+
+        try Data([0x01, 0x02, 0x03]).write(to: temporaryURL, options: .atomic)
+        try storage.moveDownloadedFile(from: temporaryURL, for: asset)
+        XCTAssertTrue(storage.fileExists(asset))
+
+        let changedR2Asset = MediaAsset(
+            id: asset.id,
+            filename: asset.filename,
+            kind: asset.kind,
+            byteCount: 4
+        )
+        XCTAssertFalse(storage.fileExists(changedR2Asset))
     }
 
     func testRevisionedQueueDoesNotLoadLegacyPlans() throws {

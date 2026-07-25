@@ -27,9 +27,11 @@ const outPath = path.join(repoRoot, "ios-native/CPRTrainerPro/CPRTrainerPro/Reso
 const tipsOutPath = path.join(repoRoot, "ios-native/CPRTrainerPro/CPRTrainerPro/Resources/instructor-tips.json");
 const subtitleOutDir = path.join(repoRoot, "ios-native/CPRTrainerPro/CPRTrainerPro/Resources/Subtitles");
 const artworkOutDir = path.join(repoRoot, "ios-native/CPRTrainerPro/CPRTrainerPro/Resources/Artwork");
+const r2ContentLengthsPath = path.join(toolDir, "r2-content-lengths.json");
 
 const source = fs.readFileSync(chaptersPath, "utf8");
 const instructorTipsSource = fs.readFileSync(instructorTipsPath, "utf8");
+const r2ContentLengths = JSON.parse(fs.readFileSync(r2ContentLengthsPath, "utf8"));
 
 function extractAssignment(input, marker, openingCharacter, closingCharacter) {
   const markerIndex = input.indexOf(marker);
@@ -139,10 +141,16 @@ function kindForFilename(filename) {
 
 function mediaAsset(filename, prefix) {
   const clean = cleanFilename(filename);
+  const byteCount = r2ContentLengths[clean];
+  assert(
+    Number.isSafeInteger(byteCount) && byteCount > 0,
+    `Missing R2 Content-Length for ${clean}`
+  );
   return {
     id: `${prefix}.${clean}`,
     filename: clean,
     kind: kindForFilename(clean),
+    byteCount,
   };
 }
 
@@ -165,6 +173,7 @@ function subtitleAssetsFor(filename, prefix, subtitleNames) {
       id: `${prefix}.subtitle.${candidate}`,
       filename: `subtitles/${candidate}`,
       kind: "subtitle",
+      byteCount: fs.statSync(path.join(subtitlesDir, candidate)).size,
     }));
 }
 
@@ -429,6 +438,20 @@ const packages = [
   packageForSlideshow(slideshowByID.get("pediatric-first-aid-course"), "package.first-aid.pediatric-slideshow", "Pediatric Focused Slideshow"),
   ...manuals.map(packageForManual),
 ];
+
+const expectedR2Filenames = new Set(
+  packages
+    .flatMap((downloadPackage) => downloadPackage.assets)
+    .filter((asset) => asset.kind !== "subtitle")
+    .map((asset) => asset.filename)
+);
+assert(
+  Object.keys(r2ContentLengths).length === expectedR2Filenames.size,
+  "R2 Content-Length inventory contains stale or missing objects"
+);
+for (const filename of Object.keys(r2ContentLengths)) {
+  assert(expectedR2Filenames.has(filename), `Stale R2 Content-Length entry: ${filename}`);
+}
 
 const manifest = {
   schemaVersion: 1,

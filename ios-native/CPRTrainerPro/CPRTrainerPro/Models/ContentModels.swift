@@ -105,6 +105,7 @@ struct MediaAsset: Identifiable, Codable, Equatable {
     let id: String
     let filename: String
     let kind: Kind
+    let byteCount: Int64?
 }
 
 struct DownloadPackage: Identifiable, Codable, Equatable {
@@ -123,6 +124,39 @@ struct DownloadPackage: Identifiable, Codable, Equatable {
     let id: ID
     let title: String
     let assets: [MediaAsset]
+}
+
+struct DownloadContentEstimate: Equatable {
+    static let typicalConnectionMegabitsPerSecond = 25.0
+
+    let remainingByteCount: Int64
+    let remainingAssetCount: Int
+
+    var sizeText: String {
+        ByteCountFormatter.string(fromByteCount: remainingByteCount, countStyle: .file)
+    }
+
+    var estimatedDurationSeconds: TimeInterval {
+        let bits = Double(max(0, remainingByteCount)) * 8
+        let bitsPerSecond = Self.typicalConnectionMegabitsPerSecond * 1_000_000
+        return bits / bitsPerSecond
+    }
+
+    var durationText: String {
+        let totalMinutes = max(1, Int(ceil(estimatedDurationSeconds / 60)))
+
+        if totalMinutes < 60 {
+            return "about \(totalMinutes) min on a typical 25 Mbps connection"
+        }
+
+        let hours = totalMinutes / 60
+        let minutes = totalMinutes % 60
+        if minutes == 0 {
+            return "about \(hours) hr on a typical 25 Mbps connection"
+        }
+
+        return "about \(hours) hr \(minutes) min on a typical 25 Mbps connection"
+    }
 }
 
 struct DownloadProgressSnapshot: Equatable {
@@ -202,45 +236,59 @@ enum DownloadState: Equatable {
 
 extension DownloadPackage {
     var estimatedDownloadBytes: Int64 {
+        let declaredByteCount = assets.reduce(Int64(0)) { total, asset in
+            total + asset.estimatedByteCount
+        }
+        if declaredByteCount > 0 {
+            return declaredByteCount
+        }
+
         switch id {
         case .cprSlideshow:
-            700_000_000
+            return 700_000_000
         case .cprVideo:
-            900_000_000
+            return 900_000_000
         case .pediatricCPRSlideshow:
-            700_000_000
+            return 700_000_000
         case .firstAidSlideshow:
-            750_000_000
+            return 750_000_000
         case .firstAidVideo:
-            1_400_000_000
+            return 1_400_000_000
         case .pediatricSlideshow:
-            750_000_000
+            return 750_000_000
         case .instructorManual, .studentManual, .pediatricManual:
-            25_000_000
+            return 25_000_000
         }
     }
 
     var estimatedDownloadText: String {
-        switch id {
-        case .cprSlideshow:
-            "about 700 MB"
-        case .cprVideo:
-            "about 900 MB"
-        case .pediatricCPRSlideshow:
-            "about 700 MB"
-        case .firstAidSlideshow:
-            "about 750 MB"
-        case .firstAidVideo:
-            "about 1.4 GB"
-        case .pediatricSlideshow:
-            "about 750 MB"
-        case .instructorManual, .studentManual, .pediatricManual:
-            "less than 25 MB"
-        }
+        "about \(ByteCountFormatter.string(fromByteCount: estimatedDownloadBytes, countStyle: .file))"
     }
 }
 
 extension TrainingCatalog {
+    func remainingDownloadEstimate(
+        fileExists: (MediaAsset) -> Bool
+    ) -> DownloadContentEstimate? {
+        var uniqueAssets: [String: MediaAsset] = [:]
+
+        for asset in packages.flatMap(\.assets) {
+            if uniqueAssets[asset.filename]?.byteCount == nil || asset.byteCount != nil {
+                uniqueAssets[asset.filename] = asset
+            }
+        }
+
+        let remainingAssets = uniqueAssets.values.filter { !fileExists($0) }
+        guard !remainingAssets.isEmpty else { return nil }
+
+        return DownloadContentEstimate(
+            remainingByteCount: remainingAssets.reduce(Int64(0)) { total, asset in
+                total + asset.estimatedByteCount
+            },
+            remainingAssetCount: remainingAssets.count
+        )
+    }
+
     func package(with id: DownloadPackage.ID) -> DownloadPackage? {
         packages.first { $0.id == id }
     }
@@ -253,5 +301,24 @@ extension TrainingCatalog {
     func slideshow(for mode: CourseLaunchMode) -> Slideshow? {
         guard mode.kind == .slideshow else { return nil }
         return slideshows.first { $0.id == mode.id.rawValue }
+    }
+}
+
+private extension MediaAsset {
+    var estimatedByteCount: Int64 {
+        if let byteCount, byteCount > 0 {
+            return byteCount
+        }
+
+        switch kind {
+        case .video:
+            return 100_000_000
+        case .image:
+            return 2_000_000
+        case .pdf:
+            return 25_000_000
+        case .subtitle:
+            return 100_000
+        }
     }
 }

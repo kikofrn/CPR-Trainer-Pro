@@ -1,6 +1,24 @@
 import UIKit
 
+@MainActor
 final class ExternalDisplayAppDelegate: NSObject, UIApplicationDelegate {
+    private static var backgroundSessionCompletionHandlers: [String: () -> Void] = [:]
+
+    func application(
+        _ application: UIApplication,
+        handleEventsForBackgroundURLSession identifier: String,
+        completionHandler: @escaping () -> Void
+    ) {
+        Self.backgroundSessionCompletionHandlers[identifier] = completionHandler
+    }
+
+    static func completeBackgroundSessionEvents(identifier: String) {
+        let completionHandler = backgroundSessionCompletionHandlers.removeValue(
+            forKey: identifier
+        )
+        completionHandler?()
+    }
+
     func application(
         _ application: UIApplication,
         configurationForConnecting connectingSceneSession: UISceneSession,

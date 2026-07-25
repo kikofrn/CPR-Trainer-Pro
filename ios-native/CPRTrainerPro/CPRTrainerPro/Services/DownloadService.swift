@@ -123,6 +123,7 @@ final class DownloadService: NSObject, ObservableObject {
 
     private let storageService: StorageService
     private let queueStore: DownloadQueueStore
+    private let downloadAllQueueStore: DownloadAllQueueStore
     private let backgroundSessionIdentifier: String
     private let maxConcurrentDownloads = 3
     private let maxRetryAttempts = 3
@@ -130,10 +131,12 @@ final class DownloadService: NSObject, ObservableObject {
     private var activeDownloads: [Int: ActiveDownload] = [:]
     private var packageProgress: [DownloadPackage.ID: PackageProgress] = [:]
     private var persistedPlans: [DownloadPackage.ID: DownloadQueueStore.PackagePlan] = [:]
+    private var downloadAllPlan: DownloadAllQueueStore.Plan?
     private var knownPackages: [DownloadPackage.ID: DownloadPackage] = [:]
     private var progressTickerTask: Task<Void, Never>?
 
     @Published private var states: [DownloadPackage.ID: DownloadState] = [:]
+    @Published private(set) var isDownloadingAll = false
 
     private lazy var session: URLSession = {
         #if targetEnvironment(simulator)
@@ -158,10 +161,12 @@ final class DownloadService: NSObject, ObservableObject {
     init(
         storageService: StorageService = .init(),
         queueStore: DownloadQueueStore = .init(),
+        downloadAllQueueStore: DownloadAllQueueStore = .init(),
         contentRevision: String = "experiment-3.0"
     ) {
         self.storageService = storageService
         self.queueStore = queueStore
+        self.downloadAllQueueStore = downloadAllQueueStore
         let revisionComponent = contentRevision.replacingOccurrences(
             of: "[^A-Za-z0-9.-]",
             with: "-",
@@ -171,6 +176,7 @@ final class DownloadService: NSObject, ObservableObject {
             "com.ehacademy.cpr-trainer-pro.background.\(revisionComponent)"
         super.init()
         loadPersistedPlans()
+        loadPersistedDownloadAllPlan()
         _ = session
         recoverBackgroundTasks()
     }
@@ -185,12 +191,37 @@ final class DownloadService: NSObject, ObservableObject {
         return ByteCountFormatter.string(fromByteCount: byteCount, countStyle: .file)
     }
 
+    func enqueueAll(_ packages: [DownloadPackage], baseURL: URL) {
+        remember(packages)
+
+        let pendingPackages = packages.filter { !storageService.packageIsReady($0) }
+        guard !pendingPackages.isEmpty else {
+            clearDownloadAllPlan()
+            return
+        }
+
+        let activePackages = pendingPackages.filter { isTrackingDownload(for: $0.id) }
+        let activeIDs = Set(activePackages.map(\.id))
+        let orderedPackages = activePackages + pendingPackages.filter { !activeIDs.contains($0.id) }
+        let plan = DownloadAllQueueStore.Plan(
+            packageIDs: orderedPackages.map(\.id),
+            baseURL: baseURL
+        )
+
+        downloadAllPlan = plan
+        isDownloadingAll = true
+        saveDownloadAllPlan()
+        advanceDownloadAllQueueIfNeeded()
+    }
+
     func refreshPackageStates(for packages: [DownloadPackage]) {
         remember(packages)
 
         for package in packages where storageService.packageIsReady(package) {
             states[package.id] = .ready
         }
+
+        reconcileDownloadAllPlan()
     }
 
     func synchronizeForegroundState(for packages: [DownloadPackage]) {
@@ -204,6 +235,8 @@ final class DownloadService: NSObject, ObservableObject {
                 self.restore(tasks)
                 self.restorePersistedDownloads()
                 self.refreshVisiblePackageProgress(for: packages, tasks: tasks)
+                self.reconcileDownloadAllPlan()
+                self.advanceDownloadAllQueueIfNeeded()
                 self.startProgressTickerIfNeeded()
             }
         }
@@ -218,7 +251,7 @@ final class DownloadService: NSObject, ObservableObject {
             return
         }
 
-        let pendingAssets = package.assets.filter { !storageService.fileExists($0.filename) }
+        let pendingAssets = package.assets.filter { !storageService.fileExists($0) }
         guard !pendingAssets.isEmpty else {
             states[package.id] = .ready
             removePersistedPlan(package.id)
@@ -272,6 +305,8 @@ final class DownloadService: NSObject, ObservableObject {
         packageProgress[packageID] = nil
         removePersistedPlan(packageID)
         stopProgressTickerIfIdle()
+        removePackageFromDownloadAllPlan(packageID)
+        advanceDownloadAllQueueIfNeeded()
     }
 
     func delete(_ package: DownloadPackage) {
@@ -345,7 +380,7 @@ final class DownloadService: NSObject, ObservableObject {
                 let package = persistedPlans[decoded.packageID]?.package ?? knownPackages[decoded.packageID]
                 let totalAssetCount = package?.assets.count ?? 1
                 let completedAssetCount = package?.assets.filter {
-                    storageService.fileExists($0.filename)
+                    storageService.fileExists($0)
                 }.count ?? 0
 
                 var progress = PackageProgress(
@@ -377,7 +412,7 @@ final class DownloadService: NSObject, ObservableObject {
 
             guard isTrackingDownload(for: package.id) else { continue }
 
-            let completedAssetCount = package.assets.filter { storageService.fileExists($0.filename) }.count
+            let completedAssetCount = package.assets.filter(storageService.fileExists).count
             let activeAssetProgress = refreshedActiveAssetProgress(
                 for: package.id,
                 using: tasks,
@@ -403,7 +438,7 @@ final class DownloadService: NSObject, ObservableObject {
     ) -> [String: ActiveAssetProgress] {
         let completedFilenames = Set(
             package.assets
-                .filter { storageService.fileExists($0.filename) }
+                .filter(storageService.fileExists)
                 .map(\.filename)
         )
 
@@ -447,9 +482,9 @@ final class DownloadService: NSObject, ObservableObject {
                     .filter { $0.packageID == package.id }
                     .map { $0.asset.filename }
             )
-            let completedAssetCount = package.assets.filter { storageService.fileExists($0.filename) }.count
+            let completedAssetCount = package.assets.filter(storageService.fileExists).count
             let pendingAssets = package.assets.filter {
-                !storageService.fileExists($0.filename) && !activeFilenames.contains($0.filename)
+                !storageService.fileExists($0) && !activeFilenames.contains($0.filename)
             }
 
             queue.removeAll { $0.packageID == package.id }
@@ -515,7 +550,7 @@ final class DownloadService: NSObject, ObservableObject {
             packageProgress[activeDownload.packageID] = PackageProgress(
                 totalAssetCount: package?.assets.count ?? 1,
                 completedAssetCount: package?.assets.filter {
-                    storageService.fileExists($0.filename)
+                    storageService.fileExists($0)
                 }.count ?? 0,
                 expectedByteCount: package?.estimatedDownloadBytes ?? 0,
                 completedByteCount: package.map { completedByteCount(for: $0) } ?? 0
@@ -547,7 +582,10 @@ final class DownloadService: NSObject, ObservableObject {
         }
 
         do {
-            try storageService.moveDownloadedFile(from: temporaryURL, toExactFilename: activeDownload.asset.filename)
+            try storageService.moveDownloadedFile(
+                from: temporaryURL,
+                for: activeDownload.asset
+            )
             packageProgress[activeDownload.packageID]?.completedAssetCount += 1
             packageProgress[activeDownload.packageID]?.completedByteCount += storageService.fileSizeIfExists(
                 activeDownload.asset.filename
@@ -561,10 +599,12 @@ final class DownloadService: NSObject, ObservableObject {
                 states[activeDownload.packageID] = .ready
                 packageProgress[activeDownload.packageID] = nil
                 removePersistedPlan(activeDownload.packageID)
+                removePackageFromDownloadAllPlan(activeDownload.packageID)
                 stopProgressTickerIfIdle()
             }
 
             pumpQueue()
+            advanceDownloadAllQueueIfNeeded()
         } catch {
             activeDownloads[taskIdentifier] = nil
             retryOrFail(activeDownload, message: message(for: error, asset: activeDownload.asset))
@@ -644,7 +684,9 @@ final class DownloadService: NSObject, ObservableObject {
         packageProgress[packageID] = nil
         states[packageID] = .failed(message: message)
         removePersistedPlan(packageID)
+        removePackageFromDownloadAllPlan(packageID)
         stopProgressTickerIfIdle()
+        advanceDownloadAllQueueIfNeeded()
     }
 
     private func packageHasActiveOrQueuedWork(_ packageID: DownloadPackage.ID) -> Bool {
@@ -758,6 +800,8 @@ final class DownloadService: NSObject, ObservableObject {
                 self.restore(tasks)
                 self.restorePersistedDownloads()
                 self.refreshVisiblePackageProgress(for: packages, tasks: tasks)
+                self.reconcileDownloadAllPlan()
+                self.advanceDownloadAllQueueIfNeeded()
                 self.stopProgressTickerIfIdle()
             }
         }
@@ -811,6 +855,106 @@ final class DownloadService: NSObject, ObservableObject {
         }
     }
 
+    private func loadPersistedDownloadAllPlan() {
+        do {
+            downloadAllPlan = try downloadAllQueueStore.load()
+            isDownloadingAll = downloadAllPlan?.packageIDs.isEmpty == false
+        } catch {
+            downloadAllPlan = nil
+            isDownloadingAll = false
+            try? downloadAllQueueStore.remove()
+        }
+    }
+
+    private func reconcileDownloadAllPlan() {
+        guard var plan = downloadAllPlan else { return }
+
+        var seen = Set<DownloadPackage.ID>()
+        let reconciledIDs = plan.packageIDs.filter { packageID in
+            guard seen.insert(packageID).inserted else { return false }
+            guard let package = knownPackages[packageID] else { return true }
+
+            if storageService.packageIsReady(package) {
+                states[packageID] = .ready
+                return false
+            }
+
+            return true
+        }
+
+        guard reconciledIDs != plan.packageIDs else {
+            isDownloadingAll = !plan.packageIDs.isEmpty
+            return
+        }
+
+        plan.packageIDs = reconciledIDs
+        if plan.packageIDs.isEmpty {
+            clearDownloadAllPlan()
+        } else {
+            downloadAllPlan = plan
+            isDownloadingAll = true
+            saveDownloadAllPlan()
+        }
+    }
+
+    private func advanceDownloadAllQueueIfNeeded() {
+        reconcileDownloadAllPlan()
+        guard let plan = downloadAllPlan, !plan.packageIDs.isEmpty else { return }
+
+        if plan.packageIDs.contains(where: { isTrackingDownload(for: $0) }) {
+            return
+        }
+
+        guard
+            let nextPackageID = plan.packageIDs.first,
+            let nextPackage = knownPackages[nextPackageID]
+        else {
+            return
+        }
+
+        enqueue(nextPackage, baseURL: plan.baseURL)
+    }
+
+    private func removePackageFromDownloadAllPlan(_ packageID: DownloadPackage.ID) {
+        guard var plan = downloadAllPlan else { return }
+        let previousCount = plan.packageIDs.count
+        plan.packageIDs.removeAll { $0 == packageID }
+        guard plan.packageIDs.count != previousCount else { return }
+
+        if plan.packageIDs.isEmpty {
+            clearDownloadAllPlan()
+        } else {
+            downloadAllPlan = plan
+            isDownloadingAll = true
+            saveDownloadAllPlan()
+        }
+    }
+
+    private func saveDownloadAllPlan() {
+        guard let downloadAllPlan, !downloadAllPlan.packageIDs.isEmpty else {
+            clearDownloadAllPlan()
+            return
+        }
+
+        do {
+            try downloadAllQueueStore.save(downloadAllPlan)
+            isDownloadingAll = true
+        } catch {
+            assertionFailure("Failed to save Download All queue: \(error)")
+        }
+    }
+
+    private func clearDownloadAllPlan() {
+        downloadAllPlan = nil
+        isDownloadingAll = false
+
+        do {
+            try downloadAllQueueStore.remove()
+        } catch {
+            assertionFailure("Failed to clear Download All queue: \(error)")
+        }
+    }
+
     private static func remoteURL(forExactFilename filename: String, baseURL: URL) -> URL {
         let clean = filename
             .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -825,6 +969,18 @@ final class DownloadService: NSObject, ObservableObject {
 }
 
 extension DownloadService: URLSessionDownloadDelegate {
+    nonisolated func urlSessionDidFinishEvents(
+        forBackgroundURLSession session: URLSession
+    ) {
+        guard let identifier = session.configuration.identifier else { return }
+
+        Task { @MainActor in
+            ExternalDisplayAppDelegate.completeBackgroundSessionEvents(
+                identifier: identifier
+            )
+        }
+    }
+
     nonisolated func urlSession(
         _ session: URLSession,
         downloadTask: URLSessionDownloadTask,
