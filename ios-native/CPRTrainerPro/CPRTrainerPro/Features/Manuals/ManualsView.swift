@@ -63,7 +63,10 @@ struct ManualsView: View {
             .toolbar(.hidden, for: .navigationBar)
         }
         .fullScreenCover(item: $activeManual) { manual in
-            ManualViewerView(manual: manual, storageService: StorageService())
+            ManualViewerView(
+                manual: manual,
+                storageService: appViewModel.storageService
+            )
         }
     }
 }

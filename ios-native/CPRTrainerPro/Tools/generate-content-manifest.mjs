@@ -5,36 +5,54 @@ import { fileURLToPath } from "node:url";
 
 const toolDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(toolDir, "../../..");
-const chaptersPath = path.join(repoRoot, "src/chapters.ts");
-const subtitlesDir = path.join(repoRoot, "public/subtitles");
+const args = process.argv.slice(2);
+const sourceRootIndex = args.indexOf("--source-root");
+const inlineSourceRoot = args.find((arg) => arg.startsWith("--source-root="))?.split("=", 2)[1];
+const sourceRootArgument = inlineSourceRoot ?? (
+  sourceRootIndex >= 0 ? args[sourceRootIndex + 1] : undefined
+);
+
+if (!sourceRootArgument) {
+  throw new Error(
+    "Missing --source-root. Pass a checkout containing the Experiment 3.0 src and public folders."
+  );
+}
+
+const sourceRoot = path.resolve(sourceRootArgument);
+const chaptersPath = path.join(sourceRoot, "src/chapters.ts");
+const instructorTipsPath = path.join(sourceRoot, "src/instructor-tips.ts");
+const subtitlesDir = path.join(sourceRoot, "public/subtitles");
+const pediatricCoverPath = path.join(sourceRoot, "public/Pediatric CPR AED Cover.webp");
 const outPath = path.join(repoRoot, "ios-native/CPRTrainerPro/CPRTrainerPro/Resources/content-manifest.json");
+const tipsOutPath = path.join(repoRoot, "ios-native/CPRTrainerPro/CPRTrainerPro/Resources/instructor-tips.json");
 const subtitleOutDir = path.join(repoRoot, "ios-native/CPRTrainerPro/CPRTrainerPro/Resources/Subtitles");
+const artworkOutDir = path.join(repoRoot, "ios-native/CPRTrainerPro/CPRTrainerPro/Resources/Artwork");
 
 const source = fs.readFileSync(chaptersPath, "utf8");
+const instructorTipsSource = fs.readFileSync(instructorTipsPath, "utf8");
 
-function extractArray(exportName) {
-  const marker = `export let ${exportName}`;
-  const markerIndex = source.indexOf(marker);
+function extractAssignment(input, marker, openingCharacter, closingCharacter) {
+  const markerIndex = input.indexOf(marker);
   if (markerIndex === -1) {
     throw new Error(`Missing ${marker}`);
   }
 
-  const assignmentIndex = source.indexOf("=", markerIndex);
+  const assignmentIndex = input.indexOf("=", markerIndex);
   if (assignmentIndex === -1) {
-    throw new Error(`Missing assignment for ${exportName}`);
+    throw new Error(`Missing assignment for ${marker}`);
   }
 
-  const start = source.indexOf("[", assignmentIndex);
+  const start = input.indexOf(openingCharacter, assignmentIndex);
   if (start === -1) {
-    throw new Error(`Missing array start for ${exportName}`);
+    throw new Error(`Missing ${openingCharacter} after ${marker}`);
   }
 
   let depth = 0;
   let quote = null;
   let escaping = false;
 
-  for (let i = start; i < source.length; i += 1) {
-    const char = source[i];
+  for (let i = start; i < input.length; i += 1) {
+    const char = input[i];
 
     if (quote) {
       if (escaping) {
@@ -52,21 +70,31 @@ function extractArray(exportName) {
       continue;
     }
 
-    if (char === "[") depth += 1;
-    if (char === "]") {
+    if (char === openingCharacter) depth += 1;
+    if (char === closingCharacter) {
       depth -= 1;
       if (depth === 0) {
-        return source.slice(start, i + 1);
+        return input.slice(start, i + 1);
       }
     }
   }
 
-  throw new Error(`Could not find end of ${exportName}`);
+  throw new Error(`Could not find end of ${marker}`);
 }
 
 function evaluateArray(exportName) {
-  const arraySource = extractArray(exportName);
+  const arraySource = extractAssignment(source, `export let ${exportName}`, "[", "]");
   return vm.runInNewContext(`(${arraySource})`, {}, { timeout: 1000 });
+}
+
+function evaluateInstructorTips() {
+  const objectSource = extractAssignment(
+    instructorTipsSource,
+    "export const INSTRUCTOR_TIPS",
+    "{",
+    "}"
+  );
+  return vm.runInNewContext(`(${objectSource})`, {}, { timeout: 1000 });
 }
 
 function cleanFilename(filename) {
@@ -96,10 +124,11 @@ function subtitleCandidatesFor(filename) {
   const clean = cleanFilename(filename);
   if (!clean.toLowerCase().endsWith(".mp4")) return [];
 
-  const withoutMP4 = clean.replace(/\.mp4$/i, "");
+  const basename = path.posix.basename(clean);
+  const withoutMP4 = basename.replace(/\.mp4$/i, "");
   return [
     `${withoutMP4}.vtt`,
-    `${clean}.vtt`,
+    `${basename}.vtt`,
   ];
 }
 
@@ -118,13 +147,18 @@ const slideshows = evaluateArray("SLIDESHOWS")
     "cpr-aed-course",
     "first-aid-course",
     "pediatric-first-aid-course",
+    "pediatric-cpr-aed-course",
   ].includes(slideshow.id))
   .map((slideshow) => ({
     id: slideshow.id,
     title: slideshow.title,
     slides: slideshow.slides.map((slide) => ({
       id: slide.id,
-      title: slide.title,
+      title: slideshow.id === "cpr-aed-course" && slide.id === "slide-6"
+        ? "What if something goes wrong"
+        : slideshow.id === "cpr-aed-course" && slide.id === "slide-35"
+          ? "Choking Adult"
+          : slide.title,
       filename: cleanFilename(slide.filename),
       type: slide.type,
       isSectionHeader: Boolean(slide.isSectionHeader),
@@ -143,7 +177,9 @@ const videoCourses = evaluateArray("COURSES")
       id: chapter.id,
       title: chapter.title,
       filename: cleanFilename(chapter.filename),
-      duration: chapter.duration ?? null,
+      duration: course.id === "first-aid" && chapter.id === "fa-10"
+        ? "0:43"
+        : chapter.duration ?? null,
       subtitle: chapter.subtitle ?? null,
       description: chapter.description ?? null,
       isSectionHeader: Boolean(chapter.isSectionHeader),
@@ -159,6 +195,88 @@ const manuals = evaluateArray("MANUALS").map((manual) => ({
   thumbnail: cleanFilename(manual.thumbnail),
   packageID: `package.manual.${manual.id}`,
 }));
+
+const expectedSlideshowShape = new Map([
+  ["cpr-aed-course", { count: 39, prefix: "CPR AED Presentation Slides/", videos: [8, 12, 17, 21, 22] }],
+  ["first-aid-course", { count: 46, prefix: "First Aid Presentation Slides/", videos: [11] }],
+  ["pediatric-first-aid-course", { count: 45, prefix: "Pedi First Aid Presentation Slides/", videos: [] }],
+  ["pediatric-cpr-aed-course", { count: 36, prefix: "Pedi CPR Presentation Slides/", videos: [11, 16, 20, 21] }],
+]);
+const expectedVideoCourseShape = new Map([
+  ["cpr-aed", { count: 30, prefix: "CPR AED VA Slides/" }],
+  ["first-aid", { count: 45, prefix: "First Aid VA Slides/" }],
+]);
+
+function assert(condition, message) {
+  if (!condition) throw new Error(message);
+}
+
+function validateSequentialItems(items, prefix, ownerID) {
+  const ids = new Set();
+  for (const [index, item] of items.entries()) {
+    assert(!ids.has(item.id), `Duplicate item id ${item.id} in ${ownerID}`);
+    ids.add(item.id);
+    assert(
+      item.id === `${prefix}${index + 1}`,
+      `Unexpected item id ${item.id} at position ${index + 1} in ${ownerID}`
+    );
+    assert(item.filename.length > 0, `Missing filename for ${item.id} in ${ownerID}`);
+  }
+
+  for (const item of items) {
+    if (item.parentSectionId) {
+      assert(ids.has(item.parentSectionId), `Missing parent ${item.parentSectionId} for ${item.id}`);
+    }
+  }
+}
+
+function validateSourceContent() {
+  assert(slideshows.length === expectedSlideshowShape.size, "Unexpected native slideshow count");
+  for (const slideshow of slideshows) {
+    const expected = expectedSlideshowShape.get(slideshow.id);
+    assert(expected, `Unexpected native slideshow ${slideshow.id}`);
+    assert(slideshow.slides.length === expected.count, `Unexpected slide count for ${slideshow.id}`);
+    assert(
+      slideshow.slides.every((slide) => slide.filename.startsWith(expected.prefix)),
+      `Unexpected media folder in ${slideshow.id}`
+    );
+    const videoPositions = slideshow.slides
+      .map((slide, index) => slide.type === "video" ? index + 1 : null)
+      .filter(Boolean);
+    assert(
+      JSON.stringify(videoPositions) === JSON.stringify(expected.videos),
+      `Unexpected video slide positions in ${slideshow.id}`
+    );
+    validateSequentialItems(slideshow.slides, "slide-", slideshow.id);
+  }
+
+  assert(videoCourses.length === expectedVideoCourseShape.size, "Unexpected native video course count");
+  for (const course of videoCourses) {
+    const expected = expectedVideoCourseShape.get(course.id);
+    assert(expected, `Unexpected native video course ${course.id}`);
+    assert(course.chapters.length === expected.count, `Unexpected chapter count for ${course.id}`);
+    assert(
+      course.chapters.every((chapter) => chapter.filename.startsWith(expected.prefix)),
+      `Unexpected media folder in ${course.id}`
+    );
+    validateSequentialItems(
+      course.chapters,
+      course.id === "cpr-aed" ? "cpr-" : "fa-",
+      course.id
+    );
+  }
+
+  assert(
+    manuals.map((manual) => manual.id).join(",") === "instructor,student,pediatric",
+    "Unexpected native manual set"
+  );
+  assert(
+    manuals.every((manual) => !manual.filename.includes("/")),
+    "Manual PDFs must remain at the CDN root"
+  );
+}
+
+validateSourceContent();
 
 const subtitleNames = new Set(
   fs.existsSync(subtitlesDir)
@@ -234,6 +352,12 @@ const courses = [
         title: "VA Video",
         packageID: "package.cpr-aed.video",
       },
+      {
+        id: "pediatric-cpr-aed-course",
+        kind: "slideshow",
+        title: "Pediatric Focused",
+        packageID: "package.cpr-aed.pediatric-slideshow",
+      },
     ],
   },
   {
@@ -267,6 +391,7 @@ const courses = [
 const packages = [
   packageForSlideshow(slideshowByID.get("cpr-aed-course"), "package.cpr-aed.slideshow", "CPR & AED Slideshow"),
   packageForVideoCourse(videoCourseByID.get("cpr-aed"), "package.cpr-aed.video", "CPR & AED VA Video"),
+  packageForSlideshow(slideshowByID.get("pediatric-cpr-aed-course"), "package.cpr-aed.pediatric-slideshow", "Pediatric CPR & AED Slideshow"),
   packageForSlideshow(slideshowByID.get("first-aid-course"), "package.first-aid.slideshow", "First Aid Slideshow"),
   packageForVideoCourse(videoCourseByID.get("first-aid"), "package.first-aid.video", "First Aid VA Video"),
   packageForSlideshow(slideshowByID.get("pediatric-first-aid-course"), "package.first-aid.pediatric-slideshow", "Pediatric Focused Slideshow"),
@@ -275,6 +400,7 @@ const packages = [
 
 const manifest = {
   schemaVersion: 1,
+  contentRevision: "experiment-3.0",
   mediaBaseURL: "https://media.ehacademy.com/",
   sendCertsURL: "https://ehacademy.com/login",
   courses,
@@ -284,11 +410,69 @@ const manifest = {
   packages,
 };
 
-fs.mkdirSync(path.dirname(outPath), { recursive: true });
-fs.writeFileSync(outPath, `${JSON.stringify(manifest, null, 2)}\n`);
+function normalizeTipLine(value) {
+  return String(value)
+    .replace(/\*+/g, "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => line.startsWith("- ") ? `• ${line.slice(2).trim()}` : line)
+    .join("\n");
+}
 
-fs.rmSync(subtitleOutDir, { recursive: true, force: true });
-fs.mkdirSync(subtitleOutDir, { recursive: true });
+const sourceInstructorTips = evaluateInstructorTips();
+const tipsManifest = {
+  schemaVersion: 1,
+  slideshows: slideshows.map((slideshow) => {
+    const courseTips = sourceInstructorTips[slideshow.id];
+    assert(courseTips, `Missing instructor tips for ${slideshow.id}`);
+
+    const tips = slideshow.slides.map((slide, index) => {
+      const sourceLines = courseTips[slide.id];
+      assert(Array.isArray(sourceLines), `Missing instructor tip for ${slideshow.id}/${slide.id}`);
+      const body = sourceLines
+        .map(normalizeTipLine)
+        .filter(Boolean)
+        .join("\n");
+      assert(body.length > 0, `Empty instructor tip for ${slideshow.id}/${slide.id}`);
+
+      return {
+        slideID: slide.id,
+        slideNumber: index + 1,
+        title: slide.title,
+        body,
+      };
+    });
+
+    assert(
+      Object.keys(courseTips).length === slideshow.slides.length,
+      `Unexpected instructor tip count for ${slideshow.id}`
+    );
+    return { id: slideshow.id, tips };
+  }),
+};
+
+const expectedPackageCounts = new Map([
+  ["package.cpr-aed.slideshow", 43],
+  ["package.cpr-aed.video", 60],
+  ["package.cpr-aed.pediatric-slideshow", 36],
+  ["package.first-aid.slideshow", 47],
+  ["package.first-aid.video", 90],
+  ["package.first-aid.pediatric-slideshow", 45],
+  ["package.manual.instructor", 1],
+  ["package.manual.student", 1],
+  ["package.manual.pediatric", 1],
+]);
+assert(packages.length === expectedPackageCounts.size, "Unexpected package count");
+for (const downloadPackage of packages) {
+  const expectedCount = expectedPackageCounts.get(downloadPackage.id);
+  assert(expectedCount, `Unexpected package ${downloadPackage.id}`);
+  assert(
+    downloadPackage.assets.length === expectedCount,
+    `Unexpected asset count for ${downloadPackage.id}: ${downloadPackage.assets.length}`
+  );
+}
+assert(fs.existsSync(pediatricCoverPath), "Missing Pediatric CPR AED cover artwork");
 
 const subtitleAssets = new Set(
   packages
@@ -296,13 +480,71 @@ const subtitleAssets = new Set(
     .filter((asset) => asset.kind === "subtitle")
     .map((asset) => asset.filename.replace(/^subtitles\//, ""))
 );
-
+assert(subtitleAssets.size === 80, `Unexpected bundled subtitle count: ${subtitleAssets.size}`);
 for (const subtitle of subtitleAssets) {
-  fs.copyFileSync(path.join(subtitlesDir, subtitle), path.join(subtitleOutDir, subtitle));
+  assert(
+    fs.existsSync(path.join(subtitlesDir, subtitle)),
+    `Missing referenced subtitle ${subtitle}`
+  );
 }
+
+function writeFileAtomically(filename, contents) {
+  const temporaryPath = `${filename}.generate-${process.pid}`;
+  fs.writeFileSync(temporaryPath, contents);
+  fs.renameSync(temporaryPath, filename);
+}
+
+function replaceDirectoryAtomically(destination, populate) {
+  const staging = `${destination}.generate-${process.pid}`;
+  const backup = `${destination}.backup-${process.pid}`;
+  fs.rmSync(staging, { recursive: true, force: true });
+  fs.rmSync(backup, { recursive: true, force: true });
+  fs.mkdirSync(staging, { recursive: true });
+
+  try {
+    populate(staging);
+    if (fs.existsSync(destination)) {
+      fs.renameSync(destination, backup);
+    }
+    fs.renameSync(staging, destination);
+    fs.rmSync(backup, { recursive: true, force: true });
+  } catch (error) {
+    fs.rmSync(staging, { recursive: true, force: true });
+    if (!fs.existsSync(destination) && fs.existsSync(backup)) {
+      fs.renameSync(backup, destination);
+    }
+    throw error;
+  }
+}
+
+fs.mkdirSync(path.dirname(outPath), { recursive: true });
+writeFileAtomically(outPath, `${JSON.stringify(manifest, null, 2)}\n`);
+writeFileAtomically(tipsOutPath, `${JSON.stringify(tipsManifest, null, 2)}\n`);
+
+replaceDirectoryAtomically(
+  subtitleOutDir,
+  (stagingDirectory) => {
+    for (const subtitle of subtitleAssets) {
+      fs.copyFileSync(
+        path.join(subtitlesDir, subtitle),
+        path.join(stagingDirectory, subtitle)
+      );
+    }
+  }
+);
+
+fs.mkdirSync(artworkOutDir, { recursive: true });
+const artworkDestination = path.join(artworkOutDir, "Pediatric CPR AED Cover.webp");
+const artworkTemporaryPath = `${artworkDestination}.generate-${process.pid}`;
+fs.copyFileSync(
+  pediatricCoverPath,
+  artworkTemporaryPath
+);
+fs.renameSync(artworkTemporaryPath, artworkDestination);
 
 const assetCount = packages.reduce((total, item) => total + item.assets.length, 0);
 console.log(`Wrote ${path.relative(repoRoot, outPath)}`);
+console.log(`Wrote ${path.relative(repoRoot, tipsOutPath)}`);
 console.log(`Bundled subtitles: ${subtitleAssets.size}`);
 console.log(`Courses: ${courses.length}`);
 console.log(`Video courses: ${videoCourses.length}`);

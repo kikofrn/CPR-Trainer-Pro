@@ -18,6 +18,98 @@ struct VideoPlaybackSpeedOption: Identifiable, Equatable {
     ]
 }
 
+struct VideoCourseScrubberProgress: Equatable {
+    var currentTime: TimeInterval = 0
+    var duration: TimeInterval = 0
+    var previewTime: TimeInterval?
+    var isScrubbing = false
+    var wasPlaybackActiveBeforeScrub = false
+    var activeSeekToken = 0
+    var canSeek = false
+
+    var displayedScrubberTime: TimeInterval {
+        previewTime ?? currentTime
+    }
+
+    var sliderValue: TimeInterval {
+        Self.clampedDisplayValue(displayedScrubberTime, duration: duration)
+    }
+
+    var sliderRange: ClosedRange<TimeInterval> {
+        0...max(0.1, duration)
+    }
+
+    var elapsedText: String {
+        Self.formattedTime(sliderValue)
+    }
+
+    var remainingText: String {
+        Self.formattedRemainingTime(duration: duration, currentTime: sliderValue)
+    }
+
+    var accessibilityValue: String {
+        "Elapsed \(elapsedText), remaining \(remainingText.replacingOccurrences(of: "-", with: ""))"
+    }
+
+    @discardableResult
+    mutating func updatePreviewIfScrubbing(to value: TimeInterval) -> Bool {
+        guard isScrubbing else { return false }
+        previewTime = Self.clampedDisplayValue(value, duration: duration)
+        return true
+    }
+
+    static func sanitizedDuration(_ duration: TimeInterval) -> TimeInterval? {
+        guard duration.isFinite, duration > 0 else { return nil }
+        return duration
+    }
+
+    static func clampedDisplayValue(_ value: TimeInterval, duration: TimeInterval) -> TimeInterval {
+        guard value.isFinite else { return 0 }
+        return min(max(0, value), max(0, duration))
+    }
+
+    static func clampedSeekTarget(_ value: TimeInterval, duration: TimeInterval) -> TimeInterval {
+        guard value.isFinite, let duration = sanitizedDuration(duration) else { return 0 }
+        return min(max(0, value), max(0, duration - 0.1))
+    }
+
+    static func formattedTime(_ time: TimeInterval) -> String {
+        let totalSeconds = max(0, Int(floor(time)))
+        let hours = totalSeconds / 3_600
+        let minutes = (totalSeconds % 3_600) / 60
+        let seconds = totalSeconds % 60
+
+        if hours > 0 {
+            return "\(hours):\(String(format: "%02d", minutes)):\(String(format: "%02d", seconds))"
+        }
+
+        return "\(minutes):\(String(format: "%02d", seconds))"
+    }
+
+    static func formattedRemainingTime(duration: TimeInterval, currentTime: TimeInterval) -> String {
+        let remaining = duration - currentTime
+        let remainingSeconds = Int(floor(max(0, remaining)))
+        guard remainingSeconds > 0 else { return "0:00" }
+        return "-\(formattedTime(TimeInterval(remainingSeconds)))"
+    }
+}
+
+struct VideoCourseScrubberSeekContext: Equatable {
+    let token: Int
+    let chapterID: Chapter.ID
+    let itemID: ObjectIdentifier
+
+    func isCurrent(
+        activeToken: Int,
+        currentChapterID: Chapter.ID?,
+        currentItemID: ObjectIdentifier?
+    ) -> Bool {
+        token == activeToken &&
+            chapterID == currentChapterID &&
+            itemID == currentItemID
+    }
+}
+
 @MainActor
 final class VideoCoursePlaybackCoordinator: ObservableObject {
     let videoCourse: VideoCourse
@@ -28,6 +120,7 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
     @Published private(set) var player: AVPlayer?
     @Published private(set) var currentSubtitleText: String?
     @Published private(set) var playbackStatus: PlaybackStatus = .idle
+    @Published private(set) var scrubberProgress = VideoCourseScrubberProgress()
     @Published var playbackRate: Float = 1.0 {
         didSet {
             guard abs(playbackRate - oldValue) > 0.001 else { return }
@@ -63,6 +156,7 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
     private var subtitleCues: [SubtitleCue] = []
     private var currentCueIndex: Int?
     private var timeObserver: Any?
+    private var scrubberTimeObserver: Any?
     private var endObserver: NSObjectProtocol?
     private var routeChangeObserver: NSObjectProtocol?
     private var interruptionObserver: NSObjectProtocol?
@@ -113,6 +207,30 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
         VideoPlaybackSpeedOption.allCases.first { abs($0.rate - playbackRate) < 0.001 }?.title ?? "\(playbackRate)x"
     }
 
+    var canShowScrubber: Bool {
+        scrubberProgress.canSeek
+    }
+
+    var scrubberSliderValue: TimeInterval {
+        scrubberProgress.sliderValue
+    }
+
+    var scrubberSliderRange: ClosedRange<TimeInterval> {
+        scrubberProgress.sliderRange
+    }
+
+    var scrubberElapsedTimeText: String {
+        scrubberProgress.elapsedText
+    }
+
+    var scrubberRemainingTimeText: String {
+        scrubberProgress.remainingText
+    }
+
+    var scrubberAccessibilityValue: String {
+        scrubberProgress.accessibilityValue
+    }
+
     func appear() {
         isTornDown = false
         attachAudioRouteObservers()
@@ -126,7 +244,11 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
 
     func select(_ chapter: Chapter) {
         guard selectedChapterID != chapter.id else {
+            cancelScrubbing(restorePlayback: false)
+            invalidatePendingScrubSeek()
             player?.seek(to: .zero)
+            updateScrubberProgress(from: player, time: 0)
+            updateSubtitle(at: 0)
             play()
             return
         }
@@ -169,11 +291,95 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
         playbackRate = rate
     }
 
+    func beginScrubbing() {
+        guard scrubberProgress.canSeek, let player else { return }
+
+        var nextProgress = scrubberProgress
+        nextProgress.isScrubbing = true
+        nextProgress.wasPlaybackActiveBeforeScrub = player.timeControlStatus == .playing ||
+            player.timeControlStatus == .waitingToPlayAtSpecifiedRate
+        nextProgress.previewTime = nextProgress.sliderValue
+        scrubberProgress = nextProgress
+
+        player.pause()
+    }
+
+    func updateScrubPreview(to value: TimeInterval) {
+        var nextProgress = scrubberProgress
+        guard nextProgress.updatePreviewIfScrubbing(to: value) else { return }
+        scrubberProgress = nextProgress
+    }
+
+    func endScrubbing(to value: TimeInterval?) {
+        guard scrubberProgress.isScrubbing else { return }
+        guard scrubberProgress.canSeek,
+              let player,
+              let seekItem = player.currentItem,
+              let selectedChapterID
+        else {
+            cancelScrubbing(restorePlayback: false)
+            return
+        }
+
+        let proposedTarget = value ?? scrubberProgress.displayedScrubberTime
+        let target = VideoCourseScrubberProgress.clampedSeekTarget(
+            proposedTarget,
+            duration: scrubberProgress.duration
+        )
+        let shouldResume = scrubberProgress.wasPlaybackActiveBeforeScrub
+
+        var nextProgress = scrubberProgress
+        nextProgress.activeSeekToken += 1
+        nextProgress.previewTime = target
+        scrubberProgress = nextProgress
+
+        let seekContext = VideoCourseScrubberSeekContext(
+            token: nextProgress.activeSeekToken,
+            chapterID: selectedChapterID,
+            itemID: ObjectIdentifier(seekItem)
+        )
+        let seekTime = CMTime(seconds: target, preferredTimescale: 600)
+
+        player.seek(
+            to: seekTime,
+            toleranceBefore: .zero,
+            toleranceAfter: .zero
+        ) { [weak self] finished in
+            Task { @MainActor [weak self] in
+                self?.completeScrubSeek(
+                    finished: finished,
+                    target: target,
+                    shouldResume: shouldResume,
+                    context: seekContext
+                )
+            }
+        }
+    }
+
+    func cancelScrubbing(restorePlayback: Bool) {
+        guard scrubberProgress.isScrubbing else { return }
+
+        let shouldRestorePlayback = restorePlayback && scrubberProgress.wasPlaybackActiveBeforeScrub
+        var nextProgress = scrubberProgress
+        nextProgress.isScrubbing = false
+        nextProgress.previewTime = nil
+        nextProgress.wasPlaybackActiveBeforeScrub = false
+        nextProgress.activeSeekToken += 1
+        scrubberProgress = nextProgress
+
+        if shouldRestorePlayback {
+            ensurePlaybackResources()
+            player?.playImmediately(atRate: playbackRate)
+        }
+    }
+
     func tearDown() {
         guard !isTornDown else { return }
         isTornDown = true
 
+        cancelScrubbing(restorePlayback: false)
         player?.pause()
+        removeScrubberTimeObserver()
         removeTimeObserver()
         removeEndObserver()
         routeChangeObserver.map(NotificationCenter.default.removeObserver)
@@ -189,6 +395,7 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
         subtitleCues = []
         currentCueIndex = nil
         currentSubtitleText = nil
+        resetScrubberState()
         playbackStatus = .idle
 
         if hasAcquiredAudioSession {
@@ -205,6 +412,8 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
     }
 
     private func loadSelectedChapter() {
+        cancelScrubbing(restorePlayback: false)
+        removeScrubberTimeObserver()
         removeTimeObserver()
         removeEndObserver()
         timeControlObservation?.invalidate()
@@ -215,6 +424,7 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
         subtitleCues = []
         currentCueIndex = nil
         currentSubtitleText = nil
+        resetScrubberState()
         setPlaybackStatus(.loading)
 
         guard let selectedChapter else {
@@ -248,6 +458,8 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
         attachItemStatusObserver(to: playerItem)
         attachTimeControlObserver(to: nextPlayer)
         attachSubtitleObserver(to: nextPlayer)
+        attachScrubberTimeObserver(to: nextPlayer)
+        updateScrubberProgress(from: nextPlayer, time: nextPlayer.currentTime().seconds)
         beginPresentation(player: nextPlayer, missingMessage: nil)
         play()
     }
@@ -288,6 +500,8 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
         guard let player else { return }
         player.defaultRate = playbackRate
 
+        guard !scrubberProgress.isScrubbing else { return }
+
         if playbackStatus == .playing || player.rate > 0 {
             player.playImmediately(atRate: playbackRate)
         }
@@ -304,11 +518,20 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
     private func attachItemStatusObserver(to item: AVPlayerItem) {
         itemStatusObservation = item.observe(\.status, options: [.new]) { [weak self] item, _ in
             Task { @MainActor [weak self] in
-                guard item.status == .failed else { return }
-                let message = item.error?.localizedDescription ?? "This video chapter could not be played."
-                self?.setPlaybackStatus(.failed(message))
-                if let ownerID = self?.ownerID {
-                    PresentationHub.shared.session.failExternalPresentation(ownerID: ownerID, reason: message)
+                switch item.status {
+                case .readyToPlay:
+                    self?.updateScrubberProgress(from: self?.player, time: self?.player?.currentTime().seconds ?? 0)
+                case .failed:
+                    let message = item.error?.localizedDescription ?? "This video chapter could not be played."
+                    self?.resetScrubberState()
+                    self?.setPlaybackStatus(.failed(message))
+                    if let ownerID = self?.ownerID {
+                        PresentationHub.shared.session.failExternalPresentation(ownerID: ownerID, reason: message)
+                    }
+                case .unknown:
+                    break
+                @unknown default:
+                    break
                 }
             }
         }
@@ -317,7 +540,7 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
     private func handleTimeControlStatus(_ status: AVPlayer.TimeControlStatus) {
         switch status {
         case .paused:
-            if playbackStatus != .ended {
+            if !scrubberProgress.isScrubbing, playbackStatus != .ended {
                 setPlaybackStatus(.paused)
             }
         case .playing:
@@ -352,6 +575,17 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
         }
     }
 
+    private func attachScrubberTimeObserver(to player: AVPlayer) {
+        scrubberTimeObserver = player.addPeriodicTimeObserver(
+            forInterval: CMTime(seconds: 0.50, preferredTimescale: 600),
+            queue: .main
+        ) { [weak self, weak player] time in
+            Task { @MainActor [weak self, weak player] in
+                self?.updateScrubberProgress(from: player, time: time.seconds)
+            }
+        }
+    }
+
     private func attachAudioRouteObservers() {
         guard routeChangeObserver == nil else { return }
 
@@ -377,6 +611,7 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
             }
 
             Task { @MainActor [weak self] in
+                self?.cancelScrubbing(restorePlayback: false)
                 self?.pause()
             }
         }
@@ -430,10 +665,99 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
         return nil
     }
 
+    private func updateScrubberProgress(from player: AVPlayer?, time: TimeInterval) {
+        guard !scrubberProgress.isScrubbing else { return }
+
+        let duration = validDuration(for: player?.currentItem)
+        var nextProgress = scrubberProgress
+
+        if let duration {
+            nextProgress.duration = duration
+            nextProgress.currentTime = VideoCourseScrubberProgress.clampedDisplayValue(time, duration: duration)
+            nextProgress.canSeek = true
+        } else {
+            nextProgress.duration = 0
+            nextProgress.currentTime = VideoCourseScrubberProgress.clampedDisplayValue(time, duration: 0)
+            nextProgress.canSeek = false
+        }
+
+        nextProgress.previewTime = nil
+        scrubberProgress = nextProgress
+    }
+
+    private func validDuration(for item: AVPlayerItem?) -> TimeInterval? {
+        guard let item else { return nil }
+        let duration = item.duration
+        guard duration.isValid, !duration.isIndefinite else { return nil }
+        return VideoCourseScrubberProgress.sanitizedDuration(duration.seconds)
+    }
+
+    private func completeScrubSeek(
+        finished: Bool,
+        target: TimeInterval,
+        shouldResume: Bool,
+        context: VideoCourseScrubberSeekContext
+    ) {
+        let currentItemID = player?.currentItem.map(ObjectIdentifier.init)
+        guard context.isCurrent(
+            activeToken: scrubberProgress.activeSeekToken,
+            currentChapterID: selectedChapterID,
+            currentItemID: currentItemID
+        ) else {
+            return
+        }
+
+        guard finished else {
+            var nextProgress = scrubberProgress
+            nextProgress.isScrubbing = false
+            nextProgress.previewTime = nil
+            nextProgress.wasPlaybackActiveBeforeScrub = false
+            scrubberProgress = nextProgress
+            setPlaybackStatus(.paused)
+            return
+        }
+
+        let currentDuration = validDuration(for: player?.currentItem) ?? scrubberProgress.duration
+        var nextProgress = scrubberProgress
+        nextProgress.currentTime = VideoCourseScrubberProgress.clampedDisplayValue(target, duration: currentDuration)
+        nextProgress.duration = currentDuration
+        nextProgress.canSeek = VideoCourseScrubberProgress.sanitizedDuration(currentDuration) != nil
+        nextProgress.isScrubbing = false
+        nextProgress.previewTime = nil
+        nextProgress.wasPlaybackActiveBeforeScrub = false
+        scrubberProgress = nextProgress
+
+        updateSubtitle(at: target)
+
+        if shouldResume {
+            ensurePlaybackResources()
+            player?.playImmediately(atRate: playbackRate)
+        }
+    }
+
+    private func resetScrubberState() {
+        var nextProgress = VideoCourseScrubberProgress()
+        nextProgress.activeSeekToken = scrubberProgress.activeSeekToken + 1
+        scrubberProgress = nextProgress
+    }
+
+    private func invalidatePendingScrubSeek() {
+        var nextProgress = scrubberProgress
+        nextProgress.activeSeekToken += 1
+        scrubberProgress = nextProgress
+    }
+
     private func removeTimeObserver() {
         if let timeObserver {
             player?.removeTimeObserver(timeObserver)
             self.timeObserver = nil
+        }
+    }
+
+    private func removeScrubberTimeObserver() {
+        if let scrubberTimeObserver {
+            player?.removeTimeObserver(scrubberTimeObserver)
+            self.scrubberTimeObserver = nil
         }
     }
 
@@ -445,8 +769,10 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
     }
 
     private func handleChapterEnded() {
+        cancelScrubbing(restorePlayback: false)
         currentSubtitleText = nil
         PresentationHub.shared.session.updateSubtitle(ownerID: ownerID, text: nil)
+        resetScrubberState()
         setPlaybackStatus(.ended)
 
         guard continuousPlayEnabled else { return }

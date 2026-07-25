@@ -79,6 +79,7 @@ struct ManualTOCService {
         guard pageIndex >= 0, pageIndex < pageCount else { return nil }
 
         let trimmedTitle = (outline.label ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        guard Self.shouldIncludeOutlineTitle(trimmedTitle) else { return nil }
         let title = trimmedTitle.isEmpty ? "Page \(pageIndex + 1)" : trimmedTitle
 
         return ManualTOCEntry(
@@ -125,6 +126,11 @@ struct ManualTOCService {
                 level: max(0, entry.level ?? 0)
             )
         }
+    }
+
+    nonisolated static func shouldIncludeOutlineTitle(_ title: String) -> Bool {
+        title.trimmingCharacters(in: .whitespacesAndNewlines)
+            .localizedCaseInsensitiveCompare("Untitled") != .orderedSame
     }
 }
 

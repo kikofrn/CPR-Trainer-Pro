@@ -32,10 +32,11 @@ struct SubtitleService {
             return [clean]
         }
 
-        let withoutExtension = (clean as NSString).deletingPathExtension
+        let basename = (clean as NSString).lastPathComponent
+        let withoutExtension = (basename as NSString).deletingPathExtension
         return [
             "subtitles/\(withoutExtension).vtt",
-            "subtitles/\(clean).vtt"
+            "subtitles/\(basename).vtt"
         ]
     }
 

@@ -5,15 +5,29 @@ final class AppViewModel: ObservableObject {
     @Published private(set) var catalog: TrainingCatalog
     @Published var selectedTab: AppTab = .cprAED
     @Published var selectedCourseID: Course.ID?
-    @Published var firstAidPediatricFocused = false
+    @Published private(set) var cprVAEnabled = false
+    @Published private(set) var cprPediatricFocused = false
+    @Published private(set) var firstAidVAEnabled = false
+    @Published private(set) var firstAidPediatricFocused = false
 
+    let storageService: StorageService
     let downloadService: DownloadService
 
     init(manifestService: ContentManifestService = .init()) {
-        self.catalog = manifestService.loadBundledCatalog()
-        self.downloadService = DownloadService()
+        let catalog = manifestService.loadBundledCatalog()
+        let storageService = StorageService(contentRevision: catalog.contentRevision)
+        let queueStore = DownloadQueueStore(contentRevision: catalog.contentRevision)
+
+        self.catalog = catalog
+        self.storageService = storageService
+        self.downloadService = DownloadService(
+            storageService: storageService,
+            queueStore: queueStore,
+            contentRevision: catalog.contentRevision
+        )
         self.selectedCourseID = catalog.courses.first?.id
         self.downloadService.refreshPackageStates(for: catalog.packages)
+        LegacyContentCleanup.schedule(for: catalog.contentRevision)
     }
 
     var selectedCourse: Course? {
@@ -29,13 +43,83 @@ final class AppViewModel: ObservableObject {
         downloadService.synchronizeForegroundState(for: catalog.packages)
     }
 
-    func primaryMode(for course: Course, vaEnabled: Bool) -> CourseLaunchMode? {
-        if course.id == .firstAid && firstAidPediatricFocused {
-            return course.modes.first { $0.id == .pediatricSlideshow }
+    func vaEnabled(for courseID: Course.ID) -> Bool {
+        switch courseID {
+        case .cprAED:
+            cprVAEnabled
+        case .firstAid:
+            firstAidVAEnabled
+        }
+    }
+
+    func pediatricFocused(for courseID: Course.ID) -> Bool {
+        switch courseID {
+        case .cprAED:
+            cprPediatricFocused
+        case .firstAid:
+            firstAidPediatricFocused
+        }
+    }
+
+    func setVAEnabled(_ enabled: Bool, for courseID: Course.ID) {
+        switch courseID {
+        case .cprAED:
+            cprVAEnabled = enabled
+            if enabled {
+                cprPediatricFocused = false
+            }
+        case .firstAid:
+            firstAidVAEnabled = enabled
+            if enabled {
+                firstAidPediatricFocused = false
+            }
+        }
+    }
+
+    func setPediatricFocused(_ enabled: Bool, for courseID: Course.ID) {
+        switch courseID {
+        case .cprAED:
+            cprPediatricFocused = enabled
+            if enabled {
+                cprVAEnabled = false
+            }
+        case .firstAid:
+            firstAidPediatricFocused = enabled
+            if enabled {
+                firstAidVAEnabled = false
+            }
+        }
+    }
+
+    func primaryMode(for course: Course) -> CourseLaunchMode? {
+        if pediatricFocused(for: course.id) {
+            let pediatricModeID: CourseLaunchMode.ID =
+                course.id == .cprAED ? .pediatricCPRSlideshow : .pediatricSlideshow
+            return course.modes.first { $0.id == pediatricModeID }
         }
 
-        let preferredKind: CourseLaunchMode.Kind = vaEnabled ? .video : .slideshow
+        let preferredKind: CourseLaunchMode.Kind =
+            vaEnabled(for: course.id) ? .video : .slideshow
         return course.modes.first { $0.kind == preferredKind }
+    }
+}
+
+private enum LegacyContentCleanup {
+    private static let completedRevisionKey = "contentMigration.completedRevision"
+
+    static func schedule(for contentRevision: String) {
+        DispatchQueue.global(qos: .utility).async {
+            let defaults = UserDefaults.standard
+            guard defaults.string(forKey: completedRevisionKey) != contentRevision else { return }
+
+            do {
+                try StorageService(contentRevision: contentRevision).removeLegacyDownloadedMedia()
+                try DownloadQueueStore(contentRevision: contentRevision).removeLegacyStore()
+                defaults.set(contentRevision, forKey: completedRevisionKey)
+            } catch {
+                // Leave the marker unset so the safe, idempotent cleanup can retry next launch.
+            }
+        }
     }
 }
 

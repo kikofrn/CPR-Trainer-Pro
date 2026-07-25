@@ -123,6 +123,7 @@ final class DownloadService: NSObject, ObservableObject {
 
     private let storageService: StorageService
     private let queueStore: DownloadQueueStore
+    private let backgroundSessionIdentifier: String
     private let maxConcurrentDownloads = 3
     private let maxRetryAttempts = 3
     private var queue: [QueuedAsset] = []
@@ -139,7 +140,7 @@ final class DownloadService: NSObject, ObservableObject {
         let configuration = URLSessionConfiguration.default
         #else
         let configuration = URLSessionConfiguration.background(
-            withIdentifier: "com.ehacademy.cpr-trainer-pro.background"
+            withIdentifier: backgroundSessionIdentifier
         )
         configuration.sessionSendsLaunchEvents = true
         #endif
@@ -154,9 +155,20 @@ final class DownloadService: NSObject, ObservableObject {
         return URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
     }()
 
-    init(storageService: StorageService = .init(), queueStore: DownloadQueueStore = .init()) {
+    init(
+        storageService: StorageService = .init(),
+        queueStore: DownloadQueueStore = .init(),
+        contentRevision: String = "experiment-3.0"
+    ) {
         self.storageService = storageService
         self.queueStore = queueStore
+        let revisionComponent = contentRevision.replacingOccurrences(
+            of: "[^A-Za-z0-9.-]",
+            with: "-",
+            options: .regularExpression
+        )
+        self.backgroundSessionIdentifier =
+            "com.ehacademy.cpr-trainer-pro.background.\(revisionComponent)"
         super.init()
         loadPersistedPlans()
         _ = session

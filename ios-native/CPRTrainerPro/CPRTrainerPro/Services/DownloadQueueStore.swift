@@ -24,10 +24,19 @@ struct DownloadQueueStore {
 
     private let fileManager: FileManager
     private let explicitStoreURL: URL?
+    private let contentRevision: String
+    private let explicitSupportDirectoryURL: URL?
 
-    init(fileManager: FileManager = .default, storeURL: URL? = nil) {
+    init(
+        fileManager: FileManager = .default,
+        storeURL: URL? = nil,
+        contentRevision: String = "experiment-3.0",
+        supportDirectoryURL: URL? = nil
+    ) {
         self.fileManager = fileManager
         self.explicitStoreURL = storeURL
+        self.contentRevision = contentRevision
+        self.explicitSupportDirectoryURL = supportDirectoryURL
     }
 
     func load() throws -> [PackagePlan] {
@@ -62,21 +71,48 @@ struct DownloadQueueStore {
         try save(plans)
     }
 
+    func removeLegacyStore() throws {
+        let legacyRoot = try applicationSupportDirectory()
+            .appendingPathComponent("DownloadQueue", isDirectory: true)
+
+        guard fileManager.fileExists(atPath: legacyRoot.path) else { return }
+        try fileManager.removeItem(at: legacyRoot)
+    }
+
     private func resolvedStoreURL() throws -> URL {
         if let explicitStoreURL {
             return explicitStoreURL
         }
 
-        let supportURL = try fileManager.url(
+        return try applicationSupportDirectory()
+            .appendingPathComponent("DownloadQueue-\(sanitizedRevision)", isDirectory: true)
+            .appendingPathComponent("packages.json", isDirectory: false)
+    }
+
+    private var sanitizedRevision: String {
+        let sanitized = contentRevision.replacingOccurrences(
+            of: "[^A-Za-z0-9._-]",
+            with: "-",
+            options: .regularExpression
+        )
+        return sanitized.isEmpty ? "current" : sanitized
+    }
+
+    private func applicationSupportDirectory() throws -> URL {
+        if let explicitSupportDirectoryURL {
+            try fileManager.createDirectory(
+                at: explicitSupportDirectoryURL,
+                withIntermediateDirectories: true
+            )
+            return explicitSupportDirectoryURL
+        }
+
+        return try fileManager.url(
             for: .applicationSupportDirectory,
             in: .userDomainMask,
             appropriateFor: nil,
             create: true
         )
-
-        return supportURL
-            .appendingPathComponent("DownloadQueue", isDirectory: true)
-            .appendingPathComponent("packages.json", isDirectory: false)
     }
 
     private func excludeFromBackup(_ url: URL) throws {

@@ -132,6 +132,8 @@ struct CourseCard: View {
             "CPR AED for All Ages with VA.webp"
         case .firstAidVideo:
             "First Aid for All Ages with VA.webp"
+        case .pediatricCPRSlideshow:
+            "Pediatric CPR AED Cover.webp"
         case .pediatricSlideshow:
             "Pediatric First Aid Cover.webp"
         default:

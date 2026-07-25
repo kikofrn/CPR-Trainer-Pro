@@ -20,6 +20,7 @@ struct ContentManifestService {
 private extension ContentManifestService {
     static let fallbackCatalog = TrainingCatalog(
         schemaVersion: 1,
+        contentRevision: "experiment-3.0",
         mediaBaseURL: URLHelpers.mediaBaseURL,
         sendCertsURL: URLHelpers.sendCertsURL,
         courses: [
@@ -30,7 +31,13 @@ private extension ContentManifestService {
                 artworkName: "CPR AED for All Ages Cover.webp",
                 modes: [
                     CourseLaunchMode(id: .cprSlideshow, kind: .slideshow, title: "Slideshow", packageID: .cprSlideshow),
-                    CourseLaunchMode(id: .cprVideo, kind: .video, title: "Virtual Assistant?", packageID: .cprVideo)
+                    CourseLaunchMode(id: .cprVideo, kind: .video, title: "Virtual Assistant?", packageID: .cprVideo),
+                    CourseLaunchMode(
+                        id: .pediatricCPRSlideshow,
+                        kind: .slideshow,
+                        title: "Pediatric Focused",
+                        packageID: .pediatricCPRSlideshow
+                    )
                 ]
             ),
             Course(

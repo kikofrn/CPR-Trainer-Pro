@@ -16,25 +16,38 @@ struct StorageService {
     }
 
     private let fileManager: FileManager
+    private let contentRevision: String
+    private let explicitSupportDirectoryURL: URL?
 
-    init(fileManager: FileManager = .default) {
+    init(
+        fileManager: FileManager = .default,
+        contentRevision: String = "experiment-3.0",
+        supportDirectoryURL: URL? = nil
+    ) {
         self.fileManager = fileManager
+        self.contentRevision = contentRevision
+        self.explicitSupportDirectoryURL = supportDirectoryURL
     }
 
     var downloadedMediaRoot: URL {
         get throws {
-            let supportURL = try fileManager.url(
-                for: .applicationSupportDirectory,
-                in: .userDomainMask,
-                appropriateFor: nil,
-                create: true
+            let supportURL = try applicationSupportDirectory()
+            let root = supportURL.appendingPathComponent(
+                "DownloadedMedia-\(sanitizedRevision)",
+                isDirectory: true
             )
-
-            let root = supportURL.appendingPathComponent("DownloadedMedia", isDirectory: true)
             try ensureDirectory(root)
             try excludeFromBackup(root)
             return root
         }
+    }
+
+    func removeLegacyDownloadedMedia() throws {
+        let legacyRoot = try applicationSupportDirectory()
+            .appendingPathComponent("DownloadedMedia", isDirectory: true)
+
+        guard fileManager.fileExists(atPath: legacyRoot.path) else { return }
+        try fileManager.removeItem(at: legacyRoot)
     }
 
     func fileExists(_ filename: String) -> Bool {
@@ -136,6 +149,29 @@ struct StorageService {
     private func downloadedURL(for filename: String) throws -> URL {
         let clean = try sanitizedRelativePath(filename)
         return try downloadedMediaRoot.appendingPathComponent(clean, isDirectory: false)
+    }
+
+    private var sanitizedRevision: String {
+        let sanitized = contentRevision.replacingOccurrences(
+            of: "[^A-Za-z0-9._-]",
+            with: "-",
+            options: .regularExpression
+        )
+        return sanitized.isEmpty ? "current" : sanitized
+    }
+
+    private func applicationSupportDirectory() throws -> URL {
+        if let explicitSupportDirectoryURL {
+            try ensureDirectory(explicitSupportDirectoryURL)
+            return explicitSupportDirectoryURL
+        }
+
+        return try fileManager.url(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask,
+            appropriateFor: nil,
+            create: true
+        )
     }
 
     private func sanitizedRelativePath(_ filename: String) throws -> String {

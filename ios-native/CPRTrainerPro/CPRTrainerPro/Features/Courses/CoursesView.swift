@@ -6,8 +6,6 @@ struct CoursesView: View {
 
     @EnvironmentObject private var appViewModel: AppViewModel
     @EnvironmentObject private var downloadService: DownloadService
-    @State private var cprVAEnabled = false
-    @State private var firstAidVAEnabled = false
     @State private var activeLaunch: CourseLaunchRequest?
     @State private var pendingDownloadPrompt: DownloadPromptContext?
 
@@ -59,8 +57,7 @@ struct CoursesView: View {
 
     @ViewBuilder
     private func courseSection(for course: Course) -> some View {
-        let vaBinding = course.id == .cprAED ? $cprVAEnabled : $firstAidVAEnabled
-        let selectedMode = appViewModel.primaryMode(for: course, vaEnabled: vaBinding.wrappedValue)
+        let selectedMode = appViewModel.primaryMode(for: course)
         let state = selectedMode.map { downloadService.state(for: $0.packageID) } ?? .notDownloaded
         let cardCopy = courseCardCopy(for: course, selectedMode: selectedMode)
 
@@ -83,7 +80,7 @@ struct CoursesView: View {
                 }
             )
 
-            modeControls(for: course, vaEnabled: vaBinding)
+            modeControls(for: course)
 
             PrimaryActionButton(
                 title: "Launch Course",
@@ -121,22 +118,28 @@ struct CoursesView: View {
     }
 
     @ViewBuilder
-    private func modeControls(for course: Course, vaEnabled: Binding<Bool>) -> some View {
-        VStack(spacing: 10) {
-            Toggle("Enable Virtual Assistant", isOn: vaEnabled)
-                .tint(Theme.Colors.peach)
-                .disabled(course.id == .firstAid && appViewModel.firstAidPediatricFocused)
-                .opacity(course.id == .firstAid && appViewModel.firstAidPediatricFocused ? 0.45 : 1)
+    private func modeControls(for course: Course) -> some View {
+        let vaBinding = Binding(
+            get: { appViewModel.vaEnabled(for: course.id) },
+            set: { appViewModel.setVAEnabled($0, for: course.id) }
+        )
+        let pediatricBinding = Binding(
+            get: { appViewModel.pediatricFocused(for: course.id) },
+            set: { appViewModel.setPediatricFocused($0, for: course.id) }
+        )
+        let isPediatric = pediatricBinding.wrappedValue
+        let isVA = vaBinding.wrappedValue
 
-            if course.id == .firstAid {
-                Toggle("Pediatric Focused", isOn: $appViewModel.firstAidPediatricFocused)
-                    .tint(Theme.Colors.peach)
-                    .onChange(of: appViewModel.firstAidPediatricFocused) { _, enabled in
-                        if enabled {
-                            firstAidVAEnabled = false
-                        }
-                    }
-            }
+        VStack(spacing: 10) {
+            Toggle("Enable Virtual Assistant?", isOn: vaBinding)
+                .tint(Theme.Colors.peach)
+                .disabled(isPediatric)
+                .opacity(isPediatric ? 0.45 : 1)
+
+            Toggle("Pediatric Focused?", isOn: pediatricBinding)
+                .tint(Theme.Colors.peach)
+                .disabled(isVA)
+                .opacity(isVA ? 0.45 : 1)
         }
         .font(.subheadline.weight(.semibold))
         .foregroundStyle(.white)
@@ -150,13 +153,19 @@ struct CoursesView: View {
         switch mode.kind {
         case .video:
             if let videoCourse = appViewModel.catalog.videoCourse(for: mode) {
-                VideoCoursePlayerView(videoCourse: videoCourse, storageService: StorageService())
+                VideoCoursePlayerView(
+                    videoCourse: videoCourse,
+                    storageService: appViewModel.storageService
+                )
             } else {
                 MissingLaunchView(title: "Video Course Missing")
             }
         case .slideshow:
             if let slideshow = appViewModel.catalog.slideshow(for: mode) {
-                SlideshowPlayerView(slideshow: slideshow, storageService: StorageService())
+                SlideshowPlayerView(
+                    slideshow: slideshow,
+                    storageService: appViewModel.storageService
+                )
             } else {
                 MissingLaunchView(title: "Slideshow Missing")
             }
@@ -166,13 +175,43 @@ struct CoursesView: View {
     private func courseCardCopy(for course: Course, selectedMode: CourseLaunchMode?) -> CourseCardCopy {
         let isVideo = selectedMode?.kind == .video
         let isPediatric = selectedMode?.id == .pediatricSlideshow
+            || selectedMode?.id == .pediatricCPRSlideshow
+        let title: String
+
+        if selectedMode?.id == .pediatricCPRSlideshow {
+            title = "Pediatric CPR & AED"
+        } else if selectedMode?.id == .pediatricSlideshow {
+            title = "Pediatric First Aid"
+        } else {
+            title = course.title
+        }
 
         return CourseCardCopy(
-            title: isPediatric ? "Pediatric First Aid" : course.title,
+            title: title,
             modeTitle: modeTitle(for: course, selectedMode: selectedMode),
-            bluebellBubbles: isVideo ? Self.videoBluebellBubbles : Self.slideshowBluebellBubbles,
+            bluebellBubbles: bluebellBubbles(
+                for: course,
+                isVideo: isVideo,
+                isPediatric: isPediatric
+            ),
             collapsibleDescription: collapsibleDescription(for: course, isPediatric: isPediatric)
         )
+    }
+
+    private func bluebellBubbles(
+        for course: Course,
+        isVideo: Bool,
+        isPediatric: Bool
+    ) -> [String] {
+        if isPediatric, course.id == .cprAED {
+            return Self.pediatricCPRBluebellBubbles
+        }
+
+        if isPediatric {
+            return Self.pediatricFirstAidBluebellBubbles
+        }
+
+        return isVideo ? Self.videoBluebellBubbles : Self.slideshowBluebellBubbles
     }
 
     private func modeTitle(for course: Course, selectedMode: CourseLaunchMode?) -> String {
@@ -186,6 +225,10 @@ struct CoursesView: View {
     }
 
     private func collapsibleDescription(for course: Course, isPediatric: Bool) -> String {
+        if course.id == .cprAED, isPediatric {
+            return Self.pediatricCPRCertificationDescription
+        }
+
         if course.id == .cprAED {
             return Self.cprCertificationDescription
         }
@@ -209,7 +252,23 @@ private extension CoursesView {
         "Hands-free automation for classroom delivery"
     ]
 
+    static let pediatricCPRBluebellBubbles = [
+        "Pediatric Focused CPR & AED Certification",
+        "Designed for childcare providers & teachers",
+        "Covers Child & Infant CPR",
+        "Interactive slides with practice cues"
+    ]
+
+    static let pediatricFirstAidBluebellBubbles = [
+        "Pediatric Focused First Aid Certification",
+        "Designed for childcare providers & teachers",
+        "Covers common pediatric emergencies",
+        "Interactive slides with practice cues"
+    ]
+
     static let cprCertificationDescription = "Course content includes Adult, Child, and Infant CPR as well as choking relief. This is a full certification course built strictly on the latest 2025 AHA/ILCOR guidelines. All certifications meet or exceed federal OSHA workplace safety requirements and satisfy state licensing mandates including pediatric hands-on skills validation. Official certification cards are valid for 2 years and can only be issued through the EHAcademy.com web portal by an approved EHAcademy Instructor with valid credentials."
+
+    static let pediatricCPRCertificationDescription = "Course content focuses on Child and Infant CPR, AED use, and choking relief. This is a full pediatric certification course built strictly on the latest 2025 AHA/ILCOR guidelines. All certifications meet or exceed federal OSHA workplace safety requirements and satisfy state licensing mandates including pediatric hands-on skills validation. Official certification cards are valid for 2 years and can only be issued through the EHAcademy.com web portal by an approved EHAcademy Instructor with valid credentials."
 
     static let firstAidCertificationDescription = "Course content includes up-to-date First Aid education for all ages. This is a full certification course built strictly on the latest 2025 AHA/ILCOR guidelines. All certifications meet or exceed federal OSHA workplace safety requirements and satisfy state licensing mandates including pediatric hands-on skills validation. Official certification cards are valid for 2 years and can only be issued through the EHAcademy.com web portal by an approved EHAcademy Instructor with valid credentials."
 

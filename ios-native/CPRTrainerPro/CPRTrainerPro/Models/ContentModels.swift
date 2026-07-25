@@ -2,6 +2,7 @@ import Foundation
 
 struct TrainingCatalog: Codable, Equatable {
     let schemaVersion: Int
+    let contentRevision: String
     let mediaBaseURL: URL
     let sendCertsURL: URL
     var courses: [Course]
@@ -28,6 +29,7 @@ struct CourseLaunchMode: Identifiable, Codable, Equatable {
     enum ID: String, Codable, Hashable {
         case cprSlideshow = "cpr-aed-course"
         case cprVideo = "cpr-aed"
+        case pediatricCPRSlideshow = "pediatric-cpr-aed-course"
         case firstAidSlideshow = "first-aid-course"
         case firstAidVideo = "first-aid"
         case pediatricSlideshow = "pediatric-first-aid-course"
@@ -109,6 +111,7 @@ struct DownloadPackage: Identifiable, Codable, Equatable {
     enum ID: String, Codable, Hashable {
         case cprSlideshow = "package.cpr-aed.slideshow"
         case cprVideo = "package.cpr-aed.video"
+        case pediatricCPRSlideshow = "package.cpr-aed.pediatric-slideshow"
         case firstAidSlideshow = "package.first-aid.slideshow"
         case firstAidVideo = "package.first-aid.video"
         case pediatricSlideshow = "package.first-aid.pediatric-slideshow"
@@ -204,6 +207,8 @@ extension DownloadPackage {
             700_000_000
         case .cprVideo:
             900_000_000
+        case .pediatricCPRSlideshow:
+            700_000_000
         case .firstAidSlideshow:
             750_000_000
         case .firstAidVideo:
@@ -221,6 +226,8 @@ extension DownloadPackage {
             "about 700 MB"
         case .cprVideo:
             "about 900 MB"
+        case .pediatricCPRSlideshow:
+            "about 700 MB"
         case .firstAidSlideshow:
             "about 750 MB"
         case .firstAidVideo:

@@ -107,6 +107,7 @@ struct VideoCoursePlayerView: View {
             }
             .onChange(of: isPresentingExternally) { _, isPresentingExternally in
                 if !isPresentingExternally {
+                    coordinator.cancelScrubbing(restorePlayback: true)
                     isExternalChapterListCollapsed = false
                 }
             }
@@ -195,9 +196,54 @@ struct VideoCoursePlayerView: View {
                 .padding(.vertical, 5)
                 .background(.white.opacity(0.08), in: Capsule())
 
+            if coordinator.canShowScrubber {
+                externalPlaybackScrubber
+            }
+
             externalTransportControls
         }
         .padding(20)
+    }
+
+    private var externalPlaybackScrubber: some View {
+        VStack(spacing: 7) {
+            HStack {
+                Text(coordinator.scrubberElapsedTimeText)
+                    .font(.caption.monospacedDigit().weight(.semibold))
+                    .foregroundStyle(.white.opacity(0.72))
+
+                Spacer(minLength: 12)
+
+                Text(coordinator.scrubberRemainingTimeText)
+                    .font(.caption.monospacedDigit().weight(.semibold))
+                    .foregroundStyle(.white.opacity(0.72))
+            }
+
+            Slider(
+                value: Binding(
+                    get: {
+                        coordinator.scrubberSliderValue
+                    },
+                    set: { value in
+                        coordinator.updateScrubPreview(to: value)
+                    }
+                ),
+                in: coordinator.scrubberSliderRange,
+                onEditingChanged: { isEditing in
+                    if isEditing {
+                        coordinator.beginScrubbing()
+                    } else {
+                        coordinator.endScrubbing(to: coordinator.scrubberProgress.previewTime)
+                    }
+                }
+            )
+            .tint(Theme.Colors.peach)
+            .accessibilityLabel("Video progress")
+            .accessibilityValue(coordinator.scrubberAccessibilityValue)
+        }
+        .padding(.horizontal, 4)
+        .padding(.top, 2)
+        .padding(.bottom, 1)
     }
 
     private var externalTransportControls: some View {
