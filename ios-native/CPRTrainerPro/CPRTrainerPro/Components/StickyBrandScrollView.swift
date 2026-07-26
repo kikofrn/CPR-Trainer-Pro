@@ -26,13 +26,6 @@ struct StickyBrandScrollView<Content: View>: View {
                 ScrollOffsetReader()
 
                 VStack(alignment: .leading, spacing: 14) {
-                    if let title {
-                        Text(title)
-                            .font(.title.weight(.bold))
-                            .foregroundStyle(.white)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-
                     if showsCourseSubtitle {
                         Text("Choose the course mode before class, download it once, then train offline with confidence.")
                             .font(.footnote)
@@ -67,7 +60,36 @@ struct StickyBrandScrollView<Content: View>: View {
         let logoHeight = expandedLogoHeight - ((expandedLogoHeight - collapsedLogoHeight) * progress)
         let headerHeight = expandedHeaderHeight - ((expandedHeaderHeight - collapsedHeaderHeight) * progress)
 
-        return HeartbeatBrandHeader(logoHeight: logoHeight, onBeat: recordHeartbeatTap)
+        return Group {
+            if let title {
+                HStack(spacing: 12) {
+                    HeartbeatBrandHeader(
+                        logoHeight: logoHeight,
+                        alignment: .leading,
+                        onBeat: recordHeartbeatTap
+                    )
+                    .frame(
+                        width: logoHeight * logoAspectRatio,
+                        alignment: .leading
+                    )
+                    .frame(minHeight: minTapTargetHeight)
+
+                    Text(title)
+                        .font(.title2.weight(.bold))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.72)
+                        .allowsTightening(true)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .accessibilityAddTraits(.isHeader)
+                }
+            } else {
+                HeartbeatBrandHeader(
+                    logoHeight: logoHeight,
+                    onBeat: recordHeartbeatTap
+                )
+            }
+        }
             .padding(.horizontal, Theme.Layout.screenPadding)
             .frame(maxWidth: .infinity)
             .frame(height: headerHeight)
@@ -84,6 +106,8 @@ struct StickyBrandScrollView<Content: View>: View {
     private var collapsedHeaderHeight: CGFloat { 46 }
     private var expandedLogoHeight: CGFloat { 66 }
     private var collapsedLogoHeight: CGFloat { 33 }
+    private var logoAspectRatio: CGFloat { 2.4 }
+    private var minTapTargetHeight: CGFloat { 44 }
 
     private func recordHeartbeatTap() {
         let now = Date()
