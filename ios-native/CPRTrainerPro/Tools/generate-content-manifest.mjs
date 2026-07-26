@@ -28,10 +28,12 @@ const tipsOutPath = path.join(repoRoot, "ios-native/CPRTrainerPro/CPRTrainerPro/
 const subtitleOutDir = path.join(repoRoot, "ios-native/CPRTrainerPro/CPRTrainerPro/Resources/Subtitles");
 const artworkOutDir = path.join(repoRoot, "ios-native/CPRTrainerPro/CPRTrainerPro/Resources/Artwork");
 const r2ContentLengthsPath = path.join(toolDir, "r2-content-lengths.json");
+const r2ObjectMetadataPath = path.join(toolDir, "r2-object-metadata.json");
 
 const source = fs.readFileSync(chaptersPath, "utf8");
 const instructorTipsSource = fs.readFileSync(instructorTipsPath, "utf8");
 const r2ContentLengths = JSON.parse(fs.readFileSync(r2ContentLengthsPath, "utf8"));
+const r2ObjectMetadata = JSON.parse(fs.readFileSync(r2ObjectMetadataPath, "utf8"));
 
 function extractAssignment(input, marker, openingCharacter, closingCharacter) {
   const markerIndex = input.indexOf(marker);
@@ -105,30 +107,75 @@ function cleanFilename(filename) {
     .replace(/^\/+/, "");
 }
 
-// R2 is authoritative for media object keys. The pediatric CPR course reuses
-// these objects from the all-ages CPR presentation instead of storing duplicate
-// copies under the pediatric folder.
-const r2SlideshowMediaOverrides = new Map([
-  ["pediatric-cpr-aed-course/slide-12", "CPR AED Presentation Slides/13_EHAcademy - CPR AED Course Pres-Check Responsiveness.png"],
-  ["pediatric-cpr-aed-course/slide-13", "CPR AED Presentation Slides/14_EHAcademy - CPR AED Course Pres--Getting Help.png"],
-  ["pediatric-cpr-aed-course/slide-14", "CPR AED Presentation Slides/15_EHAcademy - CPR AED Course Pres-Check Breathing.png"],
-  ["pediatric-cpr-aed-course/slide-15", "CPR AED Presentation Slides/16_EHAcademy - CPR AED Course Pres-Begin Chest Compressions.png"],
-  ["pediatric-cpr-aed-course/slide-16", "CPR AED Presentation Slides/17_EHAcademy - CPR AED Course Pres-Chest Compressions Video.mp4"],
-  ["pediatric-cpr-aed-course/slide-20", "CPR AED Presentation Slides/21_EHAcademy - CPR AED Course Pres-CPR Songs.mp4"],
-  ["pediatric-cpr-aed-course/slide-25", "CPR AED Presentation Slides/26_EHAcademy - CPR AED Course Pres-Adult Scenario.png"],
-  ["pediatric-cpr-aed-course/slide-26", "CPR AED Presentation Slides/29_EHAcademy - CPR AED Course Pres-Infant CPR.png"],
-  ["pediatric-cpr-aed-course/slide-29", "CPR AED Presentation Slides/32_EHAcademy - CPR AED Course Pres-Infant Scenario.png"],
-  ["pediatric-cpr-aed-course/slide-30", "CPR AED Presentation Slides/33_EHAcademy - CPR AED Course Pres-Mild Choking.png"],
-  ["pediatric-cpr-aed-course/slide-31", "CPR AED Presentation Slides/34_EHAcademy - CPR AED Course Pres-Severe Choking.png"],
-  ["pediatric-cpr-aed-course/slide-32", "CPR AED Presentation Slides/35_EHAcademy - CPR AED Course Pres-Choking Adult.png"],
-  ["pediatric-cpr-aed-course/slide-33", "CPR AED Presentation Slides/36_EHAcademy - CPR AED Course Pres-Choking Child.png"],
-  ["pediatric-cpr-aed-course/slide-34", "CPR AED Presentation Slides/37_EHAcademy - CPR AED Course Pres-Choking Infant.png"],
+// R2 object keys and their ordering are authoritative. These overrides reconcile
+// the Windows Experiment 3.0 labels with the exact pediatric objects in R2.
+const r2SlideshowOverrides = new Map([
+  ["pediatric-cpr-aed-course/slide-12", {
+    title: "Assessment and Activation - Check Responsiveness",
+    filename: "Pedi CPR Presentation Slides/12_EHAcademy - Pedi CPR AED Course Pres-Assessment and Activation - Check Responsiveness.png",
+  }],
+  ["pediatric-cpr-aed-course/slide-13", {
+    title: "Assessment and Activation - Getting Help",
+    filename: "Pedi CPR Presentation Slides/13_EHAcademy - Pedi CPR AED Course Pres-Assessment and Activation - Getting Help.png",
+  }],
+  ["pediatric-cpr-aed-course/slide-14", {
+    title: "Assessment and Activation - Check Breathing",
+    filename: "Pedi CPR Presentation Slides/14_EHAcademy - Pedi CPR AED Course Pres-Assessment and Activation - Check Breathing.png",
+  }],
+  ["pediatric-cpr-aed-course/slide-15", {
+    title: "Assessment and Activation - Begin Chest Compressions",
+    filename: "Pedi CPR Presentation Slides/15_EHAcademy - Pedi CPR AED Course Pres-Assessment and Activation - Begin Chest Compressions.png",
+  }],
+  ["pediatric-cpr-aed-course/slide-16", {
+    title: "Chest Compression Effect",
+    filename: "Pedi CPR Presentation Slides/16_EHAcademy - Pedi CPR AED Course Pres-Chest Compression Effect Video.mp4",
+  }],
+  ["pediatric-cpr-aed-course/slide-20", {
+    title: "CPR Song",
+    filename: "Pedi CPR Presentation Slides/20_EHAcademy - Pedi CPR AED Course Pres-CPR Song.mp4",
+  }],
+  ["pediatric-cpr-aed-course/slide-25", {
+    title: "Put it all together",
+    filename: "Pedi CPR Presentation Slides/25_EHAcademy - Pedi CPR AED Course Pres-Put it all together.png",
+  }],
+  ["pediatric-cpr-aed-course/slide-26", {
+    title: "Infant Assessment",
+    filename: "Pedi CPR Presentation Slides/26_EHAcademy - Pedi CPR AED Course Pres-Infant Assessment.png",
+  }],
+  ["pediatric-cpr-aed-course/slide-29", {
+    title: "Infant AED Use",
+    filename: "Pedi CPR Presentation Slides/29_EHAcademy - Pedi CPR AED Course Pres-Infant AED Use.png",
+  }],
+  ["pediatric-cpr-aed-course/slide-30", {
+    title: "Infant Scenario",
+    filename: "Pedi CPR Presentation Slides/30_EHAcademy - Pedi CPR AED Course Pres-Infant Scenario.png",
+  }],
+  ["pediatric-cpr-aed-course/slide-31", {
+    title: "Mild Choking",
+    filename: "Pedi CPR Presentation Slides/31_EHAcademy - Pedi CPR AED Course Pres-Mild Choking.png",
+  }],
+  ["pediatric-cpr-aed-course/slide-32", {
+    title: "Severe Choking",
+    filename: "Pedi CPR Presentation Slides/32_EHAcademy - Pedi CPR AED Course Pres-Severe Choking.png",
+  }],
+  ["pediatric-cpr-aed-course/slide-33", {
+    title: "Choking Relief Child",
+    filename: "Pedi CPR Presentation Slides/33_EHAcademy - Pedi CPR AED Course Pres-Choking Relief Child.png",
+  }],
+  ["pediatric-cpr-aed-course/slide-34", {
+    title: "Choking Relief Infant",
+    filename: "Pedi CPR Presentation Slides/34_EHAcademy - Pedi CPR AED Course Pres-Choking Relief Infant.png",
+  }],
 ]);
 
 function resolvedSlideshowFilename(slideshowID, slide) {
   return cleanFilename(
-    r2SlideshowMediaOverrides.get(`${slideshowID}/${slide.id}`) ?? slide.filename
+    r2SlideshowOverrides.get(`${slideshowID}/${slide.id}`)?.filename ?? slide.filename
   );
+}
+
+function resolvedSlideshowTitle(slideshowID, slide) {
+  return r2SlideshowOverrides.get(`${slideshowID}/${slide.id}`)?.title ?? slide.title;
 }
 
 function kindForFilename(filename) {
@@ -142,15 +189,24 @@ function kindForFilename(filename) {
 function mediaAsset(filename, prefix) {
   const clean = cleanFilename(filename);
   const byteCount = r2ContentLengths[clean];
+  const metadata = r2ObjectMetadata[clean];
   assert(
     Number.isSafeInteger(byteCount) && byteCount > 0,
     `Missing R2 Content-Length for ${clean}`
+  );
+  assert(metadata?.byteCount === byteCount, `Missing or stale R2 metadata for ${clean}`);
+  assert(typeof metadata.eTag === "string" && metadata.eTag.length > 0, `Missing R2 ETag for ${clean}`);
+  assert(
+    typeof metadata.lastModified === "string" && !Number.isNaN(Date.parse(metadata.lastModified)),
+    `Missing R2 Last-Modified for ${clean}`
   );
   return {
     id: `${prefix}.${clean}`,
     filename: clean,
     kind: kindForFilename(clean),
     byteCount,
+    eTag: metadata.eTag,
+    lastModified: metadata.lastModified,
   };
 }
 
@@ -193,7 +249,7 @@ const slideshows = evaluateArray("SLIDESHOWS")
         ? "What if something goes wrong"
         : slideshow.id === "cpr-aed-course" && slide.id === "slide-35"
           ? "Choking Adult"
-          : slide.title,
+          : resolvedSlideshowTitle(slideshow.id, slide),
       filename: resolvedSlideshowFilename(slideshow.id, slide),
       type: slide.type,
       isSectionHeader: Boolean(slide.isSectionHeader),
@@ -237,7 +293,7 @@ const expectedSlideshowShape = new Map([
   ["pediatric-first-aid-course", { count: 45, prefixes: ["Pedi First Aid Presentation Slides/"], videos: [] }],
   ["pediatric-cpr-aed-course", {
     count: 36,
-    prefixes: ["Pedi CPR Presentation Slides/", "CPR AED Presentation Slides/"],
+    prefixes: ["Pedi CPR Presentation Slides/"],
     videos: [11, 16, 20, 21],
   }],
 ]);
@@ -449,8 +505,15 @@ assert(
   Object.keys(r2ContentLengths).length === expectedR2Filenames.size,
   "R2 Content-Length inventory contains stale or missing objects"
 );
+assert(
+  Object.keys(r2ObjectMetadata).length === expectedR2Filenames.size,
+  "R2 metadata inventory contains stale or missing objects"
+);
 for (const filename of Object.keys(r2ContentLengths)) {
   assert(expectedR2Filenames.has(filename), `Stale R2 Content-Length entry: ${filename}`);
+}
+for (const filename of Object.keys(r2ObjectMetadata)) {
+  assert(expectedR2Filenames.has(filename), `Stale R2 metadata entry: ${filename}`);
 }
 
 const manifest = {
@@ -510,7 +573,7 @@ const tipsManifest = {
 const expectedPackageCounts = new Map([
   ["package.cpr-aed.slideshow", 43],
   ["package.cpr-aed.video", 60],
-  ["package.cpr-aed.pediatric-slideshow", 38],
+  ["package.cpr-aed.pediatric-slideshow", 36],
   ["package.first-aid.slideshow", 47],
   ["package.first-aid.video", 90],
   ["package.first-aid.pediatric-slideshow", 45],

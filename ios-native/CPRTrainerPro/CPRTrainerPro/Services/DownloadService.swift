@@ -122,6 +122,7 @@ final class DownloadService: NSObject, ObservableObject {
     }
 
     private let storageService: StorageService
+    private let versionStore: ContentVersionStore?
     private let queueStore: DownloadQueueStore
     private let downloadAllQueueStore: DownloadAllQueueStore
     private let backgroundSessionIdentifier: String
@@ -160,11 +161,13 @@ final class DownloadService: NSObject, ObservableObject {
 
     init(
         storageService: StorageService = .init(),
+        versionStore: ContentVersionStore? = nil,
         queueStore: DownloadQueueStore = .init(),
         downloadAllQueueStore: DownloadAllQueueStore = .init(),
         contentRevision: String = "experiment-3.0"
     ) {
         self.storageService = storageService
+        self.versionStore = versionStore
         self.queueStore = queueStore
         self.downloadAllQueueStore = downloadAllQueueStore
         let revisionComponent = contentRevision.replacingOccurrences(
@@ -582,10 +585,24 @@ final class DownloadService: NSObject, ObservableObject {
         }
 
         do {
+            guard let remoteVersion = RemoteAssetVersion(response: httpResponse) else {
+                throw StorageService.StorageError.emptyDownloadedFile(
+                    activeDownload.asset.filename
+                )
+            }
             try storageService.moveDownloadedFile(
                 from: temporaryURL,
-                for: activeDownload.asset
+                for: activeDownload.asset,
+                expectedByteCount: remoteVersion.byteCount
             )
+            do {
+                try versionStore?.recordInstalled(
+                    filename: activeDownload.asset.filename,
+                    version: remoteVersion
+                )
+            } catch {
+                assertionFailure("Failed to save downloaded media version: \(error)")
+            }
             packageProgress[activeDownload.packageID]?.completedAssetCount += 1
             packageProgress[activeDownload.packageID]?.completedByteCount += storageService.fileSizeIfExists(
                 activeDownload.asset.filename

@@ -1978,40 +1978,40 @@
         },
         {
           "id": "slide-12",
-          "title": "Check Responsiveness",
-          "filename": "CPR AED Presentation Slides/13_EHAcademy - CPR AED Course Pres-Check Responsiveness.png",
+          "title": "Assessment and Activation - Check Responsiveness",
+          "filename": "Pedi CPR Presentation Slides/12_EHAcademy - Pedi CPR AED Course Pres-Assessment and Activation - Check Responsiveness.png",
           "type": "image",
           "isSectionHeader": false,
           "parentSectionId": "slide-11"
         },
         {
           "id": "slide-13",
-          "title": "Getting Help",
-          "filename": "CPR AED Presentation Slides/14_EHAcademy - CPR AED Course Pres--Getting Help.png",
+          "title": "Assessment and Activation - Getting Help",
+          "filename": "Pedi CPR Presentation Slides/13_EHAcademy - Pedi CPR AED Course Pres-Assessment and Activation - Getting Help.png",
           "type": "image",
           "isSectionHeader": false,
           "parentSectionId": "slide-11"
         },
         {
           "id": "slide-14",
-          "title": "Check Breathing",
-          "filename": "CPR AED Presentation Slides/15_EHAcademy - CPR AED Course Pres-Check Breathing.png",
+          "title": "Assessment and Activation - Check Breathing",
+          "filename": "Pedi CPR Presentation Slides/14_EHAcademy - Pedi CPR AED Course Pres-Assessment and Activation - Check Breathing.png",
           "type": "image",
           "isSectionHeader": false,
           "parentSectionId": "slide-11"
         },
         {
           "id": "slide-15",
-          "title": "Begin Chest Compressions",
-          "filename": "CPR AED Presentation Slides/16_EHAcademy - CPR AED Course Pres-Begin Chest Compressions.png",
+          "title": "Assessment and Activation - Begin Chest Compressions",
+          "filename": "Pedi CPR Presentation Slides/15_EHAcademy - Pedi CPR AED Course Pres-Assessment and Activation - Begin Chest Compressions.png",
           "type": "image",
           "isSectionHeader": false,
           "parentSectionId": "slide-11"
         },
         {
           "id": "slide-16",
-          "title": "CHEST COMPRESSIONS",
-          "filename": "CPR AED Presentation Slides/17_EHAcademy - CPR AED Course Pres-Chest Compressions Video.mp4",
+          "title": "Chest Compression Effect",
+          "filename": "Pedi CPR Presentation Slides/16_EHAcademy - Pedi CPR AED Course Pres-Chest Compression Effect Video.mp4",
           "type": "video",
           "isSectionHeader": true,
           "parentSectionId": null
@@ -2042,8 +2042,8 @@
         },
         {
           "id": "slide-20",
-          "title": "CPR Songs",
-          "filename": "CPR AED Presentation Slides/21_EHAcademy - CPR AED Course Pres-CPR Songs.mp4",
+          "title": "CPR Song",
+          "filename": "Pedi CPR Presentation Slides/20_EHAcademy - Pedi CPR AED Course Pres-CPR Song.mp4",
           "type": "video",
           "isSectionHeader": false,
           "parentSectionId": "slide-16"
@@ -2082,16 +2082,16 @@
         },
         {
           "id": "slide-25",
-          "title": "Adult Scenario",
-          "filename": "CPR AED Presentation Slides/26_EHAcademy - CPR AED Course Pres-Adult Scenario.png",
+          "title": "Put it all together",
+          "filename": "Pedi CPR Presentation Slides/25_EHAcademy - Pedi CPR AED Course Pres-Put it all together.png",
           "type": "image",
           "isSectionHeader": false,
           "parentSectionId": "slide-22"
         },
         {
           "id": "slide-26",
-          "title": "INFANT CPR",
-          "filename": "CPR AED Presentation Slides/29_EHAcademy - CPR AED Course Pres-Infant CPR.png",
+          "title": "Infant Assessment",
+          "filename": "Pedi CPR Presentation Slides/26_EHAcademy - Pedi CPR AED Course Pres-Infant Assessment.png",
           "type": "image",
           "isSectionHeader": true,
           "parentSectionId": null
@@ -2114,48 +2114,48 @@
         },
         {
           "id": "slide-29",
-          "title": "Infant Scenario",
-          "filename": "CPR AED Presentation Slides/32_EHAcademy - CPR AED Course Pres-Infant Scenario.png",
+          "title": "Infant AED Use",
+          "filename": "Pedi CPR Presentation Slides/29_EHAcademy - Pedi CPR AED Course Pres-Infant AED Use.png",
           "type": "image",
           "isSectionHeader": false,
           "parentSectionId": "slide-26"
         },
         {
           "id": "slide-30",
-          "title": "CHOKING",
-          "filename": "CPR AED Presentation Slides/33_EHAcademy - CPR AED Course Pres-Mild Choking.png",
+          "title": "Infant Scenario",
+          "filename": "Pedi CPR Presentation Slides/30_EHAcademy - Pedi CPR AED Course Pres-Infant Scenario.png",
           "type": "image",
           "isSectionHeader": true,
           "parentSectionId": null
         },
         {
           "id": "slide-31",
-          "title": "Severe Choking",
-          "filename": "CPR AED Presentation Slides/34_EHAcademy - CPR AED Course Pres-Severe Choking.png",
+          "title": "Mild Choking",
+          "filename": "Pedi CPR Presentation Slides/31_EHAcademy - Pedi CPR AED Course Pres-Mild Choking.png",
           "type": "image",
           "isSectionHeader": false,
           "parentSectionId": "slide-30"
         },
         {
           "id": "slide-32",
-          "title": "Choking Adult",
-          "filename": "CPR AED Presentation Slides/35_EHAcademy - CPR AED Course Pres-Choking Adult.png",
+          "title": "Severe Choking",
+          "filename": "Pedi CPR Presentation Slides/32_EHAcademy - Pedi CPR AED Course Pres-Severe Choking.png",
           "type": "image",
           "isSectionHeader": false,
           "parentSectionId": "slide-30"
         },
         {
           "id": "slide-33",
-          "title": "Choking Child",
-          "filename": "CPR AED Presentation Slides/36_EHAcademy - CPR AED Course Pres-Choking Child.png",
+          "title": "Choking Relief Child",
+          "filename": "Pedi CPR Presentation Slides/33_EHAcademy - Pedi CPR AED Course Pres-Choking Relief Child.png",
           "type": "image",
           "isSectionHeader": false,
           "parentSectionId": "slide-30"
         },
         {
           "id": "slide-34",
-          "title": "Choking Infant",
-          "filename": "CPR AED Presentation Slides/37_EHAcademy - CPR AED Course Pres-Choking Infant.png",
+          "title": "Choking Relief Infant",
+          "filename": "Pedi CPR Presentation Slides/34_EHAcademy - Pedi CPR AED Course Pres-Choking Relief Infant.png",
           "type": "image",
           "isSectionHeader": false,
           "parentSectionId": "slide-30"
@@ -2214,73 +2214,97 @@
           "id": "package.cpr-aed.slideshow.CPR AED Presentation Slides/01_EHAcademy - CPR AED Course Pres-Introduction.png",
           "filename": "CPR AED Presentation Slides/01_EHAcademy - CPR AED Course Pres-Introduction.png",
           "kind": "image",
-          "byteCount": 11833693
+          "byteCount": 11833693,
+          "eTag": "\"00f4000389c6945bfa019ee3de1f682b\"",
+          "lastModified": "Thu, 23 Jul 2026 22:03:34 GMT"
         },
         {
           "id": "package.cpr-aed.slideshow.CPR AED Presentation Slides/02_EHAcademy - CPR AED Course Pres-Why should I learn CPR.png",
           "filename": "CPR AED Presentation Slides/02_EHAcademy - CPR AED Course Pres-Why should I learn CPR.png",
           "kind": "image",
-          "byteCount": 8446849
+          "byteCount": 8446849,
+          "eTag": "\"5709a9fa15017ee8ba90add5f1a473ca\"",
+          "lastModified": "Thu, 23 Jul 2026 22:03:33 GMT"
         },
         {
           "id": "package.cpr-aed.slideshow.CPR AED Presentation Slides/03_EHAcademy - CPR AED Course Pres-Heart Attack vs Cardiac Arrest.png",
           "filename": "CPR AED Presentation Slides/03_EHAcademy - CPR AED Course Pres-Heart Attack vs Cardiac Arrest.png",
           "kind": "image",
-          "byteCount": 3224311
+          "byteCount": 3224311,
+          "eTag": "\"445758b9ae9aa76f3db43f68b4800562\"",
+          "lastModified": "Thu, 23 Jul 2026 22:03:30 GMT"
         },
         {
           "id": "package.cpr-aed.slideshow.CPR AED Presentation Slides/04_EHAcademy - CPR AED Course Pres-What is CPR.png",
           "filename": "CPR AED Presentation Slides/04_EHAcademy - CPR AED Course Pres-What is CPR.png",
           "kind": "image",
-          "byteCount": 10576865
+          "byteCount": 10576865,
+          "eTag": "\"225df890895c2ce3eea1241187f9efc5\"",
+          "lastModified": "Thu, 23 Jul 2026 22:03:34 GMT"
         },
         {
           "id": "package.cpr-aed.slideshow.CPR AED Presentation Slides/05_EHAcademy - CPR AED Course Pres-When will I use CPR.png",
           "filename": "CPR AED Presentation Slides/05_EHAcademy - CPR AED Course Pres-When will I use CPR.png",
           "kind": "image",
-          "byteCount": 12115350
+          "byteCount": 12115350,
+          "eTag": "\"bffef21067ce83bf4ad05d033165e6d3\"",
+          "lastModified": "Thu, 23 Jul 2026 22:03:34 GMT"
         },
         {
           "id": "package.cpr-aed.slideshow.CPR AED Presentation Slides/06_EHAcademy - CPR AED Course Pres-What if something goes wrong.png",
           "filename": "CPR AED Presentation Slides/06_EHAcademy - CPR AED Course Pres-What if something goes wrong.png",
           "kind": "image",
-          "byteCount": 7548526
+          "byteCount": 7548526,
+          "eTag": "\"c9b8e85b22acd5baf980ab11a57595cf\"",
+          "lastModified": "Thu, 23 Jul 2026 22:03:35 GMT"
         },
         {
           "id": "package.cpr-aed.slideshow.CPR AED Presentation Slides/07_EHAcademy - CPR AED Course Pres-Good Samaritan Law.png",
           "filename": "CPR AED Presentation Slides/07_EHAcademy - CPR AED Course Pres-Good Samaritan Law.png",
           "kind": "image",
-          "byteCount": 7222801
+          "byteCount": 7222801,
+          "eTag": "\"49899746a1c96f5106adc0e091887227\"",
+          "lastModified": "Thu, 23 Jul 2026 22:03:36 GMT"
         },
         {
           "id": "package.cpr-aed.slideshow.CPR AED Presentation Slides/08_EHAcademy - CPR AED Course Pres-Life and Death Drama.mp4",
           "filename": "CPR AED Presentation Slides/08_EHAcademy - CPR AED Course Pres-Life and Death Drama.mp4",
           "kind": "video",
-          "byteCount": 168056932
+          "byteCount": 168056932,
+          "eTag": "\"ced84a7bf74d36bdd5ae0c78bf3abc74\"",
+          "lastModified": "Thu, 23 Jul 2026 22:04:24 GMT"
         },
         {
           "id": "package.cpr-aed.slideshow.CPR AED Presentation Slides/09_EHAcademy - CPR AED Course Pres-Course Overview.png",
           "filename": "CPR AED Presentation Slides/09_EHAcademy - CPR AED Course Pres-Course Overview.png",
           "kind": "image",
-          "byteCount": 2093383
+          "byteCount": 2093383,
+          "eTag": "\"62bd0f037d1a924cfb232847b4efbea4\"",
+          "lastModified": "Thu, 23 Jul 2026 22:03:36 GMT"
         },
         {
           "id": "package.cpr-aed.slideshow.CPR AED Presentation Slides/10_EHAcademy - CPR AED Course Pres-Recognizing the Emergency.png",
           "filename": "CPR AED Presentation Slides/10_EHAcademy - CPR AED Course Pres-Recognizing the Emergency.png",
           "kind": "image",
-          "byteCount": 437893
+          "byteCount": 437893,
+          "eTag": "\"07865426058c095fcdcc35244b6bc551\"",
+          "lastModified": "Thu, 23 Jul 2026 22:03:36 GMT"
         },
         {
           "id": "package.cpr-aed.slideshow.CPR AED Presentation Slides/11_EHAcademy - CPR AED Course Pres-First Actions.png",
           "filename": "CPR AED Presentation Slides/11_EHAcademy - CPR AED Course Pres-First Actions.png",
           "kind": "image",
-          "byteCount": 17282345
+          "byteCount": 17282345,
+          "eTag": "\"153d712096e5b51ff990571fe4127b86\"",
+          "lastModified": "Thu, 23 Jul 2026 22:03:43 GMT"
         },
         {
           "id": "package.cpr-aed.slideshow.CPR AED Presentation Slides/12_EHAcademy - CPR AED Course Pres-Assessment Example.mp4",
           "filename": "CPR AED Presentation Slides/12_EHAcademy - CPR AED Course Pres-Assessment Example.mp4",
           "kind": "video",
-          "byteCount": 11705739
+          "byteCount": 11705739,
+          "eTag": "\"cc56f323e25ba8e4a870d08987128cc6\"",
+          "lastModified": "Thu, 23 Jul 2026 22:03:42 GMT"
         },
         {
           "id": "package.cpr-aed.slideshow.subtitle.12_EHAcademy - CPR AED Course Pres-Assessment Example.vtt",
@@ -2292,31 +2316,41 @@
           "id": "package.cpr-aed.slideshow.CPR AED Presentation Slides/13_EHAcademy - CPR AED Course Pres-Check Responsiveness.png",
           "filename": "CPR AED Presentation Slides/13_EHAcademy - CPR AED Course Pres-Check Responsiveness.png",
           "kind": "image",
-          "byteCount": 409257
+          "byteCount": 409257,
+          "eTag": "\"48b8061e996b7b9d00179c85db71a81b\"",
+          "lastModified": "Thu, 23 Jul 2026 22:03:38 GMT"
         },
         {
           "id": "package.cpr-aed.slideshow.CPR AED Presentation Slides/14_EHAcademy - CPR AED Course Pres--Getting Help.png",
           "filename": "CPR AED Presentation Slides/14_EHAcademy - CPR AED Course Pres--Getting Help.png",
           "kind": "image",
-          "byteCount": 422809
+          "byteCount": 422809,
+          "eTag": "\"492ebcbccc5b4dcf0e1be4ea87ab9bc9\"",
+          "lastModified": "Thu, 23 Jul 2026 22:03:38 GMT"
         },
         {
           "id": "package.cpr-aed.slideshow.CPR AED Presentation Slides/15_EHAcademy - CPR AED Course Pres-Check Breathing.png",
           "filename": "CPR AED Presentation Slides/15_EHAcademy - CPR AED Course Pres-Check Breathing.png",
           "kind": "image",
-          "byteCount": 429127
+          "byteCount": 429127,
+          "eTag": "\"f7119aa8c719ba70a52bfd11be77f961\"",
+          "lastModified": "Thu, 23 Jul 2026 22:03:39 GMT"
         },
         {
           "id": "package.cpr-aed.slideshow.CPR AED Presentation Slides/16_EHAcademy - CPR AED Course Pres-Begin Chest Compressions.png",
           "filename": "CPR AED Presentation Slides/16_EHAcademy - CPR AED Course Pres-Begin Chest Compressions.png",
           "kind": "image",
-          "byteCount": 394872
+          "byteCount": 394872,
+          "eTag": "\"bba5444b58198c216e2188c1faf61340\"",
+          "lastModified": "Thu, 23 Jul 2026 22:03:39 GMT"
         },
         {
           "id": "package.cpr-aed.slideshow.CPR AED Presentation Slides/17_EHAcademy - CPR AED Course Pres-Chest Compressions Video.mp4",
           "filename": "CPR AED Presentation Slides/17_EHAcademy - CPR AED Course Pres-Chest Compressions Video.mp4",
           "kind": "video",
-          "byteCount": 16885652
+          "byteCount": 16885652,
+          "eTag": "\"cb44b68322a4f71e1996eb0963fb608c\"",
+          "lastModified": "Thu, 23 Jul 2026 22:03:48 GMT"
         },
         {
           "id": "package.cpr-aed.slideshow.subtitle.17_EHAcademy - CPR AED Course Pres-Chest Compressions Video.vtt",
@@ -2328,25 +2362,33 @@
           "id": "package.cpr-aed.slideshow.CPR AED Presentation Slides/18_EHAcademy - CPR AED Course Pres-Hand Placement.png",
           "filename": "CPR AED Presentation Slides/18_EHAcademy - CPR AED Course Pres-Hand Placement.png",
           "kind": "image",
-          "byteCount": 6924307
+          "byteCount": 6924307,
+          "eTag": "\"8530671834f70cc34973e64532b4981a\"",
+          "lastModified": "Thu, 23 Jul 2026 22:03:44 GMT"
         },
         {
           "id": "package.cpr-aed.slideshow.CPR AED Presentation Slides/19_EHAcademy - CPR AED Course Pres-Compression Depth.png",
           "filename": "CPR AED Presentation Slides/19_EHAcademy - CPR AED Course Pres-Compression Depth.png",
           "kind": "image",
-          "byteCount": 5199836
+          "byteCount": 5199836,
+          "eTag": "\"3ab191328f45d1ce7f7a265ed12b5907\"",
+          "lastModified": "Thu, 23 Jul 2026 22:03:46 GMT"
         },
         {
           "id": "package.cpr-aed.slideshow.CPR AED Presentation Slides/20_EHAcademy - CPR AED Course Pres-Rate and Rhythm.png",
           "filename": "CPR AED Presentation Slides/20_EHAcademy - CPR AED Course Pres-Rate and Rhythm.png",
           "kind": "image",
-          "byteCount": 4955958
+          "byteCount": 4955958,
+          "eTag": "\"12076c475a85381d75f8bf195215da02\"",
+          "lastModified": "Thu, 23 Jul 2026 22:03:47 GMT"
         },
         {
           "id": "package.cpr-aed.slideshow.CPR AED Presentation Slides/21_EHAcademy - CPR AED Course Pres-CPR Songs.mp4",
           "filename": "CPR AED Presentation Slides/21_EHAcademy - CPR AED Course Pres-CPR Songs.mp4",
           "kind": "video",
-          "byteCount": 24988618
+          "byteCount": 24988618,
+          "eTag": "\"55c80e37d0fb5082dc3aa56484d14f76\"",
+          "lastModified": "Thu, 23 Jul 2026 22:03:57 GMT"
         },
         {
           "id": "package.cpr-aed.slideshow.subtitle.21_EHAcademy - CPR AED Course Pres-CPR Songs.vtt",
@@ -2358,7 +2400,9 @@
           "id": "package.cpr-aed.slideshow.CPR AED Presentation Slides/22_EHAcademy - CPR AED Course Pres-Practice Compressions.mp4",
           "filename": "CPR AED Presentation Slides/22_EHAcademy - CPR AED Course Pres-Practice Compressions.mp4",
           "kind": "video",
-          "byteCount": 21098273
+          "byteCount": 21098273,
+          "eTag": "\"2789fc27c25ecdcd14c1c81f745e10d5\"",
+          "lastModified": "Thu, 23 Jul 2026 22:03:57 GMT"
         },
         {
           "id": "package.cpr-aed.slideshow.subtitle.22_EHAcademy - CPR AED Course Pres-Practice Compressions.vtt",
@@ -2370,103 +2414,137 @@
           "id": "package.cpr-aed.slideshow.CPR AED Presentation Slides/23_EHAcademy - CPR AED Course Pres-Giving Breaths.png",
           "filename": "CPR AED Presentation Slides/23_EHAcademy - CPR AED Course Pres-Giving Breaths.png",
           "kind": "image",
-          "byteCount": 1186890
+          "byteCount": 1186890,
+          "eTag": "\"879264fe62c78cb26408660d66eba10a\"",
+          "lastModified": "Thu, 23 Jul 2026 22:03:49 GMT"
         },
         {
           "id": "package.cpr-aed.slideshow.CPR AED Presentation Slides/24_EHAcademy - CPR AED Course Pres-Practice Giving Breaths.png",
           "filename": "CPR AED Presentation Slides/24_EHAcademy - CPR AED Course Pres-Practice Giving Breaths.png",
           "kind": "image",
-          "byteCount": 9561147
+          "byteCount": 9561147,
+          "eTag": "\"8b0a3256f1a5423adf91768dc1203eb2\"",
+          "lastModified": "Thu, 23 Jul 2026 22:03:55 GMT"
         },
         {
           "id": "package.cpr-aed.slideshow.CPR AED Presentation Slides/25_EHAcademy - CPR AED Course Pres-Using an AED.png",
           "filename": "CPR AED Presentation Slides/25_EHAcademy - CPR AED Course Pres-Using an AED.png",
           "kind": "image",
-          "byteCount": 3064238
+          "byteCount": 3064238,
+          "eTag": "\"ce8022c13038f988d868a4023663bedb\"",
+          "lastModified": "Thu, 23 Jul 2026 22:03:52 GMT"
         },
         {
           "id": "package.cpr-aed.slideshow.CPR AED Presentation Slides/26_EHAcademy - CPR AED Course Pres-Adult Scenario.png",
           "filename": "CPR AED Presentation Slides/26_EHAcademy - CPR AED Course Pres-Adult Scenario.png",
           "kind": "image",
-          "byteCount": 412692
+          "byteCount": 412692,
+          "eTag": "\"01ed5cc5d696174d6b2239707cc6633c\"",
+          "lastModified": "Thu, 23 Jul 2026 22:03:54 GMT"
         },
         {
           "id": "package.cpr-aed.slideshow.CPR AED Presentation Slides/27_EHAcademy - CPR AED Course Pres-Child CPR.png",
           "filename": "CPR AED Presentation Slides/27_EHAcademy - CPR AED Course Pres-Child CPR.png",
           "kind": "image",
-          "byteCount": 4111903
+          "byteCount": 4111903,
+          "eTag": "\"db42d5f9fdbf8e11c20f3c69a20982f5\"",
+          "lastModified": "Thu, 23 Jul 2026 22:03:58 GMT"
         },
         {
           "id": "package.cpr-aed.slideshow.CPR AED Presentation Slides/28_EHAcademy - CPR AED Course Pres-AED use on kids.png",
           "filename": "CPR AED Presentation Slides/28_EHAcademy - CPR AED Course Pres-AED use on kids.png",
           "kind": "image",
-          "byteCount": 4055429
+          "byteCount": 4055429,
+          "eTag": "\"76e3b5500e05ed103caa545a34619f6d\"",
+          "lastModified": "Thu, 23 Jul 2026 22:03:58 GMT"
         },
         {
           "id": "package.cpr-aed.slideshow.CPR AED Presentation Slides/29_EHAcademy - CPR AED Course Pres-Infant CPR.png",
           "filename": "CPR AED Presentation Slides/29_EHAcademy - CPR AED Course Pres-Infant CPR.png",
           "kind": "image",
-          "byteCount": 5748854
+          "byteCount": 5748854,
+          "eTag": "\"5c3b725db9a33e5ff306a37f6e3fbe3f\"",
+          "lastModified": "Thu, 23 Jul 2026 22:04:01 GMT"
         },
         {
           "id": "package.cpr-aed.slideshow.CPR AED Presentation Slides/30_EHAcademy - CPR AED Course Pres-Infant Chest Compressions.png",
           "filename": "CPR AED Presentation Slides/30_EHAcademy - CPR AED Course Pres-Infant Chest Compressions.png",
           "kind": "image",
-          "byteCount": 4797793
+          "byteCount": 4797793,
+          "eTag": "\"4425036c47b5d8ad0bf573e8d77511fc\"",
+          "lastModified": "Thu, 23 Jul 2026 22:04:01 GMT"
         },
         {
           "id": "package.cpr-aed.slideshow.CPR AED Presentation Slides/31_EHAcademy - CPR AED Course Pres-Giving Breaths.png",
           "filename": "CPR AED Presentation Slides/31_EHAcademy - CPR AED Course Pres-Giving Breaths.png",
           "kind": "image",
-          "byteCount": 5631170
+          "byteCount": 5631170,
+          "eTag": "\"cc1972600401416a913351fa3a740f42\"",
+          "lastModified": "Thu, 23 Jul 2026 22:04:01 GMT"
         },
         {
           "id": "package.cpr-aed.slideshow.CPR AED Presentation Slides/32_EHAcademy - CPR AED Course Pres-Infant Scenario.png",
           "filename": "CPR AED Presentation Slides/32_EHAcademy - CPR AED Course Pres-Infant Scenario.png",
           "kind": "image",
-          "byteCount": 541989
+          "byteCount": 541989,
+          "eTag": "\"f3ddb6db3af9867072cfb852be5a96a7\"",
+          "lastModified": "Thu, 23 Jul 2026 22:04:01 GMT"
         },
         {
           "id": "package.cpr-aed.slideshow.CPR AED Presentation Slides/33_EHAcademy - CPR AED Course Pres-Mild Choking.png",
           "filename": "CPR AED Presentation Slides/33_EHAcademy - CPR AED Course Pres-Mild Choking.png",
           "kind": "image",
-          "byteCount": 4488853
+          "byteCount": 4488853,
+          "eTag": "\"ce9ea8379f305ea8f8f04a4f29bd6f04\"",
+          "lastModified": "Thu, 23 Jul 2026 22:04:05 GMT"
         },
         {
           "id": "package.cpr-aed.slideshow.CPR AED Presentation Slides/34_EHAcademy - CPR AED Course Pres-Severe Choking.png",
           "filename": "CPR AED Presentation Slides/34_EHAcademy - CPR AED Course Pres-Severe Choking.png",
           "kind": "image",
-          "byteCount": 7047471
+          "byteCount": 7047471,
+          "eTag": "\"090a66bbfc2586244b31eb7dd6620ed5\"",
+          "lastModified": "Thu, 23 Jul 2026 22:04:06 GMT"
         },
         {
           "id": "package.cpr-aed.slideshow.CPR AED Presentation Slides/35_EHAcademy - CPR AED Course Pres-Choking Adult.png",
           "filename": "CPR AED Presentation Slides/35_EHAcademy - CPR AED Course Pres-Choking Adult.png",
           "kind": "image",
-          "byteCount": 4536597
+          "byteCount": 4536597,
+          "eTag": "\"47bca9cd939bb7883d6bd462840ee481\"",
+          "lastModified": "Thu, 23 Jul 2026 22:04:05 GMT"
         },
         {
           "id": "package.cpr-aed.slideshow.CPR AED Presentation Slides/36_EHAcademy - CPR AED Course Pres-Choking Child.png",
           "filename": "CPR AED Presentation Slides/36_EHAcademy - CPR AED Course Pres-Choking Child.png",
           "kind": "image",
-          "byteCount": 3331341
+          "byteCount": 3331341,
+          "eTag": "\"d33432f3123a0ab27ce3d08d46d99335\"",
+          "lastModified": "Thu, 23 Jul 2026 22:04:05 GMT"
         },
         {
           "id": "package.cpr-aed.slideshow.CPR AED Presentation Slides/37_EHAcademy - CPR AED Course Pres-Choking Infant.png",
           "filename": "CPR AED Presentation Slides/37_EHAcademy - CPR AED Course Pres-Choking Infant.png",
           "kind": "image",
-          "byteCount": 4923080
+          "byteCount": 4923080,
+          "eTag": "\"a3e1a3b92ad6dd94e985efe491a43055\"",
+          "lastModified": "Fri, 24 Jul 2026 19:15:06 GMT"
         },
         {
           "id": "package.cpr-aed.slideshow.CPR AED Presentation Slides/38_EHAcademy - CPR AED Course Pres-Practice Infant Choking.png",
           "filename": "CPR AED Presentation Slides/38_EHAcademy - CPR AED Course Pres-Practice Infant Choking.png",
           "kind": "image",
-          "byteCount": 22182080
+          "byteCount": 22182080,
+          "eTag": "\"9e8685d93b4e285f59766797e45b07b8\"",
+          "lastModified": "Fri, 24 Jul 2026 19:15:10 GMT"
         },
         {
           "id": "package.cpr-aed.slideshow.CPR AED Presentation Slides/39_EHAcademy - CPR AED Course Pres-Conclusion.png",
           "filename": "CPR AED Presentation Slides/39_EHAcademy - CPR AED Course Pres-Conclusion.png",
           "kind": "image",
-          "byteCount": 4758551
+          "byteCount": 4758551,
+          "eTag": "\"7a57f1ff88519186ba7880923d141b94\"",
+          "lastModified": "Fri, 24 Jul 2026 19:15:06 GMT"
         }
       ]
     },
@@ -2478,7 +2556,9 @@
           "id": "package.cpr-aed.video.CPR AED VA Slides/01_EHAcademy - CPR AED Course Video-Introduction.mp4",
           "filename": "CPR AED VA Slides/01_EHAcademy - CPR AED Course Video-Introduction.mp4",
           "kind": "video",
-          "byteCount": 9656720
+          "byteCount": 9656720,
+          "eTag": "\"b5dac4991e8a211775f8cfd1e934dfcc\"",
+          "lastModified": "Thu, 23 Jul 2026 22:19:16 GMT"
         },
         {
           "id": "package.cpr-aed.video.subtitle.01_EHAcademy - CPR AED Course Video-Introduction.vtt",
@@ -2490,7 +2570,9 @@
           "id": "package.cpr-aed.video.CPR AED VA Slides/02_EHAcademy - CPR AED Course Video-Why are we here.mp4",
           "filename": "CPR AED VA Slides/02_EHAcademy - CPR AED Course Video-Why are we here.mp4",
           "kind": "video",
-          "byteCount": 44274596
+          "byteCount": 44274596,
+          "eTag": "\"5366757e1cbd13ff6416ef009209cdf2\"",
+          "lastModified": "Thu, 23 Jul 2026 22:19:22 GMT"
         },
         {
           "id": "package.cpr-aed.video.subtitle.02_EHAcademy - CPR AED Course Video-Why are we here.vtt",
@@ -2502,7 +2584,9 @@
           "id": "package.cpr-aed.video.CPR AED VA Slides/03_EHAcademy - CPR AED Course Video-Life and Death Drama.mp4",
           "filename": "CPR AED VA Slides/03_EHAcademy - CPR AED Course Video-Life and Death Drama.mp4",
           "kind": "video",
-          "byteCount": 20728902
+          "byteCount": 20728902,
+          "eTag": "\"1e7a1a0976f14b002db44e6f53c48add\"",
+          "lastModified": "Thu, 23 Jul 2026 22:19:18 GMT"
         },
         {
           "id": "package.cpr-aed.video.subtitle.03_EHAcademy - CPR AED Course Video-Life and Death Drama.vtt",
@@ -2514,7 +2598,9 @@
           "id": "package.cpr-aed.video.CPR AED VA Slides/04_EHAcademy - CPR AED Course Video-Course Overview.mp4",
           "filename": "CPR AED VA Slides/04_EHAcademy - CPR AED Course Video-Course Overview.mp4",
           "kind": "video",
-          "byteCount": 16825877
+          "byteCount": 16825877,
+          "eTag": "\"278931dfd9354083f918d60aceb9cbf2\"",
+          "lastModified": "Thu, 23 Jul 2026 22:19:19 GMT"
         },
         {
           "id": "package.cpr-aed.video.subtitle.04_EHAcademy - CPR AED Course Video-Course Overview.vtt",
@@ -2526,7 +2612,9 @@
           "id": "package.cpr-aed.video.CPR AED VA Slides/05_EHAcademy - CPR AED Course Video-Recognizing the Emergency.mp4",
           "filename": "CPR AED VA Slides/05_EHAcademy - CPR AED Course Video-Recognizing the Emergency.mp4",
           "kind": "video",
-          "byteCount": 5625818
+          "byteCount": 5625818,
+          "eTag": "\"a899d042d9db8886a66550bf93797327\"",
+          "lastModified": "Thu, 23 Jul 2026 22:19:15 GMT"
         },
         {
           "id": "package.cpr-aed.video.subtitle.05_EHAcademy - CPR AED Course Video-Recognizing the Emergency.vtt",
@@ -2538,7 +2626,9 @@
           "id": "package.cpr-aed.video.CPR AED VA Slides/06_EHAcademy - CPR AED Course Video-First Actions.mp4",
           "filename": "CPR AED VA Slides/06_EHAcademy - CPR AED Course Video-First Actions.mp4",
           "kind": "video",
-          "byteCount": 9862067
+          "byteCount": 9862067,
+          "eTag": "\"c884f6e8815e38524dec4579ddd7bae1\"",
+          "lastModified": "Thu, 23 Jul 2026 22:19:18 GMT"
         },
         {
           "id": "package.cpr-aed.video.subtitle.06_EHAcademy - CPR AED Course Video-First Actions.vtt",
@@ -2550,7 +2640,9 @@
           "id": "package.cpr-aed.video.CPR AED VA Slides/07_EHAcademy - CPR AED Course Video-Assessment Example.mp4",
           "filename": "CPR AED VA Slides/07_EHAcademy - CPR AED Course Video-Assessment Example.mp4",
           "kind": "video",
-          "byteCount": 13823125
+          "byteCount": 13823125,
+          "eTag": "\"a290f5601f1c3a2eb1d1b677b1c8928b\"",
+          "lastModified": "Thu, 23 Jul 2026 22:19:20 GMT"
         },
         {
           "id": "package.cpr-aed.video.subtitle.07_EHAcademy - CPR AED Course Video-Assessment Example.vtt",
@@ -2562,7 +2654,9 @@
           "id": "package.cpr-aed.video.CPR AED VA Slides/08_EHAcademy - CPR AED Course Video-Assessment and Activation.mp4",
           "filename": "CPR AED VA Slides/08_EHAcademy - CPR AED Course Video-Assessment and Activation.mp4",
           "kind": "video",
-          "byteCount": 24438376
+          "byteCount": 24438376,
+          "eTag": "\"666c1458cd11ea342c1cf32dc09747c9\"",
+          "lastModified": "Thu, 23 Jul 2026 22:19:23 GMT"
         },
         {
           "id": "package.cpr-aed.video.subtitle.08_EHAcademy - CPR AED Course Video-Assessment and Activation.vtt",
@@ -2574,7 +2668,9 @@
           "id": "package.cpr-aed.video.CPR AED VA Slides/09_EHAcademy - CPR AED Course Video-Chest Compressions Video.mp4",
           "filename": "CPR AED VA Slides/09_EHAcademy - CPR AED Course Video-Chest Compressions Video.mp4",
           "kind": "video",
-          "byteCount": 8147504
+          "byteCount": 8147504,
+          "eTag": "\"4ac3db9b883a9dc84079927c786ea472\"",
+          "lastModified": "Thu, 23 Jul 2026 22:19:21 GMT"
         },
         {
           "id": "package.cpr-aed.video.subtitle.09_EHAcademy - CPR AED Course Video-Chest Compressions Video.vtt",
@@ -2586,7 +2682,9 @@
           "id": "package.cpr-aed.video.CPR AED VA Slides/10_EHAcademy - CPR AED Course Video-Hand Placement.mp4",
           "filename": "CPR AED VA Slides/10_EHAcademy - CPR AED Course Video-Hand Placement.mp4",
           "kind": "video",
-          "byteCount": 12574420
+          "byteCount": 12574420,
+          "eTag": "\"108b710b983043bf40b55ac47061f9fd\"",
+          "lastModified": "Thu, 23 Jul 2026 22:19:22 GMT"
         },
         {
           "id": "package.cpr-aed.video.subtitle.10_EHAcademy - CPR AED Course Video-Hand Placement.vtt",
@@ -2598,7 +2696,9 @@
           "id": "package.cpr-aed.video.CPR AED VA Slides/11_EHAcademy - CPR AED Course Video-Compression Depth.mp4",
           "filename": "CPR AED VA Slides/11_EHAcademy - CPR AED Course Video-Compression Depth.mp4",
           "kind": "video",
-          "byteCount": 4468510
+          "byteCount": 4468510,
+          "eTag": "\"b40fcac3b3e40ab1cc49e2af91924f89\"",
+          "lastModified": "Thu, 23 Jul 2026 22:19:22 GMT"
         },
         {
           "id": "package.cpr-aed.video.subtitle.11_EHAcademy - CPR AED Course Video-Compression Depth.vtt",
@@ -2610,7 +2710,9 @@
           "id": "package.cpr-aed.video.CPR AED VA Slides/12_EHAcademy - CPR AED Course Video-Rate and Rhythm.mp4",
           "filename": "CPR AED VA Slides/12_EHAcademy - CPR AED Course Video-Rate and Rhythm.mp4",
           "kind": "video",
-          "byteCount": 10642985
+          "byteCount": 10642985,
+          "eTag": "\"3b48225eb29ff5ba79bda89b53aaaafb\"",
+          "lastModified": "Thu, 23 Jul 2026 22:19:24 GMT"
         },
         {
           "id": "package.cpr-aed.video.subtitle.12_EHAcademy - CPR AED Course Video-Rate and Rhythm.vtt",
@@ -2622,7 +2724,9 @@
           "id": "package.cpr-aed.video.CPR AED VA Slides/13_EHAcademy - CPR AED Course Video-CPR Music.mp4",
           "filename": "CPR AED VA Slides/13_EHAcademy - CPR AED Course Video-CPR Music.mp4",
           "kind": "video",
-          "byteCount": 32285925
+          "byteCount": 32285925,
+          "eTag": "\"8bbde41d59c8bf5f2aace5cd83356a8f\"",
+          "lastModified": "Thu, 23 Jul 2026 22:19:30 GMT"
         },
         {
           "id": "package.cpr-aed.video.subtitle.13_EHAcademy - CPR AED Course Video-CPR Music.vtt",
@@ -2634,7 +2738,9 @@
           "id": "package.cpr-aed.video.CPR AED VA Slides/14_EHAcademy - CPR AED Course Video-Practice Compressions.mp4",
           "filename": "CPR AED VA Slides/14_EHAcademy - CPR AED Course Video-Practice Compressions.mp4",
           "kind": "video",
-          "byteCount": 26313846
+          "byteCount": 26313846,
+          "eTag": "\"994193fd1b11b6e132836bda400511d1\"",
+          "lastModified": "Thu, 23 Jul 2026 22:19:29 GMT"
         },
         {
           "id": "package.cpr-aed.video.subtitle.14_EHAcademy - CPR AED Course Video-Practice Compressions.vtt",
@@ -2646,7 +2752,9 @@
           "id": "package.cpr-aed.video.CPR AED VA Slides/15_EHAcademy - CPR AED Course Video-Giving Breaths.mp4",
           "filename": "CPR AED VA Slides/15_EHAcademy - CPR AED Course Video-Giving Breaths.mp4",
           "kind": "video",
-          "byteCount": 10753147
+          "byteCount": 10753147,
+          "eTag": "\"e4135a1066a124ca2bd7fe29d682d959\"",
+          "lastModified": "Thu, 23 Jul 2026 22:19:27 GMT"
         },
         {
           "id": "package.cpr-aed.video.subtitle.15_EHAcademy - CPR AED Course Video-Giving Breaths.vtt",
@@ -2658,7 +2766,9 @@
           "id": "package.cpr-aed.video.CPR AED VA Slides/16_EHAcademy - CPR AED Course Video-Practice Breaths.mp4",
           "filename": "CPR AED VA Slides/16_EHAcademy - CPR AED Course Video-Practice Breaths.mp4",
           "kind": "video",
-          "byteCount": 7130187
+          "byteCount": 7130187,
+          "eTag": "\"011b1ae607e331b40c4414aba3c671a1\"",
+          "lastModified": "Thu, 23 Jul 2026 22:19:27 GMT"
         },
         {
           "id": "package.cpr-aed.video.subtitle.16_EHAcademy - CPR AED Course Video-Practice Breaths.vtt",
@@ -2670,7 +2780,9 @@
           "id": "package.cpr-aed.video.CPR AED VA Slides/17_EHAcademy - CPR AED Course Video-Using an AED.mp4",
           "filename": "CPR AED VA Slides/17_EHAcademy - CPR AED Course Video-Using an AED.mp4",
           "kind": "video",
-          "byteCount": 12332359
+          "byteCount": 12332359,
+          "eTag": "\"27172cefb86a1140d0e8da9495087ead\"",
+          "lastModified": "Thu, 23 Jul 2026 22:19:28 GMT"
         },
         {
           "id": "package.cpr-aed.video.subtitle.17_EHAcademy - CPR AED Course Video-Using an AED.vtt",
@@ -2682,7 +2794,9 @@
           "id": "package.cpr-aed.video.CPR AED VA Slides/18_EHAcademy - CPR AED Course Video-Adult Scenario.mp4",
           "filename": "CPR AED VA Slides/18_EHAcademy - CPR AED Course Video-Adult Scenario.mp4",
           "kind": "video",
-          "byteCount": 6380449
+          "byteCount": 6380449,
+          "eTag": "\"6c3fb4bd85f10499a56b061f0a2558a6\"",
+          "lastModified": "Thu, 23 Jul 2026 22:19:29 GMT"
         },
         {
           "id": "package.cpr-aed.video.subtitle.18_EHAcademy - CPR AED Course Video-Adult Scenario.vtt",
@@ -2694,7 +2808,9 @@
           "id": "package.cpr-aed.video.CPR AED VA Slides/19_EHAcademy - CPR AED Course Video-Child CPR.mp4",
           "filename": "CPR AED VA Slides/19_EHAcademy - CPR AED Course Video-Child CPR.mp4",
           "kind": "video",
-          "byteCount": 19352819
+          "byteCount": 19352819,
+          "eTag": "\"440dd6a0df4021217c7207a96697db3e\"",
+          "lastModified": "Thu, 23 Jul 2026 22:19:31 GMT"
         },
         {
           "id": "package.cpr-aed.video.subtitle.19_EHAcademy - CPR AED Course Video-Child CPR.vtt",
@@ -2706,7 +2822,9 @@
           "id": "package.cpr-aed.video.CPR AED VA Slides/20_EHAcademy - CPR AED Course Video-AED use on kids.mp4",
           "filename": "CPR AED VA Slides/20_EHAcademy - CPR AED Course Video-AED use on kids.mp4",
           "kind": "video",
-          "byteCount": 11660205
+          "byteCount": 11660205,
+          "eTag": "\"83055feed52bc8df4987e82293814297\"",
+          "lastModified": "Thu, 23 Jul 2026 22:19:31 GMT"
         },
         {
           "id": "package.cpr-aed.video.subtitle.20_EHAcademy - CPR AED Course Video-AED use on kids.vtt",
@@ -2718,7 +2836,9 @@
           "id": "package.cpr-aed.video.CPR AED VA Slides/21_EHAcademy - CPR AED Course Video-Infant CPR.mp4",
           "filename": "CPR AED VA Slides/21_EHAcademy - CPR AED Course Video-Infant CPR.mp4",
           "kind": "video",
-          "byteCount": 11568255
+          "byteCount": 11568255,
+          "eTag": "\"79c9e76032feea5a01e225882573af6b\"",
+          "lastModified": "Thu, 23 Jul 2026 22:19:33 GMT"
         },
         {
           "id": "package.cpr-aed.video.subtitle.21_EHAcademy - CPR AED Course Video-Infant CPR.vtt",
@@ -2730,7 +2850,9 @@
           "id": "package.cpr-aed.video.CPR AED VA Slides/22_EHAcademy - CPR AED Course Video-Infant Compressions.mp4",
           "filename": "CPR AED VA Slides/22_EHAcademy - CPR AED Course Video-Infant Compressions.mp4",
           "kind": "video",
-          "byteCount": 6430715
+          "byteCount": 6430715,
+          "eTag": "\"d9957a0d43dc80d1f41ded5b3d2dadf2\"",
+          "lastModified": "Thu, 23 Jul 2026 22:19:32 GMT"
         },
         {
           "id": "package.cpr-aed.video.subtitle.22_EHAcademy - CPR AED Course Video-Infant Compressions.vtt",
@@ -2742,7 +2864,9 @@
           "id": "package.cpr-aed.video.CPR AED VA Slides/23_EHAcademy - CPR AED Course Video-Infant Breaths.mp4",
           "filename": "CPR AED VA Slides/23_EHAcademy - CPR AED Course Video-Infant Breaths.mp4",
           "kind": "video",
-          "byteCount": 9005607
+          "byteCount": 9005607,
+          "eTag": "\"91b54982d747e4e882ead60ba5cc5d72\"",
+          "lastModified": "Thu, 23 Jul 2026 22:19:32 GMT"
         },
         {
           "id": "package.cpr-aed.video.subtitle.23_EHAcademy - CPR AED Course Video-Infant Breaths.vtt",
@@ -2754,7 +2878,9 @@
           "id": "package.cpr-aed.video.CPR AED VA Slides/24_EHAcademy - CPR AED Course Video-Infant Scenario.mp4",
           "filename": "CPR AED VA Slides/24_EHAcademy - CPR AED Course Video-Infant Scenario.mp4",
           "kind": "video",
-          "byteCount": 3005409
+          "byteCount": 3005409,
+          "eTag": "\"a7b9f659cbc7e37c8612fbc7ad18409f\"",
+          "lastModified": "Thu, 23 Jul 2026 22:19:33 GMT"
         },
         {
           "id": "package.cpr-aed.video.subtitle.24_EHAcademy - CPR AED Course Video-Infant Scenario.vtt",
@@ -2766,7 +2892,9 @@
           "id": "package.cpr-aed.video.CPR AED VA Slides/25_EHAcademy - CPR AED Course Video-Mild Choking.mp4",
           "filename": "CPR AED VA Slides/25_EHAcademy - CPR AED Course Video-Mild Choking.mp4",
           "kind": "video",
-          "byteCount": 4611318
+          "byteCount": 4611318,
+          "eTag": "\"3733ec99fbec2296d06fc2c54a62291e\"",
+          "lastModified": "Thu, 23 Jul 2026 22:19:33 GMT"
         },
         {
           "id": "package.cpr-aed.video.subtitle.25_EHAcademy - CPR AED Course Video-Mild Choking.vtt",
@@ -2778,7 +2906,9 @@
           "id": "package.cpr-aed.video.CPR AED VA Slides/26_EHAcademy - CPR AED Course Video-Severe Choking.mp4",
           "filename": "CPR AED VA Slides/26_EHAcademy - CPR AED Course Video-Severe Choking.mp4",
           "kind": "video",
-          "byteCount": 4935897
+          "byteCount": 4935897,
+          "eTag": "\"5bde2c2c2c39131fb1ad0a7c4b9fe107\"",
+          "lastModified": "Thu, 23 Jul 2026 22:19:33 GMT"
         },
         {
           "id": "package.cpr-aed.video.subtitle.26_EHAcademy - CPR AED Course Video-Severe Choking.vtt",
@@ -2790,7 +2920,9 @@
           "id": "package.cpr-aed.video.CPR AED VA Slides/27_EHAcademy - CPR AED Course Video-Adult Choking Relief.mp4",
           "filename": "CPR AED VA Slides/27_EHAcademy - CPR AED Course Video-Adult Choking Relief.mp4",
           "kind": "video",
-          "byteCount": 10570568
+          "byteCount": 10570568,
+          "eTag": "\"b95306165175c3a630f74d063fc0f287\"",
+          "lastModified": "Thu, 23 Jul 2026 22:19:35 GMT"
         },
         {
           "id": "package.cpr-aed.video.subtitle.27_EHAcademy - CPR AED Course Video-Adult Choking Relief.vtt",
@@ -2802,7 +2934,9 @@
           "id": "package.cpr-aed.video.CPR AED VA Slides/28_EHAcademy - CPR AED Course Video-Child Choking Relief.mp4",
           "filename": "CPR AED VA Slides/28_EHAcademy - CPR AED Course Video-Child Choking Relief.mp4",
           "kind": "video",
-          "byteCount": 7564618
+          "byteCount": 7564618,
+          "eTag": "\"0ea20d455f16c9d66ca7b1ba11571db8\"",
+          "lastModified": "Thu, 23 Jul 2026 22:19:35 GMT"
         },
         {
           "id": "package.cpr-aed.video.subtitle.28_EHAcademy - CPR AED Course Video-Child Choking Relief.vtt",
@@ -2814,7 +2948,9 @@
           "id": "package.cpr-aed.video.CPR AED VA Slides/29_EHAcademy - CPR AED Course Video-Infant Choking Relief.mp4",
           "filename": "CPR AED VA Slides/29_EHAcademy - CPR AED Course Video-Infant Choking Relief.mp4",
           "kind": "video",
-          "byteCount": 16803658
+          "byteCount": 16803658,
+          "eTag": "\"8c7e85e0ce130e551f3a91ca30e8812a\"",
+          "lastModified": "Thu, 23 Jul 2026 22:19:36 GMT"
         },
         {
           "id": "package.cpr-aed.video.subtitle.29_EHAcademy - CPR AED Course Video-Infant Choking Relief.vtt",
@@ -2826,7 +2962,9 @@
           "id": "package.cpr-aed.video.CPR AED VA Slides/30_EHAcademy - CPR AED Course Video-Conclusion.mp4",
           "filename": "CPR AED VA Slides/30_EHAcademy - CPR AED Course Video-Conclusion.mp4",
           "kind": "video",
-          "byteCount": 7195963
+          "byteCount": 7195963,
+          "eTag": "\"2bf1ad673ea8c7d1a7f40b3447737cd7\"",
+          "lastModified": "Thu, 23 Jul 2026 22:19:35 GMT"
         },
         {
           "id": "package.cpr-aed.video.subtitle.30_EHAcademy - CPR AED Course Video-Conclusion.vtt",
@@ -2844,229 +2982,289 @@
           "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/01_EHAcademy - Pedi CPR AED Course Pres-Introduction.png",
           "filename": "Pedi CPR Presentation Slides/01_EHAcademy - Pedi CPR AED Course Pres-Introduction.png",
           "kind": "image",
-          "byteCount": 2833955
+          "byteCount": 2833955,
+          "eTag": "\"fff6b9041c3da5c432eca057add99ac4\"",
+          "lastModified": "Thu, 23 Jul 2026 22:05:00 GMT"
         },
         {
           "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/02_EHAcademy - Pedi CPR AED Course Pres-Why should I learn CPR.png",
           "filename": "Pedi CPR Presentation Slides/02_EHAcademy - Pedi CPR AED Course Pres-Why should I learn CPR.png",
           "kind": "image",
-          "byteCount": 3637926
+          "byteCount": 3637926,
+          "eTag": "\"a3bd636d74e5619ba221aa4b30f22472\"",
+          "lastModified": "Thu, 23 Jul 2026 22:05:00 GMT"
         },
         {
           "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/03_EHAcademy - Pedi CPR AED Course Pres-Heart Attack vs Cardiac Arrest.png",
           "filename": "Pedi CPR Presentation Slides/03_EHAcademy - Pedi CPR AED Course Pres-Heart Attack vs Cardiac Arrest.png",
           "kind": "image",
-          "byteCount": 1308437
+          "byteCount": 1308437,
+          "eTag": "\"ba14960a906c9e32748c333f8488728e\"",
+          "lastModified": "Thu, 23 Jul 2026 22:05:00 GMT"
         },
         {
           "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/04_EHAcademy - Pedi CPR AED Course Pres-What is CPR.png",
           "filename": "Pedi CPR Presentation Slides/04_EHAcademy - Pedi CPR AED Course Pres-What is CPR.png",
           "kind": "image",
-          "byteCount": 4330501
+          "byteCount": 4330501,
+          "eTag": "\"3233a4a86722de8ee5df3d75b2ecdba1\"",
+          "lastModified": "Thu, 23 Jul 2026 22:05:00 GMT"
         },
         {
           "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/05_EHAcademy - Pedi CPR AED Course Pres-When will I use CPR.png",
           "filename": "Pedi CPR Presentation Slides/05_EHAcademy - Pedi CPR AED Course Pres-When will I use CPR.png",
           "kind": "image",
-          "byteCount": 4655899
+          "byteCount": 4655899,
+          "eTag": "\"e7e03218ae342f9a4cf38d46492b4ebf\"",
+          "lastModified": "Thu, 23 Jul 2026 22:05:01 GMT"
         },
         {
           "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/06_EHAcademy - Pedi CPR AED Course Pres-What if something goes wrong.png",
           "filename": "Pedi CPR Presentation Slides/06_EHAcademy - Pedi CPR AED Course Pres-What if something goes wrong.png",
           "kind": "image",
-          "byteCount": 3074327
+          "byteCount": 3074327,
+          "eTag": "\"adccff30fe38323baefa46993f328061\"",
+          "lastModified": "Thu, 23 Jul 2026 22:05:01 GMT"
         },
         {
           "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/07_EHAcademy - Pedi CPR AED Course Pres-Good Samaritan Law.png",
           "filename": "Pedi CPR Presentation Slides/07_EHAcademy - Pedi CPR AED Course Pres-Good Samaritan Law.png",
           "kind": "image",
-          "byteCount": 3047637
+          "byteCount": 3047637,
+          "eTag": "\"e1b2c976f37857365d6388db1123b2cf\"",
+          "lastModified": "Thu, 23 Jul 2026 22:05:02 GMT"
         },
         {
           "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/08_EHAcademy - Pedi CPR AED Course Pres-Course Overview.png",
           "filename": "Pedi CPR Presentation Slides/08_EHAcademy - Pedi CPR AED Course Pres-Course Overview.png",
           "kind": "image",
-          "byteCount": 835260
+          "byteCount": 835260,
+          "eTag": "\"1843238afc187c9bad51ffa5eae6d32c\"",
+          "lastModified": "Thu, 23 Jul 2026 22:05:02 GMT"
         },
         {
           "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/09_EHAcademy - Pedi CPR AED Course Pres-Recognizing the Emergency.png",
           "filename": "Pedi CPR Presentation Slides/09_EHAcademy - Pedi CPR AED Course Pres-Recognizing the Emergency.png",
           "kind": "image",
-          "byteCount": 180856
+          "byteCount": 180856,
+          "eTag": "\"c1cc802375f69728023dfa70c78bf1ff\"",
+          "lastModified": "Thu, 23 Jul 2026 22:05:02 GMT"
         },
         {
           "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/10_EHAcademy - Pedi CPR AED Course Pres-First Actions.png",
           "filename": "Pedi CPR Presentation Slides/10_EHAcademy - Pedi CPR AED Course Pres-First Actions.png",
           "kind": "image",
-          "byteCount": 4243610
+          "byteCount": 4243610,
+          "eTag": "\"407f985a9e8703e4211c4eabf714860a\"",
+          "lastModified": "Thu, 23 Jul 2026 22:05:03 GMT"
         },
         {
           "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/11_EHAcademy - Pedi CPR AED Course Pres-Assessment Example.mp4",
           "filename": "Pedi CPR Presentation Slides/11_EHAcademy - Pedi CPR AED Course Pres-Assessment Example.mp4",
           "kind": "video",
-          "byteCount": 13440194
+          "byteCount": 13440194,
+          "eTag": "\"ec241efa9102dbc3d703d622d5b0688b\"",
+          "lastModified": "Thu, 23 Jul 2026 22:05:05 GMT"
         },
         {
-          "id": "package.cpr-aed.pediatric-slideshow.CPR AED Presentation Slides/13_EHAcademy - CPR AED Course Pres-Check Responsiveness.png",
-          "filename": "CPR AED Presentation Slides/13_EHAcademy - CPR AED Course Pres-Check Responsiveness.png",
+          "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/12_EHAcademy - Pedi CPR AED Course Pres-Assessment and Activation - Check Responsiveness.png",
+          "filename": "Pedi CPR Presentation Slides/12_EHAcademy - Pedi CPR AED Course Pres-Assessment and Activation - Check Responsiveness.png",
           "kind": "image",
-          "byteCount": 409257
+          "byteCount": 272151,
+          "eTag": "\"8c3fa53c6582670f2ba3426d4cb40d49\"",
+          "lastModified": "Thu, 23 Jul 2026 22:05:03 GMT"
         },
         {
-          "id": "package.cpr-aed.pediatric-slideshow.CPR AED Presentation Slides/14_EHAcademy - CPR AED Course Pres--Getting Help.png",
-          "filename": "CPR AED Presentation Slides/14_EHAcademy - CPR AED Course Pres--Getting Help.png",
+          "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/13_EHAcademy - Pedi CPR AED Course Pres-Assessment and Activation - Getting Help.png",
+          "filename": "Pedi CPR Presentation Slides/13_EHAcademy - Pedi CPR AED Course Pres-Assessment and Activation - Getting Help.png",
           "kind": "image",
-          "byteCount": 422809
+          "byteCount": 282515,
+          "eTag": "\"04ee350376df2477c23d5109890aca75\"",
+          "lastModified": "Thu, 23 Jul 2026 22:05:03 GMT"
         },
         {
-          "id": "package.cpr-aed.pediatric-slideshow.CPR AED Presentation Slides/15_EHAcademy - CPR AED Course Pres-Check Breathing.png",
-          "filename": "CPR AED Presentation Slides/15_EHAcademy - CPR AED Course Pres-Check Breathing.png",
+          "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/14_EHAcademy - Pedi CPR AED Course Pres-Assessment and Activation - Check Breathing.png",
+          "filename": "Pedi CPR Presentation Slides/14_EHAcademy - Pedi CPR AED Course Pres-Assessment and Activation - Check Breathing.png",
           "kind": "image",
-          "byteCount": 429127
+          "byteCount": 280924,
+          "eTag": "\"f79c174448d683f64fdd39e1fdebe5ab\"",
+          "lastModified": "Thu, 23 Jul 2026 22:05:03 GMT"
         },
         {
-          "id": "package.cpr-aed.pediatric-slideshow.CPR AED Presentation Slides/16_EHAcademy - CPR AED Course Pres-Begin Chest Compressions.png",
-          "filename": "CPR AED Presentation Slides/16_EHAcademy - CPR AED Course Pres-Begin Chest Compressions.png",
+          "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/15_EHAcademy - Pedi CPR AED Course Pres-Assessment and Activation - Begin Chest Compressions.png",
+          "filename": "Pedi CPR Presentation Slides/15_EHAcademy - Pedi CPR AED Course Pres-Assessment and Activation - Begin Chest Compressions.png",
           "kind": "image",
-          "byteCount": 394872
+          "byteCount": 257023,
+          "eTag": "\"014202c2222201dcaa5be157926f9f68\"",
+          "lastModified": "Thu, 23 Jul 2026 22:05:04 GMT"
         },
         {
-          "id": "package.cpr-aed.pediatric-slideshow.CPR AED Presentation Slides/17_EHAcademy - CPR AED Course Pres-Chest Compressions Video.mp4",
-          "filename": "CPR AED Presentation Slides/17_EHAcademy - CPR AED Course Pres-Chest Compressions Video.mp4",
+          "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/16_EHAcademy - Pedi CPR AED Course Pres-Chest Compression Effect Video.mp4",
+          "filename": "Pedi CPR Presentation Slides/16_EHAcademy - Pedi CPR AED Course Pres-Chest Compression Effect Video.mp4",
           "kind": "video",
-          "byteCount": 16885652
-        },
-        {
-          "id": "package.cpr-aed.pediatric-slideshow.subtitle.17_EHAcademy - CPR AED Course Pres-Chest Compressions Video.vtt",
-          "filename": "subtitles/17_EHAcademy - CPR AED Course Pres-Chest Compressions Video.vtt",
-          "kind": "subtitle",
-          "byteCount": 78
+          "byteCount": 10206078,
+          "eTag": "\"6d3edcff06352f1ace9a12748a768fab\"",
+          "lastModified": "Thu, 23 Jul 2026 22:05:06 GMT"
         },
         {
           "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/17_EHAcademy - Pedi CPR AED Course Pres-Hand Placement.png",
           "filename": "Pedi CPR Presentation Slides/17_EHAcademy - Pedi CPR AED Course Pres-Hand Placement.png",
           "kind": "image",
-          "byteCount": 1887918
+          "byteCount": 1887918,
+          "eTag": "\"041fe58149fba8e89c652fc0df9e8c2e\"",
+          "lastModified": "Thu, 23 Jul 2026 22:05:05 GMT"
         },
         {
           "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/18_EHAcademy - Pedi CPR AED Course Pres-Compression Depth.png",
           "filename": "Pedi CPR Presentation Slides/18_EHAcademy - Pedi CPR AED Course Pres-Compression Depth.png",
           "kind": "image",
-          "byteCount": 2546318
+          "byteCount": 2546318,
+          "eTag": "\"442feb557325c8dace4f9a931429fb0e\"",
+          "lastModified": "Thu, 23 Jul 2026 22:05:05 GMT"
         },
         {
           "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/19_EHAcademy - Pedi CPR AED Course Pres-Rate and Rhythm.png",
           "filename": "Pedi CPR Presentation Slides/19_EHAcademy - Pedi CPR AED Course Pres-Rate and Rhythm.png",
           "kind": "image",
-          "byteCount": 1943688
+          "byteCount": 1943688,
+          "eTag": "\"3b78c5493511450d90a4a56695b48133\"",
+          "lastModified": "Thu, 23 Jul 2026 22:05:06 GMT"
         },
         {
-          "id": "package.cpr-aed.pediatric-slideshow.CPR AED Presentation Slides/21_EHAcademy - CPR AED Course Pres-CPR Songs.mp4",
-          "filename": "CPR AED Presentation Slides/21_EHAcademy - CPR AED Course Pres-CPR Songs.mp4",
+          "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/20_EHAcademy - Pedi CPR AED Course Pres-CPR Song.mp4",
+          "filename": "Pedi CPR Presentation Slides/20_EHAcademy - Pedi CPR AED Course Pres-CPR Song.mp4",
           "kind": "video",
-          "byteCount": 24988618
-        },
-        {
-          "id": "package.cpr-aed.pediatric-slideshow.subtitle.21_EHAcademy - CPR AED Course Pres-CPR Songs.vtt",
-          "filename": "subtitles/21_EHAcademy - CPR AED Course Pres-CPR Songs.vtt",
-          "kind": "subtitle",
-          "byteCount": 278
+          "byteCount": 21415606,
+          "eTag": "\"3c162b1519cc0b7140272f6a65a36b09\"",
+          "lastModified": "Thu, 23 Jul 2026 22:05:12 GMT"
         },
         {
           "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/21_EHAcademy - Pedi CPR AED Course Pres-Practice Compressions.mp4",
           "filename": "Pedi CPR Presentation Slides/21_EHAcademy - Pedi CPR AED Course Pres-Practice Compressions.mp4",
           "kind": "video",
-          "byteCount": 8701386
+          "byteCount": 8701386,
+          "eTag": "\"4ce585b07303730452ffa6b04654e9b5\"",
+          "lastModified": "Thu, 23 Jul 2026 22:05:09 GMT"
         },
         {
           "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/22_EHAcademy - Pedi CPR AED Course Pres-Giving Breaths.png",
           "filename": "Pedi CPR Presentation Slides/22_EHAcademy - Pedi CPR AED Course Pres-Giving Breaths.png",
           "kind": "image",
-          "byteCount": 766956
+          "byteCount": 766956,
+          "eTag": "\"cc3ca5c6aba9f74eec82e03597b9e818\"",
+          "lastModified": "Thu, 23 Jul 2026 22:05:07 GMT"
         },
         {
           "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/23_EHAcademy - Pedi CPR AED Course Pres-Practice Giving Breaths.png",
           "filename": "Pedi CPR Presentation Slides/23_EHAcademy - Pedi CPR AED Course Pres-Practice Giving Breaths.png",
           "kind": "image",
-          "byteCount": 4629217
+          "byteCount": 4629217,
+          "eTag": "\"67bfd211bf70af057c54ca7015e443d6\"",
+          "lastModified": "Thu, 23 Jul 2026 22:05:08 GMT"
         },
         {
           "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/24_EHAcademy - Pedi CPR AED Course Pres-Using an AED.png",
           "filename": "Pedi CPR Presentation Slides/24_EHAcademy - Pedi CPR AED Course Pres-Using an AED.png",
           "kind": "image",
-          "byteCount": 1048970
+          "byteCount": 1048970,
+          "eTag": "\"65eb65ab2b07446b372a6777ce1526fc\"",
+          "lastModified": "Thu, 23 Jul 2026 22:05:08 GMT"
         },
         {
-          "id": "package.cpr-aed.pediatric-slideshow.CPR AED Presentation Slides/26_EHAcademy - CPR AED Course Pres-Adult Scenario.png",
-          "filename": "CPR AED Presentation Slides/26_EHAcademy - CPR AED Course Pres-Adult Scenario.png",
+          "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/25_EHAcademy - Pedi CPR AED Course Pres-Put it all together.png",
+          "filename": "Pedi CPR Presentation Slides/25_EHAcademy - Pedi CPR AED Course Pres-Put it all together.png",
           "kind": "image",
-          "byteCount": 412692
+          "byteCount": 275094,
+          "eTag": "\"e2dbdc60d425ef6b9e9a494cc4fac8aa\"",
+          "lastModified": "Thu, 23 Jul 2026 22:05:08 GMT"
         },
         {
-          "id": "package.cpr-aed.pediatric-slideshow.CPR AED Presentation Slides/29_EHAcademy - CPR AED Course Pres-Infant CPR.png",
-          "filename": "CPR AED Presentation Slides/29_EHAcademy - CPR AED Course Pres-Infant CPR.png",
+          "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/26_EHAcademy - Pedi CPR AED Course Pres-Infant Assessment.png",
+          "filename": "Pedi CPR Presentation Slides/26_EHAcademy - Pedi CPR AED Course Pres-Infant Assessment.png",
           "kind": "image",
-          "byteCount": 5748854
+          "byteCount": 2577532,
+          "eTag": "\"321492f61bc91e47fdcbdf28210a56b3\"",
+          "lastModified": "Thu, 23 Jul 2026 22:05:10 GMT"
         },
         {
           "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/27_EHAcademy - Pedi CPR AED Course Pres-Infant Chest Compressions.png",
           "filename": "Pedi CPR Presentation Slides/27_EHAcademy - Pedi CPR AED Course Pres-Infant Chest Compressions.png",
           "kind": "image",
-          "byteCount": 1881951
+          "byteCount": 1881951,
+          "eTag": "\"28e1cd1844d0747c76d3fe82c6aca529\"",
+          "lastModified": "Thu, 23 Jul 2026 22:05:10 GMT"
         },
         {
           "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/28_EHAcademy - Pedi CPR AED Course Pres-Infant Breaths.png",
           "filename": "Pedi CPR Presentation Slides/28_EHAcademy - Pedi CPR AED Course Pres-Infant Breaths.png",
           "kind": "image",
-          "byteCount": 2235593
+          "byteCount": 2235593,
+          "eTag": "\"6525360bd8c92ace25f118c719de9c35\"",
+          "lastModified": "Thu, 23 Jul 2026 22:05:10 GMT"
         },
         {
-          "id": "package.cpr-aed.pediatric-slideshow.CPR AED Presentation Slides/32_EHAcademy - CPR AED Course Pres-Infant Scenario.png",
-          "filename": "CPR AED Presentation Slides/32_EHAcademy - CPR AED Course Pres-Infant Scenario.png",
+          "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/29_EHAcademy - Pedi CPR AED Course Pres-Infant AED Use.png",
+          "filename": "Pedi CPR Presentation Slides/29_EHAcademy - Pedi CPR AED Course Pres-Infant AED Use.png",
           "kind": "image",
-          "byteCount": 541989
+          "byteCount": 1638331,
+          "eTag": "\"2d4ad4b2882e20b57b12c550b8e38d37\"",
+          "lastModified": "Thu, 23 Jul 2026 22:05:11 GMT"
         },
         {
-          "id": "package.cpr-aed.pediatric-slideshow.CPR AED Presentation Slides/33_EHAcademy - CPR AED Course Pres-Mild Choking.png",
-          "filename": "CPR AED Presentation Slides/33_EHAcademy - CPR AED Course Pres-Mild Choking.png",
+          "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/30_EHAcademy - Pedi CPR AED Course Pres-Infant Scenario.png",
+          "filename": "Pedi CPR Presentation Slides/30_EHAcademy - Pedi CPR AED Course Pres-Infant Scenario.png",
           "kind": "image",
-          "byteCount": 4488853
+          "byteCount": 306302,
+          "eTag": "\"1a427e6e06b24d0b6630d5ddd111af0e\"",
+          "lastModified": "Thu, 23 Jul 2026 22:05:11 GMT"
         },
         {
-          "id": "package.cpr-aed.pediatric-slideshow.CPR AED Presentation Slides/34_EHAcademy - CPR AED Course Pres-Severe Choking.png",
-          "filename": "CPR AED Presentation Slides/34_EHAcademy - CPR AED Course Pres-Severe Choking.png",
+          "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/31_EHAcademy - Pedi CPR AED Course Pres-Mild Choking.png",
+          "filename": "Pedi CPR Presentation Slides/31_EHAcademy - Pedi CPR AED Course Pres-Mild Choking.png",
           "kind": "image",
-          "byteCount": 7047471
+          "byteCount": 1866827,
+          "eTag": "\"8ca36541049e3642ef3aa64b983431af\"",
+          "lastModified": "Thu, 23 Jul 2026 22:05:12 GMT"
         },
         {
-          "id": "package.cpr-aed.pediatric-slideshow.CPR AED Presentation Slides/35_EHAcademy - CPR AED Course Pres-Choking Adult.png",
-          "filename": "CPR AED Presentation Slides/35_EHAcademy - CPR AED Course Pres-Choking Adult.png",
+          "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/32_EHAcademy - Pedi CPR AED Course Pres-Severe Choking.png",
+          "filename": "Pedi CPR Presentation Slides/32_EHAcademy - Pedi CPR AED Course Pres-Severe Choking.png",
           "kind": "image",
-          "byteCount": 4536597
+          "byteCount": 1567969,
+          "eTag": "\"bea431d4b81693b4cc489d9197ede245\"",
+          "lastModified": "Thu, 23 Jul 2026 22:05:12 GMT"
         },
         {
-          "id": "package.cpr-aed.pediatric-slideshow.CPR AED Presentation Slides/36_EHAcademy - CPR AED Course Pres-Choking Child.png",
-          "filename": "CPR AED Presentation Slides/36_EHAcademy - CPR AED Course Pres-Choking Child.png",
+          "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/33_EHAcademy - Pedi CPR AED Course Pres-Choking Relief Child.png",
+          "filename": "Pedi CPR Presentation Slides/33_EHAcademy - Pedi CPR AED Course Pres-Choking Relief Child.png",
           "kind": "image",
-          "byteCount": 3331341
+          "byteCount": 1430990,
+          "eTag": "\"103ed70af1ab5a2cb041427dd029963a\"",
+          "lastModified": "Thu, 23 Jul 2026 22:05:12 GMT"
         },
         {
-          "id": "package.cpr-aed.pediatric-slideshow.CPR AED Presentation Slides/37_EHAcademy - CPR AED Course Pres-Choking Infant.png",
-          "filename": "CPR AED Presentation Slides/37_EHAcademy - CPR AED Course Pres-Choking Infant.png",
+          "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/34_EHAcademy - Pedi CPR AED Course Pres-Choking Relief Infant.png",
+          "filename": "Pedi CPR Presentation Slides/34_EHAcademy - Pedi CPR AED Course Pres-Choking Relief Infant.png",
           "kind": "image",
-          "byteCount": 4923080
+          "byteCount": 2074254,
+          "eTag": "\"64d3eebb6fe49793e349aa8918f1612c\"",
+          "lastModified": "Thu, 23 Jul 2026 22:05:13 GMT"
         },
         {
           "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/35_EHAcademy - Pedi CPR AED Course Pres-Practice Infant Choking.png",
           "filename": "Pedi CPR Presentation Slides/35_EHAcademy - Pedi CPR AED Course Pres-Practice Infant Choking.png",
           "kind": "image",
-          "byteCount": 5666374
+          "byteCount": 5666374,
+          "eTag": "\"7853ac87e7bafaa2539bfd24fd5ded81\"",
+          "lastModified": "Thu, 23 Jul 2026 22:05:14 GMT"
         },
         {
           "id": "package.cpr-aed.pediatric-slideshow.Pedi CPR Presentation Slides/36_EHAcademy - Pedi CPR AED Course Pres-Conclusion.png",
           "filename": "Pedi CPR Presentation Slides/36_EHAcademy - Pedi CPR AED Course Pres-Conclusion.png",
           "kind": "image",
-          "byteCount": 1989906
+          "byteCount": 1989906,
+          "eTag": "\"505f1634fbd6993caa2897af0b6ee409\"",
+          "lastModified": "Thu, 23 Jul 2026 22:05:13 GMT"
         }
       ]
     },
@@ -3078,67 +3276,89 @@
           "id": "package.first-aid.slideshow.First Aid Presentation Slides/01_EHAcademy - First Aid Course Pres-Introduction.png",
           "filename": "First Aid Presentation Slides/01_EHAcademy - First Aid Course Pres-Introduction.png",
           "kind": "image",
-          "byteCount": 9603283
+          "byteCount": 9603283,
+          "eTag": "\"e7ba4c8f2ac9aa10e1cce61e28d3e29e\"",
+          "lastModified": "Thu, 23 Jul 2026 21:48:50 GMT"
         },
         {
           "id": "package.first-aid.slideshow.First Aid Presentation Slides/02_EHAcademy - First Aid Course Pres-What is First Aid.png",
           "filename": "First Aid Presentation Slides/02_EHAcademy - First Aid Course Pres-What is First Aid.png",
           "kind": "image",
-          "byteCount": 2541128
+          "byteCount": 2541128,
+          "eTag": "\"b19d2e32aa3ae418e3f153778e3fcf1d\"",
+          "lastModified": "Thu, 23 Jul 2026 21:48:49 GMT"
         },
         {
           "id": "package.first-aid.slideshow.First Aid Presentation Slides/03_EHAcademy - First Aid Course Pres-First Aid Basics.png",
           "filename": "First Aid Presentation Slides/03_EHAcademy - First Aid Course Pres-First Aid Basics.png",
           "kind": "image",
-          "byteCount": 563102
+          "byteCount": 563102,
+          "eTag": "\"f1db250d4be2dc697b573b9d05ee3f2c\"",
+          "lastModified": "Thu, 23 Jul 2026 21:48:48 GMT"
         },
         {
           "id": "package.first-aid.slideshow.First Aid Presentation Slides/04_EHAcademy - First Aid Course Pres-Universal Precautions.png",
           "filename": "First Aid Presentation Slides/04_EHAcademy - First Aid Course Pres-Universal Precautions.png",
           "kind": "image",
-          "byteCount": 3595356
+          "byteCount": 3595356,
+          "eTag": "\"4e47480004a40290518671fa8ec4ab69\"",
+          "lastModified": "Thu, 23 Jul 2026 21:48:49 GMT"
         },
         {
           "id": "package.first-aid.slideshow.First Aid Presentation Slides/05_EHAcademy - First Aid Course Pres-Legal Concerns.png",
           "filename": "First Aid Presentation Slides/05_EHAcademy - First Aid Course Pres-Legal Concerns.png",
           "kind": "image",
-          "byteCount": 4009410
+          "byteCount": 4009410,
+          "eTag": "\"f4f338c036d769f21c15856b42dcf844\"",
+          "lastModified": "Thu, 23 Jul 2026 21:48:49 GMT"
         },
         {
           "id": "package.first-aid.slideshow.First Aid Presentation Slides/06_EHAcademy - First Aid Course Pres-Calling 911.png",
           "filename": "First Aid Presentation Slides/06_EHAcademy - First Aid Course Pres-Calling 911.png",
           "kind": "image",
-          "byteCount": 1249475
+          "byteCount": 1249475,
+          "eTag": "\"318f04b07aca06dc93bf63ac932ada35\"",
+          "lastModified": "Thu, 23 Jul 2026 21:48:50 GMT"
         },
         {
           "id": "package.first-aid.slideshow.First Aid Presentation Slides/07_EHAcademy - First Aid Course Pres-Medical Emergencies.png",
           "filename": "First Aid Presentation Slides/07_EHAcademy - First Aid Course Pres-Medical Emergencies.png",
           "kind": "image",
-          "byteCount": 6131446
+          "byteCount": 6131446,
+          "eTag": "\"22508dd5273b9e5b10d2dd61a54b7c2a\"",
+          "lastModified": "Thu, 23 Jul 2026 21:48:51 GMT"
         },
         {
           "id": "package.first-aid.slideshow.First Aid Presentation Slides/08_EHAcademy - First Aid Course Pres-Heart Attack Symptoms.png",
           "filename": "First Aid Presentation Slides/08_EHAcademy - First Aid Course Pres-Heart Attack Symptoms.png",
           "kind": "image",
-          "byteCount": 8415601
+          "byteCount": 8415601,
+          "eTag": "\"1765a4b391ceba805253e78048a42434\"",
+          "lastModified": "Thu, 23 Jul 2026 21:48:53 GMT"
         },
         {
           "id": "package.first-aid.slideshow.First Aid Presentation Slides/09_EHAcademy - First Aid Course Pres-Heart Attack.png",
           "filename": "First Aid Presentation Slides/09_EHAcademy - First Aid Course Pres-Heart Attack.png",
           "kind": "image",
-          "byteCount": 4093700
+          "byteCount": 4093700,
+          "eTag": "\"828711dbb18e4dd2a55bd4b937b1b4f3\"",
+          "lastModified": "Thu, 23 Jul 2026 21:48:52 GMT"
         },
         {
           "id": "package.first-aid.slideshow.First Aid Presentation Slides/10_EHAcademy - First Aid Course Pres-Stroke.png",
           "filename": "First Aid Presentation Slides/10_EHAcademy - First Aid Course Pres-Stroke.png",
           "kind": "image",
-          "byteCount": 7845913
+          "byteCount": 7845913,
+          "eTag": "\"3bf695af5ce874fb19ee4612bd392f74\"",
+          "lastModified": "Thu, 23 Jul 2026 21:48:54 GMT"
         },
         {
           "id": "package.first-aid.slideshow.First Aid Presentation Slides/11_EHAcademy - First Aid Course Pres-Seizure Video.mp4",
           "filename": "First Aid Presentation Slides/11_EHAcademy - First Aid Course Pres-Seizure Video.mp4",
           "kind": "video",
-          "byteCount": 143591665
+          "byteCount": 143591665,
+          "eTag": "\"35140c98f3257ff7edc0710874c28ebf\"",
+          "lastModified": "Thu, 23 Jul 2026 21:49:34 GMT"
         },
         {
           "id": "package.first-aid.slideshow.subtitle.11_EHAcademy - First Aid Course Pres-Seizure Video.vtt",
@@ -3150,211 +3370,281 @@
           "id": "package.first-aid.slideshow.First Aid Presentation Slides/12_EHAcademy - First Aid Course Pres-Seizure.png",
           "filename": "First Aid Presentation Slides/12_EHAcademy - First Aid Course Pres-Seizure.png",
           "kind": "image",
-          "byteCount": 4889030
+          "byteCount": 4889030,
+          "eTag": "\"0b6ec4c658da8cb35fee9429f4b7a01d\"",
+          "lastModified": "Thu, 23 Jul 2026 21:48:54 GMT"
         },
         {
           "id": "package.first-aid.slideshow.First Aid Presentation Slides/13_EHAcademy - First Aid Course Pres-Diabetes.png",
           "filename": "First Aid Presentation Slides/13_EHAcademy - First Aid Course Pres-Diabetes.png",
           "kind": "image",
-          "byteCount": 6729091
+          "byteCount": 6729091,
+          "eTag": "\"b47db139939cccb399dff96a471f8a3c\"",
+          "lastModified": "Thu, 23 Jul 2026 21:48:55 GMT"
         },
         {
           "id": "package.first-aid.slideshow.First Aid Presentation Slides/14_EHAcademy - First Aid Course Pres-Difficulty Breathing.png",
           "filename": "First Aid Presentation Slides/14_EHAcademy - First Aid Course Pres-Difficulty Breathing.png",
           "kind": "image",
-          "byteCount": 6139516
+          "byteCount": 6139516,
+          "eTag": "\"3ecd9cea9ba61d137fa356d9cfc0a43a\"",
+          "lastModified": "Thu, 23 Jul 2026 21:48:56 GMT"
         },
         {
           "id": "package.first-aid.slideshow.First Aid Presentation Slides/15_EHAcademy - First Aid Course Pres-Allergic Reaction.png",
           "filename": "First Aid Presentation Slides/15_EHAcademy - First Aid Course Pres-Allergic Reaction.png",
           "kind": "image",
-          "byteCount": 9973224
+          "byteCount": 9973224,
+          "eTag": "\"8b62e5a1139ef0ab7d028156d0f80901\"",
+          "lastModified": "Thu, 23 Jul 2026 21:48:59 GMT"
         },
         {
           "id": "package.first-aid.slideshow.First Aid Presentation Slides/16_EHAcademy - First Aid Course Pres-Fainting.png",
           "filename": "First Aid Presentation Slides/16_EHAcademy - First Aid Course Pres-Fainting.png",
           "kind": "image",
-          "byteCount": 9696829
+          "byteCount": 9696829,
+          "eTag": "\"aad0e2ee94006aa0a442f35594b0029a\"",
+          "lastModified": "Thu, 23 Jul 2026 21:48:59 GMT"
         },
         {
           "id": "package.first-aid.slideshow.First Aid Presentation Slides/17_EHAcademy - First Aid Course Pres-Bleeding and Wounds.png",
           "filename": "First Aid Presentation Slides/17_EHAcademy - First Aid Course Pres-Bleeding and Wounds.png",
           "kind": "image",
-          "byteCount": 4509969
+          "byteCount": 4509969,
+          "eTag": "\"5f0c2be4576180cc0765582d55cec449\"",
+          "lastModified": "Thu, 23 Jul 2026 21:48:59 GMT"
         },
         {
           "id": "package.first-aid.slideshow.First Aid Presentation Slides/18_EHAcademy - First Aid Course Pres-Minor External Bleeding.png",
           "filename": "First Aid Presentation Slides/18_EHAcademy - First Aid Course Pres-Minor External Bleeding.png",
           "kind": "image",
-          "byteCount": 6669635
+          "byteCount": 6669635,
+          "eTag": "\"5febbb180b8e9aaff8502befaa0e196f\"",
+          "lastModified": "Thu, 23 Jul 2026 21:48:59 GMT"
         },
         {
           "id": "package.first-aid.slideshow.First Aid Presentation Slides/19_EHAcademy - First Aid Course Pres-Major External Bleeding.png",
           "filename": "First Aid Presentation Slides/19_EHAcademy - First Aid Course Pres-Major External Bleeding.png",
           "kind": "image",
-          "byteCount": 6271380
+          "byteCount": 6271380,
+          "eTag": "\"b4c1a976d0b4cff441a78d3646e08add\"",
+          "lastModified": "Thu, 23 Jul 2026 21:49:03 GMT"
         },
         {
           "id": "package.first-aid.slideshow.First Aid Presentation Slides/20_EHAcademy - First Aid Course Pres-Using a Tourniquet.png",
           "filename": "First Aid Presentation Slides/20_EHAcademy - First Aid Course Pres-Using a Tourniquet.png",
           "kind": "image",
-          "byteCount": 6954588
+          "byteCount": 6954588,
+          "eTag": "\"02182c9b01d8b4ebef6960ceb270d211\"",
+          "lastModified": "Thu, 23 Jul 2026 21:49:03 GMT"
         },
         {
           "id": "package.first-aid.slideshow.First Aid Presentation Slides/21_EHAcademy - First Aid Course Pres-Nosebleed.png",
           "filename": "First Aid Presentation Slides/21_EHAcademy - First Aid Course Pres-Nosebleed.png",
           "kind": "image",
-          "byteCount": 8107963
+          "byteCount": 8107963,
+          "eTag": "\"10c82e84f49d7a16fbdb31fcfdac5193\"",
+          "lastModified": "Thu, 23 Jul 2026 21:49:04 GMT"
         },
         {
           "id": "package.first-aid.slideshow.First Aid Presentation Slides/22_EHAcademy - First Aid Course Pres-Mouth Bleed.png",
           "filename": "First Aid Presentation Slides/22_EHAcademy - First Aid Course Pres-Mouth Bleed.png",
           "kind": "image",
-          "byteCount": 8393035
+          "byteCount": 8393035,
+          "eTag": "\"bb85285023c7719f8b23b77974a9716a\"",
+          "lastModified": "Thu, 23 Jul 2026 21:49:04 GMT"
         },
         {
           "id": "package.first-aid.slideshow.First Aid Presentation Slides/23_EHAcademy - First Aid Course Pres-Penetration Injuries.png",
           "filename": "First Aid Presentation Slides/23_EHAcademy - First Aid Course Pres-Penetration Injuries.png",
           "kind": "image",
-          "byteCount": 6974352
+          "byteCount": 6974352,
+          "eTag": "\"ada5181fab9cbe4c25091517cc28eae7\"",
+          "lastModified": "Thu, 23 Jul 2026 21:49:07 GMT"
         },
         {
           "id": "package.first-aid.slideshow.First Aid Presentation Slides/24_EHAcademy - First Aid Course Pres-Internal Bleeding.png",
           "filename": "First Aid Presentation Slides/24_EHAcademy - First Aid Course Pres-Internal Bleeding.png",
           "kind": "image",
-          "byteCount": 9159870
+          "byteCount": 9159870,
+          "eTag": "\"82c8e97e78381b2f1d8d3fb4b52c2bd0\"",
+          "lastModified": "Thu, 23 Jul 2026 21:49:08 GMT"
         },
         {
           "id": "package.first-aid.slideshow.First Aid Presentation Slides/25_EHAcademy - First Aid Course Pres-Amputation.png",
           "filename": "First Aid Presentation Slides/25_EHAcademy - First Aid Course Pres-Amputation.png",
           "kind": "image",
-          "byteCount": 7697242
+          "byteCount": 7697242,
+          "eTag": "\"9f6fb320335431b7e3a32a105a141a6b\"",
+          "lastModified": "Thu, 23 Jul 2026 21:49:08 GMT"
         },
         {
           "id": "package.first-aid.slideshow.First Aid Presentation Slides/26_EHAcademy - First Aid Course Pres-Shock.png",
           "filename": "First Aid Presentation Slides/26_EHAcademy - First Aid Course Pres-Shock.png",
           "kind": "image",
-          "byteCount": 3137177
+          "byteCount": 3137177,
+          "eTag": "\"9ccea6be5be2c02da606ad477af590da\"",
+          "lastModified": "Thu, 23 Jul 2026 21:49:06 GMT"
         },
         {
           "id": "package.first-aid.slideshow.First Aid Presentation Slides/27_EHAcademy - First Aid Course Pres-Bodily Injuries.png",
           "filename": "First Aid Presentation Slides/27_EHAcademy - First Aid Course Pres-Bodily Injuries.png",
           "kind": "image",
-          "byteCount": 8473500
+          "byteCount": 8473500,
+          "eTag": "\"7e5a97294a67497356665436ec7dbd34\"",
+          "lastModified": "Thu, 23 Jul 2026 21:49:12 GMT"
         },
         {
           "id": "package.first-aid.slideshow.First Aid Presentation Slides/28_EHAcademy - First Aid Course Pres-Eye Injury.png",
           "filename": "First Aid Presentation Slides/28_EHAcademy - First Aid Course Pres-Eye Injury.png",
           "kind": "image",
-          "byteCount": 8056754
+          "byteCount": 8056754,
+          "eTag": "\"fbd986e61e2973c47fdccc0cb57afcc8\"",
+          "lastModified": "Thu, 23 Jul 2026 21:49:12 GMT"
         },
         {
           "id": "package.first-aid.slideshow.First Aid Presentation Slides/29_EHAcademy - First Aid Course Pres-Sprain and Fracture.png",
           "filename": "First Aid Presentation Slides/29_EHAcademy - First Aid Course Pres-Sprain and Fracture.png",
           "kind": "image",
-          "byteCount": 8781727
+          "byteCount": 8781727,
+          "eTag": "\"661968d15973d59a696bbc76310aaddb\"",
+          "lastModified": "Thu, 23 Jul 2026 21:49:13 GMT"
         },
         {
           "id": "package.first-aid.slideshow.First Aid Presentation Slides/30_EHAcademy - First Aid Course Pres-Head Neck or Spine Injuries.png",
           "filename": "First Aid Presentation Slides/30_EHAcademy - First Aid Course Pres-Head Neck or Spine Injuries.png",
           "kind": "image",
-          "byteCount": 7742137
+          "byteCount": 7742137,
+          "eTag": "\"36d5f72072771e443bcf824ff50ddb1a\"",
+          "lastModified": "Thu, 23 Jul 2026 21:49:13 GMT"
         },
         {
           "id": "package.first-aid.slideshow.First Aid Presentation Slides/31_EHAcademy - First Aid Course Pres-Burns.png",
           "filename": "First Aid Presentation Slides/31_EHAcademy - First Aid Course Pres-Burns.png",
           "kind": "image",
-          "byteCount": 5503771
+          "byteCount": 5503771,
+          "eTag": "\"2b16979c4d01b04aa077b7fa733384ac\"",
+          "lastModified": "Thu, 23 Jul 2026 21:49:17 GMT"
         },
         {
           "id": "package.first-aid.slideshow.First Aid Presentation Slides/32_EHAcademy - First Aid Course Pres-Electrical Burns.png",
           "filename": "First Aid Presentation Slides/32_EHAcademy - First Aid Course Pres-Electrical Burns.png",
           "kind": "image",
-          "byteCount": 4215927
+          "byteCount": 4215927,
+          "eTag": "\"eb84b520d7d890f2746a4fd5bca14570\"",
+          "lastModified": "Thu, 23 Jul 2026 21:49:16 GMT"
         },
         {
           "id": "package.first-aid.slideshow.First Aid Presentation Slides/33_EHAcademy - First Aid Course Pres-Environmental Emergencies.png",
           "filename": "First Aid Presentation Slides/33_EHAcademy - First Aid Course Pres-Environmental Emergencies.png",
           "kind": "image",
-          "byteCount": 5438053
+          "byteCount": 5438053,
+          "eTag": "\"8a04001fb01bed97a42d14f4fb10a4ad\"",
+          "lastModified": "Thu, 23 Jul 2026 21:49:17 GMT"
         },
         {
           "id": "package.first-aid.slideshow.First Aid Presentation Slides/34_EHAcademy - First Aid Course Pres-Animal or Human Bite.png",
           "filename": "First Aid Presentation Slides/34_EHAcademy - First Aid Course Pres-Animal or Human Bite.png",
           "kind": "image",
-          "byteCount": 8872127
+          "byteCount": 8872127,
+          "eTag": "\"c146e77b7ecfdab84e177b6c6ea8c10f\"",
+          "lastModified": "Thu, 23 Jul 2026 21:49:18 GMT"
         },
         {
           "id": "package.first-aid.slideshow.First Aid Presentation Slides/35_EHAcademy - First Aid Course Pres-Snake Bite.png",
           "filename": "First Aid Presentation Slides/35_EHAcademy - First Aid Course Pres-Snake Bite.png",
           "kind": "image",
-          "byteCount": 5683584
+          "byteCount": 5683584,
+          "eTag": "\"9620dcbce5b8450b42b4d7c26876f828\"",
+          "lastModified": "Thu, 23 Jul 2026 21:49:19 GMT"
         },
         {
           "id": "package.first-aid.slideshow.First Aid Presentation Slides/36_EHAcademy - First Aid Course Pres-Bee Sting.png",
           "filename": "First Aid Presentation Slides/36_EHAcademy - First Aid Course Pres-Bee Sting.png",
           "kind": "image",
-          "byteCount": 8847524
+          "byteCount": 8847524,
+          "eTag": "\"d69078bb16f329144132e5101438a34f\"",
+          "lastModified": "Thu, 23 Jul 2026 21:49:22 GMT"
         },
         {
           "id": "package.first-aid.slideshow.First Aid Presentation Slides/37_EHAcademy - First Aid Course Pres-Spider or Scorpion Bite.png",
           "filename": "First Aid Presentation Slides/37_EHAcademy - First Aid Course Pres-Spider or Scorpion Bite.png",
           "kind": "image",
-          "byteCount": 7605466
+          "byteCount": 7605466,
+          "eTag": "\"16b342125be9239442c0d1d2948835a1\"",
+          "lastModified": "Thu, 23 Jul 2026 21:49:21 GMT"
         },
         {
           "id": "package.first-aid.slideshow.First Aid Presentation Slides/38_EHAcademy - First Aid Course Pres-Tick Bites.png",
           "filename": "First Aid Presentation Slides/38_EHAcademy - First Aid Course Pres-Tick Bites.png",
           "kind": "image",
-          "byteCount": 5342661
+          "byteCount": 5342661,
+          "eTag": "\"dc1501c75ebdb0b4ceebda6bbc9b1feb\"",
+          "lastModified": "Thu, 23 Jul 2026 21:49:22 GMT"
         },
         {
           "id": "package.first-aid.slideshow.First Aid Presentation Slides/39_EHAcademy - First Aid Course Pres-Marine Life Stings.png",
           "filename": "First Aid Presentation Slides/39_EHAcademy - First Aid Course Pres-Marine Life Stings.png",
           "kind": "image",
-          "byteCount": 8992704
+          "byteCount": 8992704,
+          "eTag": "\"b83ab716e077b7baa1f09cce1840159d\"",
+          "lastModified": "Thu, 23 Jul 2026 21:49:24 GMT"
         },
         {
           "id": "package.first-aid.slideshow.First Aid Presentation Slides/40_EHAcademy - First Aid Course Pres-Drowning.png",
           "filename": "First Aid Presentation Slides/40_EHAcademy - First Aid Course Pres-Drowning.png",
           "kind": "image",
-          "byteCount": 6605319
+          "byteCount": 6605319,
+          "eTag": "\"1fb9e55c4be5f4f0e5bfdbe482d40c72\"",
+          "lastModified": "Thu, 23 Jul 2026 21:49:26 GMT"
         },
         {
           "id": "package.first-aid.slideshow.First Aid Presentation Slides/41_EHAcademy - First Aid Course Pres-Poisoning.png",
           "filename": "First Aid Presentation Slides/41_EHAcademy - First Aid Course Pres-Poisoning.png",
           "kind": "image",
-          "byteCount": 6102953
+          "byteCount": 6102953,
+          "eTag": "\"ceebe8c037625fd74480fbb55e6b90d8\"",
+          "lastModified": "Thu, 23 Jul 2026 21:49:26 GMT"
         },
         {
           "id": "package.first-aid.slideshow.First Aid Presentation Slides/42_EHAcademy - First Aid Course Pres-Opioid and Overdose.png",
           "filename": "First Aid Presentation Slides/42_EHAcademy - First Aid Course Pres-Opioid and Overdose.png",
           "kind": "image",
-          "byteCount": 4929805
+          "byteCount": 4929805,
+          "eTag": "\"4c7411563b6f11cae1f88782508641bb\"",
+          "lastModified": "Thu, 23 Jul 2026 21:49:26 GMT"
         },
         {
           "id": "package.first-aid.slideshow.First Aid Presentation Slides/43_EHAcademy - First Aid Course Pres-Temperature Relate Illness.png",
           "filename": "First Aid Presentation Slides/43_EHAcademy - First Aid Course Pres-Temperature Relate Illness.png",
           "kind": "image",
-          "byteCount": 15953090
+          "byteCount": 15953090,
+          "eTag": "\"7465fb3a9b4789b9d595186e8c7900cf\"",
+          "lastModified": "Thu, 23 Jul 2026 21:49:30 GMT"
         },
         {
           "id": "package.first-aid.slideshow.First Aid Presentation Slides/44_EHAcademy - First Aid Course Pres-Heat Relate Illness.png",
           "filename": "First Aid Presentation Slides/44_EHAcademy - First Aid Course Pres-Heat Relate Illness.png",
           "kind": "image",
-          "byteCount": 930774
+          "byteCount": 930774,
+          "eTag": "\"11cd0139ec34b62fbb63c50b2a1d17a8\"",
+          "lastModified": "Thu, 23 Jul 2026 21:49:27 GMT"
         },
         {
           "id": "package.first-aid.slideshow.First Aid Presentation Slides/45_EHAcademy - First Aid Course Pres-Cold Related Illness.png",
           "filename": "First Aid Presentation Slides/45_EHAcademy - First Aid Course Pres-Cold Related Illness.png",
           "kind": "image",
-          "byteCount": 8308514
+          "byteCount": 8308514,
+          "eTag": "\"bf308ec4a7565998a00e2ebfbdb12b71\"",
+          "lastModified": "Thu, 23 Jul 2026 21:49:30 GMT"
         },
         {
           "id": "package.first-aid.slideshow.First Aid Presentation Slides/46_EHAcademy - First Aid Course Pres-Conclusion.png",
           "filename": "First Aid Presentation Slides/46_EHAcademy - First Aid Course Pres-Conclusion.png",
           "kind": "image",
-          "byteCount": 746074
+          "byteCount": 746074,
+          "eTag": "\"c141c8894f2fe5c43f7113f5dcbc72a8\"",
+          "lastModified": "Thu, 23 Jul 2026 21:49:27 GMT"
         }
       ]
     },
@@ -3366,7 +3656,9 @@
           "id": "package.first-aid.video.First Aid VA Slides/01_EHAcademy - First Aid Course-Introduction.mp4",
           "filename": "First Aid VA Slides/01_EHAcademy - First Aid Course-Introduction.mp4",
           "kind": "video",
-          "byteCount": 10944522
+          "byteCount": 10944522,
+          "eTag": "\"d44b0dcb7cd1bfd843b871ef7f504dc4\"",
+          "lastModified": "Thu, 23 Jul 2026 22:20:26 GMT"
         },
         {
           "id": "package.first-aid.video.subtitle.01_EHAcademy - First Aid Course-Introduction.vtt",
@@ -3378,7 +3670,9 @@
           "id": "package.first-aid.video.First Aid VA Slides/02_EHAcademy - First Aid Course-What is First Aid.mp4",
           "filename": "First Aid VA Slides/02_EHAcademy - First Aid Course-What is First Aid.mp4",
           "kind": "video",
-          "byteCount": 9687878
+          "byteCount": 9687878,
+          "eTag": "\"4158a180fa4c42a187c02736912ef3fd\"",
+          "lastModified": "Thu, 23 Jul 2026 22:20:25 GMT"
         },
         {
           "id": "package.first-aid.video.subtitle.02_EHAcademy - First Aid Course-What is First Aid.vtt",
@@ -3390,7 +3684,9 @@
           "id": "package.first-aid.video.First Aid VA Slides/03_EHAcademy - First Aid Course-First Aid Basics.mp4",
           "filename": "First Aid VA Slides/03_EHAcademy - First Aid Course-First Aid Basics.mp4",
           "kind": "video",
-          "byteCount": 9475043
+          "byteCount": 9475043,
+          "eTag": "\"628b7d0b281d043b75b9ecbb313af779\"",
+          "lastModified": "Thu, 23 Jul 2026 22:20:25 GMT"
         },
         {
           "id": "package.first-aid.video.subtitle.03_EHAcademy - First Aid Course-First Aid Basics.vtt",
@@ -3402,7 +3698,9 @@
           "id": "package.first-aid.video.First Aid VA Slides/04_EHAcademy - First Aid Course-Universal Precautions.mp4",
           "filename": "First Aid VA Slides/04_EHAcademy - First Aid Course-Universal Precautions.mp4",
           "kind": "video",
-          "byteCount": 9882659
+          "byteCount": 9882659,
+          "eTag": "\"bd8dc37f258a43e7c9829e7c25e3e396\"",
+          "lastModified": "Thu, 23 Jul 2026 22:20:25 GMT"
         },
         {
           "id": "package.first-aid.video.subtitle.04_EHAcademy - First Aid Course-Universal Precautions.vtt",
@@ -3414,7 +3712,9 @@
           "id": "package.first-aid.video.First Aid VA Slides/05_EHAcademy - First Aid Course-Legal Concerns.mp4",
           "filename": "First Aid VA Slides/05_EHAcademy - First Aid Course-Legal Concerns.mp4",
           "kind": "video",
-          "byteCount": 6829545
+          "byteCount": 6829545,
+          "eTag": "\"2d059e40b1355f81a6c132bdd38ff233\"",
+          "lastModified": "Thu, 23 Jul 2026 22:20:25 GMT"
         },
         {
           "id": "package.first-aid.video.subtitle.05_EHAcademy - First Aid Course-Legal Concerns.vtt",
@@ -3426,7 +3726,9 @@
           "id": "package.first-aid.video.First Aid VA Slides/06_EHAcademy - First Aid Course-Calling 911.mp4",
           "filename": "First Aid VA Slides/06_EHAcademy - First Aid Course-Calling 911.mp4",
           "kind": "video",
-          "byteCount": 6435038
+          "byteCount": 6435038,
+          "eTag": "\"8da7fe8bf563c1b3f5c751ede6a8f6d8\"",
+          "lastModified": "Thu, 23 Jul 2026 22:20:27 GMT"
         },
         {
           "id": "package.first-aid.video.subtitle.06_EHAcademy - First Aid Course-Calling 911.vtt",
@@ -3438,7 +3740,9 @@
           "id": "package.first-aid.video.First Aid VA Slides/07_EHAcademy - First Aid Course-MEDICAL EMERGENCIES.mp4",
           "filename": "First Aid VA Slides/07_EHAcademy - First Aid Course-MEDICAL EMERGENCIES.mp4",
           "kind": "video",
-          "byteCount": 2192479
+          "byteCount": 2192479,
+          "eTag": "\"1593b6fa143885e3ba6237fb94b53786\"",
+          "lastModified": "Thu, 23 Jul 2026 22:20:27 GMT"
         },
         {
           "id": "package.first-aid.video.subtitle.07_EHAcademy - First Aid Course-MEDICAL EMERGENCIES.vtt",
@@ -3450,7 +3754,9 @@
           "id": "package.first-aid.video.First Aid VA Slides/08_EHAcademy - First Aid Course-Heart Attack.mp4",
           "filename": "First Aid VA Slides/08_EHAcademy - First Aid Course-Heart Attack.mp4",
           "kind": "video",
-          "byteCount": 18116632
+          "byteCount": 18116632,
+          "eTag": "\"21c3b6bc063e08505711d3929aae31da\"",
+          "lastModified": "Thu, 23 Jul 2026 22:20:32 GMT"
         },
         {
           "id": "package.first-aid.video.subtitle.08_EHAcademy - First Aid Course-Heart Attack.vtt",
@@ -3462,7 +3768,9 @@
           "id": "package.first-aid.video.First Aid VA Slides/09_EHAcademy - First Aid Course-Stroke.mp4",
           "filename": "First Aid VA Slides/09_EHAcademy - First Aid Course-Stroke.mp4",
           "kind": "video",
-          "byteCount": 14584031
+          "byteCount": 14584031,
+          "eTag": "\"45570d2a10ded7851a5f12c462d57ce0\"",
+          "lastModified": "Thu, 23 Jul 2026 22:20:31 GMT"
         },
         {
           "id": "package.first-aid.video.subtitle.09_EHAcademy - First Aid Course-Stroke.vtt",
@@ -3474,7 +3782,9 @@
           "id": "package.first-aid.video.First Aid VA Slides/10_EHAcademy - First Aid Course Pres-Seizure Video.mp4",
           "filename": "First Aid VA Slides/10_EHAcademy - First Aid Course Pres-Seizure Video.mp4",
           "kind": "video",
-          "byteCount": 18586006
+          "byteCount": 18586006,
+          "eTag": "\"0dd651c3b5f3bdf5654110a94ade7ef6\"",
+          "lastModified": "Thu, 23 Jul 2026 22:20:32 GMT"
         },
         {
           "id": "package.first-aid.video.subtitle.10_EHAcademy - First Aid Course Pres-Seizure Video.vtt",
@@ -3486,7 +3796,9 @@
           "id": "package.first-aid.video.First Aid VA Slides/11_EHAcademy - First Aid Course-Seizure.mp4",
           "filename": "First Aid VA Slides/11_EHAcademy - First Aid Course-Seizure.mp4",
           "kind": "video",
-          "byteCount": 13384059
+          "byteCount": 13384059,
+          "eTag": "\"a566ad009a9c04a38816e4386db71432\"",
+          "lastModified": "Thu, 23 Jul 2026 22:20:32 GMT"
         },
         {
           "id": "package.first-aid.video.subtitle.11_EHAcademy - First Aid Course-Seizure.vtt",
@@ -3498,7 +3810,9 @@
           "id": "package.first-aid.video.First Aid VA Slides/12_EHAcademy - First Aid Course-Diabetes.mp4",
           "filename": "First Aid VA Slides/12_EHAcademy - First Aid Course-Diabetes.mp4",
           "kind": "video",
-          "byteCount": 15665070
+          "byteCount": 15665070,
+          "eTag": "\"730bca72640b1e55c244d2747639351d\"",
+          "lastModified": "Thu, 23 Jul 2026 22:20:33 GMT"
         },
         {
           "id": "package.first-aid.video.subtitle.12_EHAcademy - First Aid Course-Diabetes.vtt",
@@ -3510,7 +3824,9 @@
           "id": "package.first-aid.video.First Aid VA Slides/13_EHAcademy - First Aid Course-Difficulty Breathing.mp4",
           "filename": "First Aid VA Slides/13_EHAcademy - First Aid Course-Difficulty Breathing.mp4",
           "kind": "video",
-          "byteCount": 8229143
+          "byteCount": 8229143,
+          "eTag": "\"6d879deb496fb3b539bc9228e9af522f\"",
+          "lastModified": "Thu, 23 Jul 2026 22:20:33 GMT"
         },
         {
           "id": "package.first-aid.video.subtitle.13_EHAcademy - First Aid Course-Difficulty Breathing.vtt",
@@ -3522,7 +3838,9 @@
           "id": "package.first-aid.video.First Aid VA Slides/14_EHAcademy - First Aid Course-Allergic Reaction.mp4",
           "filename": "First Aid VA Slides/14_EHAcademy - First Aid Course-Allergic Reaction.mp4",
           "kind": "video",
-          "byteCount": 8934445
+          "byteCount": 8934445,
+          "eTag": "\"bd64436db8821a574195660a38b8d5f9\"",
+          "lastModified": "Thu, 23 Jul 2026 22:20:34 GMT"
         },
         {
           "id": "package.first-aid.video.subtitle.14_EHAcademy - First Aid Course-Allergic Reaction.vtt",
@@ -3534,7 +3852,9 @@
           "id": "package.first-aid.video.First Aid VA Slides/15_EHAcademy - First Aid Course-Fainting.mp4",
           "filename": "First Aid VA Slides/15_EHAcademy - First Aid Course-Fainting.mp4",
           "kind": "video",
-          "byteCount": 9606913
+          "byteCount": 9606913,
+          "eTag": "\"cf7581b0b8369ac696c09b186eb311e8\"",
+          "lastModified": "Thu, 23 Jul 2026 22:20:35 GMT"
         },
         {
           "id": "package.first-aid.video.subtitle.15_EHAcademy - First Aid Course-Fainting.vtt",
@@ -3546,7 +3866,9 @@
           "id": "package.first-aid.video.First Aid VA Slides/16_EHAcademy - First Aid Course-BLEEDING AND WOUNDS.mp4",
           "filename": "First Aid VA Slides/16_EHAcademy - First Aid Course-BLEEDING AND WOUNDS.mp4",
           "kind": "video",
-          "byteCount": 5836755
+          "byteCount": 5836755,
+          "eTag": "\"a3fa7833896ecf2f0be26dcdfa42e76b\"",
+          "lastModified": "Thu, 23 Jul 2026 22:20:35 GMT"
         },
         {
           "id": "package.first-aid.video.subtitle.16_EHAcademy - First Aid Course-BLEEDING AND WOUNDS.vtt",
@@ -3558,7 +3880,9 @@
           "id": "package.first-aid.video.First Aid VA Slides/17_EHAcademy - First Aid Course-Minor Bleeding.mp4",
           "filename": "First Aid VA Slides/17_EHAcademy - First Aid Course-Minor Bleeding.mp4",
           "kind": "video",
-          "byteCount": 10063534
+          "byteCount": 10063534,
+          "eTag": "\"d0170fe983341f24ee6282b1fc091afc\"",
+          "lastModified": "Thu, 23 Jul 2026 22:20:36 GMT"
         },
         {
           "id": "package.first-aid.video.subtitle.17_EHAcademy - First Aid Course-Minor Bleeding.vtt",
@@ -3570,7 +3894,9 @@
           "id": "package.first-aid.video.First Aid VA Slides/18_EHAcademy - First Aid Course-Major Bleeding.mp4",
           "filename": "First Aid VA Slides/18_EHAcademy - First Aid Course-Major Bleeding.mp4",
           "kind": "video",
-          "byteCount": 13849481
+          "byteCount": 13849481,
+          "eTag": "\"4ad013f5eb2836554155305ecaebdaa5\"",
+          "lastModified": "Thu, 23 Jul 2026 22:20:37 GMT"
         },
         {
           "id": "package.first-aid.video.subtitle.18_EHAcademy - First Aid Course-Major Bleeding.vtt",
@@ -3582,7 +3908,9 @@
           "id": "package.first-aid.video.First Aid VA Slides/19_EHAcademy - First Aid Course-Using a Tourniquet.mp4",
           "filename": "First Aid VA Slides/19_EHAcademy - First Aid Course-Using a Tourniquet.mp4",
           "kind": "video",
-          "byteCount": 17070756
+          "byteCount": 17070756,
+          "eTag": "\"8a702acf6a83bdb09282f1fc63ae4931\"",
+          "lastModified": "Thu, 23 Jul 2026 22:20:39 GMT"
         },
         {
           "id": "package.first-aid.video.subtitle.19_EHAcademy - First Aid Course-Using a Tourniquet.vtt",
@@ -3594,7 +3922,9 @@
           "id": "package.first-aid.video.First Aid VA Slides/20_EHAcademy - First Aid Course-Nose Bleed.mp4",
           "filename": "First Aid VA Slides/20_EHAcademy - First Aid Course-Nose Bleed.mp4",
           "kind": "video",
-          "byteCount": 8678865
+          "byteCount": 8678865,
+          "eTag": "\"c8782b54706bcd1b6a591439d05a86d0\"",
+          "lastModified": "Thu, 23 Jul 2026 22:20:38 GMT"
         },
         {
           "id": "package.first-aid.video.subtitle.20_EHAcademy - First Aid Course-Nose Bleed.vtt",
@@ -3606,7 +3936,9 @@
           "id": "package.first-aid.video.First Aid VA Slides/21_EHAcademy - First Aid Course-Mouth Bleed.mp4",
           "filename": "First Aid VA Slides/21_EHAcademy - First Aid Course-Mouth Bleed.mp4",
           "kind": "video",
-          "byteCount": 10768767
+          "byteCount": 10768767,
+          "eTag": "\"176cdd8bce24362739b48f67e47af6c2\"",
+          "lastModified": "Thu, 23 Jul 2026 22:20:39 GMT"
         },
         {
           "id": "package.first-aid.video.subtitle.21_EHAcademy - First Aid Course-Mouth Bleed.vtt",
@@ -3618,7 +3950,9 @@
           "id": "package.first-aid.video.First Aid VA Slides/22_EHAcademy - First Aid Course-Penetration Injuries.mp4",
           "filename": "First Aid VA Slides/22_EHAcademy - First Aid Course-Penetration Injuries.mp4",
           "kind": "video",
-          "byteCount": 9170714
+          "byteCount": 9170714,
+          "eTag": "\"b4c996ea06d2eec92238cedb9a059caa\"",
+          "lastModified": "Thu, 23 Jul 2026 22:20:39 GMT"
         },
         {
           "id": "package.first-aid.video.subtitle.22_EHAcademy - First Aid Course-Penetration Injuries.vtt",
@@ -3630,7 +3964,9 @@
           "id": "package.first-aid.video.First Aid VA Slides/23_EHAcademy - First Aid Course-Internal Bleeding.mp4",
           "filename": "First Aid VA Slides/23_EHAcademy - First Aid Course-Internal Bleeding.mp4",
           "kind": "video",
-          "byteCount": 10615133
+          "byteCount": 10615133,
+          "eTag": "\"2c187077d0a150c2cd7dd09275b8cc60\"",
+          "lastModified": "Thu, 23 Jul 2026 22:20:39 GMT"
         },
         {
           "id": "package.first-aid.video.subtitle.23_EHAcademy - First Aid Course-Internal Bleeding.vtt",
@@ -3642,7 +3978,9 @@
           "id": "package.first-aid.video.First Aid VA Slides/24_EHAcademy - First Aid Course-Amputation.mp4",
           "filename": "First Aid VA Slides/24_EHAcademy - First Aid Course-Amputation.mp4",
           "kind": "video",
-          "byteCount": 10841919
+          "byteCount": 10841919,
+          "eTag": "\"82dd16c20176d0252c01962aebe0fa04\"",
+          "lastModified": "Thu, 23 Jul 2026 22:20:41 GMT"
         },
         {
           "id": "package.first-aid.video.subtitle.24_EHAcademy - First Aid Course-Amputation.vtt",
@@ -3654,7 +3992,9 @@
           "id": "package.first-aid.video.First Aid VA Slides/25_EHAcademy - First Aid Course-Shock.mp4",
           "filename": "First Aid VA Slides/25_EHAcademy - First Aid Course-Shock.mp4",
           "kind": "video",
-          "byteCount": 10383949
+          "byteCount": 10383949,
+          "eTag": "\"8ed4e9761c42be42c025c2e0a06fda71\"",
+          "lastModified": "Thu, 23 Jul 2026 22:20:42 GMT"
         },
         {
           "id": "package.first-aid.video.subtitle.25_EHAcademy - First Aid Course-Shock.vtt",
@@ -3666,7 +4006,9 @@
           "id": "package.first-aid.video.First Aid VA Slides/26_EHAcademy - First Aid Course-BODILY INJURIES.mp4",
           "filename": "First Aid VA Slides/26_EHAcademy - First Aid Course-BODILY INJURIES.mp4",
           "kind": "video",
-          "byteCount": 3804453
+          "byteCount": 3804453,
+          "eTag": "\"6ccac0c1037c6606b7eebd5d52aef997\"",
+          "lastModified": "Thu, 23 Jul 2026 22:20:41 GMT"
         },
         {
           "id": "package.first-aid.video.subtitle.26_EHAcademy - First Aid Course-BODILY INJURIES.vtt",
@@ -3678,7 +4020,9 @@
           "id": "package.first-aid.video.First Aid VA Slides/27_EHAcademy - First Aid Course-Eye Injury.mp4",
           "filename": "First Aid VA Slides/27_EHAcademy - First Aid Course-Eye Injury.mp4",
           "kind": "video",
-          "byteCount": 14755617
+          "byteCount": 14755617,
+          "eTag": "\"1e7340e74a481209bc4e495f3bc895b2\"",
+          "lastModified": "Thu, 23 Jul 2026 22:20:44 GMT"
         },
         {
           "id": "package.first-aid.video.subtitle.27_EHAcademy - First Aid Course-Eye Injury.vtt",
@@ -3690,7 +4034,9 @@
           "id": "package.first-aid.video.First Aid VA Slides/28_EHAcademy - First Aid Course-Sprain or Fracture.mp4",
           "filename": "First Aid VA Slides/28_EHAcademy - First Aid Course-Sprain or Fracture.mp4",
           "kind": "video",
-          "byteCount": 16708238
+          "byteCount": 16708238,
+          "eTag": "\"cf0c555ce55c9fd0c00d0f812805427f\"",
+          "lastModified": "Thu, 23 Jul 2026 22:20:44 GMT"
         },
         {
           "id": "package.first-aid.video.subtitle.28_EHAcademy - First Aid Course-Sprain or Fracture.vtt",
@@ -3702,7 +4048,9 @@
           "id": "package.first-aid.video.First Aid VA Slides/29_EHAcademy - First Aid Course-Head Neck or Spine Injury.mp4",
           "filename": "First Aid VA Slides/29_EHAcademy - First Aid Course-Head Neck or Spine Injury.mp4",
           "kind": "video",
-          "byteCount": 12931897
+          "byteCount": 12931897,
+          "eTag": "\"18dbf7562ab6156e7cb83c632df58f1f\"",
+          "lastModified": "Thu, 23 Jul 2026 22:20:45 GMT"
         },
         {
           "id": "package.first-aid.video.subtitle.29_EHAcademy - First Aid Course-Head Neck or Spine Injury.vtt",
@@ -3714,7 +4062,9 @@
           "id": "package.first-aid.video.First Aid VA Slides/30_EHAcademy - First Aid Course-Burns.mp4",
           "filename": "First Aid VA Slides/30_EHAcademy - First Aid Course-Burns.mp4",
           "kind": "video",
-          "byteCount": 14631089
+          "byteCount": 14631089,
+          "eTag": "\"5bbbf8663fea752a728055436cd5237d\"",
+          "lastModified": "Thu, 23 Jul 2026 22:20:45 GMT"
         },
         {
           "id": "package.first-aid.video.subtitle.30_EHAcademy - First Aid Course-Burns.vtt",
@@ -3726,7 +4076,9 @@
           "id": "package.first-aid.video.First Aid VA Slides/31_EHAcademy - First Aid Course-Electrical Burns.mp4",
           "filename": "First Aid VA Slides/31_EHAcademy - First Aid Course-Electrical Burns.mp4",
           "kind": "video",
-          "byteCount": 7631078
+          "byteCount": 7631078,
+          "eTag": "\"bb0d751d70b29edba3173333099ec5b8\"",
+          "lastModified": "Thu, 23 Jul 2026 22:20:45 GMT"
         },
         {
           "id": "package.first-aid.video.subtitle.31_EHAcademy - First Aid Course-Electrical Burns.vtt",
@@ -3738,7 +4090,9 @@
           "id": "package.first-aid.video.First Aid VA Slides/32_EHAcademy - First Aid Course-ENVIRONMENTAL EMERGENCIES.mp4",
           "filename": "First Aid VA Slides/32_EHAcademy - First Aid Course-ENVIRONMENTAL EMERGENCIES.mp4",
           "kind": "video",
-          "byteCount": 3019166
+          "byteCount": 3019166,
+          "eTag": "\"a5262f08c2e86619e845a4bfb736dce1\"",
+          "lastModified": "Thu, 23 Jul 2026 22:20:45 GMT"
         },
         {
           "id": "package.first-aid.video.subtitle.32_EHAcademy - First Aid Course-ENVIRONMENTAL EMERGENCIES.vtt",
@@ -3750,7 +4104,9 @@
           "id": "package.first-aid.video.First Aid VA Slides/33_EHAcademy - First Aid Course-Animal or Human Bite.mp4",
           "filename": "First Aid VA Slides/33_EHAcademy - First Aid Course-Animal or Human Bite.mp4",
           "kind": "video",
-          "byteCount": 7900831
+          "byteCount": 7900831,
+          "eTag": "\"2091a3c4497195f86379a73a86c13f16\"",
+          "lastModified": "Thu, 23 Jul 2026 22:20:46 GMT"
         },
         {
           "id": "package.first-aid.video.subtitle.33_EHAcademy - First Aid Course-Animal or Human Bite.vtt",
@@ -3762,7 +4118,9 @@
           "id": "package.first-aid.video.First Aid VA Slides/34_EHAcademy - First Aid Course-Snake Bite.mp4",
           "filename": "First Aid VA Slides/34_EHAcademy - First Aid Course-Snake Bite.mp4",
           "kind": "video",
-          "byteCount": 9727332
+          "byteCount": 9727332,
+          "eTag": "\"080e5e0c7ab603d6754f0ca4fbe72d36\"",
+          "lastModified": "Thu, 23 Jul 2026 22:20:47 GMT"
         },
         {
           "id": "package.first-aid.video.subtitle.34_EHAcademy - First Aid Course-Snake Bite.vtt",
@@ -3774,7 +4132,9 @@
           "id": "package.first-aid.video.First Aid VA Slides/35_EHAcademy - First Aid Course-Bee Sting.mp4",
           "filename": "First Aid VA Slides/35_EHAcademy - First Aid Course-Bee Sting.mp4",
           "kind": "video",
-          "byteCount": 5545386
+          "byteCount": 5545386,
+          "eTag": "\"93c42c2139ed3c1d34660f339a81d76a\"",
+          "lastModified": "Thu, 23 Jul 2026 22:20:48 GMT"
         },
         {
           "id": "package.first-aid.video.subtitle.35_EHAcademy - First Aid Course-Bee Sting.vtt",
@@ -3786,7 +4146,9 @@
           "id": "package.first-aid.video.First Aid VA Slides/36_EHAcademy - First Aid Course-Spider or Scorpion.mp4",
           "filename": "First Aid VA Slides/36_EHAcademy - First Aid Course-Spider or Scorpion.mp4",
           "kind": "video",
-          "byteCount": 9694802
+          "byteCount": 9694802,
+          "eTag": "\"9958b9c5e687f7b44b4b22a16c6e15dc\"",
+          "lastModified": "Thu, 23 Jul 2026 22:20:48 GMT"
         },
         {
           "id": "package.first-aid.video.subtitle.36_EHAcademy - First Aid Course-Spider or Scorpion.vtt",
@@ -3798,7 +4160,9 @@
           "id": "package.first-aid.video.First Aid VA Slides/37_EHAcademy - First Aid Course-Tick Bite.mp4",
           "filename": "First Aid VA Slides/37_EHAcademy - First Aid Course-Tick Bite.mp4",
           "kind": "video",
-          "byteCount": 10416074
+          "byteCount": 10416074,
+          "eTag": "\"aa518ea372389b3329d8536bd28ebcb5\"",
+          "lastModified": "Thu, 23 Jul 2026 22:20:48 GMT"
         },
         {
           "id": "package.first-aid.video.subtitle.37_EHAcademy - First Aid Course-Tick Bite.vtt",
@@ -3810,7 +4174,9 @@
           "id": "package.first-aid.video.First Aid VA Slides/38_EHAcademy - First Aid Course-Marine Life.mp4",
           "filename": "First Aid VA Slides/38_EHAcademy - First Aid Course-Marine Life.mp4",
           "kind": "video",
-          "byteCount": 13963161
+          "byteCount": 13963161,
+          "eTag": "\"68a36066e87ac85aa50858309a92a5d6\"",
+          "lastModified": "Thu, 23 Jul 2026 22:20:49 GMT"
         },
         {
           "id": "package.first-aid.video.subtitle.38_EHAcademy - First Aid Course-Marine Life.vtt",
@@ -3822,7 +4188,9 @@
           "id": "package.first-aid.video.First Aid VA Slides/39_EHAcademy - First Aid Course-Drowning.mp4",
           "filename": "First Aid VA Slides/39_EHAcademy - First Aid Course-Drowning.mp4",
           "kind": "video",
-          "byteCount": 12190543
+          "byteCount": 12190543,
+          "eTag": "\"ee02d2a7e5511fb315ec294cf9ff5bc3\"",
+          "lastModified": "Thu, 23 Jul 2026 22:20:49 GMT"
         },
         {
           "id": "package.first-aid.video.subtitle.39_EHAcademy - First Aid Course-Drowning.vtt",
@@ -3834,7 +4202,9 @@
           "id": "package.first-aid.video.First Aid VA Slides/40_EHAcademy - First Aid Course-Poisoning.mp4",
           "filename": "First Aid VA Slides/40_EHAcademy - First Aid Course-Poisoning.mp4",
           "kind": "video",
-          "byteCount": 12507611
+          "byteCount": 12507611,
+          "eTag": "\"fe3ae211774af698c143bdc8dcdac438\"",
+          "lastModified": "Thu, 23 Jul 2026 22:20:51 GMT"
         },
         {
           "id": "package.first-aid.video.subtitle.40_EHAcademy - First Aid Course-Poisoning.vtt",
@@ -3846,7 +4216,9 @@
           "id": "package.first-aid.video.First Aid VA Slides/41_EHAcademy - First Aid Course-Opioids and Overdose.mp4",
           "filename": "First Aid VA Slides/41_EHAcademy - First Aid Course-Opioids and Overdose.mp4",
           "kind": "video",
-          "byteCount": 12693619
+          "byteCount": 12693619,
+          "eTag": "\"3fd15cc777391e8251d06beeca74ead7\"",
+          "lastModified": "Thu, 23 Jul 2026 22:20:52 GMT"
         },
         {
           "id": "package.first-aid.video.subtitle.41_EHAcademy - First Aid Course-Opioids and Overdose.vtt",
@@ -3858,7 +4230,9 @@
           "id": "package.first-aid.video.First Aid VA Slides/42_EHAcademy - First Aid Course-TEMPERATURE RELATED ILLNESS.mp4",
           "filename": "First Aid VA Slides/42_EHAcademy - First Aid Course-TEMPERATURE RELATED ILLNESS.mp4",
           "kind": "video",
-          "byteCount": 5548182
+          "byteCount": 5548182,
+          "eTag": "\"1d09d4ed4e0ea317011be0847799c4eb\"",
+          "lastModified": "Thu, 23 Jul 2026 22:20:51 GMT"
         },
         {
           "id": "package.first-aid.video.subtitle.42_EHAcademy - First Aid Course-TEMPERATURE RELATED ILLNESS.vtt",
@@ -3870,7 +4244,9 @@
           "id": "package.first-aid.video.First Aid VA Slides/43_EHAcademy - First Aid Course-Heat Related Illness.mp4",
           "filename": "First Aid VA Slides/43_EHAcademy - First Aid Course-Heat Related Illness.mp4",
           "kind": "video",
-          "byteCount": 7435311
+          "byteCount": 7435311,
+          "eTag": "\"6ecdaae0371ec023eb6d0dda61ae7997\"",
+          "lastModified": "Thu, 23 Jul 2026 22:20:52 GMT"
         },
         {
           "id": "package.first-aid.video.subtitle.43_EHAcademy - First Aid Course-Heat Related Illness.vtt",
@@ -3882,7 +4258,9 @@
           "id": "package.first-aid.video.First Aid VA Slides/44_EHAcademy - First Aid Course-Cold Related Illness.mp4",
           "filename": "First Aid VA Slides/44_EHAcademy - First Aid Course-Cold Related Illness.mp4",
           "kind": "video",
-          "byteCount": 16313785
+          "byteCount": 16313785,
+          "eTag": "\"3666b6d5f9fbb3de1e2d1ac5f91369fa\"",
+          "lastModified": "Thu, 23 Jul 2026 22:20:53 GMT"
         },
         {
           "id": "package.first-aid.video.subtitle.44_EHAcademy - First Aid Course-Cold Related Illness.vtt",
@@ -3894,7 +4272,9 @@
           "id": "package.first-aid.video.First Aid VA Slides/45_EHAcademy - First Aid Course-Conclusion.mp4",
           "filename": "First Aid VA Slides/45_EHAcademy - First Aid Course-Conclusion.mp4",
           "kind": "video",
-          "byteCount": 2897496
+          "byteCount": 2897496,
+          "eTag": "\"9341a823f1c937dca401f9b5294d59d3\"",
+          "lastModified": "Thu, 23 Jul 2026 22:20:53 GMT"
         },
         {
           "id": "package.first-aid.video.subtitle.45_EHAcademy - First Aid Course-Conclusion.vtt",
@@ -3912,271 +4292,361 @@
           "id": "package.first-aid.pediatric-slideshow.Pedi First Aid Presentation Slides/01_EHAcademy - Pedi FA Course Pres-Introduction.png",
           "filename": "Pedi First Aid Presentation Slides/01_EHAcademy - Pedi FA Course Pres-Introduction.png",
           "kind": "image",
-          "byteCount": 7456193
+          "byteCount": 7456193,
+          "eTag": "\"ba36bdc30079e0056b1dee4cea271023\"",
+          "lastModified": "Thu, 23 Jul 2026 22:18:33 GMT"
         },
         {
           "id": "package.first-aid.pediatric-slideshow.Pedi First Aid Presentation Slides/02_EHAcademy - Pedi FA Course Pres-What is First Aid.png",
           "filename": "Pedi First Aid Presentation Slides/02_EHAcademy - Pedi FA Course Pres-What is First Aid.png",
           "kind": "image",
-          "byteCount": 3626463
+          "byteCount": 3626463,
+          "eTag": "\"d80cb74d31c8e969587f38360ad237dd\"",
+          "lastModified": "Thu, 23 Jul 2026 22:18:32 GMT"
         },
         {
           "id": "package.first-aid.pediatric-slideshow.Pedi First Aid Presentation Slides/03_EHAcademy - Pedi FA Course Pres-First Aid Basics.png",
           "filename": "Pedi First Aid Presentation Slides/03_EHAcademy - Pedi FA Course Pres-First Aid Basics.png",
           "kind": "image",
-          "byteCount": 609422
+          "byteCount": 609422,
+          "eTag": "\"8f37fe20b3f052446f82d43696e73b28\"",
+          "lastModified": "Thu, 23 Jul 2026 22:18:31 GMT"
         },
         {
           "id": "package.first-aid.pediatric-slideshow.Pedi First Aid Presentation Slides/04_EHAcademy - Pedi FA Course Pres-Universal Precautions.png",
           "filename": "Pedi First Aid Presentation Slides/04_EHAcademy - Pedi FA Course Pres-Universal Precautions.png",
           "kind": "image",
-          "byteCount": 3588927
+          "byteCount": 3588927,
+          "eTag": "\"9970d7a8c5165a86e8262187bd31ff64\"",
+          "lastModified": "Thu, 23 Jul 2026 22:18:32 GMT"
         },
         {
           "id": "package.first-aid.pediatric-slideshow.Pedi First Aid Presentation Slides/05_EHAcademy - Pedi FA Course Pres-Legal Concerns.png",
           "filename": "Pedi First Aid Presentation Slides/05_EHAcademy - Pedi FA Course Pres-Legal Concerns.png",
           "kind": "image",
-          "byteCount": 4086861
+          "byteCount": 4086861,
+          "eTag": "\"2bc54a6212576248d6e7c84281720577\"",
+          "lastModified": "Thu, 23 Jul 2026 22:18:32 GMT"
         },
         {
           "id": "package.first-aid.pediatric-slideshow.Pedi First Aid Presentation Slides/06_EHAcademy - Pedi FA Course Pres-Calling 911.png",
           "filename": "Pedi First Aid Presentation Slides/06_EHAcademy - Pedi FA Course Pres-Calling 911.png",
           "kind": "image",
-          "byteCount": 1344315
+          "byteCount": 1344315,
+          "eTag": "\"4a690cee69164c84ba57ba0b8284ecca\"",
+          "lastModified": "Thu, 23 Jul 2026 22:18:32 GMT"
         },
         {
           "id": "package.first-aid.pediatric-slideshow.Pedi First Aid Presentation Slides/07_EHAcademy - Pedi FA Course Pres- MEDICAL EMERGENCIES.png",
           "filename": "Pedi First Aid Presentation Slides/07_EHAcademy - Pedi FA Course Pres- MEDICAL EMERGENCIES.png",
           "kind": "image",
-          "byteCount": 4391491
+          "byteCount": 4391491,
+          "eTag": "\"768e7f390fe5f0606d1521e3df5b975d\"",
+          "lastModified": "Thu, 23 Jul 2026 22:18:34 GMT"
         },
         {
           "id": "package.first-aid.pediatric-slideshow.Pedi First Aid Presentation Slides/08_EHAcademy - Pedi FA Course Pres-Heart Attack.png",
           "filename": "Pedi First Aid Presentation Slides/08_EHAcademy - Pedi FA Course Pres-Heart Attack.png",
           "kind": "image",
-          "byteCount": 3610482
+          "byteCount": 3610482,
+          "eTag": "\"f716b08efd9449a4eab45679ae787469\"",
+          "lastModified": "Thu, 23 Jul 2026 22:18:34 GMT"
         },
         {
           "id": "package.first-aid.pediatric-slideshow.Pedi First Aid Presentation Slides/09_EHAcademy - Pedi FA Course Pres-Stroke.png",
           "filename": "Pedi First Aid Presentation Slides/09_EHAcademy - Pedi FA Course Pres-Stroke.png",
           "kind": "image",
-          "byteCount": 4909688
+          "byteCount": 4909688,
+          "eTag": "\"d9e6b2031702eb0eda762f273cc726b4\"",
+          "lastModified": "Thu, 23 Jul 2026 22:18:35 GMT"
         },
         {
           "id": "package.first-aid.pediatric-slideshow.Pedi First Aid Presentation Slides/10_EHAcademy - Pedi FA Course Pres-Seizures.png",
           "filename": "Pedi First Aid Presentation Slides/10_EHAcademy - Pedi FA Course Pres-Seizures.png",
           "kind": "image",
-          "byteCount": 4240611
+          "byteCount": 4240611,
+          "eTag": "\"f08cfd00963a741c044f2b5881128b38\"",
+          "lastModified": "Thu, 23 Jul 2026 22:18:35 GMT"
         },
         {
           "id": "package.first-aid.pediatric-slideshow.Pedi First Aid Presentation Slides/11_EHAcademy - Pedi FA Course Pres-Diabetes.png",
           "filename": "Pedi First Aid Presentation Slides/11_EHAcademy - Pedi FA Course Pres-Diabetes.png",
           "kind": "image",
-          "byteCount": 5869185
+          "byteCount": 5869185,
+          "eTag": "\"70bd60c1d28dd9c51eb794b375bf4797\"",
+          "lastModified": "Thu, 23 Jul 2026 22:18:35 GMT"
         },
         {
           "id": "package.first-aid.pediatric-slideshow.Pedi First Aid Presentation Slides/12_EHAcademy - Pedi FA Course Pres-Asthma.png",
           "filename": "Pedi First Aid Presentation Slides/12_EHAcademy - Pedi FA Course Pres-Asthma.png",
           "kind": "image",
-          "byteCount": 5913355
+          "byteCount": 5913355,
+          "eTag": "\"e4af964a1e398f76a1922e91ebc8d5ef\"",
+          "lastModified": "Thu, 23 Jul 2026 22:18:36 GMT"
         },
         {
           "id": "package.first-aid.pediatric-slideshow.Pedi First Aid Presentation Slides/13_EHAcademy - Pedi FA Course Pres-Difficulty Breathing.png",
           "filename": "Pedi First Aid Presentation Slides/13_EHAcademy - Pedi FA Course Pres-Difficulty Breathing.png",
           "kind": "image",
-          "byteCount": 5142039
+          "byteCount": 5142039,
+          "eTag": "\"5000f15904e6412ce5fb9a8d6e3e4ad8\"",
+          "lastModified": "Thu, 23 Jul 2026 22:18:36 GMT"
         },
         {
           "id": "package.first-aid.pediatric-slideshow.Pedi First Aid Presentation Slides/14_EHAcademy - Pedi FA Course Pres-Allergic Reaction.png",
           "filename": "Pedi First Aid Presentation Slides/14_EHAcademy - Pedi FA Course Pres-Allergic Reaction.png",
           "kind": "image",
-          "byteCount": 5357023
+          "byteCount": 5357023,
+          "eTag": "\"5c29dedfadae739226256cae7a7cd225\"",
+          "lastModified": "Thu, 23 Jul 2026 22:18:37 GMT"
         },
         {
           "id": "package.first-aid.pediatric-slideshow.Pedi First Aid Presentation Slides/15_EHAcademy - Pedi FA Course Pres-Fainting.png",
           "filename": "Pedi First Aid Presentation Slides/15_EHAcademy - Pedi FA Course Pres-Fainting.png",
           "kind": "image",
-          "byteCount": 3413592
+          "byteCount": 3413592,
+          "eTag": "\"003999dfd215ded6296ae2e22a620606\"",
+          "lastModified": "Thu, 23 Jul 2026 22:18:37 GMT"
         },
         {
           "id": "package.first-aid.pediatric-slideshow.Pedi First Aid Presentation Slides/16_EHAcademy - Pedi FA Course Pres-BLEEDING & WOUNDS.png",
           "filename": "Pedi First Aid Presentation Slides/16_EHAcademy - Pedi FA Course Pres-BLEEDING & WOUNDS.png",
           "kind": "image",
-          "byteCount": 3189359
+          "byteCount": 3189359,
+          "eTag": "\"9119e8cae0339186706bd720118135ab\"",
+          "lastModified": "Thu, 23 Jul 2026 22:18:37 GMT"
         },
         {
           "id": "package.first-aid.pediatric-slideshow.Pedi First Aid Presentation Slides/17_EHAcademy - Pedi FA Course Pres-Minor External Bleeding.png",
           "filename": "Pedi First Aid Presentation Slides/17_EHAcademy - Pedi FA Course Pres-Minor External Bleeding.png",
           "kind": "image",
-          "byteCount": 5533535
+          "byteCount": 5533535,
+          "eTag": "\"ab247683cae910eae81c873644e8a141\"",
+          "lastModified": "Thu, 23 Jul 2026 22:18:38 GMT"
         },
         {
           "id": "package.first-aid.pediatric-slideshow.Pedi First Aid Presentation Slides/18_EHAcademy - Pedi FA Course Pres-Major External Bleeding.png",
           "filename": "Pedi First Aid Presentation Slides/18_EHAcademy - Pedi FA Course Pres-Major External Bleeding.png",
           "kind": "image",
-          "byteCount": 6299022
+          "byteCount": 6299022,
+          "eTag": "\"aa62b13b6b3cb968e659393ac5080d94\"",
+          "lastModified": "Fri, 24 Jul 2026 19:26:59 GMT"
         },
         {
           "id": "package.first-aid.pediatric-slideshow.Pedi First Aid Presentation Slides/19_EHAcademy - Pedi FA Course Pres-Using a Tourniquet.png",
           "filename": "Pedi First Aid Presentation Slides/19_EHAcademy - Pedi FA Course Pres-Using a Tourniquet.png",
           "kind": "image",
-          "byteCount": 7101181
+          "byteCount": 7101181,
+          "eTag": "\"83446fca9766aea2a122ffed6619e8e6\"",
+          "lastModified": "Thu, 23 Jul 2026 22:18:39 GMT"
         },
         {
           "id": "package.first-aid.pediatric-slideshow.Pedi First Aid Presentation Slides/20_EHAcademy - Pedi FA Course Pres-Nose Bleed.png",
           "filename": "Pedi First Aid Presentation Slides/20_EHAcademy - Pedi FA Course Pres-Nose Bleed.png",
           "kind": "image",
-          "byteCount": 5846474
+          "byteCount": 5846474,
+          "eTag": "\"cac33d50dc09fceac37e921480cac877\"",
+          "lastModified": "Thu, 23 Jul 2026 22:18:39 GMT"
         },
         {
           "id": "package.first-aid.pediatric-slideshow.Pedi First Aid Presentation Slides/21_EHAcademy - Pedi FA Course Pres-Mouth Bleed.png",
           "filename": "Pedi First Aid Presentation Slides/21_EHAcademy - Pedi FA Course Pres-Mouth Bleed.png",
           "kind": "image",
-          "byteCount": 6289055
+          "byteCount": 6289055,
+          "eTag": "\"c352e4a964cc3a920ad3292f77c4811a\"",
+          "lastModified": "Thu, 23 Jul 2026 22:18:40 GMT"
         },
         {
           "id": "package.first-aid.pediatric-slideshow.Pedi First Aid Presentation Slides/22_EHAcademy - Pedi FA Course Pres-Penetration Injuries.png",
           "filename": "Pedi First Aid Presentation Slides/22_EHAcademy - Pedi FA Course Pres-Penetration Injuries.png",
           "kind": "image",
-          "byteCount": 6450889
+          "byteCount": 6450889,
+          "eTag": "\"c549713847737f6cd8e52f6956f480f2\"",
+          "lastModified": "Thu, 23 Jul 2026 22:18:40 GMT"
         },
         {
           "id": "package.first-aid.pediatric-slideshow.Pedi First Aid Presentation Slides/23_EHAcademy - Pedi FA Course Pres-Internal Bleeding.png",
           "filename": "Pedi First Aid Presentation Slides/23_EHAcademy - Pedi FA Course Pres-Internal Bleeding.png",
           "kind": "image",
-          "byteCount": 6137279
+          "byteCount": 6137279,
+          "eTag": "\"c6b963205ee6564880fd8bf035e3bd87\"",
+          "lastModified": "Thu, 23 Jul 2026 22:18:40 GMT"
         },
         {
           "id": "package.first-aid.pediatric-slideshow.Pedi First Aid Presentation Slides/24_EHAcademy - Pedi FA Course Pres-Amputation.png",
           "filename": "Pedi First Aid Presentation Slides/24_EHAcademy - Pedi FA Course Pres-Amputation.png",
           "kind": "image",
-          "byteCount": 3478983
+          "byteCount": 3478983,
+          "eTag": "\"f2125bd63b1c97188e7c1d9f934b5d76\"",
+          "lastModified": "Thu, 23 Jul 2026 22:18:40 GMT"
         },
         {
           "id": "package.first-aid.pediatric-slideshow.Pedi First Aid Presentation Slides/25_EHAcademy - Pedi FA Course Pres-Shock.png",
           "filename": "Pedi First Aid Presentation Slides/25_EHAcademy - Pedi FA Course Pres-Shock.png",
           "kind": "image",
-          "byteCount": 2646186
+          "byteCount": 2646186,
+          "eTag": "\"c9504e5b8453159f1662d3d54508f814\"",
+          "lastModified": "Thu, 23 Jul 2026 22:18:41 GMT"
         },
         {
           "id": "package.first-aid.pediatric-slideshow.Pedi First Aid Presentation Slides/26_EHAcademy - Pedi FA Course Pres-BODILY INJURIES.png",
           "filename": "Pedi First Aid Presentation Slides/26_EHAcademy - Pedi FA Course Pres-BODILY INJURIES.png",
           "kind": "image",
-          "byteCount": 5989038
+          "byteCount": 5989038,
+          "eTag": "\"b97072addd5ea84ed9ecea18f7d1666c\"",
+          "lastModified": "Thu, 23 Jul 2026 22:18:41 GMT"
         },
         {
           "id": "package.first-aid.pediatric-slideshow.Pedi First Aid Presentation Slides/27_EHAcademy - Pedi FA Course Pres-Eye Injury.png",
           "filename": "Pedi First Aid Presentation Slides/27_EHAcademy - Pedi FA Course Pres-Eye Injury.png",
           "kind": "image",
-          "byteCount": 5646317
+          "byteCount": 5646317,
+          "eTag": "\"881798a8048f465d10ba9dfff948c53e\"",
+          "lastModified": "Thu, 23 Jul 2026 22:18:41 GMT"
         },
         {
           "id": "package.first-aid.pediatric-slideshow.Pedi First Aid Presentation Slides/28_EHAcademy - Pedi FA Course Pres-Sprain or Fracture.png",
           "filename": "Pedi First Aid Presentation Slides/28_EHAcademy - Pedi FA Course Pres-Sprain or Fracture.png",
           "kind": "image",
-          "byteCount": 5049575
+          "byteCount": 5049575,
+          "eTag": "\"3c37db46472d11b57e0c293415a70068\"",
+          "lastModified": "Thu, 23 Jul 2026 22:18:42 GMT"
         },
         {
           "id": "package.first-aid.pediatric-slideshow.Pedi First Aid Presentation Slides/29_EHAcademy - Pedi FA Course Pres-Head or Spine Injuries.png",
           "filename": "Pedi First Aid Presentation Slides/29_EHAcademy - Pedi FA Course Pres-Head or Spine Injuries.png",
           "kind": "image",
-          "byteCount": 5470857
+          "byteCount": 5470857,
+          "eTag": "\"607e116c5cc20438844ac3937a71f8d7\"",
+          "lastModified": "Thu, 23 Jul 2026 22:18:42 GMT"
         },
         {
           "id": "package.first-aid.pediatric-slideshow.Pedi First Aid Presentation Slides/30_EHAcademy - Pedi FA Course Pres-Burns.png",
           "filename": "Pedi First Aid Presentation Slides/30_EHAcademy - Pedi FA Course Pres-Burns.png",
           "kind": "image",
-          "byteCount": 4062571
+          "byteCount": 4062571,
+          "eTag": "\"3d8acda593cd48cce3b16a7822ce4da3\"",
+          "lastModified": "Thu, 23 Jul 2026 22:18:42 GMT"
         },
         {
           "id": "package.first-aid.pediatric-slideshow.Pedi First Aid Presentation Slides/31_EHAcademy - Pedi FA Course Pres-Electrical Burns.png",
           "filename": "Pedi First Aid Presentation Slides/31_EHAcademy - Pedi FA Course Pres-Electrical Burns.png",
           "kind": "image",
-          "byteCount": 3072735
+          "byteCount": 3072735,
+          "eTag": "\"003a3aa46d792af34bf5734524a23fbf\"",
+          "lastModified": "Thu, 23 Jul 2026 22:18:43 GMT"
         },
         {
           "id": "package.first-aid.pediatric-slideshow.Pedi First Aid Presentation Slides/32_EHAcademy - Pedi FA Course Pres-ENVIRONMENTAL EMERGENCIES.png",
           "filename": "Pedi First Aid Presentation Slides/32_EHAcademy - Pedi FA Course Pres-ENVIRONMENTAL EMERGENCIES.png",
           "kind": "image",
-          "byteCount": 3890892
+          "byteCount": 3890892,
+          "eTag": "\"cd72a2b245770258b41fb029e0916893\"",
+          "lastModified": "Thu, 23 Jul 2026 22:18:43 GMT"
         },
         {
           "id": "package.first-aid.pediatric-slideshow.Pedi First Aid Presentation Slides/33_EHAcademy - Pedi FA Course Pres-Animal or Human Bite.png",
           "filename": "Pedi First Aid Presentation Slides/33_EHAcademy - Pedi FA Course Pres-Animal or Human Bite.png",
           "kind": "image",
-          "byteCount": 6501483
+          "byteCount": 6501483,
+          "eTag": "\"c100dca43ff0edaaf19a4c330235c14e\"",
+          "lastModified": "Thu, 23 Jul 2026 22:18:43 GMT"
         },
         {
           "id": "package.first-aid.pediatric-slideshow.Pedi First Aid Presentation Slides/34_EHAcademy - Pedi FA Course Pres-Snake Bite.png",
           "filename": "Pedi First Aid Presentation Slides/34_EHAcademy - Pedi FA Course Pres-Snake Bite.png",
           "kind": "image",
-          "byteCount": 4145036
+          "byteCount": 4145036,
+          "eTag": "\"e782941eca0e1dfe0fa81ed5ff361239\"",
+          "lastModified": "Thu, 23 Jul 2026 22:18:44 GMT"
         },
         {
           "id": "package.first-aid.pediatric-slideshow.Pedi First Aid Presentation Slides/35_EHAcademy - Pedi FA Course Pres-Bee Sting.png",
           "filename": "Pedi First Aid Presentation Slides/35_EHAcademy - Pedi FA Course Pres-Bee Sting.png",
           "kind": "image",
-          "byteCount": 4915919
+          "byteCount": 4915919,
+          "eTag": "\"279b51afea692f331f4d79225e3f3da7\"",
+          "lastModified": "Thu, 23 Jul 2026 22:18:44 GMT"
         },
         {
           "id": "package.first-aid.pediatric-slideshow.Pedi First Aid Presentation Slides/36_EHAcademy - Pedi FA Course Pres-Spider or Scorpion Bite.png",
           "filename": "Pedi First Aid Presentation Slides/36_EHAcademy - Pedi FA Course Pres-Spider or Scorpion Bite.png",
           "kind": "image",
-          "byteCount": 1472294
+          "byteCount": 1472294,
+          "eTag": "\"54ab426f8e25c90161b58b94a43c1888\"",
+          "lastModified": "Thu, 23 Jul 2026 22:18:44 GMT"
         },
         {
           "id": "package.first-aid.pediatric-slideshow.Pedi First Aid Presentation Slides/37_EHAcademy - Pedi FA Course Pres-Tick Bite.png",
           "filename": "Pedi First Aid Presentation Slides/37_EHAcademy - Pedi FA Course Pres-Tick Bite.png",
           "kind": "image",
-          "byteCount": 3916611
+          "byteCount": 3916611,
+          "eTag": "\"67c219731852002bd887b1f8e65b4acf\"",
+          "lastModified": "Thu, 23 Jul 2026 22:18:44 GMT"
         },
         {
           "id": "package.first-aid.pediatric-slideshow.Pedi First Aid Presentation Slides/38_EHAcademy - Pedi FA Course Pres-Marine Bites and Stings.png",
           "filename": "Pedi First Aid Presentation Slides/38_EHAcademy - Pedi FA Course Pres-Marine Bites and Stings.png",
           "kind": "image",
-          "byteCount": 8597370
+          "byteCount": 8597370,
+          "eTag": "\"d23fb8fa28d494767e5f6a20218893f5\"",
+          "lastModified": "Thu, 23 Jul 2026 22:18:45 GMT"
         },
         {
           "id": "package.first-aid.pediatric-slideshow.Pedi First Aid Presentation Slides/39_EHAcademy - Pedi FA Course Pres-Drowning.png",
           "filename": "Pedi First Aid Presentation Slides/39_EHAcademy - Pedi FA Course Pres-Drowning.png",
           "kind": "image",
-          "byteCount": 6925881
+          "byteCount": 6925881,
+          "eTag": "\"692d532242d00ecc89232522fffa3133\"",
+          "lastModified": "Thu, 23 Jul 2026 22:18:45 GMT"
         },
         {
           "id": "package.first-aid.pediatric-slideshow.Pedi First Aid Presentation Slides/40_EHAcademy - Pedi FA Course Pres-Poisoning.png",
           "filename": "Pedi First Aid Presentation Slides/40_EHAcademy - Pedi FA Course Pres-Poisoning.png",
           "kind": "image",
-          "byteCount": 4422344
+          "byteCount": 4422344,
+          "eTag": "\"088f98ba845e045e179c312ce0ac96b5\"",
+          "lastModified": "Thu, 23 Jul 2026 22:18:45 GMT"
         },
         {
           "id": "package.first-aid.pediatric-slideshow.Pedi First Aid Presentation Slides/41_EHAcademy - Pedi FA Course Pres-Opioids and Overdose.png",
           "filename": "Pedi First Aid Presentation Slides/41_EHAcademy - Pedi FA Course Pres-Opioids and Overdose.png",
           "kind": "image",
-          "byteCount": 3711001
+          "byteCount": 3711001,
+          "eTag": "\"ebc6c1bc5f84ac7d67e697311fa81d40\"",
+          "lastModified": "Thu, 23 Jul 2026 22:18:46 GMT"
         },
         {
           "id": "package.first-aid.pediatric-slideshow.Pedi First Aid Presentation Slides/42_EHAcademy - Pedi FA Course Pres-TEMPERATURE RELATED ILLNESS.png",
           "filename": "Pedi First Aid Presentation Slides/42_EHAcademy - Pedi FA Course Pres-TEMPERATURE RELATED ILLNESS.png",
           "kind": "image",
-          "byteCount": 6498132
+          "byteCount": 6498132,
+          "eTag": "\"efe916bcca318fe5244bbb86c289c90c\"",
+          "lastModified": "Thu, 23 Jul 2026 22:18:46 GMT"
         },
         {
           "id": "package.first-aid.pediatric-slideshow.Pedi First Aid Presentation Slides/43_EHAcademy - Pedi FA Course Pres-Heat Related Illness.png",
           "filename": "Pedi First Aid Presentation Slides/43_EHAcademy - Pedi FA Course Pres-Heat Related Illness.png",
           "kind": "image",
-          "byteCount": 663045
+          "byteCount": 663045,
+          "eTag": "\"402f6160fe89ac60186e9a942308082a\"",
+          "lastModified": "Thu, 23 Jul 2026 22:18:46 GMT"
         },
         {
           "id": "package.first-aid.pediatric-slideshow.Pedi First Aid Presentation Slides/44_EHAcademy - Pedi FA Course Pres-Cold Related Illness.png",
           "filename": "Pedi First Aid Presentation Slides/44_EHAcademy - Pedi FA Course Pres-Cold Related Illness.png",
           "kind": "image",
-          "byteCount": 6004511
+          "byteCount": 6004511,
+          "eTag": "\"c78dbca2574ead72e3acc1bf46196e15\"",
+          "lastModified": "Thu, 23 Jul 2026 22:18:47 GMT"
         },
         {
           "id": "package.first-aid.pediatric-slideshow.Pedi First Aid Presentation Slides/45_EHAcademy - Pedi FA Course Pres-Conclusion.png",
           "filename": "Pedi First Aid Presentation Slides/45_EHAcademy - Pedi FA Course Pres-Conclusion.png",
           "kind": "image",
-          "byteCount": 747360
+          "byteCount": 747360,
+          "eTag": "\"37c42f5cfb4f408c4d6c7d59af3ea7d8\"",
+          "lastModified": "Thu, 23 Jul 2026 22:18:47 GMT"
         }
       ]
     },
@@ -4188,7 +4658,9 @@
           "id": "package.manual.instructor.instructor_manual.pdf",
           "filename": "instructor_manual.pdf",
           "kind": "pdf",
-          "byteCount": 65401384
+          "byteCount": 65401384,
+          "eTag": "\"f60c74e4aa7547e033adc62477804a55\"",
+          "lastModified": "Thu, 23 Jul 2026 23:46:52 GMT"
         }
       ]
     },
@@ -4200,7 +4672,9 @@
           "id": "package.manual.student.student_manual.pdf",
           "filename": "student_manual.pdf",
           "kind": "pdf",
-          "byteCount": 38223952
+          "byteCount": 38223952,
+          "eTag": "\"0c8d5575772f60075b243376fa9b4e35\"",
+          "lastModified": "Thu, 23 Jul 2026 21:48:06 GMT"
         }
       ]
     },
@@ -4212,7 +4686,9 @@
           "id": "package.manual.pediatric.pediatric_student_manual.pdf",
           "filename": "pediatric_student_manual.pdf",
           "kind": "pdf",
-          "byteCount": 40477904
+          "byteCount": 40477904,
+          "eTag": "\"6923845b1064f2d38bdb9abc44f651fd\"",
+          "lastModified": "Thu, 23 Jul 2026 21:48:06 GMT"
         }
       ]
     }

@@ -8,7 +8,8 @@ const manifestPath = path.join(
   projectDirectory,
   "CPRTrainerPro/Resources/content-manifest.json"
 );
-const outputPath = path.join(toolDirectory, "r2-content-lengths.json");
+const contentLengthsOutputPath = path.join(toolDirectory, "r2-content-lengths.json");
+const metadataOutputPath = path.join(toolDirectory, "r2-object-metadata.json");
 const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
 
 function mediaURL(filename) {
@@ -27,12 +28,12 @@ const filenames = [...new Set(
     .map((asset) => asset.filename)
 )].sort((left, right) => left.localeCompare(right));
 
-const contentLengths = {};
+const objectMetadata = {};
 const failures = [];
 let nextIndex = 0;
 let completed = 0;
 
-async function readContentLength(filename) {
+async function readObjectMetadata(filename) {
   const response = await fetch(mediaURL(filename), {
     method: "HEAD",
     redirect: "follow",
@@ -49,7 +50,17 @@ async function readContentLength(filename) {
     throw new Error("missing or invalid Content-Length");
   }
 
-  return byteCount;
+  const eTag = response.headers.get("etag")?.trim();
+  if (!eTag) {
+    throw new Error("missing ETag");
+  }
+
+  const lastModified = response.headers.get("last-modified")?.trim();
+  if (!lastModified || Number.isNaN(Date.parse(lastModified))) {
+    throw new Error("missing or invalid Last-Modified");
+  }
+
+  return { byteCount, eTag, lastModified };
 }
 
 async function worker() {
@@ -59,7 +70,7 @@ async function worker() {
     const filename = filenames[index];
 
     try {
-      contentLengths[filename] = await readContentLength(filename);
+      objectMetadata[filename] = await readObjectMetadata(filename);
     } catch (error) {
       failures.push(
         `${filename}: ${error instanceof Error ? error.message : String(error)}`
@@ -79,16 +90,29 @@ if (failures.length > 0) {
   throw new Error(`R2 size discovery failed:\n${failures.join("\n")}`);
 }
 
-const orderedContentLengths = Object.fromEntries(
-  Object.entries(contentLengths)
+const orderedMetadata = Object.fromEntries(
+  Object.entries(objectMetadata)
     .sort(([left], [right]) => left.localeCompare(right))
 );
-const temporaryPath = `${outputPath}.update-${process.pid}`;
-fs.writeFileSync(temporaryPath, `${JSON.stringify(orderedContentLengths, null, 2)}\n`);
-fs.renameSync(temporaryPath, outputPath);
+const orderedContentLengths = Object.fromEntries(
+  Object.entries(orderedMetadata).map(([filename, metadata]) => [
+    filename,
+    metadata.byteCount,
+  ])
+);
+
+function writeJSONAtomically(outputPath, value) {
+  const temporaryPath = `${outputPath}.update-${process.pid}`;
+  fs.writeFileSync(temporaryPath, `${JSON.stringify(value, null, 2)}\n`);
+  fs.renameSync(temporaryPath, outputPath);
+}
+
+writeJSONAtomically(contentLengthsOutputPath, orderedContentLengths);
+writeJSONAtomically(metadataOutputPath, orderedMetadata);
 
 const totalBytes = Object.values(orderedContentLengths)
   .reduce((total, byteCount) => total + byteCount, 0);
-console.log(`Wrote ${path.relative(projectDirectory, outputPath)}`);
+console.log(`Wrote ${path.relative(projectDirectory, contentLengthsOutputPath)}`);
+console.log(`Wrote ${path.relative(projectDirectory, metadataOutputPath)}`);
 console.log(`Unique R2 objects: ${filenames.length}`);
 console.log(`Total bytes: ${totalBytes}`);

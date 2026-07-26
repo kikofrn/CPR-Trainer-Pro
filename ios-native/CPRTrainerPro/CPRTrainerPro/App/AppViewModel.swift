@@ -1,5 +1,19 @@
 import Foundation
 
+enum AppPrompt: Identifiable, Equatable {
+    case initialDownload(DownloadContentEstimate)
+    case contentUpdate(ContentUpdateSummary)
+
+    var id: String {
+        switch self {
+        case .initialDownload:
+            "initial-download"
+        case .contentUpdate(let summary):
+            "content-update-\(summary.id)"
+        }
+    }
+}
+
 @MainActor
 final class AppViewModel: ObservableObject {
     @Published private(set) var catalog: TrainingCatalog
@@ -9,30 +23,57 @@ final class AppViewModel: ObservableObject {
     @Published private(set) var cprPediatricFocused = false
     @Published private(set) var firstAidVAEnabled = false
     @Published private(set) var firstAidPediatricFocused = false
-    @Published var initialDownloadPrompt: DownloadContentEstimate?
+    @Published private(set) var activePrompt: AppPrompt?
 
     let storageService: StorageService
     let downloadService: DownloadService
+    let contentUpdateService: ContentUpdateService
+    private let versionStore: ContentVersionStore
     private var didEvaluateInitialDownloadPrompt = false
+    private var pendingContentUpdate: ContentUpdateSummary?
 
     init(manifestService: ContentManifestService = .init()) {
         let catalog = manifestService.loadBundledCatalog()
-        let storageService = StorageService(contentRevision: catalog.contentRevision)
+        let versionStore = ContentVersionStore(
+            contentRevision: catalog.contentRevision
+        )
+        let storageService = StorageService(
+            contentRevision: catalog.contentRevision,
+            versionStore: versionStore
+        )
         let queueStore = DownloadQueueStore(contentRevision: catalog.contentRevision)
         let downloadAllQueueStore = DownloadAllQueueStore(
             contentRevision: catalog.contentRevision
         )
+        let contentUpdatePlanStore = ContentUpdatePlanStore(
+            contentRevision: catalog.contentRevision
+        )
+        let contentUpdateService = ContentUpdateService(
+            storageService: storageService,
+            versionStore: versionStore,
+            planStore: contentUpdatePlanStore,
+            contentRevision: catalog.contentRevision
+        )
 
         self.catalog = catalog
+        self.versionStore = versionStore
         self.storageService = storageService
         self.downloadService = DownloadService(
             storageService: storageService,
+            versionStore: versionStore,
             queueStore: queueStore,
             downloadAllQueueStore: downloadAllQueueStore,
             contentRevision: catalog.contentRevision
         )
+        self.contentUpdateService = contentUpdateService
         self.selectedCourseID = catalog.courses.first?.id
         self.downloadService.refreshPackageStates(for: catalog.packages)
+        self.contentUpdateService.onAvailableUpdate = { [weak self] summary in
+            self?.receiveContentUpdate(summary)
+        }
+        if let availableUpdate = contentUpdateService.availableUpdate {
+            receiveContentUpdate(availableUpdate)
+        }
         LegacyContentCleanup.schedule(for: catalog.contentRevision)
     }
 
@@ -47,6 +88,7 @@ final class AppViewModel: ObservableObject {
 
     func synchronizeDownloadsAfterForeground() {
         downloadService.synchronizeForegroundState(for: catalog.packages)
+        contentUpdateService.synchronizeForegroundState()
     }
 
     var remainingDownloadEstimate: DownloadContentEstimate? {
@@ -54,24 +96,39 @@ final class AppViewModel: ObservableObject {
     }
 
     func presentInitialDownloadPromptIfNeeded() {
-        guard
-            !didEvaluateInitialDownloadPrompt,
-            !downloadService.isDownloadingAll
-        else {
-            return
-        }
+        guard !didEvaluateInitialDownloadPrompt else { return }
 
         didEvaluateInitialDownloadPrompt = true
-        initialDownloadPrompt = remainingDownloadEstimate
+        if
+            !downloadService.isDownloadingAll,
+            let estimate = remainingDownloadEstimate
+        {
+            activePrompt = .initialDownload(estimate)
+        } else {
+            presentPendingContentUpdateIfPossible()
+        }
+
+        Task {
+            await contentUpdateService.checkForUpdates(
+                packages: catalog.packages,
+                baseURL: catalog.mediaBaseURL
+            )
+        }
     }
 
     func dismissInitialDownloadPrompt() {
-        initialDownloadPrompt = nil
+        if case .initialDownload = activePrompt {
+            activePrompt = nil
+        }
+        presentPendingContentUpdateAfterDismissal()
     }
 
     func downloadAllContent() {
         guard remainingDownloadEstimate != nil else {
-            initialDownloadPrompt = nil
+            if case .initialDownload = activePrompt {
+                activePrompt = nil
+            }
+            presentPendingContentUpdateAfterDismissal()
             return
         }
 
@@ -79,7 +136,58 @@ final class AppViewModel: ObservableObject {
             catalog.packages,
             baseURL: catalog.mediaBaseURL
         )
-        initialDownloadPrompt = nil
+        if case .initialDownload = activePrompt {
+            activePrompt = nil
+        }
+        presentPendingContentUpdateAfterDismissal()
+    }
+
+    func beginContentUpdate(_ summary: ContentUpdateSummary) {
+        pendingContentUpdate = nil
+        activePrompt = nil
+        contentUpdateService.beginAvailableUpdates(summary)
+    }
+
+    func dismissContentUpdatePrompt() {
+        pendingContentUpdate = nil
+        activePrompt = nil
+        contentUpdateService.dismissAvailableUpdate()
+    }
+
+    func dismissActivePrompt() {
+        switch activePrompt {
+        case .initialDownload:
+            dismissInitialDownloadPrompt()
+        case .contentUpdate:
+            dismissContentUpdatePrompt()
+        case nil:
+            break
+        }
+    }
+
+    private func receiveContentUpdate(_ summary: ContentUpdateSummary?) {
+        pendingContentUpdate = summary
+        presentPendingContentUpdateIfPossible()
+    }
+
+    private func presentPendingContentUpdateAfterDismissal() {
+        Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 350_000_000)
+            guard !Task.isCancelled else { return }
+            self?.presentPendingContentUpdateIfPossible()
+        }
+    }
+
+    private func presentPendingContentUpdateIfPossible() {
+        guard
+            didEvaluateInitialDownloadPrompt,
+            activePrompt == nil,
+            let pendingContentUpdate
+        else {
+            return
+        }
+
+        activePrompt = .contentUpdate(pendingContentUpdate)
     }
 
     func vaEnabled(for courseID: Course.ID) -> Bool {

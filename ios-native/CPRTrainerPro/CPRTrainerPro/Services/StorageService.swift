@@ -21,15 +21,18 @@ struct StorageService {
     private let fileManager: FileManager
     private let contentRevision: String
     private let explicitSupportDirectoryURL: URL?
+    private let versionStore: ContentVersionStore?
 
     init(
         fileManager: FileManager = .default,
         contentRevision: String = "experiment-3.0",
-        supportDirectoryURL: URL? = nil
+        supportDirectoryURL: URL? = nil,
+        versionStore: ContentVersionStore? = nil
     ) {
         self.fileManager = fileManager
         self.contentRevision = contentRevision
         self.explicitSupportDirectoryURL = supportDirectoryURL
+        self.versionStore = versionStore
     }
 
     var downloadedMediaRoot: URL {
@@ -72,7 +75,10 @@ struct StorageService {
             return false
         }
 
-        guard let expectedByteCount = asset.byteCount, expectedByteCount > 0 else {
+        let expectedByteCount = versionStore?
+            .installedVersion(for: asset.filename)?
+            .byteCount ?? asset.byteCount
+        guard let expectedByteCount, expectedByteCount > 0 else {
             return true
         }
 
@@ -92,7 +98,11 @@ struct StorageService {
         try ensureDirectory(parent)
     }
 
-    func moveDownloadedFile(from temporaryURL: URL, for asset: MediaAsset) throws {
+    func moveDownloadedFile(
+        from temporaryURL: URL,
+        for asset: MediaAsset,
+        expectedByteCount: Int64? = nil
+    ) throws {
         let destinationURL = try localURL(for: asset.filename)
         try ensureDirectory(destinationURL.deletingLastPathComponent())
 
@@ -101,20 +111,42 @@ struct StorageService {
             throw StorageError.emptyDownloadedFile(asset.filename)
         }
 
-        if let expectedByteCount = asset.byteCount, expectedByteCount > 0,
-           byteCount != UInt64(expectedByteCount) {
+        let validatedByteCount = expectedByteCount ?? asset.byteCount
+        if let validatedByteCount, validatedByteCount > 0,
+           byteCount != UInt64(validatedByteCount) {
             throw StorageError.unexpectedFileSize(
                 filename: asset.filename,
-                expected: expectedByteCount,
+                expected: validatedByteCount,
                 actual: Int64(byteCount)
             )
         }
 
+        let incomingURL = destinationURL
+            .deletingLastPathComponent()
+            .appendingPathComponent(
+                ".\(destinationURL.lastPathComponent).incoming-\(UUID().uuidString)",
+                isDirectory: false
+            )
+        try fileManager.moveItem(at: temporaryURL, to: incomingURL)
+
         if fileManager.fileExists(atPath: destinationURL.path) {
-            try fileManager.removeItem(at: destinationURL)
+            do {
+                _ = try fileManager.replaceItemAt(
+                    destinationURL,
+                    withItemAt: incomingURL,
+                    backupItemName: nil,
+                    options: []
+                )
+            } catch {
+                if fileManager.fileExists(atPath: incomingURL.path) {
+                    try? fileManager.removeItem(at: incomingURL)
+                }
+                throw error
+            }
+        } else {
+            try fileManager.moveItem(at: incomingURL, to: destinationURL)
         }
 
-        try fileManager.moveItem(at: temporaryURL, to: destinationURL)
         try excludeFromBackup(destinationURL)
         try setClassCFileProtection(destinationURL)
     }

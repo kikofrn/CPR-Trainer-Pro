@@ -37,18 +37,29 @@ struct RootView: View {
         }
         .background(Color.black)
         .preferredColorScheme(.dark)
-        .sheet(isPresented: initialDownloadPromptIsPresented) {
-            if let estimate = appViewModel.initialDownloadPrompt {
-                InitialDownloadPromptView(
-                    estimate: estimate,
-                    onDownloadAll: appViewModel.downloadAllContent,
-                    onNotYet: appViewModel.dismissInitialDownloadPrompt
-                )
-                .presentationDragIndicator(.hidden)
-                .presentationDetents([.fraction(0.72), .large])
-                .presentationBackground(Theme.Colors.background)
-                .interactiveDismissDisabled()
+        .sheet(item: activePromptBinding) { prompt in
+            Group {
+                switch prompt {
+                case .initialDownload(let estimate):
+                    InitialDownloadPromptView(
+                        estimate: estimate,
+                        onDownloadAll: appViewModel.downloadAllContent,
+                        onNotYet: appViewModel.dismissInitialDownloadPrompt
+                    )
+                case .contentUpdate(let summary):
+                    ContentUpdatePromptView(
+                        summary: summary,
+                        onUpdate: {
+                            appViewModel.beginContentUpdate(summary)
+                        },
+                        onNotYet: appViewModel.dismissContentUpdatePrompt
+                    )
+                }
             }
+            .presentationDragIndicator(.hidden)
+            .presentationDetents([.fraction(0.72), .large])
+            .presentationBackground(Theme.Colors.background)
+            .interactiveDismissDisabled()
         }
         .onAppear {
             appViewModel.synchronizeDownloadsAfterForeground()
@@ -60,12 +71,12 @@ struct RootView: View {
         }
     }
 
-    private var initialDownloadPromptIsPresented: Binding<Bool> {
+    private var activePromptBinding: Binding<AppPrompt?> {
         Binding(
-            get: { appViewModel.initialDownloadPrompt != nil },
-            set: { isPresented in
-                if !isPresented {
-                    appViewModel.dismissInitialDownloadPrompt()
+            get: { appViewModel.activePrompt },
+            set: { prompt in
+                if prompt == nil {
+                    appViewModel.dismissActivePrompt()
                 }
             }
         )
@@ -237,6 +248,106 @@ private struct InitialDownloadPromptView: View {
                 .foregroundStyle(.white)
                 .multilineTextAlignment(.center)
                 .lineLimit(3)
+                .minimumScaleFactor(0.84)
+        }
+        .frame(maxWidth: .infinity, minHeight: 72)
+        .padding(.horizontal, 8)
+        .background(Theme.Colors.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+    }
+}
+
+private struct ContentUpdatePromptView: View {
+    let summary: ContentUpdateSummary
+    let onUpdate: () -> Void
+    let onNotYet: () -> Void
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 18) {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 44, weight: .bold))
+                    .foregroundStyle(Theme.Colors.peach)
+                    .accessibilityHidden(true)
+
+                VStack(spacing: 8) {
+                    Text("Fresh Course Files Just Dropped")
+                        .font(.title2.weight(.bold))
+                        .foregroundStyle(.white)
+                        .multilineTextAlignment(.center)
+
+                    Text(
+                        "Cloudflare has newer versions of some downloaded course files. Tap Update Now and we'll swap them in."
+                    )
+                    .font(.subheadline)
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(.white.opacity(0.76))
+                    .fixedSize(horizontal: false, vertical: true)
+                }
+
+                HStack(spacing: 10) {
+                    updatePill(
+                        title: "Files",
+                        value: "\(summary.assetCount)",
+                        systemImage: "doc.on.doc.fill"
+                    )
+                    updatePill(
+                        title: "Update Size",
+                        value: summary.sizeText,
+                        systemImage: "arrow.down.circle.fill"
+                    )
+                }
+
+                Text(
+                    "*The current files stay safely in place until their replacements finish downloading and pass validation."
+                )
+                .font(.caption2)
+                .foregroundStyle(.white.opacity(0.58))
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+
+                VStack(spacing: 10) {
+                    Button("Update Now", action: onUpdate)
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(.black)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                        .background(Theme.Colors.peach)
+                        .clipShape(
+                            RoundedRectangle(
+                                cornerRadius: 14,
+                                style: .continuous
+                            )
+                        )
+
+                    Button("Not Yet", action: onNotYet)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.white.opacity(0.82))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 42)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 22)
+            .padding(.vertical, 24)
+        }
+        .scrollIndicators(.hidden)
+    }
+
+    private func updatePill(
+        title: String,
+        value: String,
+        systemImage: String
+    ) -> some View {
+        VStack(spacing: 5) {
+            Label(title, systemImage: systemImage)
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.white.opacity(0.58))
+
+            Text(value)
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.white)
+                .lineLimit(2)
                 .minimumScaleFactor(0.84)
         }
         .frame(maxWidth: .infinity, minHeight: 72)

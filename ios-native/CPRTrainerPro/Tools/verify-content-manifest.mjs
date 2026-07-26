@@ -10,6 +10,7 @@ const tipsPath = path.join(resourcesDirectory, "instructor-tips.json");
 const subtitlesDirectory = path.join(resourcesDirectory, "Subtitles");
 const artworkDirectory = path.join(resourcesDirectory, "Artwork");
 const r2ContentLengthsPath = path.join(projectDirectory, "Tools/r2-content-lengths.json");
+const r2ObjectMetadataPath = path.join(projectDirectory, "Tools/r2-object-metadata.json");
 const shouldVerifyNetwork = process.argv.includes("--network");
 const baseURLArgument = process.argv
   .find((argument) => argument.startsWith("--base-url="))
@@ -55,6 +56,7 @@ function assertSequentialIDs(items, prefix, ownerID) {
 const manifest = readJSON(manifestPath);
 const tipsManifest = readJSON(tipsPath);
 const r2ContentLengths = readJSON(r2ContentLengthsPath);
+const r2ObjectMetadata = readJSON(r2ObjectMetadataPath);
 const remoteBaseURL = baseURLArgument ?? manifest.mediaBaseURL;
 
 assert(manifest.schemaVersion === 1, "Unsupported manifest schema");
@@ -90,21 +92,21 @@ const expectedSlideshows = new Map([
   ["pediatric-first-aid-course", { count: 45, videoPositions: [] }],
   ["pediatric-cpr-aed-course", { count: 36, videoPositions: [11, 16, 20, 21] }],
 ]);
-const expectedPediatricCPRSharedMedia = new Map([
-  ["slide-12", "CPR AED Presentation Slides/13_EHAcademy - CPR AED Course Pres-Check Responsiveness.png"],
-  ["slide-13", "CPR AED Presentation Slides/14_EHAcademy - CPR AED Course Pres--Getting Help.png"],
-  ["slide-14", "CPR AED Presentation Slides/15_EHAcademy - CPR AED Course Pres-Check Breathing.png"],
-  ["slide-15", "CPR AED Presentation Slides/16_EHAcademy - CPR AED Course Pres-Begin Chest Compressions.png"],
-  ["slide-16", "CPR AED Presentation Slides/17_EHAcademy - CPR AED Course Pres-Chest Compressions Video.mp4"],
-  ["slide-20", "CPR AED Presentation Slides/21_EHAcademy - CPR AED Course Pres-CPR Songs.mp4"],
-  ["slide-25", "CPR AED Presentation Slides/26_EHAcademy - CPR AED Course Pres-Adult Scenario.png"],
-  ["slide-26", "CPR AED Presentation Slides/29_EHAcademy - CPR AED Course Pres-Infant CPR.png"],
-  ["slide-29", "CPR AED Presentation Slides/32_EHAcademy - CPR AED Course Pres-Infant Scenario.png"],
-  ["slide-30", "CPR AED Presentation Slides/33_EHAcademy - CPR AED Course Pres-Mild Choking.png"],
-  ["slide-31", "CPR AED Presentation Slides/34_EHAcademy - CPR AED Course Pres-Severe Choking.png"],
-  ["slide-32", "CPR AED Presentation Slides/35_EHAcademy - CPR AED Course Pres-Choking Adult.png"],
-  ["slide-33", "CPR AED Presentation Slides/36_EHAcademy - CPR AED Course Pres-Choking Child.png"],
-  ["slide-34", "CPR AED Presentation Slides/37_EHAcademy - CPR AED Course Pres-Choking Infant.png"],
+const expectedPediatricCPRMedia = new Map([
+  ["slide-12", ["Assessment and Activation - Check Responsiveness", "Pedi CPR Presentation Slides/12_EHAcademy - Pedi CPR AED Course Pres-Assessment and Activation - Check Responsiveness.png"]],
+  ["slide-13", ["Assessment and Activation - Getting Help", "Pedi CPR Presentation Slides/13_EHAcademy - Pedi CPR AED Course Pres-Assessment and Activation - Getting Help.png"]],
+  ["slide-14", ["Assessment and Activation - Check Breathing", "Pedi CPR Presentation Slides/14_EHAcademy - Pedi CPR AED Course Pres-Assessment and Activation - Check Breathing.png"]],
+  ["slide-15", ["Assessment and Activation - Begin Chest Compressions", "Pedi CPR Presentation Slides/15_EHAcademy - Pedi CPR AED Course Pres-Assessment and Activation - Begin Chest Compressions.png"]],
+  ["slide-16", ["Chest Compression Effect", "Pedi CPR Presentation Slides/16_EHAcademy - Pedi CPR AED Course Pres-Chest Compression Effect Video.mp4"]],
+  ["slide-20", ["CPR Song", "Pedi CPR Presentation Slides/20_EHAcademy - Pedi CPR AED Course Pres-CPR Song.mp4"]],
+  ["slide-25", ["Put it all together", "Pedi CPR Presentation Slides/25_EHAcademy - Pedi CPR AED Course Pres-Put it all together.png"]],
+  ["slide-26", ["Infant Assessment", "Pedi CPR Presentation Slides/26_EHAcademy - Pedi CPR AED Course Pres-Infant Assessment.png"]],
+  ["slide-29", ["Infant AED Use", "Pedi CPR Presentation Slides/29_EHAcademy - Pedi CPR AED Course Pres-Infant AED Use.png"]],
+  ["slide-30", ["Infant Scenario", "Pedi CPR Presentation Slides/30_EHAcademy - Pedi CPR AED Course Pres-Infant Scenario.png"]],
+  ["slide-31", ["Mild Choking", "Pedi CPR Presentation Slides/31_EHAcademy - Pedi CPR AED Course Pres-Mild Choking.png"]],
+  ["slide-32", ["Severe Choking", "Pedi CPR Presentation Slides/32_EHAcademy - Pedi CPR AED Course Pres-Severe Choking.png"]],
+  ["slide-33", ["Choking Relief Child", "Pedi CPR Presentation Slides/33_EHAcademy - Pedi CPR AED Course Pres-Choking Relief Child.png"]],
+  ["slide-34", ["Choking Relief Infant", "Pedi CPR Presentation Slides/34_EHAcademy - Pedi CPR AED Course Pres-Choking Relief Infant.png"]],
 ]);
 assert(manifest.slideshows.length === expectedSlideshows.size, "Unexpected slideshow count");
 for (const slideshow of manifest.slideshows) {
@@ -125,11 +127,17 @@ for (const slideshow of manifest.slideshows) {
 const pediatricCPR = manifest.slideshows.find(
   (slideshow) => slideshow.id === "pediatric-cpr-aed-course"
 );
-for (const [slideID, filename] of expectedPediatricCPRSharedMedia) {
+assert(
+  pediatricCPR.slides.every((slide) => slide.filename.startsWith("Pedi CPR Presentation Slides/")),
+  "Pediatric CPR must use only pediatric R2 objects"
+);
+for (const [slideID, [title, filename]] of expectedPediatricCPRMedia) {
+  const slide = pediatricCPR?.slides.find((item) => item.id === slideID);
   assert(
-    pediatricCPR?.slides.find((slide) => slide.id === slideID)?.filename === filename,
-    `Unexpected R2 shared-media mapping for pediatric-cpr-aed-course/${slideID}`
+    slide?.filename === filename,
+    `Unexpected R2 media mapping for pediatric-cpr-aed-course/${slideID}`
   );
+  assert(slide?.title === title, `Unexpected title for pediatric-cpr-aed-course/${slideID}`);
 }
 
 const expectedVideoCourses = new Map([
@@ -150,7 +158,7 @@ assert(firstAidVA.chapters.find((chapter) => chapter.id === "fa-10")?.duration =
 const expectedPackageCounts = new Map([
   ["package.cpr-aed.slideshow", 43],
   ["package.cpr-aed.video", 60],
-  ["package.cpr-aed.pediatric-slideshow", 38],
+  ["package.cpr-aed.pediatric-slideshow", 36],
   ["package.first-aid.slideshow", 47],
   ["package.first-aid.video", 90],
   ["package.first-aid.pediatric-slideshow", 45],
@@ -177,6 +185,13 @@ for (const [packageID, expectedCount] of expectedPackageCounts) {
       Number.isSafeInteger(asset.byteCount) && asset.byteCount > 0,
       `Missing byteCount for ${packageID}/${asset.filename}`
     );
+    if (asset.kind !== "subtitle") {
+      assert(typeof asset.eTag === "string" && asset.eTag.length > 0, `Missing ETag for ${asset.filename}`);
+      assert(
+        typeof asset.lastModified === "string" && !Number.isNaN(Date.parse(asset.lastModified)),
+        `Missing Last-Modified for ${asset.filename}`
+      );
+    }
   }
 }
 
@@ -184,23 +199,37 @@ const remoteAssetsByFilename = new Map();
 for (const asset of manifest.packages
   .flatMap((downloadPackage) => downloadPackage.assets)
   .filter((asset) => asset.kind !== "subtitle")) {
-  const existingByteCount = remoteAssetsByFilename.get(asset.filename);
+  const metadata = {
+    byteCount: asset.byteCount,
+    eTag: asset.eTag,
+    lastModified: asset.lastModified,
+  };
+  const existingMetadata = remoteAssetsByFilename.get(asset.filename);
   assert(
-    existingByteCount === undefined || existingByteCount === asset.byteCount,
-    `Conflicting byteCount values for ${asset.filename}`
+    existingMetadata === undefined || JSON.stringify(existingMetadata) === JSON.stringify(metadata),
+    `Conflicting metadata values for ${asset.filename}`
   );
-  remoteAssetsByFilename.set(asset.filename, asset.byteCount);
+  remoteAssetsByFilename.set(asset.filename, metadata);
 }
-assert(remoteAssetsByFilename.size === 230, "Unexpected unique R2 object count");
+assert(remoteAssetsByFilename.size === 244, "Unexpected unique R2 object count");
 assertSameStrings(
   remoteAssetsByFilename.keys(),
   Object.keys(r2ContentLengths),
   "R2 Content-Length inventory"
 );
-for (const [filename, byteCount] of remoteAssetsByFilename) {
+assertSameStrings(
+  remoteAssetsByFilename.keys(),
+  Object.keys(r2ObjectMetadata),
+  "R2 object metadata inventory"
+);
+for (const [filename, metadata] of remoteAssetsByFilename) {
   assert(
-    r2ContentLengths[filename] === byteCount,
+    r2ContentLengths[filename] === metadata.byteCount,
     `Manifest byteCount does not match R2 inventory for ${filename}`
+  );
+  assert(
+    JSON.stringify(r2ObjectMetadata[filename]) === JSON.stringify(metadata),
+    `Manifest metadata does not match R2 inventory for ${filename}`
   );
 }
 
@@ -261,7 +290,7 @@ const packageAssetCount = manifest.packages.reduce(
   (total, downloadPackage) => total + downloadPackage.assets.length,
   0
 );
-assert(packageAssetCount === 326, `Unexpected total package asset count: ${packageAssetCount}`);
+assert(packageAssetCount === 324, `Unexpected total package asset count: ${packageAssetCount}`);
 
 function mediaURL(filename) {
   const encodedPath = filename
@@ -279,7 +308,7 @@ function responseByteCount(response) {
   return Number.isSafeInteger(value) && value > 0 ? value : null;
 }
 
-async function requestExists(url, expectedByteCount) {
+async function requestExists(url, expectedMetadata) {
   for (let attempt = 1; attempt <= 2; attempt += 1) {
     try {
       let response = await fetch(url, {
@@ -301,8 +330,16 @@ async function requestExists(url, expectedByteCount) {
 
       if (response.status >= 200 && response.status < 400) {
         const actualByteCount = responseByteCount(response);
-        if (actualByteCount !== expectedByteCount) {
-          return `Content-Length ${actualByteCount ?? "missing"} (expected ${expectedByteCount})`;
+        if (actualByteCount !== expectedMetadata.byteCount) {
+          return `Content-Length ${actualByteCount ?? "missing"} (expected ${expectedMetadata.byteCount})`;
+        }
+        const actualETag = response.headers.get("etag")?.trim();
+        if (actualETag !== expectedMetadata.eTag) {
+          return `ETag ${actualETag ?? "missing"} (expected ${expectedMetadata.eTag})`;
+        }
+        const actualLastModified = response.headers.get("last-modified")?.trim();
+        if (actualLastModified !== expectedMetadata.lastModified) {
+          return `Last-Modified ${actualLastModified ?? "missing"} (expected ${expectedMetadata.lastModified})`;
         }
         return null;
       }

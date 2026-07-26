@@ -15,6 +15,8 @@ Spanish presentations are intentionally out of scope for this first build.
 - Exact production R2 byte counts power a remaining-content estimate that excludes already-downloaded files and deduplicates media shared by multiple courses.
 - A one-time-per-launch Download All prompt appears only when content is missing and no bulk download is already underway.
 - Settings > All Downloads includes a Download All action and a live remaining-size/time estimate.
+- On launch, downloaded images, videos, and manuals are checked against the exact same R2 object key. Changed ETags, newer Last-Modified values, or changed byte counts trigger one coordinated update prompt.
+- Accepted content updates use a persisted background queue, bounded concurrency, retry/backoff, response metadata validation, and atomic replacement so the installed file remains usable until its replacement is complete.
 - Background `URLSession` download service with exact filename preservation, URL encoding, retry/backoff, atomic temp-file moves, and local storage excluded from iCloud backup.
 - Persisted download queue plans so a requested package can resume remaining assets after app restart.
 - Persisted, sequential Download All plans keep background work bounded to three concurrent files and avoid racing shared course assets.
@@ -34,9 +36,10 @@ node ios-native/CPRTrainerPro/Tools/generate-content-manifest.mjs \
   --source-root /path/to/experiment-3.0-checkout
 ```
 
-The size inventory command queries every unique manifest object in production R2
-and atomically updates `Tools/r2-content-lengths.json`. Run it whenever production
-media is replaced, then regenerate the manifest.
+The R2 inventory command queries every unique manifest object in production and
+atomically updates both `Tools/r2-content-lengths.json` and
+`Tools/r2-object-metadata.json` (Content-Length, ETag, and Last-Modified). Run it
+whenever production media is replaced, then regenerate the manifest.
 
 Run the fast local contract audit after every generation:
 
@@ -52,8 +55,8 @@ node ios-native/CPRTrainerPro/Tools/verify-content-manifest.mjs --network
 
 Cloudflare R2 object keys are the source of truth for generated media filenames.
 The Windows Experiment 3.0 data supplies course structure and ordering only.
-Pediatric CPR intentionally reuses shared all-ages CPR objects when R2 does not
-contain a duplicate pediatric object.
+Every Pediatric CPR slide resolves to the corresponding object under
+`Pedi CPR Presentation Slides/`; it does not fall back to the adult CPR course.
 
 ## Build Check
 

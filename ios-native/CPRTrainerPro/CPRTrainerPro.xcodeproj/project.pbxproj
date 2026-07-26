@@ -56,6 +56,8 @@
 		001000000000000000000147 /* ManualSearchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000049 /* ManualSearchService.swift */; };
 		001000000000000000000148 /* ManualViewerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000050 /* ManualViewerViewModel.swift */; };
 		001000000000000000000149 /* ManualNavigationPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000051 /* ManualNavigationPanel.swift */; };
+		001000000000000000000150 /* ContentVersionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000052 /* ContentVersionStore.swift */; };
+		001000000000000000000151 /* ContentUpdateService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000053 /* ContentUpdateService.swift */; };
 		002000000000000000000101 /* ContentManifestContractTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 002000000000000000000001 /* ContentManifestContractTests.swift */; };
 		002000000000000000000102 /* content-manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000016 /* content-manifest.json */; };
 		002000000000000000000103 /* instructor-tips.json in Resources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000038 /* instructor-tips.json */; };
@@ -123,6 +125,8 @@
 		001000000000000000000049 /* ManualSearchService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualSearchService.swift; sourceTree = "<group>"; };
 		001000000000000000000050 /* ManualViewerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualViewerViewModel.swift; sourceTree = "<group>"; };
 		001000000000000000000051 /* ManualNavigationPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualNavigationPanel.swift; sourceTree = "<group>"; };
+		001000000000000000000052 /* ContentVersionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentVersionStore.swift; sourceTree = "<group>"; };
+		001000000000000000000053 /* ContentUpdateService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentUpdateService.swift; sourceTree = "<group>"; };
 		002000000000000000000001 /* ContentManifestContractTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentManifestContractTests.swift; sourceTree = "<group>"; };
 		002000000000000000000020 /* CPRTrainerProTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CPRTrainerProTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -293,6 +297,8 @@
 			isa = PBXGroup;
 			children = (
 				001000000000000000000006 /* ContentManifestService.swift */,
+				001000000000000000000053 /* ContentUpdateService.swift */,
+				001000000000000000000052 /* ContentVersionStore.swift */,
 				001000000000000000000007 /* DownloadService.swift */,
 				001000000000000000000024 /* DownloadQueueStore.swift */,
 				001000000000000000000036 /* InstructorTipsService.swift */,
@@ -471,6 +477,8 @@
 				001000000000000000000147 /* ManualSearchService.swift in Sources */,
 				001000000000000000000148 /* ManualViewerViewModel.swift in Sources */,
 				001000000000000000000149 /* ManualNavigationPanel.swift in Sources */,
+				001000000000000000000150 /* ContentVersionStore.swift in Sources */,
+				001000000000000000000151 /* ContentUpdateService.swift in Sources */,
 				001000000000000000000123 /* DownloadQueueStore.swift in Sources */,
 				001000000000000000000124 /* SubtitleCue.swift in Sources */,
 				001000000000000000000125 /* SubtitleService.swift in Sources */,

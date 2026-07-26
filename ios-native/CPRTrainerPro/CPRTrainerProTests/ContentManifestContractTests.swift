@@ -96,27 +96,74 @@ final class ContentManifestContractTests: XCTestCase {
         XCTAssertFalse(pediatricFirstAid.slides.contains { $0.type == .video })
         XCTAssertEqual(pediatricCPR.slides.filter { $0.type == .video }.count, 4)
 
-        let sharedPediatricCPRMedia: [String: String] = [
-            "slide-12": "CPR AED Presentation Slides/13_EHAcademy - CPR AED Course Pres-Check Responsiveness.png",
-            "slide-13": "CPR AED Presentation Slides/14_EHAcademy - CPR AED Course Pres--Getting Help.png",
-            "slide-14": "CPR AED Presentation Slides/15_EHAcademy - CPR AED Course Pres-Check Breathing.png",
-            "slide-15": "CPR AED Presentation Slides/16_EHAcademy - CPR AED Course Pres-Begin Chest Compressions.png",
-            "slide-16": "CPR AED Presentation Slides/17_EHAcademy - CPR AED Course Pres-Chest Compressions Video.mp4",
-            "slide-20": "CPR AED Presentation Slides/21_EHAcademy - CPR AED Course Pres-CPR Songs.mp4",
-            "slide-25": "CPR AED Presentation Slides/26_EHAcademy - CPR AED Course Pres-Adult Scenario.png",
-            "slide-26": "CPR AED Presentation Slides/29_EHAcademy - CPR AED Course Pres-Infant CPR.png",
-            "slide-29": "CPR AED Presentation Slides/32_EHAcademy - CPR AED Course Pres-Infant Scenario.png",
-            "slide-30": "CPR AED Presentation Slides/33_EHAcademy - CPR AED Course Pres-Mild Choking.png",
-            "slide-31": "CPR AED Presentation Slides/34_EHAcademy - CPR AED Course Pres-Severe Choking.png",
-            "slide-32": "CPR AED Presentation Slides/35_EHAcademy - CPR AED Course Pres-Choking Adult.png",
-            "slide-33": "CPR AED Presentation Slides/36_EHAcademy - CPR AED Course Pres-Choking Child.png",
-            "slide-34": "CPR AED Presentation Slides/37_EHAcademy - CPR AED Course Pres-Choking Infant.png"
+        let authoritativePediatricCPRMedia: [String: (title: String, filename: String)] = [
+            "slide-12": (
+                "Assessment and Activation - Check Responsiveness",
+                "Pedi CPR Presentation Slides/12_EHAcademy - Pedi CPR AED Course Pres-Assessment and Activation - Check Responsiveness.png"
+            ),
+            "slide-13": (
+                "Assessment and Activation - Getting Help",
+                "Pedi CPR Presentation Slides/13_EHAcademy - Pedi CPR AED Course Pres-Assessment and Activation - Getting Help.png"
+            ),
+            "slide-14": (
+                "Assessment and Activation - Check Breathing",
+                "Pedi CPR Presentation Slides/14_EHAcademy - Pedi CPR AED Course Pres-Assessment and Activation - Check Breathing.png"
+            ),
+            "slide-15": (
+                "Assessment and Activation - Begin Chest Compressions",
+                "Pedi CPR Presentation Slides/15_EHAcademy - Pedi CPR AED Course Pres-Assessment and Activation - Begin Chest Compressions.png"
+            ),
+            "slide-16": (
+                "Chest Compression Effect",
+                "Pedi CPR Presentation Slides/16_EHAcademy - Pedi CPR AED Course Pres-Chest Compression Effect Video.mp4"
+            ),
+            "slide-20": (
+                "CPR Song",
+                "Pedi CPR Presentation Slides/20_EHAcademy - Pedi CPR AED Course Pres-CPR Song.mp4"
+            ),
+            "slide-25": (
+                "Put it all together",
+                "Pedi CPR Presentation Slides/25_EHAcademy - Pedi CPR AED Course Pres-Put it all together.png"
+            ),
+            "slide-26": (
+                "Infant Assessment",
+                "Pedi CPR Presentation Slides/26_EHAcademy - Pedi CPR AED Course Pres-Infant Assessment.png"
+            ),
+            "slide-29": (
+                "Infant AED Use",
+                "Pedi CPR Presentation Slides/29_EHAcademy - Pedi CPR AED Course Pres-Infant AED Use.png"
+            ),
+            "slide-30": (
+                "Infant Scenario",
+                "Pedi CPR Presentation Slides/30_EHAcademy - Pedi CPR AED Course Pres-Infant Scenario.png"
+            ),
+            "slide-31": (
+                "Mild Choking",
+                "Pedi CPR Presentation Slides/31_EHAcademy - Pedi CPR AED Course Pres-Mild Choking.png"
+            ),
+            "slide-32": (
+                "Severe Choking",
+                "Pedi CPR Presentation Slides/32_EHAcademy - Pedi CPR AED Course Pres-Severe Choking.png"
+            ),
+            "slide-33": (
+                "Choking Relief Child",
+                "Pedi CPR Presentation Slides/33_EHAcademy - Pedi CPR AED Course Pres-Choking Relief Child.png"
+            ),
+            "slide-34": (
+                "Choking Relief Infant",
+                "Pedi CPR Presentation Slides/34_EHAcademy - Pedi CPR AED Course Pres-Choking Relief Infant.png"
+            )
         ]
-        for (slideID, filename) in sharedPediatricCPRMedia {
-            XCTAssertEqual(
-                pediatricCPR.slides.first { $0.id == slideID }?.filename,
-                filename,
-                "Unexpected R2 shared-media mapping for \(slideID)"
+        for (slideID, expected) in authoritativePediatricCPRMedia {
+            let slide = pediatricCPR.slides.first { $0.id == slideID }
+            XCTAssertEqual(slide?.title, expected.title, "Unexpected title for \(slideID)")
+            XCTAssertEqual(slide?.filename, expected.filename, "Unexpected R2 object for \(slideID)")
+        }
+
+        for slide in pediatricCPR.slides {
+            XCTAssertTrue(
+                slide.filename.hasPrefix("Pedi CPR Presentation Slides/"),
+                "Pediatric CPR must not fall back to adult media: \(slide.filename)"
             )
         }
     }
@@ -155,7 +202,7 @@ final class ContentManifestContractTests: XCTestCase {
         let expectedCounts: [DownloadPackage.ID: Int] = [
             .cprSlideshow: 43,
             .cprVideo: 60,
-            .pediatricCPRSlideshow: 38,
+            .pediatricCPRSlideshow: 36,
             .firstAidSlideshow: 47,
             .firstAidVideo: 90,
             .pediatricSlideshow: 45,
@@ -193,6 +240,16 @@ final class ContentManifestContractTests: XCTestCase {
                 0,
                 "Missing byte count for \(asset.filename)"
             )
+            if asset.kind != .subtitle {
+                XCTAssertFalse(
+                    try XCTUnwrap(asset.eTag).isEmpty,
+                    "Missing R2 ETag for \(asset.filename)"
+                )
+                XCTAssertNotNil(
+                    Self.httpDateFormatter.date(from: try XCTUnwrap(asset.lastModified)),
+                    "Missing or invalid R2 Last-Modified for \(asset.filename)"
+                )
+            }
         }
 
         let uniqueRemoteAssets = Dictionary(
@@ -203,6 +260,16 @@ final class ContentManifestContractTests: XCTestCase {
                     duplicate.byteCount,
                     "Shared asset has inconsistent byte counts: \(first.filename)"
                 )
+                XCTAssertEqual(
+                    first.eTag,
+                    duplicate.eTag,
+                    "Shared asset has inconsistent ETags: \(first.filename)"
+                )
+                XCTAssertEqual(
+                    first.lastModified,
+                    duplicate.lastModified,
+                    "Shared asset has inconsistent Last-Modified values: \(first.filename)"
+                )
                 return first
             }
         )
@@ -210,8 +277,8 @@ final class ContentManifestContractTests: XCTestCase {
             total + (asset.byteCount ?? 0)
         }
 
-        XCTAssertEqual(uniqueRemoteAssets.count, 230)
-        XCTAssertEqual(totalRemoteByteCount, 2_153_052_471)
+        XCTAssertEqual(uniqueRemoteAssets.count, 244)
+        XCTAssertEqual(totalRemoteByteCount, 2_197_504_067)
     }
 
     func testRemainingDownloadEstimateDeduplicatesAndExcludesSavedContent() throws {
@@ -221,8 +288,8 @@ final class ContentManifestContractTests: XCTestCase {
             }
         )
 
-        XCTAssertEqual(allMissing.remainingAssetCount, 230)
-        XCTAssertEqual(allMissing.remainingByteCount, 2_153_052_471)
+        XCTAssertEqual(allMissing.remainingAssetCount, 244)
+        XCTAssertEqual(allMissing.remainingByteCount, 2_197_504_067)
         XCTAssertEqual(allMissing.durationText, "about 12 min on a typical 25 Mbps connection")
 
         let savedAsset = try XCTUnwrap(
@@ -237,7 +304,7 @@ final class ContentManifestContractTests: XCTestCase {
             }
         )
 
-        XCTAssertEqual(partiallyDownloaded.remainingAssetCount, 229)
+        XCTAssertEqual(partiallyDownloaded.remainingAssetCount, 243)
         XCTAssertEqual(
             partiallyDownloaded.remainingByteCount,
             allMissing.remainingByteCount - savedByteCount
@@ -255,7 +322,143 @@ final class ContentManifestContractTests: XCTestCase {
         let asset = try JSONDecoder().decode(MediaAsset.self, from: data)
 
         XCTAssertNil(asset.byteCount)
+        XCTAssertNil(asset.eTag)
+        XCTAssertNil(asset.lastModified)
         XCTAssertEqual(asset.filename, "legacy.mp4")
+    }
+
+    func testRemoteVersionDetectsEverySupportedChangeSignal() {
+        let installed = RemoteAssetVersion(
+            byteCount: 100,
+            eTag: #""version-one""#,
+            lastModified: "Mon, 20 Jul 2026 12:00:00 GMT"
+        )
+
+        XCTAssertFalse(installed.representsUpdate(comparedTo: installed))
+        XCTAssertTrue(
+            RemoteAssetVersion(
+                byteCount: 101,
+                eTag: installed.eTag,
+                lastModified: installed.lastModified
+            )
+            .representsUpdate(comparedTo: installed)
+        )
+        XCTAssertTrue(
+            RemoteAssetVersion(
+                byteCount: installed.byteCount,
+                eTag: #""version-two""#,
+                lastModified: installed.lastModified
+            )
+            .representsUpdate(comparedTo: installed)
+        )
+        XCTAssertTrue(
+            RemoteAssetVersion(
+                byteCount: installed.byteCount,
+                eTag: installed.eTag,
+                lastModified: "Tue, 21 Jul 2026 12:00:00 GMT"
+            )
+            .representsUpdate(comparedTo: installed)
+        )
+        XCTAssertFalse(
+            RemoteAssetVersion(
+                byteCount: installed.byteCount,
+                eTag: installed.eTag,
+                lastModified: "Sun, 19 Jul 2026 12:00:00 GMT"
+            )
+            .representsUpdate(comparedTo: installed)
+        )
+    }
+
+    func testRemoteVersionMatchRequiresExactAvailableMetadata() {
+        let expected = RemoteAssetVersion(
+            byteCount: 100,
+            eTag: #""same-object""#,
+            lastModified: "Mon, 20 Jul 2026 12:00:00 GMT"
+        )
+
+        XCTAssertTrue(expected.matches(expected))
+        XCTAssertFalse(
+            expected.matches(
+                RemoteAssetVersion(
+                    byteCount: 99,
+                    eTag: expected.eTag,
+                    lastModified: expected.lastModified
+                )
+            )
+        )
+        XCTAssertFalse(
+            expected.matches(
+                RemoteAssetVersion(
+                    byteCount: expected.byteCount,
+                    eTag: nil,
+                    lastModified: expected.lastModified
+                )
+            )
+        )
+        XCTAssertFalse(
+            expected.matches(
+                RemoteAssetVersion(
+                    byteCount: expected.byteCount,
+                    eTag: expected.eTag,
+                    lastModified: nil
+                )
+            )
+        )
+    }
+
+    func testContentVersionStoreAdoptsAndPersistsInstalledVersions() throws {
+        let directoryURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let storeURL = directoryURL.appendingPathComponent("versions.json")
+        defer { try? FileManager.default.removeItem(at: directoryURL) }
+
+        let bundledAsset = MediaAsset(
+            id: "test.asset",
+            filename: "Test Assets/course.mp4",
+            kind: .video,
+            byteCount: 3,
+            eTag: #""bundled""#,
+            lastModified: "Mon, 20 Jul 2026 12:00:00 GMT"
+        )
+        let installedAt = Date(timeIntervalSince1970: 1_790_000_000)
+        let checkedAt = installedAt.addingTimeInterval(60)
+        let store = ContentVersionStore(storeURL: storeURL)
+
+        try store.adoptBundledVersionsIfNeeded([bundledAsset], now: installedAt)
+        XCTAssertEqual(
+            store.installedVersion(for: bundledAsset.filename),
+            RemoteAssetVersion(asset: bundledAsset)
+        )
+        XCTAssertEqual(store.record(for: bundledAsset.filename)?.installedAt, installedAt)
+        XCTAssertNil(store.record(for: bundledAsset.filename)?.lastCheckedAt)
+
+        try store.markChecked(filename: bundledAsset.filename, at: checkedAt)
+        let reloadedStore = ContentVersionStore(storeURL: storeURL)
+        XCTAssertEqual(
+            reloadedStore.record(for: bundledAsset.filename)?.lastCheckedAt,
+            checkedAt
+        )
+
+        let downloadedVersion = RemoteAssetVersion(
+            byteCount: 4,
+            eTag: #""downloaded""#,
+            lastModified: "Tue, 21 Jul 2026 12:00:00 GMT"
+        )
+        try reloadedStore.recordInstalled(
+            filename: bundledAsset.filename,
+            version: downloadedVersion,
+            installedAt: checkedAt
+        )
+
+        let finalStore = ContentVersionStore(storeURL: storeURL)
+        XCTAssertEqual(
+            finalStore.installedVersion(for: bundledAsset.filename),
+            downloadedVersion
+        )
+        XCTAssertEqual(
+            finalStore.record(for: bundledAsset.filename)?.lastCheckedAt,
+            checkedAt
+        )
     }
 
     func testMediaURLsEncodeSpacesAndPreserveContentFolders() {
@@ -308,6 +511,47 @@ final class ContentManifestContractTests: XCTestCase {
         let plan = DownloadAllQueueStore.Plan(
             packageIDs: [.cprSlideshow, .pediatricCPRSlideshow, .firstAidSlideshow],
             baseURL: URL(string: "https://media.ehacademy.com/")!
+        )
+
+        try store.save(plan)
+        XCTAssertEqual(try store.load(), plan)
+
+        try store.remove()
+        XCTAssertNil(try store.load())
+    }
+
+    func testContentUpdatePlanStoreRoundTripsAndRemovesPlans() throws {
+        let directoryURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let storeURL = directoryURL.appendingPathComponent("updates.json")
+        let store = ContentUpdatePlanStore(storeURL: storeURL)
+        defer { try? FileManager.default.removeItem(at: directoryURL) }
+
+        let asset = MediaAsset(
+            id: "test.asset",
+            filename: "Test Assets/course.mp4",
+            kind: .video,
+            byteCount: 3,
+            eTag: #""old""#,
+            lastModified: "Mon, 20 Jul 2026 12:00:00 GMT"
+        )
+        let candidate = ContentUpdateCandidate(
+            asset: asset,
+            remoteVersion: RemoteAssetVersion(
+                byteCount: 4,
+                eTag: #""new""#,
+                lastModified: "Tue, 21 Jul 2026 12:00:00 GMT"
+            )
+        )
+        let plan = ContentUpdatePlanStore.Plan(
+            pending: [
+                .init(
+                    candidate: candidate,
+                    attempt: 1,
+                    retryAfter: Date(timeIntervalSince1970: 1_790_000_000)
+                )
+            ],
+            failed: [candidate]
         )
 
         try store.save(plan)
@@ -430,6 +674,105 @@ final class ContentManifestContractTests: XCTestCase {
             byteCount: 4
         )
         XCTAssertFalse(storage.fileExists(changedR2Asset))
+    }
+
+    func testStorageAtomicallyReplacesAValidatedInstalledVersion() throws {
+        let directoryURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let versionURL = directoryURL.appendingPathComponent("versions.json")
+        let firstTemporaryURL = directoryURL.appendingPathComponent("first.tmp")
+        let replacementTemporaryURL = directoryURL.appendingPathComponent("replacement.tmp")
+        defer { try? FileManager.default.removeItem(at: directoryURL) }
+
+        try FileManager.default.createDirectory(
+            at: directoryURL,
+            withIntermediateDirectories: true
+        )
+
+        let asset = MediaAsset(
+            id: "test.asset",
+            filename: "Test Assets/course.mp4",
+            kind: .video,
+            byteCount: 3,
+            eTag: #""old""#,
+            lastModified: "Mon, 20 Jul 2026 12:00:00 GMT"
+        )
+        let versionStore = ContentVersionStore(storeURL: versionURL)
+        let storage = StorageService(
+            contentRevision: "atomic-update",
+            supportDirectoryURL: directoryURL,
+            versionStore: versionStore
+        )
+
+        try Data([0x01, 0x02, 0x03]).write(to: firstTemporaryURL)
+        try storage.moveDownloadedFile(from: firstTemporaryURL, for: asset)
+        try versionStore.recordInstalled(
+            filename: asset.filename,
+            version: try XCTUnwrap(RemoteAssetVersion(asset: asset))
+        )
+
+        let replacementVersion = RemoteAssetVersion(
+            byteCount: 4,
+            eTag: #""new""#,
+            lastModified: "Tue, 21 Jul 2026 12:00:00 GMT"
+        )
+        try Data([0x04, 0x05, 0x06, 0x07]).write(to: replacementTemporaryURL)
+        try storage.moveDownloadedFile(
+            from: replacementTemporaryURL,
+            for: asset,
+            expectedByteCount: replacementVersion.byteCount
+        )
+        try versionStore.recordInstalled(
+            filename: asset.filename,
+            version: replacementVersion
+        )
+
+        XCTAssertEqual(
+            try Data(contentsOf: storage.localURL(for: asset.filename)),
+            Data([0x04, 0x05, 0x06, 0x07])
+        )
+        XCTAssertTrue(storage.fileExists(asset))
+    }
+
+    func testRejectedReplacementLeavesInstalledFileUntouched() throws {
+        let directoryURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let firstTemporaryURL = directoryURL.appendingPathComponent("first.tmp")
+        let invalidReplacementURL = directoryURL.appendingPathComponent("invalid.tmp")
+        defer { try? FileManager.default.removeItem(at: directoryURL) }
+
+        try FileManager.default.createDirectory(
+            at: directoryURL,
+            withIntermediateDirectories: true
+        )
+
+        let asset = MediaAsset(
+            id: "test.asset",
+            filename: "Test Assets/course.mp4",
+            kind: .video,
+            byteCount: 3
+        )
+        let storage = StorageService(
+            contentRevision: "atomic-rejection",
+            supportDirectoryURL: directoryURL
+        )
+
+        let originalData = Data([0x01, 0x02, 0x03])
+        try originalData.write(to: firstTemporaryURL)
+        try storage.moveDownloadedFile(from: firstTemporaryURL, for: asset)
+
+        try Data([0x04, 0x05, 0x06]).write(to: invalidReplacementURL)
+        XCTAssertThrowsError(
+            try storage.moveDownloadedFile(
+                from: invalidReplacementURL,
+                for: asset,
+                expectedByteCount: 4
+            )
+        )
+        XCTAssertEqual(
+            try Data(contentsOf: storage.localURL(for: asset.filename)),
+            originalData
+        )
     }
 
     func testRevisionedQueueDoesNotLoadLegacyPlans() throws {
@@ -639,4 +982,12 @@ final class ContentManifestContractTests: XCTestCase {
         let data = try Data(contentsOf: url)
         return try JSONDecoder().decode(TrainingCatalog.self, from: data)
     }
+
+    private static let httpDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.dateFormat = "EEE',' dd MMM yyyy HH':'mm':'ss 'GMT'"
+        return formatter
+    }()
 }

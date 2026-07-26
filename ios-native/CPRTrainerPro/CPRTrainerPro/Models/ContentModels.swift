@@ -106,6 +106,24 @@ struct MediaAsset: Identifiable, Codable, Equatable {
     let filename: String
     let kind: Kind
     let byteCount: Int64?
+    let eTag: String?
+    let lastModified: String?
+
+    init(
+        id: String,
+        filename: String,
+        kind: Kind,
+        byteCount: Int64?,
+        eTag: String? = nil,
+        lastModified: String? = nil
+    ) {
+        self.id = id
+        self.filename = filename
+        self.kind = kind
+        self.byteCount = byteCount
+        self.eTag = eTag
+        self.lastModified = lastModified
+    }
 }
 
 struct DownloadPackage: Identifiable, Codable, Equatable {
@@ -156,6 +174,141 @@ struct DownloadContentEstimate: Equatable {
         }
 
         return "about \(hours) hr \(minutes) min on a typical 25 Mbps connection"
+    }
+}
+
+struct RemoteAssetVersion: Codable, Equatable {
+    let byteCount: Int64
+    let eTag: String?
+    let lastModified: String?
+
+    init(byteCount: Int64, eTag: String?, lastModified: String?) {
+        self.byteCount = byteCount
+        self.eTag = Self.normalizedHeader(eTag)
+        self.lastModified = Self.normalizedHeader(lastModified)
+    }
+
+    init?(asset: MediaAsset) {
+        guard let byteCount = asset.byteCount, byteCount > 0 else { return nil }
+        self.init(
+            byteCount: byteCount,
+            eTag: asset.eTag,
+            lastModified: asset.lastModified
+        )
+    }
+
+    init?(response: HTTPURLResponse) {
+        let contentRange = response.value(forHTTPHeaderField: "Content-Range")
+        let rangeTotal = contentRange?
+            .split(separator: "/")
+            .last
+            .flatMap { Int64($0) }
+        let headerByteCount = response.value(forHTTPHeaderField: "Content-Length")
+            .flatMap(Int64.init)
+        let byteCount = rangeTotal ?? headerByteCount ?? response.expectedContentLength
+        guard byteCount > 0 else { return nil }
+
+        self.init(
+            byteCount: byteCount,
+            eTag: response.value(forHTTPHeaderField: "ETag"),
+            lastModified: response.value(forHTTPHeaderField: "Last-Modified")
+        )
+    }
+
+    func representsUpdate(comparedTo installed: RemoteAssetVersion) -> Bool {
+        if byteCount != installed.byteCount {
+            return true
+        }
+
+        if let eTag, let installedETag = installed.eTag, eTag != installedETag {
+            return true
+        }
+
+        if
+            let remoteDate = Self.httpDate(lastModified),
+            let installedDate = Self.httpDate(installed.lastModified),
+            remoteDate > installedDate
+        {
+            return true
+        }
+
+        return false
+    }
+
+    func matches(_ other: RemoteAssetVersion) -> Bool {
+        guard byteCount == other.byteCount else { return false }
+        if let eTag {
+            guard other.eTag == eTag else { return false }
+        }
+        if let lastModified {
+            guard other.lastModified == lastModified else { return false }
+        }
+        return true
+    }
+
+    private static func normalizedHeader(_ value: String?) -> String? {
+        guard let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !trimmed.isEmpty
+        else {
+            return nil
+        }
+        return trimmed
+    }
+
+    private static func httpDate(_ value: String?) -> Date? {
+        guard let value else { return nil }
+        return HTTPDateParser.date(from: value)
+    }
+}
+
+struct ContentUpdateCandidate: Identifiable, Codable, Equatable {
+    let asset: MediaAsset
+    let remoteVersion: RemoteAssetVersion
+
+    var id: String {
+        asset.filename
+    }
+}
+
+struct ContentUpdateSummary: Identifiable, Equatable {
+    let candidates: [ContentUpdateCandidate]
+
+    var id: String {
+        candidates
+            .map(\.asset.filename)
+            .sorted()
+            .joined(separator: "|")
+    }
+
+    var assetCount: Int {
+        candidates.count
+    }
+
+    var totalByteCount: Int64 {
+        candidates.reduce(Int64(0)) { total, candidate in
+            total + candidate.remoteVersion.byteCount
+        }
+    }
+
+    var sizeText: String {
+        ByteCountFormatter.string(fromByteCount: totalByteCount, countStyle: .file)
+    }
+}
+
+private enum HTTPDateParser {
+    private static let lock = NSLock()
+    private static let formatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.dateFormat = "EEE',' dd MMM yyyy HH':'mm':'ss 'GMT'"
+        return formatter
+    }()
+
+    static func date(from value: String) -> Date? {
+        lock.lock()
+        defer { lock.unlock() }
+        return formatter.date(from: value)
     }
 }
 
