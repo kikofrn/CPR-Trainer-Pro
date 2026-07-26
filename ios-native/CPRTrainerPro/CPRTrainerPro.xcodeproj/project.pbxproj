@@ -61,6 +61,13 @@
 		002000000000000000000101 /* ContentManifestContractTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 002000000000000000000001 /* ContentManifestContractTests.swift */; };
 		002000000000000000000102 /* content-manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000016 /* content-manifest.json */; };
 		002000000000000000000103 /* instructor-tips.json in Resources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000038 /* instructor-tips.json */; };
+		003000000000000000000101 /* CPRTrainerProWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 003000000000000000000001 /* CPRTrainerProWatchApp.swift */; };
+		003000000000000000000102 /* TrainingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 003000000000000000000002 /* TrainingView.swift */; };
+		003000000000000000000103 /* TrainingSessionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 003000000000000000000003 /* TrainingSessionController.swift */; };
+		003000000000000000000104 /* LoopingTrainingMovie.swift in Sources */ = {isa = PBXBuildFile; fileRef = 003000000000000000000004 /* LoopingTrainingMovie.swift */; };
+		003000000000000000000105 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 003000000000000000000005 /* Assets.xcassets */; };
+		003000000000000000000106 /* DummiesDoingCPR-Watch.mov in Resources */ = {isa = PBXBuildFile; fileRef = 003000000000000000000006 /* DummiesDoingCPR-Watch.mov */; };
+		003000000000000000000107 /* CPRTrainerProWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 003000000000000000000020 /* CPRTrainerProWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -71,7 +78,28 @@
 			remoteGlobalIDString = 001000000000000000000400;
 			remoteInfo = CPRTrainerPro;
 		};
+		003000000000000000000601 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 001000000000000000000500 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 003000000000000000000400;
+			remoteInfo = CPRTrainerProWatch;
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		003000000000000000000403 /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				003000000000000000000107 /* CPRTrainerProWatch.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		001000000000000000000001 /* CPRTrainerProApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CPRTrainerProApp.swift; sourceTree = "<group>"; };
@@ -129,6 +157,14 @@
 		001000000000000000000053 /* ContentUpdateService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentUpdateService.swift; sourceTree = "<group>"; };
 		002000000000000000000001 /* ContentManifestContractTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentManifestContractTests.swift; sourceTree = "<group>"; };
 		002000000000000000000020 /* CPRTrainerProTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CPRTrainerProTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		003000000000000000000001 /* CPRTrainerProWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CPRTrainerProWatchApp.swift; sourceTree = "<group>"; };
+		003000000000000000000002 /* TrainingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingView.swift; sourceTree = "<group>"; };
+		003000000000000000000003 /* TrainingSessionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingSessionController.swift; sourceTree = "<group>"; };
+		003000000000000000000004 /* LoopingTrainingMovie.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopingTrainingMovie.swift; sourceTree = "<group>"; };
+		003000000000000000000005 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		003000000000000000000006 /* DummiesDoingCPR-Watch.mov */ = {isa = PBXFileReference; lastKnownFileType = video.quicktime; path = "DummiesDoingCPR-Watch.mov"; sourceTree = "<group>"; };
+		003000000000000000000007 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		003000000000000000000020 /* CPRTrainerProWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CPRTrainerProWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -146,6 +182,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		003000000000000000000201 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -154,6 +197,7 @@
 			children = (
 				001000000000000000000301 /* CPRTrainerPro */,
 				002000000000000000000301 /* CPRTrainerProTests */,
+				003000000000000000000301 /* CPRTrainerProWatch */,
 				001000000000000000000302 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -178,6 +222,7 @@
 			children = (
 				001000000000000000000020 /* CPRTrainerPro.app */,
 				002000000000000000000020 /* CPRTrainerProTests.xctest */,
+				003000000000000000000020 /* CPRTrainerProWatch.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -346,6 +391,28 @@
 			path = CPRTrainerProTests;
 			sourceTree = "<group>";
 		};
+		003000000000000000000301 /* CPRTrainerProWatch */ = {
+			isa = PBXGroup;
+			children = (
+				003000000000000000000001 /* CPRTrainerProWatchApp.swift */,
+				003000000000000000000002 /* TrainingView.swift */,
+				003000000000000000000003 /* TrainingSessionController.swift */,
+				003000000000000000000004 /* LoopingTrainingMovie.swift */,
+				003000000000000000000007 /* Info.plist */,
+				003000000000000000000380 /* Resources */,
+			);
+			path = CPRTrainerProWatch;
+			sourceTree = "<group>";
+		};
+		003000000000000000000380 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				003000000000000000000005 /* Assets.xcassets */,
+				003000000000000000000006 /* DummiesDoingCPR-Watch.mov */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -356,10 +423,12 @@
 				001000000000000000000401 /* Sources */,
 				001000000000000000000201 /* Frameworks */,
 				001000000000000000000402 /* Resources */,
+				003000000000000000000403 /* Embed Watch Content */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				003000000000000000000602 /* PBXTargetDependency */,
 			);
 			name = CPRTrainerPro;
 			productName = CPRTrainerPro;
@@ -384,6 +453,23 @@
 			productReference = 002000000000000000000020 /* CPRTrainerProTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		003000000000000000000400 /* CPRTrainerProWatch */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 003000000000000000000710 /* Build configuration list for PBXNativeTarget "CPRTrainerProWatch" */;
+			buildPhases = (
+				003000000000000000000401 /* Sources */,
+				003000000000000000000201 /* Frameworks */,
+				003000000000000000000402 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = CPRTrainerProWatch;
+			productName = CPRTrainerProWatch;
+			productReference = 003000000000000000000020 /* CPRTrainerProWatch.app */;
+			productType = "com.apple.product-type.application";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -400,6 +486,9 @@
 					002000000000000000000400 = {
 						CreatedOnToolsVersion = 26.5;
 						TestTargetID = 001000000000000000000400;
+					};
+					003000000000000000000400 = {
+						CreatedOnToolsVersion = 26.5;
 					};
 				};
 			};
@@ -419,6 +508,7 @@
 			targets = (
 				001000000000000000000400 /* CPRTrainerPro */,
 				002000000000000000000400 /* CPRTrainerProTests */,
+				003000000000000000000400 /* CPRTrainerProWatch */,
 			);
 		};
 /* End PBXProject section */
@@ -442,6 +532,15 @@
 			files = (
 				002000000000000000000102 /* content-manifest.json in Resources */,
 				002000000000000000000103 /* instructor-tips.json in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		003000000000000000000402 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				003000000000000000000105 /* Assets.xcassets in Resources */,
+				003000000000000000000106 /* DummiesDoingCPR-Watch.mov in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -509,6 +608,17 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		003000000000000000000401 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				003000000000000000000101 /* CPRTrainerProWatchApp.swift in Sources */,
+				003000000000000000000102 /* TrainingView.swift in Sources */,
+				003000000000000000000103 /* TrainingSessionController.swift in Sources */,
+				003000000000000000000104 /* LoopingTrainingMovie.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -516,6 +626,12 @@
 			isa = PBXTargetDependency;
 			target = 001000000000000000000400 /* CPRTrainerPro */;
 			targetProxy = 002000000000000000000601 /* PBXContainerItemProxy */;
+		};
+		003000000000000000000602 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = CPRTrainerProWatch;
+			target = 003000000000000000000400 /* CPRTrainerProWatch */;
+			targetProxy = 003000000000000000000601 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -735,6 +851,55 @@
 			};
 			name = Release;
 		};
+		003000000000000000000711 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8ZGSY5NJPJ;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = CPRTrainerProWatch/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.ehacademy.cpr-trainer-pro.watchkitapp";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Debug;
+		};
+		003000000000000000000712 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8ZGSY5NJPJ;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = CPRTrainerProWatch/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.ehacademy.cpr-trainer-pro.watchkitapp";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -761,6 +926,15 @@
 			buildConfigurations = (
 				002000000000000000000711 /* Debug */,
 				002000000000000000000712 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		003000000000000000000710 /* Build configuration list for PBXNativeTarget "CPRTrainerProWatch" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				003000000000000000000711 /* Debug */,
+				003000000000000000000712 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
