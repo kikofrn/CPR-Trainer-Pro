@@ -93,7 +93,7 @@ struct StickyBrandScrollView<Content: View>: View {
             .padding(.horizontal, Theme.Layout.screenPadding)
             .frame(maxWidth: .infinity)
             .frame(height: headerHeight)
-            .background(Color.black.ignoresSafeArea(edges: .top))
+            .background(Theme.Colors.background.ignoresSafeArea(edges: .top))
             .overlay(alignment: .bottom) {
                 Rectangle()
                     .fill(Color.white.opacity(0.06))

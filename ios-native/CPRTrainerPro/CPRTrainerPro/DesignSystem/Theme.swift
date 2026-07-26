@@ -2,7 +2,7 @@ import SwiftUI
 
 enum Theme {
     enum Colors {
-        static let background = Color(red: 0.04, green: 0.04, blue: 0.05)
+        static let background = Color.black
         static let surface = Color(red: 0.09, green: 0.09, blue: 0.10)
         static let elevatedSurface = Color(red: 0.13, green: 0.12, blue: 0.13)
         static let red = Color(red: 0.72, green: 0.05, blue: 0.08)

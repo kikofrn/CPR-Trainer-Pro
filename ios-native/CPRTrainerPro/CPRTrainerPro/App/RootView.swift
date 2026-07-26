@@ -35,7 +35,7 @@ struct RootView: View {
                 .zIndex(10)
             }
         }
-        .background(Color.black)
+        .background(Theme.Colors.background)
         .preferredColorScheme(.dark)
         .sheet(item: activePromptBinding) { prompt in
             Group {
