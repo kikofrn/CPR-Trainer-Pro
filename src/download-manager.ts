@@ -1,13 +1,14 @@
 import { invoke } from '@tauri-apps/api/core';
 import { listen, Event } from '@tauri-apps/api/event';
 import { COURSES, MANUALS, SLIDESHOWS } from './chapters';
+import { snapshotStore } from './snapshot-store';
 
 const COMING_SOON_IDS = ['cpr-aed-spanish-course', 'first-aid-spanish-course'];
 
 export interface DownloadState {
   isDownloading: boolean;
   activeCategory: 'everything' | 'cpr-aed' | 'first-aid' | 'manuals' | 'single' | null;
-  queue: string[];
+  queue: { filename: string; version?: string }[];
   totalQueueSize: number;
   completedQueueCount: number;
   currentFile: string | null;
@@ -188,7 +189,7 @@ class DownloadManager {
     // the current file or head of the queue, this is a duplicate call — skip it.
     if (this.state.fileStatuses[filename] &&
         this.state.currentFile !== filename &&
-        (this.state.queue.length === 0 || this.state.queue[0] !== filename)) {
+        (this.state.queue.length === 0 || this.state.queue[0].filename !== filename)) {
       console.log(`[DownloadManager] Ignoring duplicate completion for: ${filename}`);
       return;
     }
@@ -198,13 +199,18 @@ class DownloadManager {
     // Mark file as downloaded
     this.state.fileStatuses[filename] = true;
     
+    // Update avgSpeedBps
+    if (this.state.currentSpeed > 0) {
+      snapshotStore.updateAvgSpeedBps(this.state.currentSpeed).catch(e => console.error(e));
+    }
+
     // If it was the head of the queue, pop it
-    if (this.state.queue.length > 0 && this.state.queue[0] === filename) {
+    if (this.state.queue.length > 0 && this.state.queue[0].filename === filename) {
       this.state.queue.shift();
       this.state.completedQueueCount += 1;
     } else {
       // Remove from queue wherever it is just in case
-      const idx = this.state.queue.indexOf(filename);
+      const idx = this.state.queue.findIndex(q => q.filename === filename);
       if (idx !== -1) {
         this.state.queue.splice(idx, 1);
       }
@@ -240,8 +246,6 @@ class DownloadManager {
       this.state.completedQueueCount = 0;
       this.state.currentSpeed = 0;
       console.log('[DownloadManager] Bulk download queue completed successfully!');
-      // Re-check all disk statuses to catch any missed events
-      this.checkAllStatuses();
       this.notify();
     }
   }
@@ -250,7 +254,8 @@ class DownloadManager {
     if (this.state.queue.length === 0) return;
     if (this.state.isPaused || this.state.isPausing) return; // Don't start new downloads while pausing/paused
 
-    const nextFile = this.normalizeFilename(this.state.queue[0]);
+    const nextItem = this.state.queue[0];
+    const nextFile = this.normalizeFilename(nextItem.filename);
     this.state.currentFile = nextFile;
     this.lastProgressTime = Date.now();
     this.lastBytesWritten = 0;
@@ -261,12 +266,13 @@ class DownloadManager {
       console.log(`[DownloadManager] Invoking download for: ${nextFile}`);
       await invoke('download_media_file', {
         baseUrl: this.state.activeBaseUrl,
-        filename: nextFile
+        filename: nextFile,
+        version: nextItem.version
       });
       // Guarded fallback: if invoke succeeded but download-complete event was missed,
       // handle completion here to prevent the queue from getting stuck.
       if (!this.state.fileStatuses[nextFile] &&
-          (this.state.currentFile === nextFile || (this.state.queue.length > 0 && this.state.queue[0] === nextFile))) {
+          (this.state.currentFile === nextFile || (this.state.queue.length > 0 && this.state.queue[0].filename === nextFile))) {
         console.log(`[DownloadManager] ⚡ Guarded fallback: completing ${nextFile} (download-complete event may have been missed)`);
         this.handleFileComplete(nextFile);
       }
@@ -300,7 +306,7 @@ class DownloadManager {
         // Reset attempts for future bulk downloads
         this.state.fileAttempts[nextFile] = 0;
         
-        if (this.state.queue.length > 0 && this.state.queue[0] === nextFile) {
+        if (this.state.queue.length > 0 && this.state.queue[0].filename === nextFile) {
           this.state.queue.shift();
           this.state.completedQueueCount += 1;
         }
@@ -315,7 +321,6 @@ class DownloadManager {
           this.state.completedQueueCount = 0;
           this.state.currentSpeed = 0;
           console.log('[DownloadManager] Bulk download completed (some files failed).');
-          this.checkAllStatuses();
           this.notify();
         } else {
           this.downloadNext();
@@ -429,7 +434,7 @@ class DownloadManager {
 
     this.state.isDownloading = true;
     this.state.activeCategory = category;
-    this.state.queue = pendingFiles;
+    this.state.queue = pendingFiles.map(f => ({ filename: f }));
     this.state.totalQueueSize = pendingFiles.length;
     this.state.completedQueueCount = 0;
     this.notify();
@@ -437,12 +442,36 @@ class DownloadManager {
     this.downloadNext();
   }
 
+  public queueSpecificFiles(files: { filename: string; version: string }[]) {
+    if (files.length === 0) return;
+
+    if (this.state.isDownloading) {
+      files.forEach((f) => {
+        if (!this.state.queue.some(q => q.filename === f.filename) && this.state.currentFile !== f.filename) {
+          this.state.queue.push({ filename: f.filename, version: f.version });
+          this.state.totalQueueSize += 1;
+        }
+      });
+      this.notify();
+    } else {
+      this.state.isDownloading = true;
+      this.state.activeCategory = 'everything';
+      this.state.queue = [...files];
+      this.state.totalQueueSize = files.length;
+      this.state.completedQueueCount = 0;
+      this.state.isPaused = false;
+      this.state.isPausing = false;
+      this.notify();
+      this.downloadNext();
+    }
+  }
+
   public async startSingleDownload(rawFilename: string) {
     const filename = this.normalizeFilename(rawFilename);
     if (this.state.isDownloading) {
       // Add to queue if we're already bulk downloading or single downloading
-      if (!this.state.queue.includes(filename) && this.state.currentFile !== filename) {
-        this.state.queue.push(filename);
+      if (!this.state.queue.some(q => q.filename === filename) && this.state.currentFile !== filename) {
+        this.state.queue.push({ filename });
         this.state.totalQueueSize += 1;
         this.notify();
       }
@@ -464,7 +493,7 @@ class DownloadManager {
     if ((import.meta as any).env.DEV && this.mockMissingFiles) {
       this.state.isDownloading = true;
       this.state.activeCategory = 'single';
-      this.state.queue = [filename];
+      this.state.queue = [{ filename }];
       this.state.totalQueueSize = 1;
       this.state.completedQueueCount = 0;
       this.state.currentFile = filename;
@@ -495,7 +524,7 @@ class DownloadManager {
 
     this.state.isDownloading = true;
     this.state.activeCategory = 'single';
-    this.state.queue = [filename];
+    this.state.queue = [{ filename }];
     this.state.totalQueueSize = 1;
     this.state.completedQueueCount = 0;
     this.notify();
@@ -660,8 +689,8 @@ class DownloadManager {
 
     if (this.state.isDownloading) {
       pending.forEach((f) => {
-        if (!this.state.queue.includes(f) && this.state.currentFile !== f) {
-          this.state.queue.push(f);
+        if (!this.state.queue.some(q => q.filename === f) && this.state.currentFile !== f) {
+          this.state.queue.push({ filename: f });
           this.state.totalQueueSize += 1;
         }
       });
@@ -669,7 +698,7 @@ class DownloadManager {
     } else {
       this.state.isDownloading = true;
       this.state.activeCategory = 'single';
-      this.state.queue = pending;
+      this.state.queue = pending.map(f => ({ filename: f }));
       this.state.totalQueueSize = pending.length;
       this.state.completedQueueCount = 0;
       this.notify();
@@ -691,8 +720,8 @@ class DownloadManager {
 
     if (this.state.isDownloading) {
       pending.forEach((f) => {
-        if (!this.state.queue.includes(f) && this.state.currentFile !== f) {
-          this.state.queue.push(f);
+        if (!this.state.queue.some(q => q.filename === f) && this.state.currentFile !== f) {
+          this.state.queue.push({ filename: f });
           this.state.totalQueueSize += 1;
         }
       });
@@ -700,7 +729,7 @@ class DownloadManager {
     } else {
       this.state.isDownloading = true;
       this.state.activeCategory = 'manuals';
-      this.state.queue = pending;
+      this.state.queue = pending.map(f => ({ filename: f }));
       this.state.totalQueueSize = pending.length;
       this.state.completedQueueCount = 0;
       this.notify();

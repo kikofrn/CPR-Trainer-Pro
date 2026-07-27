@@ -16,3 +16,6 @@
 - Every phase ends with a commit named for the phase before the verification report.
 - Temporary files must be listed in reports and deleted before phase end.
 - Direction 2 scans only folders referenced by active courses and reports uncovered folders informationally.
+- The update check flow is implemented as a pure module in `src/update-checker.ts`, cleanly separating the diffing logic from side effects.
+- `src/snapshot-store.ts` handles JSON read/write queues for `.content-versions.json` natively, preventing race conditions between the update checker and download manager.
+- Exponential decay for `avgSpeedBps` uses a 0.8/0.2 split favoring the historical average to avoid drastic UI fluctuation.
