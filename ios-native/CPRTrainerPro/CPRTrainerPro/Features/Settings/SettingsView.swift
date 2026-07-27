@@ -1,11 +1,18 @@
 import SwiftUI
 
 struct SettingsView: View {
+    var showsBrandLogo = true
+    var onHeaderProgressChange: ((CGFloat) -> Void)? = nil
+
     @State private var activeModal: SettingsModal?
 
     var body: some View {
         NavigationStack {
-            StickyBrandScrollView(title: "Settings") {
+            StickyBrandScrollView(
+                title: "Settings",
+                showsBrandLogo: showsBrandLogo,
+                onHeaderProgressChange: onHeaderProgressChange
+            ) {
                 VStack(alignment: .leading, spacing: 16) {
                     introCard
                     guideSection

@@ -2,12 +2,19 @@ import SwiftUI
 import UIKit
 
 struct SendCertsView: View {
+    var showsBrandLogo = true
+    var onHeaderProgressChange: ((CGFloat) -> Void)? = nil
+
     @Environment(\.openURL) private var openURL
     @State private var showsCertificationDetails = false
 
     var body: some View {
         NavigationStack {
-            StickyBrandScrollView(title: "Send Certs") {
+            StickyBrandScrollView(
+                title: "Send Certs",
+                showsBrandLogo: showsBrandLogo,
+                onHeaderProgressChange: onHeaderProgressChange
+            ) {
                 VStack(alignment: .leading, spacing: 18) {
                     portalIntro
                     workflowSteps

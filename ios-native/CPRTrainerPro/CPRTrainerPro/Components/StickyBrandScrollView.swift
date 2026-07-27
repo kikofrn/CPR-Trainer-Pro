@@ -2,6 +2,8 @@ import SwiftUI
 
 struct StickyBrandScrollView<Content: View>: View {
     let title: String?
+    let showsBrandLogo: Bool
+    let onHeaderProgressChange: ((CGFloat) -> Void)?
     @ViewBuilder let content: () -> Content
 
     @Environment(\.launchExperienceTrigger) private var launchExperienceTrigger
@@ -11,9 +13,13 @@ struct StickyBrandScrollView<Content: View>: View {
 
     init(
         title: String? = nil,
+        showsBrandLogo: Bool = true,
+        onHeaderProgressChange: ((CGFloat) -> Void)? = nil,
         @ViewBuilder content: @escaping () -> Content
     ) {
         self.title = title
+        self.showsBrandLogo = showsBrandLogo
+        self.onHeaderProgressChange = onHeaderProgressChange
         self.content = content
     }
 
@@ -26,7 +32,7 @@ struct StickyBrandScrollView<Content: View>: View {
                     content()
                 }
                 .padding(.horizontal, Theme.Layout.screenPadding)
-                .padding(.top, expandedHeaderHeight + 12)
+                .padding(.top, StickyBrandHeaderMetrics.expandedHeaderHeight + 12)
                 .padding(.bottom, 112)
             }
             .coordinateSpace(name: StickyBrandScrollSpace.name)
@@ -37,6 +43,9 @@ struct StickyBrandScrollView<Content: View>: View {
 
                 let baseline = initialReaderY ?? value
                 scrollOffset = max(0, baseline - value)
+                onHeaderProgressChange?(
+                    StickyBrandHeaderMetrics.progress(for: scrollOffset)
+                )
             }
 
             stickyHeader
@@ -45,23 +54,30 @@ struct StickyBrandScrollView<Content: View>: View {
     }
 
     private var stickyHeader: some View {
-        let progress = min(1, scrollOffset / 72)
-        let logoHeight = expandedLogoHeight - ((expandedLogoHeight - collapsedLogoHeight) * progress)
-        let headerHeight = expandedHeaderHeight - ((expandedHeaderHeight - collapsedHeaderHeight) * progress)
+        let progress = StickyBrandHeaderMetrics.progress(for: scrollOffset)
+        let logoHeight = StickyBrandHeaderMetrics.logoHeight(for: progress)
+        let headerHeight = StickyBrandHeaderMetrics.headerHeight(for: progress)
 
         return Group {
             if let title {
                 HStack(spacing: 12) {
-                    HeartbeatBrandHeader(
-                        logoHeight: logoHeight,
-                        alignment: .leading,
-                        onBeat: recordHeartbeatTap
-                    )
+                    Group {
+                        if showsBrandLogo {
+                            HeartbeatBrandHeader(
+                                logoHeight: logoHeight,
+                                alignment: .leading,
+                                onBeat: recordHeartbeatTap
+                            )
+                        } else {
+                            Color.clear
+                                .accessibilityHidden(true)
+                        }
+                    }
                     .frame(
-                        width: logoHeight * logoAspectRatio,
+                        width: logoHeight * StickyBrandHeaderMetrics.logoAspectRatio,
                         alignment: .leading
                     )
-                    .frame(minHeight: minTapTargetHeight)
+                    .frame(minHeight: StickyBrandHeaderMetrics.minimumTapTargetHeight)
 
                     Text(title)
                         .font(.title2.weight(.bold))
@@ -73,10 +89,12 @@ struct StickyBrandScrollView<Content: View>: View {
                         .accessibilityAddTraits(.isHeader)
                 }
             } else {
-                HeartbeatBrandHeader(
-                    logoHeight: logoHeight,
-                    onBeat: recordHeartbeatTap
-                )
+                if showsBrandLogo {
+                    HeartbeatBrandHeader(
+                        logoHeight: logoHeight,
+                        onBeat: recordHeartbeatTap
+                    )
+                }
             }
         }
             .padding(.horizontal, Theme.Layout.screenPadding)
@@ -91,13 +109,6 @@ struct StickyBrandScrollView<Content: View>: View {
             .animation(.easeInOut(duration: 0.18), value: progress)
     }
 
-    private var expandedHeaderHeight: CGFloat { 92 }
-    private var collapsedHeaderHeight: CGFloat { 46 }
-    private var expandedLogoHeight: CGFloat { 66 }
-    private var collapsedLogoHeight: CGFloat { 33 }
-    private var logoAspectRatio: CGFloat { 2.4 }
-    private var minTapTargetHeight: CGFloat { 44 }
-
     private func recordHeartbeatTap() {
         let now = Date()
         heartbeatTapTimes = (heartbeatTapTimes + [now])
@@ -109,6 +120,31 @@ struct StickyBrandScrollView<Content: View>: View {
 
         heartbeatTapTimes.removeAll()
         launchExperienceTrigger()
+    }
+}
+
+enum StickyBrandHeaderMetrics {
+    static let expandedHeaderHeight: CGFloat = 92
+    static let collapsedHeaderHeight: CGFloat = 46
+    static let expandedLogoHeight: CGFloat = 66
+    static let collapsedLogoHeight: CGFloat = 33
+    static let logoAspectRatio: CGFloat = 2.4
+    static let minimumTapTargetHeight: CGFloat = 44
+
+    static func progress(for scrollOffset: CGFloat) -> CGFloat {
+        min(1, max(0, scrollOffset / 72))
+    }
+
+    static func logoHeight(for progress: CGFloat) -> CGFloat {
+        expandedLogoHeight - (
+            (expandedLogoHeight - collapsedLogoHeight) * progress
+        )
+    }
+
+    static func headerHeight(for progress: CGFloat) -> CGFloat {
+        expandedHeaderHeight - (
+            (expandedHeaderHeight - collapsedHeaderHeight) * progress
+        )
     }
 }
 

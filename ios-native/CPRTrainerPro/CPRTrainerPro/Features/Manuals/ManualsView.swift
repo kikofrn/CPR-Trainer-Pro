@@ -1,13 +1,20 @@
 import SwiftUI
 
 struct ManualsView: View {
+    var showsBrandLogo = true
+    var onHeaderProgressChange: ((CGFloat) -> Void)? = nil
+
     @EnvironmentObject private var appViewModel: AppViewModel
     @EnvironmentObject private var downloadService: DownloadService
     @State private var activeManual: Manual?
 
     var body: some View {
         NavigationStack {
-            StickyBrandScrollView(title: "Manuals") {
+            StickyBrandScrollView(
+                title: "Manuals",
+                showsBrandLogo: showsBrandLogo,
+                onHeaderProgressChange: onHeaderProgressChange
+            ) {
                 VStack(spacing: 14) {
                     ForEach(appViewModel.catalog.manuals) { manual in
                         VStack(alignment: .leading, spacing: 10) {

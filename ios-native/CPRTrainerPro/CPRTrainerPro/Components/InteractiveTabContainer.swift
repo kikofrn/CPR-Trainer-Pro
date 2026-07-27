@@ -1,19 +1,95 @@
 import SwiftUI
 import UIKit
 
-struct InteractiveTabContainer: UIViewControllerRepresentable {
+struct InteractiveTabContainer: View {
     @Binding var selection: AppTab
     @ObservedObject var appViewModel: AppViewModel
 
     @Environment(\.launchExperienceTrigger) private var launchExperienceTrigger
+    @State private var headerProgressByTab: [AppTab: CGFloat] = [:]
+    @State private var heartbeatTapTimes: [Date] = []
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            InteractiveTabPager(
+                selection: $selection,
+                appViewModel: appViewModel,
+                launchExperienceTrigger: launchExperienceTrigger,
+                onHeaderProgressChange: recordHeaderProgress
+            )
+
+            sharedBrandLogo
+                .zIndex(1)
+        }
+    }
+
+    private var sharedBrandLogo: some View {
+        let progress = headerProgressByTab[selection] ?? 0
+        let logoHeight = StickyBrandHeaderMetrics.logoHeight(for: progress)
+        let headerHeight = StickyBrandHeaderMetrics.headerHeight(for: progress)
+
+        return HStack(spacing: 0) {
+            HeartbeatBrandHeader(
+                logoHeight: logoHeight,
+                alignment: .leading,
+                onBeat: recordHeartbeatTap
+            )
+            .frame(
+                width: logoHeight * StickyBrandHeaderMetrics.logoAspectRatio,
+                alignment: .leading
+            )
+            .frame(minHeight: StickyBrandHeaderMetrics.minimumTapTargetHeight)
+
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, Theme.Layout.screenPadding)
+        .frame(maxWidth: .infinity)
+        .frame(height: headerHeight)
+        .animation(.easeInOut(duration: 0.18), value: progress)
+    }
+
+    private func recordHeaderProgress(_ tab: AppTab, _ progress: CGFloat) {
+        let clampedProgress = min(1, max(0, progress))
+        guard abs((headerProgressByTab[tab] ?? 0) - clampedProgress) > 0.001 else {
+            return
+        }
+
+        headerProgressByTab[tab] = clampedProgress
+    }
+
+    private func recordHeartbeatTap() {
+        let now = Date()
+        heartbeatTapTimes = (heartbeatTapTimes + [now])
+            .filter { now.timeIntervalSince($0) <= 10 }
+
+        guard heartbeatTapTimes.count >= 10 else {
+            return
+        }
+
+        heartbeatTapTimes.removeAll()
+        launchExperienceTrigger()
+    }
+}
+
+private struct InteractiveTabPager: UIViewControllerRepresentable {
+    @Binding var selection: AppTab
+    @ObservedObject var appViewModel: AppViewModel
+
+    let launchExperienceTrigger: () -> Void
+    let onHeaderProgressChange: (AppTab, CGFloat) -> Void
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(selection: $selection)
+        Coordinator(
+            selection: $selection,
+            onHeaderProgressChange: onHeaderProgressChange
+        )
     }
 
     func makeUIViewController(context: Context) -> InteractiveTabViewController {
         let tabs = AppTab.orderedTabs
-        let pages = tabs.map(makeHostingController)
+        let pages = tabs.map {
+            makeHostingController(for: $0, coordinator: context.coordinator)
+        }
         let controller = InteractiveTabViewController(
             tabs: tabs,
             pages: pages,
@@ -33,23 +109,59 @@ struct InteractiveTabContainer: UIViewControllerRepresentable {
         context: Context
     ) {
         context.coordinator.selection = $selection
+        context.coordinator.onHeaderProgressChange = onHeaderProgressChange
         controller.select(selection, animated: false, notifiesSelection: false)
     }
 
-    private func makeHostingController(for tab: AppTab) -> UIViewController {
+    private func makeHostingController(
+        for tab: AppTab,
+        coordinator: Coordinator
+    ) -> UIViewController {
         let content: AnyView
+        let progressReporter: (CGFloat) -> Void = { [weak coordinator] progress in
+            coordinator?.didChangeHeaderProgress(progress, for: tab)
+        }
 
         switch tab {
         case .cprAED:
-            content = AnyView(CoursesView(courseID: .cprAED, title: "CPR/AED"))
+            content = AnyView(
+                CoursesView(
+                    courseID: .cprAED,
+                    title: "CPR/AED",
+                    showsBrandLogo: false,
+                    onHeaderProgressChange: progressReporter
+                )
+            )
         case .firstAid:
-            content = AnyView(CoursesView(courseID: .firstAid, title: "First Aid"))
+            content = AnyView(
+                CoursesView(
+                    courseID: .firstAid,
+                    title: "First Aid",
+                    showsBrandLogo: false,
+                    onHeaderProgressChange: progressReporter
+                )
+            )
         case .manuals:
-            content = AnyView(ManualsView())
+            content = AnyView(
+                ManualsView(
+                    showsBrandLogo: false,
+                    onHeaderProgressChange: progressReporter
+                )
+            )
         case .sendCerts:
-            content = AnyView(SendCertsView())
+            content = AnyView(
+                SendCertsView(
+                    showsBrandLogo: false,
+                    onHeaderProgressChange: progressReporter
+                )
+            )
         case .settings:
-            content = AnyView(SettingsView())
+            content = AnyView(
+                SettingsView(
+                    showsBrandLogo: false,
+                    onHeaderProgressChange: progressReporter
+                )
+            )
         }
 
         let rootView = content
@@ -65,15 +177,24 @@ struct InteractiveTabContainer: UIViewControllerRepresentable {
     @MainActor
     final class Coordinator {
         var selection: Binding<AppTab>
+        var onHeaderProgressChange: (AppTab, CGFloat) -> Void
         weak var controller: InteractiveTabViewController?
 
-        init(selection: Binding<AppTab>) {
+        init(
+            selection: Binding<AppTab>,
+            onHeaderProgressChange: @escaping (AppTab, CGFloat) -> Void
+        ) {
             self.selection = selection
+            self.onHeaderProgressChange = onHeaderProgressChange
         }
 
         func didSelect(_ tab: AppTab) {
             guard selection.wrappedValue != tab else { return }
             selection.wrappedValue = tab
+        }
+
+        func didChangeHeaderProgress(_ progress: CGFloat, for tab: AppTab) {
+            onHeaderProgressChange(tab, progress)
         }
     }
 }
@@ -86,9 +207,11 @@ final class InteractiveTabViewController: UIViewController {
     private let pages: [UIViewController]
     private let pageViewController: UIPageViewController
     private let tabBar = UITabBar()
+    private let tabBarSafeAreaBackground = UIVisualEffectView(
+        effect: UIBlurEffect(style: .systemUltraThinMaterialDark)
+    )
     private let tabBarBaseHeight: CGFloat = 49
 
-    private var tabBarHeightConstraint: NSLayoutConstraint?
     private var currentIndex: Int
     private var pendingInteractiveIndex: Int?
     private var isProgrammaticTransitionInFlight = false
@@ -126,16 +249,6 @@ final class InteractiveTabViewController: UIViewController {
         configureTabBar()
         installLayout()
         synchronizeTabBarSelection()
-    }
-
-    override func viewDidLayoutSubviews() {
-        super.viewDidLayoutSubviews()
-        updateTabBarHeight()
-    }
-
-    override func viewSafeAreaInsetsDidChange() {
-        super.viewSafeAreaInsetsDidChange()
-        updateTabBarHeight()
     }
 
     func select(
@@ -181,6 +294,7 @@ final class InteractiveTabViewController: UIViewController {
 
     private func configureTabBar() {
         tabBar.delegate = self
+        tabBar.isTranslucent = true
         tabBar.itemPositioning = .fill
         tabBar.items = tabs.enumerated().map { index, tab in
             let item = UITabBarItem(
@@ -196,15 +310,19 @@ final class InteractiveTabViewController: UIViewController {
     private func installLayout() {
         addChild(pageViewController)
         view.addSubview(pageViewController.view)
+        view.addSubview(tabBarSafeAreaBackground)
         view.addSubview(tabBar)
 
         pageViewController.view.translatesAutoresizingMaskIntoConstraints = false
+        tabBarSafeAreaBackground.translatesAutoresizingMaskIntoConstraints = false
         tabBar.translatesAutoresizingMaskIntoConstraints = false
 
-        let tabBarHeightConstraint = tabBar.heightAnchor.constraint(
-            equalToConstant: tabBarBaseHeight
+        tabBarSafeAreaBackground.contentView.backgroundColor = UIColor(
+            red: 0.78,
+            green: 0.02,
+            blue: 0.06,
+            alpha: 0.34
         )
-        self.tabBarHeightConstraint = tabBarHeightConstraint
 
         NSLayoutConstraint.activate([
             pageViewController.view.topAnchor.constraint(equalTo: view.topAnchor),
@@ -212,21 +330,18 @@ final class InteractiveTabViewController: UIViewController {
             pageViewController.view.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             pageViewController.view.bottomAnchor.constraint(equalTo: tabBar.topAnchor),
 
+            tabBarSafeAreaBackground.topAnchor.constraint(equalTo: tabBar.bottomAnchor),
+            tabBarSafeAreaBackground.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            tabBarSafeAreaBackground.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            tabBarSafeAreaBackground.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+
             tabBar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tabBar.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            tabBar.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            tabBarHeightConstraint
+            tabBar.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
+            tabBar.heightAnchor.constraint(equalToConstant: tabBarBaseHeight)
         ])
 
         pageViewController.didMove(toParent: self)
-    }
-
-    private func updateTabBarHeight() {
-        let requiredHeight = tabBarBaseHeight + view.safeAreaInsets.bottom
-
-        if tabBarHeightConstraint?.constant != requiredHeight {
-            tabBarHeightConstraint?.constant = requiredHeight
-        }
     }
 
     private func transition(

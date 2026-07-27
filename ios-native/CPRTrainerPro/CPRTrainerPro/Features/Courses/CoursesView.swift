@@ -3,6 +3,8 @@ import SwiftUI
 struct CoursesView: View {
     let courseID: Course.ID
     let title: String
+    var showsBrandLogo = true
+    var onHeaderProgressChange: ((CGFloat) -> Void)? = nil
 
     @EnvironmentObject private var appViewModel: AppViewModel
     @EnvironmentObject private var downloadService: DownloadService
@@ -11,7 +13,11 @@ struct CoursesView: View {
 
     var body: some View {
         NavigationStack {
-            StickyBrandScrollView(title: title) {
+            StickyBrandScrollView(
+                title: title,
+                showsBrandLogo: showsBrandLogo,
+                onHeaderProgressChange: onHeaderProgressChange
+            ) {
                 if let course = appViewModel.catalog.courses.first(where: { $0.id == courseID }) {
                     VStack(alignment: .leading, spacing: 10) {
                         courseSection(for: course)
