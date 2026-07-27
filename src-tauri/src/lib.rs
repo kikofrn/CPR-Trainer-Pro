@@ -237,6 +237,7 @@ async fn download_media_file(
     app: tauri::AppHandle,
     base_url: String,
     filename: String,
+    version: Option<String>,
 ) -> Result<(), String> {
     if filename.contains("..") {
         return Err("Invalid filename: directory traversal detected".to_string());
@@ -265,12 +266,20 @@ async fn download_media_file(
         })
         .collect::<Vec<_>>()
         .join("/");
-    let url = format!("{}{}", base_url, encoded_filename);
+    
+    let mut url = format!("{}{}", base_url, encoded_filename);
+    if let Some(ref v) = version {
+        url = format!("{}?v={}", url, v);
+    }
 
     eprintln!("[download] Starting download: {} -> {:?}", url, dest_path);
 
     let temp_path = dest_path.with_extension("tmp");
-    let existing_size = tokio::fs::metadata(&temp_path).await.map(|m| m.len()).unwrap_or(0);
+    let existing_size = if version.is_some() {
+        0
+    } else {
+        tokio::fs::metadata(&temp_path).await.map(|m| m.len()).unwrap_or(0)
+    };
 
     let client = reqwest::Client::new();
     let mut req = client.get(&url);
@@ -345,9 +354,22 @@ async fn download_media_file(
     }
 
     // Rename temp to final
-    tokio::fs::rename(&temp_path, &dest_path)
-        .await
-        .map_err(|e| format!("Rename failed: {}", e))?;
+    let mut rename_attempts = 5;
+    let mut backoff = 200; // ms
+    loop {
+        match tokio::fs::rename(&temp_path, &dest_path).await {
+            Ok(_) => break,
+            Err(e) => {
+                rename_attempts -= 1;
+                if rename_attempts == 0 {
+                    let _ = tokio::fs::remove_file(&temp_path).await; // Clean up .tmp
+                    return Err(format!("Rename failed persistently: {}", e));
+                }
+                tokio::time::sleep(std::time::Duration::from_millis(backoff)).await;
+                backoff *= 2;
+            }
+        }
+    }
 
     eprintln!(
         "[download] ✅ Completed: {} ({} bytes)",
@@ -365,6 +387,24 @@ async fn download_media_file(
     );
 
     Ok(())
+}
+
+#[tauri::command]
+fn read_version_snapshot(app: tauri::AppHandle) -> Result<String, String> {
+    let media_dir = find_media_dir(&app);
+    let snapshot_path = media_dir.join(".content-versions.json");
+    if !snapshot_path.exists() {
+        return Ok("{}".to_string());
+    }
+    std::fs::read_to_string(&snapshot_path).map_err(|e| format!("Failed to read snapshot: {}", e))
+}
+
+#[tauri::command]
+fn write_version_snapshot(app: tauri::AppHandle, content: String) -> Result<(), String> {
+    let media_dir = find_media_dir(&app);
+    std::fs::create_dir_all(&media_dir).map_err(|e| format!("Failed to create media directory: {}", e))?;
+    let snapshot_path = media_dir.join(".content-versions.json");
+    std::fs::write(&snapshot_path, content).map_err(|e| format!("Failed to write snapshot: {}", e))
 }
 
 #[tauri::command]
@@ -451,6 +491,8 @@ pub fn run() {
             check_media_files_status,
             close_splashscreen,
             check_disk_space,
+            read_version_snapshot,
+            write_version_snapshot,
         ])
         // Register custom "media" protocol to serve files from media directory
         // On Windows: accessible via http://media.localhost/<filename>
