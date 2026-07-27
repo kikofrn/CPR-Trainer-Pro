@@ -158,6 +158,7 @@ async function run() {
       
       // Strip prefix NN_EHAcademy - <Something>-
       let title = filename.replace(/^\\d+_[^-]+-\\s*[^-]+-\\s*/, '');
+      title = title.replace(/^[\\s-]+/, '');
       title = title.replace(/\\.(png|mp4)$/i, '');
 
       const item = {

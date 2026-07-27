@@ -137,7 +137,7 @@ export let SLIDESHOWS: Slideshow[] = [
       {
         "id": "slide-14",
         "title": "-Getting Help",
-        "filename": "CPR AED Presentation Slides/14_EHAcademy - CPR AED Course Pres--Getting Help.png",
+        "filename": "CPR AED Presentation Slides/14_EHAcademy - CPR AED Course Pres-Getting Help.png",
         "type": "image",
         "parentSectionId": "slide-12"
       },
@@ -1209,7 +1209,7 @@ export let SLIDESHOWS: Slideshow[] = [
       {
         "id": "slide-7",
         "title": "MEDICAL EMERGENCIES",
-        "filename": "Pedi First Aid Presentation Slides/07_EHAcademy - Pedi FA Course Pres- MEDICAL EMERGENCIES.png",
+        "filename": "Pedi First Aid Presentation Slides/07_EHAcademy - Pedi FA Course Pres-MEDICAL EMERGENCIES.png",
         "type": "image"
       },
       {
