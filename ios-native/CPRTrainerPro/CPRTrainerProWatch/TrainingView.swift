@@ -13,8 +13,15 @@ struct TrainingView: View {
             ZStack {
                 Color.black
 
-                LoopingTrainingMovie(isPlaying: controller.shouldPlayMovie)
-                    .allowsHitTesting(false)
+                GeometryReader { geometry in
+                    LoopingTrainingMovie(isPlaying: controller.shouldPlayMovie)
+                        .frame(
+                            width: geometry.size.width,
+                            height: geometry.size.height
+                        )
+                        .clipped()
+                }
+                .allowsHitTesting(false)
 
                 overlay
             }

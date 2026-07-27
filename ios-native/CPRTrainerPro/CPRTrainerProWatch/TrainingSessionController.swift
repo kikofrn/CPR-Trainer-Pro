@@ -13,6 +13,7 @@ final class TrainingSessionController: NSObject, ObservableObject {
     }
 
     static let cadenceIntervalMilliseconds = 550
+    private static let cadenceHaptic: WKHapticType = .start
 
     @Published private(set) var phase: Phase = .ready
 
@@ -130,7 +131,7 @@ final class TrainingSessionController: NSObject, ObservableObject {
         timer.setEventHandler { [weak self] in
             Task { @MainActor [weak self] in
                 guard self?.phase == .running else { return }
-                WKInterfaceDevice.current().play(.click)
+                WKInterfaceDevice.current().play(Self.cadenceHaptic)
             }
         }
 

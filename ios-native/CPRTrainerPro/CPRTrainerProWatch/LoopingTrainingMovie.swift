@@ -1,40 +1,84 @@
+import AVFoundation
+import AVKit
 import SwiftUI
-import WatchKit
 
-struct LoopingTrainingMovie: WKInterfaceObjectRepresentable {
+struct LoopingTrainingMovie: View {
     let isPlaying: Bool
 
-    func makeWKInterfaceObject(context: Context) -> WKInterfaceInlineMovie {
-        let movie = WKInterfaceInlineMovie()
-        movie.setVideoGravity(.resizeAspectFill)
-        movie.setAutoplays(true)
-        movie.setLoops(true)
+    @StateObject private var playback = LoopingTrainingPlayback()
 
-        if let url = Bundle.main.url(
+    var body: some View {
+        VideoPlayer(player: playback.player)
+            .onAppear {
+                playback.setPlaying(isPlaying)
+            }
+            .onChange(of: isPlaying) { _, shouldPlay in
+                playback.setPlaying(shouldPlay)
+            }
+            .onDisappear {
+                playback.pause()
+            }
+            .onReceive(
+                NotificationCenter.default.publisher(
+                    for: .AVPlayerItemDidPlayToEndTime
+                )
+            ) { notification in
+                playback.loopIfNeeded(completedItem: notification.object)
+            }
+    }
+}
+
+@MainActor
+private final class LoopingTrainingPlayback: ObservableObject {
+    let player: AVPlayer
+
+    private let item: AVPlayerItem?
+    private var shouldPlay = false
+
+    init() {
+        guard let url = Bundle.main.url(
             forResource: "DummiesDoingCPR-Watch",
             withExtension: "mov"
-        ) {
-            movie.setMovieURL(url)
+        ) else {
+            player = AVPlayer()
+            item = nil
+            return
         }
 
-        return movie
+        let item = AVPlayerItem(url: url)
+        let player = AVPlayer(playerItem: item)
+        player.isMuted = true
+        player.actionAtItemEnd = .none
+
+        self.player = player
+        self.item = item
     }
 
-    func updateWKInterfaceObject(
-        _ movie: WKInterfaceInlineMovie,
-        context: Context
-    ) {
-        if isPlaying {
-            movie.play()
+    func setPlaying(_ shouldPlay: Bool) {
+        self.shouldPlay = shouldPlay
+
+        if shouldPlay {
+            player.play()
         } else {
-            movie.pause()
+            player.pause()
         }
     }
 
-    static func dismantleWKInterfaceObject(
-        _ movie: WKInterfaceInlineMovie,
-        coordinator: Void
-    ) {
-        movie.pause()
+    func pause() {
+        shouldPlay = false
+        player.pause()
+    }
+
+    func loopIfNeeded(completedItem: Any?) {
+        guard
+            let item,
+            completedItem as AnyObject === item,
+            shouldPlay
+        else {
+            return
+        }
+
+        player.seek(to: .zero)
+        player.play()
     }
 }
