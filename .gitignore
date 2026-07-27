@@ -12,3 +12,10 @@ src-tauri/target/
 .env
 .env.local
 
+# local scratch
+temp*
+scratch_*
+git_log_stat*
+audit*_diff.txt
+regenerated_output.txt
+mac_updates_patches/

@@ -19,3 +19,5 @@
 - The update check flow is implemented as a pure module in `src/update-checker.ts`, cleanly separating the diffing logic from side effects.
 - `src/snapshot-store.ts` handles JSON read/write queues for `.content-versions.json` natively, preventing race conditions between the update checker and download manager.
 - Exponential decay for `avgSpeedBps` uses a 0.8/0.2 split favoring the historical average to avoid drastic UI fluctuation.
+- Files are always staged explicitly by name and `git add -A` is prohibited.
+- The update checker accepts the thumbnails registry as a function argument rather than importing a registry that does not exist until Phase 5.
