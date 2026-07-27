@@ -1445,7 +1445,7 @@ export let SLIDESHOWS: Slideshow[] = [
   {
     "id": "pediatric-cpr-aed-course",
     "title": "Pediatric CPR & AED",
-    "slides": [
+"slides": [
       {
         "id": "slide-1",
         "title": "Introduction",
@@ -1454,7 +1454,7 @@ export let SLIDESHOWS: Slideshow[] = [
       },
       {
         "id": "slide-2",
-        "title": "WHY ARE WE HERE?",
+        "title": "Why should I learn CPR",
         "filename": "Pedi CPR Presentation Slides/02_EHAcademy - Pedi CPR AED Course Pres-Why should I learn CPR.png",
         "type": "image",
         "isSectionHeader": true
@@ -1514,43 +1514,43 @@ export let SLIDESHOWS: Slideshow[] = [
       },
       {
         "id": "slide-11",
-        "title": "ASSESSMENT AND ACTIVATION",
+        "title": "Assessment Example",
         "filename": "Pedi CPR Presentation Slides/11_EHAcademy - Pedi CPR AED Course Pres-Assessment Example.mp4",
         "type": "video",
         "isSectionHeader": true
       },
       {
         "id": "slide-12",
-        "title": "Check Responsiveness",
-        "filename": "Pedi CPR Presentation Slides/12_EHAcademy - Pedi CPR AED Course Pres-Check Responsiveness.png",
+        "title": "Assessment and Activation - Check Responsiveness",
+        "filename": "Pedi CPR Presentation Slides/12_EHAcademy - Pedi CPR AED Course Pres-Assessment and Activation - Check Responsiveness.png",
         "type": "image",
         "parentSectionId": "slide-11"
       },
       {
         "id": "slide-13",
-        "title": "Getting Help",
-        "filename": "Pedi CPR Presentation Slides/13_EHAcademy - Pedi CPR AED Course Pres-Getting Help.png",
+        "title": "Assessment and Activation - Getting Help",
+        "filename": "Pedi CPR Presentation Slides/13_EHAcademy - Pedi CPR AED Course Pres-Assessment and Activation - Getting Help.png",
         "type": "image",
         "parentSectionId": "slide-11"
       },
       {
         "id": "slide-14",
-        "title": "Check Breathing",
-        "filename": "Pedi CPR Presentation Slides/14_EHAcademy - Pedi CPR AED Course Pres-Check Breathing.png",
+        "title": "Assessment and Activation - Check Breathing",
+        "filename": "Pedi CPR Presentation Slides/14_EHAcademy - Pedi CPR AED Course Pres-Assessment and Activation - Check Breathing.png",
         "type": "image",
         "parentSectionId": "slide-11"
       },
       {
         "id": "slide-15",
-        "title": "Begin Chest Compressions",
-        "filename": "Pedi CPR Presentation Slides/15_EHAcademy - Pedi CPR AED Course Pres-Begin Chest Compressions.png",
+        "title": "Assessment and Activation - Begin Chest Compressions",
+        "filename": "Pedi CPR Presentation Slides/15_EHAcademy - Pedi CPR AED Course Pres-Assessment and Activation - Begin Chest Compressions.png",
         "type": "image",
         "parentSectionId": "slide-11"
       },
       {
         "id": "slide-16",
-        "title": "CHEST COMPRESSIONS",
-        "filename": "Pedi CPR Presentation Slides/16_EHAcademy - Pedi CPR AED Course Pres-Chest Compressions Video.mp4",
+        "title": "Chest Compression Effect Video",
+        "filename": "Pedi CPR Presentation Slides/16_EHAcademy - Pedi CPR AED Course Pres-Chest Compression Effect Video.mp4",
         "type": "video",
         "isSectionHeader": true
       },
@@ -1577,8 +1577,8 @@ export let SLIDESHOWS: Slideshow[] = [
       },
       {
         "id": "slide-20",
-        "title": "CPR Songs",
-        "filename": "Pedi CPR Presentation Slides/20_EHAcademy - Pedi CPR AED Course Pres-CPR Songs.mp4",
+        "title": "CPR Song",
+        "filename": "Pedi CPR Presentation Slides/20_EHAcademy - Pedi CPR AED Course Pres-CPR Song.mp4",
         "type": "video",
         "parentSectionId": "slide-16"
       },
@@ -1591,7 +1591,7 @@ export let SLIDESHOWS: Slideshow[] = [
       },
       {
         "id": "slide-22",
-        "title": "GIVING BREATHS",
+        "title": "Giving Breaths",
         "filename": "Pedi CPR Presentation Slides/22_EHAcademy - Pedi CPR AED Course Pres-Giving Breaths.png",
         "type": "image",
         "isSectionHeader": true
@@ -1612,15 +1612,15 @@ export let SLIDESHOWS: Slideshow[] = [
       },
       {
         "id": "slide-25",
-        "title": "Adult Scenario",
-        "filename": "Pedi CPR Presentation Slides/25_EHAcademy - Pedi CPR AED Course Pres-Adult Scenario.png",
+        "title": "Put it all together",
+        "filename": "Pedi CPR Presentation Slides/25_EHAcademy - Pedi CPR AED Course Pres-Put it all together.png",
         "type": "image",
         "parentSectionId": "slide-22"
       },
       {
         "id": "slide-26",
-        "title": "INFANT CPR",
-        "filename": "Pedi CPR Presentation Slides/26_EHAcademy - Pedi CPR AED Course Pres-Infant CPR.png",
+        "title": "Infant Assessment",
+        "filename": "Pedi CPR Presentation Slides/26_EHAcademy - Pedi CPR AED Course Pres-Infant Assessment.png",
         "type": "image",
         "isSectionHeader": true
       },
@@ -1640,43 +1640,43 @@ export let SLIDESHOWS: Slideshow[] = [
       },
       {
         "id": "slide-29",
-        "title": "Infant Scenario",
-        "filename": "Pedi CPR Presentation Slides/29_EHAcademy - Pedi CPR AED Course Pres-Infant Scenario.png",
+        "title": "Infant AED Use",
+        "filename": "Pedi CPR Presentation Slides/29_EHAcademy - Pedi CPR AED Course Pres-Infant AED Use.png",
         "type": "image",
         "parentSectionId": "slide-26"
       },
       {
         "id": "slide-30",
-        "title": "CHOKING",
-        "filename": "Pedi CPR Presentation Slides/30_EHAcademy - Pedi CPR AED Course Pres-Mild Choking.png",
+        "title": "Infant Scenario",
+        "filename": "Pedi CPR Presentation Slides/30_EHAcademy - Pedi CPR AED Course Pres-Infant Scenario.png",
         "type": "image",
         "isSectionHeader": true
       },
       {
         "id": "slide-31",
-        "title": "Severe Choking",
-        "filename": "Pedi CPR Presentation Slides/31_EHAcademy - Pedi CPR AED Course Pres-Severe Choking.png",
+        "title": "Mild Choking",
+        "filename": "Pedi CPR Presentation Slides/31_EHAcademy - Pedi CPR AED Course Pres-Mild Choking.png",
         "type": "image",
         "parentSectionId": "slide-30"
       },
       {
         "id": "slide-32",
-        "title": "Choking Adult",
-        "filename": "Pedi CPR Presentation Slides/32_EHAcademy - Pedi CPR AED Course Pres-Choking Adult.png",
+        "title": "Severe Choking",
+        "filename": "Pedi CPR Presentation Slides/32_EHAcademy - Pedi CPR AED Course Pres-Severe Choking.png",
         "type": "image",
         "parentSectionId": "slide-30"
       },
       {
         "id": "slide-33",
-        "title": "Choking Child",
-        "filename": "Pedi CPR Presentation Slides/33_EHAcademy - Pedi CPR AED Course Pres-Choking Child.png",
+        "title": "Choking Relief Child",
+        "filename": "Pedi CPR Presentation Slides/33_EHAcademy - Pedi CPR AED Course Pres-Choking Relief Child.png",
         "type": "image",
         "parentSectionId": "slide-30"
       },
       {
         "id": "slide-34",
-        "title": "Choking Infant",
-        "filename": "Pedi CPR Presentation Slides/34_EHAcademy - Pedi CPR AED Course Pres-Choking Infant.png",
+        "title": "Choking Relief Infant",
+        "filename": "Pedi CPR Presentation Slides/34_EHAcademy - Pedi CPR AED Course Pres-Choking Relief Infant.png",
         "type": "image",
         "parentSectionId": "slide-30"
       },
@@ -2227,7 +2227,15 @@ export let COURSES: Course[] = [
     ]
   },
   {
-    "id": "pediatric",
+    "id": "pediatric-cpr-aed",
+    "title": "Pediatric CPR & AED",
+    "subtitle": "Infant & Child Emergency Care",
+    "manualFilename": "pediatric_student_manual.pdf",
+    "isComingSoon": true,
+    "chapters": []
+  },
+  {
+    "id": "pediatric-first-aid",
     "title": "Pediatric First Aid",
     "subtitle": "Infant & Child Emergency Care",
     "manualFilename": "pediatric_student_manual.pdf",
@@ -2235,32 +2243,3 @@ export let COURSES: Course[] = [
     "chapters": []
   }
 ];
-
-type Listener = () => void;
-const listeners: Listener[] = [];
-export const subscribeToManifest = (l: Listener) => {
-  listeners.push(l);
-  return () => {
-    const idx = listeners.indexOf(l);
-    if (idx > -1) listeners.splice(idx, 1);
-  };
-};
-
-export async function fetchRemoteManifest() {
-  try {
-    const url = localStorage.getItem('eh_download_base_url') || 'https://media.ehacademy.com/';
-    const res = await fetch(`${url}manifest.json`);
-    if (res.ok) {
-      const data = await res.json();
-      if (data.courses) COURSES = data.courses;
-      if (data.manuals) MANUALS = data.manuals;
-      if (data.slideshows) SLIDESHOWS = data.slideshows;
-      listeners.forEach(l => l());
-      console.log('[Manifest] Successfully loaded remote content manifest');
-      return true;
-    }
-  } catch (err) {
-    console.warn('[Manifest] Failed to fetch remote manifest, using local fallback', err);
-  }
-  return false;
-}

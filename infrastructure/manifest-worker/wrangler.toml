@@ -1,0 +1,7 @@
+name = "eha-manifest"
+main = "worker.js"
+compatibility_date = "2024-07-26"
+
+[[r2_buckets]]
+binding = "MEDIA_BUCKET"
+bucket_name = "eha-cpr-media"

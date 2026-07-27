@@ -61,21 +61,6 @@ export default function App() {
 
 
 
-  // Manifest: fetch remote manifest on mount
-  useEffect(() => {
-    let unsub: (() => void) | undefined;
-    let isMounted = true;
-    import('./chapters').then(({ fetchRemoteManifest, subscribeToManifest }) => {
-      if (!isMounted) return;
-      fetchRemoteManifest();
-      unsub = subscribeToManifest(() => {
-        // Force a re-render when manifest updates by incrementing a counter
-        setMediaReady(prev => !prev);
-      });
-    });
-    return () => { isMounted = false; unsub?.(); };
-  }, []);
-
   useEffect(() => {
     async function checkForUpdates() {
       if (!isTauri) return;
@@ -92,11 +77,28 @@ export default function App() {
     checkForUpdates();
   }, []);
 
-
-
   // Initialize media resolver for Tauri desktop support
   useEffect(() => {
-    waitForMediaResolver().then(() => setMediaReady(true));
+    let resolved = false;
+    waitForMediaResolver()
+      .then(() => {
+        resolved = true;
+        setMediaReady(true);
+      })
+      .catch((err) => {
+        console.error("Media resolver failed:", err);
+        resolved = true;
+        setMediaReady(true);
+      });
+      
+    const failsafe = setTimeout(() => {
+      if (!resolved) {
+        console.warn("Media resolver timed out after 10s, forcing splashscreen close.");
+        setMediaReady(true);
+      }
+    }, 10000);
+    
+    return () => clearTimeout(failsafe);
   }, []);
 
   const appStartTime = useRef(Date.now());
@@ -349,7 +351,15 @@ export default function App() {
   const activeSlide = activeSlideshow ? activeSlideshow.slides[activeSlideIndex] : null;
 
   const handleItemClick = (type: string, index: number) => {
-    const isCpr = (type === 'video' && index === 0) || (type === 'slideshow' && (index === 0 || index === 2 || index === 5));
+    let isCpr = false;
+    if (type === 'video') {
+      const id = COURSES[index]?.id;
+      isCpr = id === 'cpr-aed' || id === 'pediatric-cpr-aed';
+    } else if (type === 'slideshow') {
+      const id = SLIDESHOWS[index]?.id;
+      isCpr = id === 'cpr-aed-course' || id === 'cpr-aed-spanish-course' || id === 'pediatric-cpr-aed-course';
+    }
+
     if (isCpr) setLastCprView(type as 'video' | 'slideshow');
     else setLastFaView(type as 'video' | 'slideshow');
 
@@ -366,13 +376,16 @@ export default function App() {
     setShowManualSelector(false);
   };
 
+  const activeVideoId = activeCourseIndex !== null ? COURSES[activeCourseIndex]?.id : null;
+  const activeSlideshowId = activeSlideshowIndex !== null ? SLIDESHOWS[activeSlideshowIndex]?.id : null;
+
   const isCprActive = 
-    (activeTab === 'video' && activeCourseIndex === 0) || 
-    (activeTab === 'slideshow' && (activeSlideshowIndex === 0 || activeSlideshowIndex === 2 || activeSlideshowIndex === 5));
+    (activeTab === 'video' && (activeVideoId === 'cpr-aed' || activeVideoId === 'pediatric-cpr-aed')) || 
+    (activeTab === 'slideshow' && (activeSlideshowId === 'cpr-aed-course' || activeSlideshowId === 'cpr-aed-spanish-course' || activeSlideshowId === 'pediatric-cpr-aed-course'));
 
   const isFaActive = 
-    (activeTab === 'video' && (activeCourseIndex === 1 || activeCourseIndex === 2)) ||
-    (activeTab === 'slideshow' && (activeSlideshowIndex === 1 || activeSlideshowIndex === 3 || activeSlideshowIndex === 4));
+    (activeTab === 'video' && (activeVideoId === 'first-aid' || activeVideoId === 'pediatric-first-aid')) ||
+    (activeTab === 'slideshow' && (activeSlideshowId === 'first-aid-course' || activeSlideshowId === 'first-aid-spanish-course' || activeSlideshowId === 'pediatric-first-aid-course'));
 
 
 
