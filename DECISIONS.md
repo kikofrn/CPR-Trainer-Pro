@@ -21,3 +21,4 @@
 - Exponential decay for `avgSpeedBps` uses a 0.8/0.2 split favoring the historical average to avoid drastic UI fluctuation.
 - Files are always staged explicitly by name and `git add -A` is prohibited.
 - The update checker accepts the thumbnails registry as a function argument rather than importing a registry that does not exist until Phase 5.
+- The local branch backup-pre-cleanup contains pre-scrub history and must be deleted before the first push; pushes are always by explicit branch name and git push --all is prohibited.
