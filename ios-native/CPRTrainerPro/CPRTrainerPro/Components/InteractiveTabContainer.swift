@@ -8,6 +8,7 @@ struct InteractiveTabContainer: View {
     @Environment(\.launchExperienceTrigger) private var launchExperienceTrigger
     @State private var headerProgressByTab: [AppTab: CGFloat] = [:]
     @State private var heartbeatTapTimes: [Date] = []
+    @State private var isPagingTransitionInProgress = false
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -15,11 +16,20 @@ struct InteractiveTabContainer: View {
                 selection: $selection,
                 appViewModel: appViewModel,
                 launchExperienceTrigger: launchExperienceTrigger,
-                onHeaderProgressChange: recordHeaderProgress
+                onHeaderProgressChange: recordHeaderProgress,
+                onTransitionActivityChange: { isActive in
+                    isPagingTransitionInProgress = isActive
+                }
             )
 
             sharedBrandLogo
                 .zIndex(1)
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            MainTabBar(
+                selection: $selection,
+                isInteractionEnabled: !isPagingTransitionInProgress
+            )
         }
     }
 
@@ -77,11 +87,13 @@ private struct InteractiveTabPager: UIViewControllerRepresentable {
 
     let launchExperienceTrigger: () -> Void
     let onHeaderProgressChange: (AppTab, CGFloat) -> Void
+    let onTransitionActivityChange: (Bool) -> Void
 
     func makeCoordinator() -> Coordinator {
         Coordinator(
             selection: $selection,
-            onHeaderProgressChange: onHeaderProgressChange
+            onHeaderProgressChange: onHeaderProgressChange,
+            onTransitionActivityChange: onTransitionActivityChange
         )
     }
 
@@ -100,6 +112,10 @@ private struct InteractiveTabPager: UIViewControllerRepresentable {
         controller.onSelectionChange = { [weak coordinator = context.coordinator] tab in
             coordinator?.didSelect(tab)
         }
+        controller.onTransitionActivityChange = {
+            [weak coordinator = context.coordinator] isActive in
+            coordinator?.didChangeTransitionActivity(isActive)
+        }
 
         return controller
     }
@@ -110,6 +126,7 @@ private struct InteractiveTabPager: UIViewControllerRepresentable {
     ) {
         context.coordinator.selection = $selection
         context.coordinator.onHeaderProgressChange = onHeaderProgressChange
+        context.coordinator.onTransitionActivityChange = onTransitionActivityChange
         controller.select(selection, animated: false, notifiesSelection: false)
     }
 
@@ -178,14 +195,17 @@ private struct InteractiveTabPager: UIViewControllerRepresentable {
     final class Coordinator {
         var selection: Binding<AppTab>
         var onHeaderProgressChange: (AppTab, CGFloat) -> Void
+        var onTransitionActivityChange: (Bool) -> Void
         weak var controller: InteractiveTabViewController?
 
         init(
             selection: Binding<AppTab>,
-            onHeaderProgressChange: @escaping (AppTab, CGFloat) -> Void
+            onHeaderProgressChange: @escaping (AppTab, CGFloat) -> Void,
+            onTransitionActivityChange: @escaping (Bool) -> Void
         ) {
             self.selection = selection
             self.onHeaderProgressChange = onHeaderProgressChange
+            self.onTransitionActivityChange = onTransitionActivityChange
         }
 
         func didSelect(_ tab: AppTab) {
@@ -196,21 +216,21 @@ private struct InteractiveTabPager: UIViewControllerRepresentable {
         func didChangeHeaderProgress(_ progress: CGFloat, for tab: AppTab) {
             onHeaderProgressChange(tab, progress)
         }
+
+        func didChangeTransitionActivity(_ isActive: Bool) {
+            onTransitionActivityChange(isActive)
+        }
     }
 }
 
 @MainActor
 final class InteractiveTabViewController: UIViewController {
     var onSelectionChange: ((AppTab) -> Void)?
+    var onTransitionActivityChange: ((Bool) -> Void)?
 
     private let tabs: [AppTab]
     private let pages: [UIViewController]
     private let pageViewController: UIPageViewController
-    private let tabBar = UITabBar()
-    private let tabBarSafeAreaBackground = UIVisualEffectView(
-        effect: UIBlurEffect(style: .systemUltraThinMaterialDark)
-    )
-    private let tabBarBaseHeight: CGFloat = 49
 
     private var currentIndex: Int
     private var pendingInteractiveIndex: Int?
@@ -246,9 +266,7 @@ final class InteractiveTabViewController: UIViewController {
 
         view.backgroundColor = UIColor(Theme.Colors.background)
         configurePageViewController()
-        configureTabBar()
         installLayout()
-        synchronizeTabBarSelection()
     }
 
     func select(
@@ -262,7 +280,6 @@ final class InteractiveTabViewController: UIViewController {
             !isProgrammaticTransitionInFlight,
             pendingInteractiveIndex == nil
         else {
-            synchronizeTabBarSelection()
             return
         }
 
@@ -292,53 +309,17 @@ final class InteractiveTabViewController: UIViewController {
         }
     }
 
-    private func configureTabBar() {
-        tabBar.delegate = self
-        tabBar.isTranslucent = true
-        tabBar.itemPositioning = .fill
-        tabBar.items = tabs.enumerated().map { index, tab in
-            let item = UITabBarItem(
-                title: tab.tabTitle,
-                image: UIImage(systemName: tab.systemImageName),
-                tag: index
-            )
-            item.accessibilityIdentifier = "main-tab-\(tab.accessibilityIdentifier)"
-            return item
-        }
-    }
-
     private func installLayout() {
         addChild(pageViewController)
         view.addSubview(pageViewController.view)
-        view.addSubview(tabBarSafeAreaBackground)
-        view.addSubview(tabBar)
 
         pageViewController.view.translatesAutoresizingMaskIntoConstraints = false
-        tabBarSafeAreaBackground.translatesAutoresizingMaskIntoConstraints = false
-        tabBar.translatesAutoresizingMaskIntoConstraints = false
-
-        tabBarSafeAreaBackground.contentView.backgroundColor = UIColor(
-            red: 0.78,
-            green: 0.02,
-            blue: 0.06,
-            alpha: 0.34
-        )
 
         NSLayoutConstraint.activate([
             pageViewController.view.topAnchor.constraint(equalTo: view.topAnchor),
             pageViewController.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             pageViewController.view.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            pageViewController.view.bottomAnchor.constraint(equalTo: tabBar.topAnchor),
-
-            tabBarSafeAreaBackground.topAnchor.constraint(equalTo: tabBar.bottomAnchor),
-            tabBarSafeAreaBackground.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            tabBarSafeAreaBackground.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            tabBarSafeAreaBackground.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-
-            tabBar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            tabBar.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            tabBar.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
-            tabBar.heightAnchor.constraint(equalToConstant: tabBarBaseHeight)
+            pageViewController.view.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
 
         pageViewController.didMove(toParent: self)
@@ -355,7 +336,7 @@ final class InteractiveTabViewController: UIViewController {
 
         isProgrammaticTransitionInFlight = true
         setNavigationInteractionEnabled(false)
-        tabBar.selectedItem = tabBar.items?[targetIndex]
+        onTransitionActivityChange?(true)
 
         pageViewController.setViewControllers(
             [pages[targetIndex]],
@@ -391,7 +372,7 @@ final class InteractiveTabViewController: UIViewController {
         pendingInteractiveIndex = nil
         isProgrammaticTransitionInFlight = false
         setNavigationInteractionEnabled(true)
-        synchronizeTabBarSelection()
+        onTransitionActivityChange?(false)
 
         if notifiesSelection {
             onSelectionChange?(tabs[index])
@@ -400,18 +381,6 @@ final class InteractiveTabViewController: UIViewController {
 
     private func setNavigationInteractionEnabled(_ isEnabled: Bool) {
         pageViewController.view.isUserInteractionEnabled = isEnabled
-        tabBar.isUserInteractionEnabled = isEnabled
-    }
-
-    private func synchronizeTabBarSelection() {
-        guard
-            isViewLoaded,
-            tabBar.items?.indices.contains(currentIndex) == true
-        else {
-            return
-        }
-
-        tabBar.selectedItem = tabBar.items?[currentIndex]
     }
 
     private func index(of controller: UIViewController?) -> Int? {
@@ -456,7 +425,7 @@ extension InteractiveTabViewController: UIPageViewControllerDelegate {
         willTransitionTo pendingViewControllers: [UIViewController]
     ) {
         pendingInteractiveIndex = index(of: pendingViewControllers.first)
-        tabBar.isUserInteractionEnabled = false
+        onTransitionActivityChange?(true)
     }
 
     func pageViewController(
@@ -467,37 +436,75 @@ extension InteractiveTabViewController: UIPageViewControllerDelegate {
     ) {
         defer {
             pendingInteractiveIndex = nil
-            tabBar.isUserInteractionEnabled = true
+            onTransitionActivityChange?(false)
         }
 
         guard
             completed,
             let visibleIndex = index(of: pageViewController.viewControllers?.first)
         else {
-            synchronizeTabBarSelection()
             return
         }
 
         currentIndex = visibleIndex
-        synchronizeTabBarSelection()
         onSelectionChange?(tabs[visibleIndex])
     }
 }
 
-extension InteractiveTabViewController: UITabBarDelegate {
-    func tabBar(_ tabBar: UITabBar, didSelect item: UITabBarItem) {
-        guard
-            tabs.indices.contains(item.tag),
-            item.tag != currentIndex
-        else {
-            synchronizeTabBarSelection()
-            return
-        }
+private struct MainTabBar: View {
+    @Binding var selection: AppTab
+    let isInteractionEnabled: Bool
 
-        transition(
-            to: item.tag,
-            animated: true,
-            notifiesSelection: true
-        )
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(AppTab.orderedTabs, id: \.self) { tab in
+                Button {
+                    guard isInteractionEnabled else { return }
+                    selection = tab
+                } label: {
+                    VStack(spacing: 4) {
+                        Image(systemName: tab.systemImageName)
+                            .symbolRenderingMode(.monochrome)
+                            .font(.system(size: 20, weight: .semibold))
+                            .frame(height: 23)
+
+                        Text(tab.tabTitle)
+                            .font(.system(size: 10, weight: tab == selection ? .bold : .semibold))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.82)
+                            .allowsTightening(true)
+                    }
+                    .foregroundStyle(
+                        tab == selection
+                            ? Theme.Colors.selectedTabItem
+                            : Theme.Colors.tabItem
+                    )
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 58)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .disabled(!isInteractionEnabled)
+                .accessibilityLabel(tab.tabTitle)
+                .accessibilityAddTraits(tab == selection ? .isSelected : [])
+                .accessibilityIdentifier("main-tab-\(tab.accessibilityIdentifier)")
+            }
+        }
+        .padding(.horizontal, 4)
+        .frame(height: 58)
+        .background {
+            ZStack {
+                Rectangle()
+                    .fill(.ultraThinMaterial)
+                Color(red: 0.78, green: 0.02, blue: 0.06)
+                    .opacity(0.34)
+            }
+            .ignoresSafeArea(edges: .bottom)
+        }
+        .overlay(alignment: .top) {
+            Rectangle()
+                .fill(Color.white.opacity(0.12))
+                .frame(height: 1)
+        }
     }
 }
