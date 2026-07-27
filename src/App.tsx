@@ -15,6 +15,9 @@ import { check } from '@tauri-apps/plugin-updater';
 import { relaunch } from '@tauri-apps/plugin-process';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { parseVTT, type SubtitleCue } from './utils/vtt-parser';
+import { getRelevantKeys, checkUpdates, ChangedFile, ManifestFile } from './update-checker';
+import { snapshotStore } from './snapshot-store';
+import { UpdatePrompt } from './components/UpdatePrompt';
 const SendCertsPage = lazy(() => import('./components/SendCertsPage').then(m => ({ default: m.SendCertsPage })));
 const HowToGuideModal = lazy(() => import('./components/HowToGuideModal').then(m => ({ default: m.HowToGuideModal })));
 import { HeaderNav } from './components/HeaderNav';
@@ -58,6 +61,91 @@ export default function App() {
       return () => clearTimeout(timer);
     }
   }, [isUpdateMinimized, updateAvailable]);
+
+  const [contentUpdateFiles, setContentUpdateFiles] = useState<ChangedFile[]>([]);
+  const [showContentUpdatePrompt, setShowContentUpdatePrompt] = useState(false);
+  const [contentUpdateAvgSpeed, setContentUpdateAvgSpeed] = useState(0);
+  const pendingUpdatesRef = useRef<Record<string, { etag: string; uploaded: string; size: number }>>({});
+
+  useEffect(() => {
+    if (!isTauri || !navigator.onLine) return;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+    async function checkContentUpdates() {
+      try {
+        const res = await fetch('https://media.ehacademy.com/api/manifest', { signal: controller.signal });
+        clearTimeout(timeoutId);
+        if (!res.ok) return;
+        const data = await res.json();
+        const manifestFiles: ManifestFile[] = data.files;
+
+        const relevantKeys = getRelevantKeys(SLIDESHOWS, COURSES, MANUALS, []);
+        
+        // get local existence
+        const localExistsMap = await downloadManager.checkStatusesForFiles(Array.from(relevantKeys));
+        
+        // get mtimes
+        const { invoke } = await import('@tauri-apps/api/core');
+        const mtimes: Record<string, number> = await invoke('get_media_file_mtimes', { filenames: Array.from(relevantKeys) });
+
+        const localFiles: Record<string, { mtime: number }> = {};
+        for (const key of relevantKeys) {
+          const clean = key.trim().replace(/^\//, '');
+          if (localExistsMap[clean] && mtimes[key]) {
+            localFiles[key] = { mtime: mtimes[key] };
+          }
+        }
+
+        const snapshot = await snapshotStore.readSnapshot();
+        setContentUpdateAvgSpeed(snapshot.avgSpeedBps);
+
+        const result = checkUpdates(
+          relevantKeys,
+          manifestFiles,
+          snapshot.files,
+          localFiles,
+          new Set()
+        );
+
+        await snapshotStore.mergeFiles(result.missingEtagsToUpdate);
+        await snapshotStore.setLastCheck(new Date().toISOString());
+
+        if (result.changedFiles.length > 0) {
+          const silentFiles = result.changedFiles.filter(f => f.isSilent);
+          const promptFiles = result.changedFiles.filter(f => !f.isSilent);
+
+          const manifestMap = new Map<string, ManifestFile>();
+          manifestFiles.forEach(m => manifestMap.set(m.key, m));
+
+          for (const f of result.changedFiles) {
+            const manifest = manifestMap.get(f.key);
+            if (manifest) {
+              pendingUpdatesRef.current[f.key] = {
+                etag: manifest.etag,
+                uploaded: manifest.uploaded,
+                size: manifest.size,
+              };
+            }
+          }
+
+          if (silentFiles.length > 0) {
+            downloadManager.queueSpecificFiles(silentFiles.map(f => ({ filename: f.key, version: f.version })));
+          }
+
+          if (promptFiles.length > 0) {
+            setContentUpdateFiles(promptFiles);
+            setShowContentUpdatePrompt(true);
+          }
+        }
+      } catch (err) {
+        // silently skip on error or timeout
+      }
+    }
+    
+    checkContentUpdates();
+  }, [isTauri]);
 
 
 
@@ -315,7 +403,26 @@ export default function App() {
 
   const [isSettingsExpanded, setIsSettingsExpanded] = useState(false);
   useEffect(() => {
-    const unsub = downloadManager.subscribe(setDlState);
+    const unsub = downloadManager.subscribe((state) => {
+      setDlState(state);
+      
+      const newlyDownloadedKeys: string[] = [];
+      for (const key in pendingUpdatesRef.current) {
+        const clean = key.trim().replace(/^\//, '');
+        if (state.fileStatuses[clean]) {
+           newlyDownloadedKeys.push(key);
+        }
+      }
+
+      if (newlyDownloadedKeys.length > 0) {
+        const mergeEntries: Record<string, any> = {};
+        for (const key of newlyDownloadedKeys) {
+          mergeEntries[key] = pendingUpdatesRef.current[key];
+          delete pendingUpdatesRef.current[key];
+        }
+        snapshotStore.mergeFiles(mergeEntries).catch(console.error);
+      }
+    });
     return unsub;
   }, []);
 
@@ -982,6 +1089,21 @@ export default function App() {
 
   return (
     <div className="flex h-screen bg-black text-eh-peach overflow-hidden medical-gradient relative">
+      {showContentUpdatePrompt && (
+        <UpdatePrompt
+          files={contentUpdateFiles}
+          avgSpeedBps={contentUpdateAvgSpeed}
+          onUpdateNow={() => {
+            setShowContentUpdatePrompt(false);
+            downloadManager.queueSpecificFiles(
+              contentUpdateFiles.map(f => ({ filename: f.key, version: f.version }))
+            );
+          }}
+          onDismiss={() => {
+            setShowContentUpdatePrompt(false);
+          }}
+        />
+      )}
       {/* Auto-Updater Banner */}
       <AnimatePresence>
         {updateAvailable && !isUpdateMinimized && (

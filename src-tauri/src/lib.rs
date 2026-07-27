@@ -434,6 +434,27 @@ fn check_media_files_status(
 }
 
 #[tauri::command]
+fn get_media_file_mtimes(
+    app: tauri::AppHandle,
+    filenames: Vec<String>,
+) -> Result<std::collections::HashMap<String, u64>, String> {
+    let media_dir = find_media_dir(&app);
+    let mut result = std::collections::HashMap::new();
+    for filename in filenames {
+        let clean = filename.trim_start_matches('/').to_string();
+        let file_path = media_dir.join(&clean);
+        if let Ok(metadata) = std::fs::metadata(&file_path) {
+            if let Ok(mtime) = metadata.modified() {
+                if let Ok(duration) = mtime.duration_since(std::time::UNIX_EPOCH) {
+                    result.insert(filename, duration.as_millis() as u64);
+                }
+            }
+        }
+    }
+    Ok(result)
+}
+
+#[tauri::command]
 async fn close_splashscreen(window: tauri::Window) {
     // Close splashscreen
     if let Some(splashscreen) = window.get_webview_window("splashscreen") {
@@ -493,6 +514,7 @@ pub fn run() {
             check_disk_space,
             read_version_snapshot,
             write_version_snapshot,
+            get_media_file_mtimes,
         ])
         // Register custom "media" protocol to serve files from media directory
         // On Windows: accessible via http://media.localhost/<filename>

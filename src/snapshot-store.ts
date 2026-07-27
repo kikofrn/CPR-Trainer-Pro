@@ -69,6 +69,47 @@ class SnapshotStore {
       }
     });
   }
+  public async mergeFiles(entries: Record<string, SnapshotFile>): Promise<void> {
+    return this.enqueue(async () => {
+      try {
+        let raw = await invoke<string>('read_version_snapshot');
+        let data: SnapshotData;
+        if (!raw || raw.trim() === '' || raw === '{}') {
+          data = { schema: 1, avgSpeedBps: 0, files: {} };
+        } else {
+          data = JSON.parse(raw) as SnapshotData;
+        }
+
+        data.files = { ...data.files, ...entries };
+
+        const content = JSON.stringify(data, null, 2);
+        await invoke('write_version_snapshot', { content });
+      } catch (e) {
+        console.error('[SnapshotStore] Failed to merge files', e);
+      }
+    });
+  }
+
+  public async setLastCheck(iso: string): Promise<void> {
+    return this.enqueue(async () => {
+      try {
+        let raw = await invoke<string>('read_version_snapshot');
+        let data: SnapshotData;
+        if (!raw || raw.trim() === '' || raw === '{}') {
+          data = { schema: 1, avgSpeedBps: 0, files: {} };
+        } else {
+          data = JSON.parse(raw) as SnapshotData;
+        }
+
+        data.lastCheck = iso;
+
+        const content = JSON.stringify(data, null, 2);
+        await invoke('write_version_snapshot', { content });
+      } catch (e) {
+        console.error('[SnapshotStore] Failed to set lastCheck', e);
+      }
+    });
+  }
 }
 
 export const snapshotStore = new SnapshotStore();
