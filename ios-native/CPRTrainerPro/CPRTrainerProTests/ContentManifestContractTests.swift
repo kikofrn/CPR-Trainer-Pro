@@ -13,6 +13,24 @@ final class ContentManifestContractTests: XCTestCase {
         super.tearDown()
     }
 
+    func testInteractiveTabOrderMetadataAndBoundariesAreStable() {
+        XCTAssertEqual(
+            AppTab.orderedTabs,
+            [.cprAED, .firstAid, .manuals, .sendCerts, .settings]
+        )
+        XCTAssertEqual(
+            AppTab.orderedTabs.map(\.tabTitle),
+            ["CPR/AED", "First Aid", "Manuals", "Send Certs", "Settings"]
+        )
+        XCTAssertEqual(Set(AppTab.orderedTabs.map(\.accessibilityIdentifier)).count, 5)
+        XCTAssertTrue(AppTab.orderedTabs.allSatisfy { !$0.systemImageName.isEmpty })
+
+        XCTAssertEqual(AppTab.cprAED.adjacentTab(direction: -1), .cprAED)
+        XCTAssertEqual(AppTab.cprAED.adjacentTab(direction: 1), .firstAid)
+        XCTAssertEqual(AppTab.settings.adjacentTab(direction: -1), .sendCerts)
+        XCTAssertEqual(AppTab.settings.adjacentTab(direction: 1), .settings)
+    }
+
     func testCatalogExcludesSpanishContentForInitialNativeBuild() {
         var strings: [String] = []
 

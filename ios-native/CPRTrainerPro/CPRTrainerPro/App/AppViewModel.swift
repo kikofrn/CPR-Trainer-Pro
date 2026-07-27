@@ -285,6 +285,51 @@ enum AppTab: Hashable {
         .settings
     ]
 
+    var tabTitle: String {
+        switch self {
+        case .cprAED:
+            "CPR/AED"
+        case .firstAid:
+            "First Aid"
+        case .manuals:
+            "Manuals"
+        case .sendCerts:
+            "Send Certs"
+        case .settings:
+            "Settings"
+        }
+    }
+
+    var systemImageName: String {
+        switch self {
+        case .cprAED:
+            "heart.text.square.fill"
+        case .firstAid:
+            "cross.case.fill"
+        case .manuals:
+            "book.closed.fill"
+        case .sendCerts:
+            "safari.fill"
+        case .settings:
+            "questionmark.circle.fill"
+        }
+    }
+
+    var accessibilityIdentifier: String {
+        switch self {
+        case .cprAED:
+            "cpr-aed"
+        case .firstAid:
+            "first-aid"
+        case .manuals:
+            "manuals"
+        case .sendCerts:
+            "send-certs"
+        case .settings:
+            "settings"
+        }
+    }
+
     func adjacentTab(direction: Int) -> AppTab {
         guard
             let currentIndex = Self.orderedTabs.firstIndex(of: self),

@@ -83,66 +83,10 @@ struct RootView: View {
     }
 
     private var tabContent: some View {
-        TabView(selection: $appViewModel.selectedTab) {
-            CoursesView(courseID: .cprAED, title: "CPR/AED")
-                .tabItem {
-                    Label("CPR/AED", systemImage: "heart.text.square.fill")
-                }
-                .tag(AppTab.cprAED)
-
-            CoursesView(courseID: .firstAid, title: "First Aid")
-                .tabItem {
-                    Label("First Aid", systemImage: "cross.case.fill")
-                }
-                .tag(AppTab.firstAid)
-
-            ManualsView()
-                .tabItem {
-                    Label("Manuals", systemImage: "book.closed.fill")
-                }
-                .tag(AppTab.manuals)
-
-            SendCertsView()
-                .tabItem {
-                    Label("Send Certs", systemImage: "safari.fill")
-                }
-                .tag(AppTab.sendCerts)
-
-            SettingsView()
-                .tabItem {
-                    Label("Settings", systemImage: "questionmark.circle.fill")
-                }
-                .tag(AppTab.settings)
-        }
-        .tint(Theme.Colors.selectedTabItem)
-        .simultaneousGesture(tabSwipeGesture)
-    }
-
-    private var tabSwipeGesture: some Gesture {
-        DragGesture(minimumDistance: 52, coordinateSpace: .local)
-            .onEnded { value in
-                handleTabSwipe(value)
-            }
-    }
-
-    private func handleTabSwipe(_ value: DragGesture.Value) {
-        let horizontalDistance = value.translation.width
-        let verticalDistance = value.translation.height
-
-        guard
-            abs(horizontalDistance) > 72,
-            abs(horizontalDistance) > abs(verticalDistance) * 1.45
-        else {
-            return
-        }
-
-        let direction = horizontalDistance < 0 ? 1 : -1
-        let nextTab = appViewModel.selectedTab.adjacentTab(direction: direction)
-        guard nextTab != appViewModel.selectedTab else { return }
-
-        withAnimation(.easeOut(duration: 0.18)) {
-            appViewModel.selectedTab = nextTab
-        }
+        InteractiveTabContainer(
+            selection: $appViewModel.selectedTab,
+            appViewModel: appViewModel
+        )
     }
 }
 
