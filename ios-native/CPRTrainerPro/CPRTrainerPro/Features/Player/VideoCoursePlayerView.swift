@@ -13,6 +13,7 @@ struct VideoCoursePlayerView: View {
     @State private var overlayControlsVisible = true
     @State private var overlayControlsHideToken = UUID()
     @State private var isExternalChapterListCollapsed = false
+    @StateObject private var nativeFullScreenState = NativeVideoFullScreenState()
 
     init(videoCourse: VideoCourse, storageService: StorageService) {
         self.videoCourse = videoCourse
@@ -112,6 +113,7 @@ struct VideoCoursePlayerView: View {
                 }
             }
             .onDisappear {
+                guard !nativeFullScreenState.isActive else { return }
                 coordinator.tearDown()
             }
         }
@@ -137,7 +139,10 @@ struct VideoCoursePlayerView: View {
                 if isPresentingExternally {
                     externalPlaybackStatusSurface
                 } else {
-                    ConfigurableVideoPlayer(player: player)
+                    ConfigurableVideoPlayer(
+                        player: player,
+                        nativeFullScreenState: nativeFullScreenState
+                    )
 
                     if coordinator.captionsEnabled {
                         VStack {
@@ -572,10 +577,16 @@ struct VideoCoursePlayerView: View {
 
 private struct ConfigurableVideoPlayer: UIViewControllerRepresentable {
     let player: AVPlayer
+    let nativeFullScreenState: NativeVideoFullScreenState
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(nativeFullScreenState: nativeFullScreenState)
+    }
 
     func makeUIViewController(context: Context) -> AVPlayerViewController {
         let controller = AVPlayerViewController()
         controller.player = player
+        controller.delegate = context.coordinator
         controller.showsPlaybackControls = true
         controller.videoGravity = .resizeAspect
         controller.speeds = Self.playbackSpeeds
@@ -583,6 +594,8 @@ private struct ConfigurableVideoPlayer: UIViewControllerRepresentable {
     }
 
     func updateUIViewController(_ controller: AVPlayerViewController, context: Context) {
+        context.coordinator.nativeFullScreenState = nativeFullScreenState
+
         if controller.player !== player {
             controller.player = player
         }
@@ -592,5 +605,54 @@ private struct ConfigurableVideoPlayer: UIViewControllerRepresentable {
 
     private static let playbackSpeeds: [AVPlaybackSpeed] = VideoPlaybackSpeedOption.allCases.map {
         AVPlaybackSpeed(rate: $0.rate, localizedName: $0.title)
+    }
+
+    final class Coordinator: NSObject, @MainActor AVPlayerViewControllerDelegate {
+        weak var nativeFullScreenState: NativeVideoFullScreenState?
+
+        init(nativeFullScreenState: NativeVideoFullScreenState) {
+            self.nativeFullScreenState = nativeFullScreenState
+        }
+
+        @MainActor
+        func playerViewController(
+            _ playerViewController: AVPlayerViewController,
+            willBeginFullScreenPresentationWithAnimationCoordinator transitionCoordinator:
+                any UIViewControllerTransitionCoordinator
+        ) {
+            nativeFullScreenState?.setActive(true)
+
+            transitionCoordinator.animate(alongsideTransition: nil) { [weak self] context in
+                if context.isCancelled {
+                    self?.nativeFullScreenState?.setActive(false)
+                }
+            }
+        }
+
+        @MainActor
+        func playerViewController(
+            _ playerViewController: AVPlayerViewController,
+            willEndFullScreenPresentationWithAnimationCoordinator transitionCoordinator:
+                any UIViewControllerTransitionCoordinator
+        ) {
+            let registered = transitionCoordinator.animate(
+                alongsideTransition: nil
+            ) { [weak self] _ in
+                self?.nativeFullScreenState?.setActive(false)
+            }
+
+            if !registered {
+                nativeFullScreenState?.setActive(false)
+            }
+        }
+    }
+}
+
+@MainActor
+private final class NativeVideoFullScreenState: ObservableObject {
+    @Published private(set) var isActive = false
+
+    func setActive(_ isActive: Bool) {
+        self.isActive = isActive
     }
 }

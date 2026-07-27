@@ -11,7 +11,7 @@ struct CoursesView: View {
 
     var body: some View {
         NavigationStack {
-            StickyBrandScrollView(title: title, showsCourseSubtitle: true) {
+            StickyBrandScrollView(title: title) {
                 if let course = appViewModel.catalog.courses.first(where: { $0.id == courseID }) {
                     VStack(alignment: .leading, spacing: 10) {
                         courseSection(for: course)

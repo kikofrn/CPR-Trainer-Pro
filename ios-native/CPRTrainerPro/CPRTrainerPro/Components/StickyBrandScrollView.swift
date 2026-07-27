@@ -2,7 +2,6 @@ import SwiftUI
 
 struct StickyBrandScrollView<Content: View>: View {
     let title: String?
-    let showsCourseSubtitle: Bool
     @ViewBuilder let content: () -> Content
 
     @Environment(\.launchExperienceTrigger) private var launchExperienceTrigger
@@ -12,11 +11,9 @@ struct StickyBrandScrollView<Content: View>: View {
 
     init(
         title: String? = nil,
-        showsCourseSubtitle: Bool = false,
         @ViewBuilder content: @escaping () -> Content
     ) {
         self.title = title
-        self.showsCourseSubtitle = showsCourseSubtitle
         self.content = content
     }
 
@@ -26,14 +23,6 @@ struct StickyBrandScrollView<Content: View>: View {
                 ScrollOffsetReader()
 
                 VStack(alignment: .leading, spacing: 14) {
-                    if showsCourseSubtitle {
-                        Text("Choose the course mode before class, download it once, then train offline with confidence.")
-                            .font(.footnote)
-                            .foregroundStyle(.white.opacity(0.70))
-                            .multilineTextAlignment(.center)
-                            .frame(maxWidth: .infinity)
-                    }
-
                     content()
                 }
                 .padding(.horizontal, Theme.Layout.screenPadding)
