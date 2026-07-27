@@ -8,3 +8,11 @@
 - Thumbnails refresh silently without a user prompt.
 - The pediatric slideshow courses are live and only the two pediatric Virtual Assistant courses are coming soon.
 - This release is Windows only with macOS and iOS ported afterward.
+- Plan documents live in `docs/plans/` and sessions stop rather than search outside the repository.
+- No anticipatory code, state, or scaffolding; no probes or verification beyond phase scope.
+- The Worker manifest endpoint is live at `https://media.ehacademy.com/api/manifest` on the preferred Workers route.
+- `desktop.ini` was removed from both pediatric presentation folders.
+- Reconciliation and verification skip content flagged `isComingSoon`.
+- Every phase ends with a commit named for the phase before the verification report.
+- Temporary files must be listed in reports and deleted before phase end.
+- Direction 2 scans only folders referenced by active courses and reports uncovered folders informationally.

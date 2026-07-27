@@ -8,3 +8,4 @@
 - Course identity is by id string, never by array index, in all new code.
 - Verification commands: `npx tsc --noEmit`, `npm run build`, `node scripts/verify-media-urls.mjs`.
 - Rule: Diffs stay minimal and unrelated code is never touched.
+- Plan documents live at docs/plans/.

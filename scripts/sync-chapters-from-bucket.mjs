@@ -123,6 +123,20 @@ async function run() {
     }
   }
 
+  const uncoveredFolders = new Map();
+  for (const file of bucketFiles) {
+    const parts = file.split('/');
+    if (parts.length > 1) {
+      const folder = parts[0];
+      if (!courseFolders.has(folder)) {
+        uncoveredFolders.set(folder, (uncoveredFolders.get(folder) || 0) + 1);
+      }
+    }
+  }
+  for (const [folder, count] of uncoveredFolders.entries()) {
+    console.info(`[INFO] Folder not covered by active courses: ${folder} (${count} files)`);
+  }
+
   if (regenerateFolder) {
     console.log(`\\n--- Regenerating array for folder: ${regenerateFolder} ---`);
     const filesInFolder = folderBucketFiles.get(regenerateFolder) || [];
