@@ -28,8 +28,10 @@ struct CourseCard: View {
                     Text(copy.title)
                         .font(.title2.weight(.bold))
                         .foregroundStyle(.white)
-                        .lineLimit(2)
-                        .fixedSize(horizontal: false, vertical: true)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.78)
+                        .allowsTightening(true)
+                        .layoutPriority(1)
 
                     Text(copy.modeTitle)
                         .font(.subheadline.weight(.semibold))
@@ -40,6 +42,7 @@ struct CourseCard: View {
                 Spacer(minLength: 8)
 
                 statusBadge
+                    .fixedSize(horizontal: true, vertical: false)
             }
 
             VStack(alignment: .leading, spacing: 7) {
