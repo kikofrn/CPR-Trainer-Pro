@@ -251,15 +251,19 @@ final class ContentUpdateService: NSObject, ObservableObject {
     private let maxRetryAttempts = 3
     private var lastSuccessfulCheckAt: Date?
     private var lastFailedCheckAt: Date?
+    private var dismissedFingerprint: String?
     private var plan: ContentUpdatePlanStore.Plan?
     private var activeUpdates: [Int: ActiveUpdate] = [:]
     private var retryWakeTask: Task<Void, Never>?
+    private var networkAllowsTransfers = true
+    private var allowsCellularTransfers = false
 
     @Published private(set) var availableUpdate: ContentUpdateSummary?
     @Published private(set) var isChecking = false
     @Published private(set) var isUpdating = false
     @Published private(set) var completedUpdateCount = 0
     @Published private(set) var totalUpdateCount = 0
+    @Published private(set) var isWaitingForWiFi = false
     @Published private(set) var lastErrorMessage: String?
 
     var onAvailableUpdate: ((ContentUpdateSummary?) -> Void)?
@@ -428,12 +432,24 @@ final class ContentUpdateService: NSObject, ObservableObject {
     }
 
     func dismissAvailableUpdate() {
+        dismissedFingerprint = availableUpdate?.fingerprint
         availableUpdate = nil
         onAvailableUpdate?(nil)
     }
 
     func synchronizeForegroundState() {
         recoverBackgroundTasks()
+    }
+
+    func applyNetworkPolicy(isAllowed: Bool, allowsCellular: Bool) {
+        networkAllowsTransfers = isAllowed
+        allowsCellularTransfers = allowsCellular
+        isWaitingForWiFi = !isAllowed && (
+            !activeUpdates.isEmpty || plan?.pending.isEmpty == false
+        )
+        if isAllowed {
+            pumpQueue()
+        }
     }
 
     private func loadPlan() {
@@ -503,6 +519,12 @@ final class ContentUpdateService: NSObject, ObservableObject {
             finishPlanIfNeeded()
             return
         }
+        guard networkAllowsTransfers else {
+            isUpdating = !currentPlan.pending.isEmpty || !activeUpdates.isEmpty
+            isWaitingForWiFi = isUpdating
+            return
+        }
+        isWaitingForWiFi = false
 
         let now = Date()
         var activeFilenames = Set(
@@ -535,6 +557,7 @@ final class ContentUpdateService: NSObject, ObservableObject {
                 )
                 request.cachePolicy = .reloadIgnoringLocalCacheData
                 request.timeoutInterval = 60
+                request.allowsExpensiveNetworkAccess = allowsCellularTransfers
                 request.setValue(
                     "CPRTrainerPro-iOS/0.1",
                     forHTTPHeaderField: "User-Agent"
@@ -585,7 +608,7 @@ final class ContentUpdateService: NSObject, ObservableObject {
             try? FileManager.default.removeItem(at: temporaryURL)
             handleFailure(
                 taskIdentifier: taskIdentifier,
-                message: "The R2 object changed while it was downloading. It will be checked again."
+                message: "The course file changed while it was downloading. It will be checked again."
             )
             return
         }
@@ -765,6 +788,11 @@ final class ContentUpdateService: NSObject, ObservableObject {
         let summary = deduplicated.isEmpty
             ? nil
             : ContentUpdateSummary(candidates: deduplicated)
+        if summary?.fingerprint == dismissedFingerprint {
+            availableUpdate = nil
+            onAvailableUpdate?(nil)
+            return
+        }
         availableUpdate = summary
         onAvailableUpdate?(summary)
     }

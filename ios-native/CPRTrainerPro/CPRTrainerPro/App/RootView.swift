@@ -3,14 +3,19 @@ import SwiftUI
 struct RootView: View {
     @Environment(\.scenePhase) private var scenePhase
     @EnvironmentObject private var appViewModel: AppViewModel
+    @EnvironmentObject private var downloadService: DownloadService
     @State private var showsLaunchExperience = true
     @State private var launchExperienceMode = LaunchExperienceMode.startup
+    @State private var launchExperienceToken: ForegroundExperienceToken?
 
     var body: some View {
         ZStack {
             tabContent
                 .environment(\.launchExperienceTrigger) {
                     launchExperienceMode = .practice
+                    launchExperienceToken = appViewModel.acquireForegroundExperience(
+                        "practice-animation"
+                    )
                     withAnimation(.easeInOut(duration: 0.22)) {
                         showsLaunchExperience = true
                     }
@@ -24,6 +29,9 @@ struct RootView: View {
                     }
                     if completedMode == .startup {
                         appViewModel.presentInitialDownloadPromptIfNeeded()
+                    } else {
+                        appViewModel.releaseForegroundExperience(launchExperienceToken)
+                        launchExperienceToken = nil
                     }
                 }
                 .transition(.opacity)
@@ -57,12 +65,17 @@ struct RootView: View {
             .interactiveDismissDisabled()
         }
         .onAppear {
-            appViewModel.synchronizeDownloadsAfterForeground()
+            appViewModel.appDidBecomeActive()
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
-                appViewModel.synchronizeDownloadsAfterForeground()
+                appViewModel.appDidBecomeActive()
+            } else {
+                appViewModel.appDidEnterBackground()
             }
+        }
+        .onChange(of: downloadService.isDownloadingAll) { _, _ in
+            appViewModel.downloadAllStateDidChange()
         }
     }
 
@@ -86,6 +99,7 @@ struct RootView: View {
 }
 
 private struct InitialDownloadPromptView: View {
+    @EnvironmentObject private var downloadService: DownloadService
     let estimate: DownloadContentEstimate
     let onDownloadAll: () -> Void
     let onNotYet: () -> Void
@@ -148,6 +162,14 @@ private struct InitialDownloadPromptView: View {
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
 
+                if let message = downloadService.lastPreflightErrorMessage {
+                    Text(message)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Theme.Colors.failure)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
                 VStack(spacing: 10) {
                     Button("Download All Courses Now", action: onDownloadAll)
                         .font(.headline.weight(.bold))
@@ -200,6 +222,7 @@ private struct ContentUpdatePromptView: View {
     let summary: ContentUpdateSummary
     let onUpdate: () -> Void
     let onNotYet: () -> Void
+    @State private var detailsExpanded = false
 
     var body: some View {
         ScrollView {
@@ -224,18 +247,41 @@ private struct ContentUpdatePromptView: View {
                     .fixedSize(horizontal: false, vertical: true)
                 }
 
-                HStack(spacing: 10) {
-                    updatePill(
-                        title: "Files",
-                        value: "\(summary.assetCount)",
-                        systemImage: "doc.on.doc.fill"
-                    )
-                    updatePill(
-                        title: "Update Size",
-                        value: summary.sizeText,
-                        systemImage: "arrow.down.circle.fill"
-                    )
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 10) {
+                        summaryPills
+                    }
+                    VStack(spacing: 10) {
+                        summaryPills
+                    }
                 }
+
+                DisclosureGroup(isExpanded: $detailsExpanded) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        ForEach(groupedCandidates, id: \.name) { group in
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(group.name)
+                                    .font(.caption.weight(.bold))
+                                    .foregroundStyle(Theme.Colors.peach)
+                                ForEach(group.files, id: \.self) { filename in
+                                    Text(filename)
+                                        .font(.caption2)
+                                        .foregroundStyle(.white.opacity(0.68))
+                                        .lineLimit(2)
+                                }
+                            }
+                        }
+                    }
+                    .padding(.top, 8)
+                } label: {
+                    Text("What’s changing")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.white)
+                }
+                .tint(Theme.Colors.peach)
+                .padding(14)
+                .background(Theme.Colors.surface)
+                .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
 
                 Text(
                     "*The current files stay safely in place until their replacements finish downloading and pass validation."
@@ -271,6 +317,43 @@ private struct ContentUpdatePromptView: View {
             .padding(.vertical, 24)
         }
         .scrollIndicators(.hidden)
+    }
+
+    @ViewBuilder
+    private var summaryPills: some View {
+        updatePill(
+            title: "Files",
+            value: "\(summary.assetCount)",
+            systemImage: "doc.on.doc.fill"
+        )
+        updatePill(
+            title: "Update Size",
+            value: summary.sizeText,
+            systemImage: "arrow.down.circle.fill"
+        )
+        updatePill(
+            title: "Estimated Time",
+            value: summary.durationText,
+            systemImage: "clock.fill"
+        )
+    }
+
+    private var groupedCandidates: [(name: String, files: [String])] {
+        let groups = Dictionary(grouping: summary.candidates) { candidate in
+            candidate.asset.filename.split(separator: "/").first.map(String.init)
+                ?? "Course Files"
+        }
+        return groups.map { name, candidates in
+            (
+                name: name,
+                files: candidates.map {
+                    $0.asset.filename.split(separator: "/").last.map(String.init)
+                        ?? $0.asset.filename
+                }
+                .sorted()
+            )
+        }
+        .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
     }
 
     private func updatePill(

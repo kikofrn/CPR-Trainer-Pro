@@ -10,6 +10,7 @@ struct CoursesView: View {
     @EnvironmentObject private var downloadService: DownloadService
     @State private var activeLaunch: CourseLaunchRequest?
     @State private var pendingDownloadPrompt: DownloadPromptContext?
+    @State private var experienceToken: ForegroundExperienceToken?
 
     var body: some View {
         NavigationStack {
@@ -29,7 +30,7 @@ struct CoursesView: View {
             .navigationTitle("")
             .toolbar(.hidden, for: .navigationBar)
         }
-        .fullScreenCover(item: $activeLaunch) { request in
+        .fullScreenCover(item: $activeLaunch, onDismiss: releaseExperience) { request in
             launchView(for: request.mode)
         }
         .alert(
@@ -123,6 +124,7 @@ struct CoursesView: View {
         }
 
         if state.isReady {
+            experienceToken = appViewModel.acquireForegroundExperience("course")
             activeLaunch = CourseLaunchRequest(mode: mode)
             return
         }
@@ -133,6 +135,11 @@ struct CoursesView: View {
             package: package,
             state: state
         )
+    }
+
+    private func releaseExperience() {
+        appViewModel.releaseForegroundExperience(experienceToken)
+        experienceToken = nil
     }
 
     @ViewBuilder

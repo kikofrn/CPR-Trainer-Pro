@@ -1,4 +1,5 @@
 import Foundation
+import Network
 
 @MainActor
 final class DownloadService: NSObject, ObservableObject {
@@ -135,9 +136,36 @@ final class DownloadService: NSObject, ObservableObject {
     private var downloadAllPlan: DownloadAllQueueStore.Plan?
     private var knownPackages: [DownloadPackage.ID: DownloadPackage] = [:]
     private var progressTickerTask: Task<Void, Never>?
+    private var lastProgressPublicationAt: [DownloadPackage.ID: Date] = [:]
+    private var lastPublishedFraction: [DownloadPackage.ID: Double] = [:]
+    private let pathMonitor = NWPathMonitor()
+    private let pathMonitorQueue = DispatchQueue(
+        label: "com.ehacademy.cpr-trainer-pro.download-path"
+    )
+    private var pathIsKnown = false
+    private var pathIsSatisfied = true
+    private var pathIsExpensive = false
 
     @Published private var states: [DownloadPackage.ID: DownloadState] = [:]
     @Published private(set) var isDownloadingAll = false
+    @Published private(set) var lastPreflightErrorMessage: String?
+    @Published var allowsCellularDownloads: Bool {
+        didSet {
+            UserDefaults.standard.set(
+                allowsCellularDownloads,
+                forKey: Self.allowsCellularDownloadsKey
+            )
+            updateWaitingStatesAndPump()
+        }
+    }
+
+    private static let allowsCellularDownloadsKey =
+        "downloads.allowExpensiveNetworkAccess"
+    var onNetworkPolicyChange: ((Bool, Bool) -> Void)?
+
+    var transferPolicySnapshot: (isAllowed: Bool, allowsCellular: Bool) {
+        (downloadsAllowedOnCurrentPath, allowsCellularDownloads)
+    }
 
     private lazy var session: URLSession = {
         #if targetEnvironment(simulator)
@@ -170,6 +198,9 @@ final class DownloadService: NSObject, ObservableObject {
         self.versionStore = versionStore
         self.queueStore = queueStore
         self.downloadAllQueueStore = downloadAllQueueStore
+        self.allowsCellularDownloads = UserDefaults.standard.bool(
+            forKey: Self.allowsCellularDownloadsKey
+        )
         let revisionComponent = contentRevision.replacingOccurrences(
             of: "[^A-Za-z0-9.-]",
             with: "-",
@@ -181,7 +212,12 @@ final class DownloadService: NSObject, ObservableObject {
         loadPersistedPlans()
         loadPersistedDownloadAllPlan()
         _ = session
+        startPathMonitoring()
         recoverBackgroundTasks()
+    }
+
+    deinit {
+        pathMonitor.cancel()
     }
 
     func state(for packageID: DownloadPackage.ID) -> DownloadState {
@@ -194,13 +230,21 @@ final class DownloadService: NSObject, ObservableObject {
         return ByteCountFormatter.string(fromByteCount: byteCount, countStyle: .file)
     }
 
-    func enqueueAll(_ packages: [DownloadPackage], baseURL: URL) {
+    @discardableResult
+    func enqueueAll(_ packages: [DownloadPackage], baseURL: URL) -> Bool {
         remember(packages)
 
         let pendingPackages = packages.filter { !storageService.packageIsReady($0) }
         guard !pendingPackages.isEmpty else {
             clearDownloadAllPlan()
-            return
+            return true
+        }
+        let pendingAssets = Self.uniqueMissingAssets(
+            in: pendingPackages,
+            fileExists: storageService.fileExists
+        )
+        guard diskPreflightAllows(pendingAssets) else {
+            return false
         }
 
         let activePackages = pendingPackages.filter { isTrackingDownload(for: $0.id) }
@@ -215,6 +259,7 @@ final class DownloadService: NSObject, ObservableObject {
         isDownloadingAll = true
         saveDownloadAllPlan()
         advanceDownloadAllQueueIfNeeded()
+        return true
     }
 
     func refreshPackageStates(for packages: [DownloadPackage]) {
@@ -260,9 +305,15 @@ final class DownloadService: NSObject, ObservableObject {
             removePersistedPlan(package.id)
             return
         }
+        guard diskPreflightAllows(pendingAssets) else {
+            states[package.id] = .failed(
+                message: lastPreflightErrorMessage ?? "Not enough available storage."
+            )
+            return
+        }
 
         persistPlan(for: package, baseURL: baseURL)
-        states[package.id] = .queued
+        states[package.id] = downloadsAllowedOnCurrentPath ? .queued : .waitingForWiFi
         var progress = PackageProgress(
             totalAssetCount: package.assets.count,
             completedAssetCount: package.assets.count - pendingAssets.count,
@@ -325,6 +376,11 @@ final class DownloadService: NSObject, ObservableObject {
     }
 
     private func pumpQueue() {
+        guard downloadsAllowedOnCurrentPath else {
+            markTrackedPackagesWaitingForWiFi()
+            return
+        }
+
         while activeDownloads.count < maxConcurrentDownloads, !queue.isEmpty {
             let next = queue.removeFirst()
 
@@ -333,6 +389,7 @@ final class DownloadService: NSObject, ObservableObject {
                 var request = URLRequest(url: next.remoteURL)
                 request.cachePolicy = .reloadIgnoringLocalCacheData
                 request.timeoutInterval = 60
+                request.allowsExpensiveNetworkAccess = allowsCellularDownloads
                 request.setValue("CPRTrainerPro-iOS/0.1", forHTTPHeaderField: "User-Agent")
                 let task = session.downloadTask(with: request)
                 task.taskDescription = try encodeTaskDescription(
@@ -563,7 +620,7 @@ final class DownloadService: NSObject, ObservableObject {
             bytesWritten: totalBytesWritten,
             bytesExpected: totalBytesExpectedToWrite
         )
-        setPackageStateDownloading(activeDownload.packageID)
+        publishProgressIfNeeded(for: activeDownload.packageID)
     }
 
     private func finishDownload(taskIdentifier: Int, temporaryURL: URL, response: URLResponse?) {
@@ -753,6 +810,10 @@ final class DownloadService: NSObject, ObservableObject {
     }
 
     private func setPackageStateDownloading(_ packageID: DownloadPackage.ID) {
+        guard downloadsAllowedOnCurrentPath else {
+            states[packageID] = .waitingForWiFi
+            return
+        }
         guard var progress = packageProgress[packageID] else {
             var emptyProgress = PackageProgress(totalAssetCount: 1, completedAssetCount: 0)
             emptyProgress.recordSample()
@@ -765,6 +826,29 @@ final class DownloadService: NSObject, ObservableObject {
         progress.recordSample()
         packageProgress[packageID] = progress
         states[packageID] = .downloading(progress: progress.snapshot)
+        startProgressTickerIfNeeded()
+    }
+
+    private func publishProgressIfNeeded(
+        for packageID: DownloadPackage.ID,
+        force: Bool = false
+    ) {
+        guard downloadsAllowedOnCurrentPath else {
+            states[packageID] = .waitingForWiFi
+            return
+        }
+        guard var progress = packageProgress[packageID] else { return }
+        let now = Date()
+        let fraction = progress.fractionComplete
+        let elapsed = now.timeIntervalSince(lastProgressPublicationAt[packageID] ?? .distantPast)
+        let delta = abs(fraction - (lastPublishedFraction[packageID] ?? 0))
+        guard force || elapsed >= 0.25 || delta >= 0.01 else { return }
+
+        progress.recordSample(at: now)
+        packageProgress[packageID] = progress
+        states[packageID] = .downloading(progress: progress.snapshot)
+        lastProgressPublicationAt[packageID] = now
+        lastPublishedFraction[packageID] = fraction
         startProgressTickerIfNeeded()
     }
 
@@ -812,24 +896,97 @@ final class DownloadService: NSObject, ObservableObject {
     }
 
     private func refreshTrackedDownloadProgress() {
-        let packages = trackedPackages()
-        guard !packages.isEmpty else {
+        guard !packageProgress.isEmpty else {
             stopProgressTickerIfIdle()
             return
         }
 
-        session.getAllTasks { [weak self] tasks in
+        for packageID in packageProgress.keys {
+            publishProgressIfNeeded(for: packageID, force: true)
+        }
+        stopProgressTickerIfIdle()
+    }
+
+    private var downloadsAllowedOnCurrentPath: Bool {
+        guard pathIsKnown else { return true }
+        return pathIsSatisfied && (allowsCellularDownloads || !pathIsExpensive)
+    }
+
+    private func startPathMonitoring() {
+        pathMonitor.pathUpdateHandler = { [weak self] path in
             Task { @MainActor in
                 guard let self else { return }
-
-                self.restore(tasks)
-                self.restorePersistedDownloads()
-                self.refreshVisiblePackageProgress(for: packages, tasks: tasks)
-                self.reconcileDownloadAllPlan()
-                self.advanceDownloadAllQueueIfNeeded()
-                self.stopProgressTickerIfIdle()
+                self.pathIsKnown = true
+                self.pathIsSatisfied = path.status == .satisfied
+                self.pathIsExpensive = path.isExpensive
+                self.updateWaitingStatesAndPump()
             }
         }
+        pathMonitor.start(queue: pathMonitorQueue)
+    }
+
+    private func updateWaitingStatesAndPump() {
+        onNetworkPolicyChange?(
+            downloadsAllowedOnCurrentPath,
+            allowsCellularDownloads
+        )
+        if downloadsAllowedOnCurrentPath {
+            for packageID in states.keys where states[packageID] == .waitingForWiFi {
+                states[packageID] = .queued
+            }
+            pumpQueue()
+        } else {
+            markTrackedPackagesWaitingForWiFi()
+        }
+    }
+
+    private func markTrackedPackagesWaitingForWiFi() {
+        let packageIDs = Set(queue.map(\.packageID))
+            .union(activeDownloads.values.map(\.packageID))
+        for packageID in packageIDs {
+            states[packageID] = .waitingForWiFi
+        }
+    }
+
+    private func diskPreflightAllows(_ assets: [MediaAsset]) -> Bool {
+        lastPreflightErrorMessage = nil
+        let remainingBytes = assets.reduce(Int64(0)) {
+            $0 + max(0, $1.estimatedByteCount)
+        }
+        guard remainingBytes > 0 else { return true }
+
+        let largestAsset = assets.map(\.estimatedByteCount).max() ?? 0
+        let safetyMargin = max(Int64(100_000_000), remainingBytes / 10)
+        let requiredBytes = remainingBytes + largestAsset + safetyMargin
+        let supportURL = (try? FileManager.default.url(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask,
+            appropriateFor: nil,
+            create: true
+        )) ?? URL(fileURLWithPath: NSHomeDirectory())
+        let availableBytes = (try? supportURL.resourceValues(
+            forKeys: [.volumeAvailableCapacityForImportantUsageKey]
+        ).volumeAvailableCapacityForImportantUsage) ?? 0
+        guard availableBytes <= 0 || Int64(availableBytes) >= requiredBytes else {
+            let formatter = ByteCountFormatter()
+            formatter.countStyle = .file
+            lastPreflightErrorMessage =
+                "This download needs \(formatter.string(fromByteCount: requiredBytes)), "
+                + "but \(formatter.string(fromByteCount: Int64(availableBytes))) is available."
+            return false
+        }
+        return true
+    }
+
+    nonisolated private static func uniqueMissingAssets(
+        in packages: [DownloadPackage],
+        fileExists: (MediaAsset) -> Bool
+    ) -> [MediaAsset] {
+        var assetsByFilename: [String: MediaAsset] = [:]
+        for asset in packages.flatMap(\.assets) where !fileExists(asset) {
+            assetsByFilename[asset.filename] = asset
+        }
+        return Array(assetsByFilename.values)
     }
 
     private func encodeTaskDescription(_ description: TaskDescription) throws -> String {

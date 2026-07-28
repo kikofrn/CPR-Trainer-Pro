@@ -20,6 +20,8 @@ struct DownloadStatusBadge: View {
             "Needed"
         case .queued:
             "Queued"
+        case .waitingForWiFi:
+            "Waiting for Wi-Fi"
         case .downloading(let progress):
             progress.percentText
         case .ready:
@@ -35,6 +37,8 @@ struct DownloadStatusBadge: View {
             "icloud.and.arrow.down"
         case .queued:
             "clock"
+        case .waitingForWiFi:
+            "wifi.exclamationmark"
         case .downloading:
             "arrow.down.circle"
         case .ready:

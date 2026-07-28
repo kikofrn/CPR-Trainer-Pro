@@ -7,6 +7,7 @@ struct ManualsView: View {
     @EnvironmentObject private var appViewModel: AppViewModel
     @EnvironmentObject private var downloadService: DownloadService
     @State private var activeManual: Manual?
+    @State private var experienceToken: ForegroundExperienceToken?
 
     var body: some View {
         NavigationStack {
@@ -50,6 +51,9 @@ struct ManualsView: View {
                                 systemImage: downloadService.state(for: manual.packageID).isReady ? "book.fill" : "arrow.down.circle.fill",
                                 action: {
                                     if downloadService.state(for: manual.packageID).isReady {
+                                        experienceToken = appViewModel.acquireForegroundExperience(
+                                            "manual"
+                                        )
                                         activeManual = manual
                                         return
                                     }
@@ -69,7 +73,13 @@ struct ManualsView: View {
             .navigationTitle("")
             .toolbar(.hidden, for: .navigationBar)
         }
-        .fullScreenCover(item: $activeManual) { manual in
+        .fullScreenCover(
+            item: $activeManual,
+            onDismiss: {
+                appViewModel.releaseForegroundExperience(experienceToken)
+                experienceToken = nil
+            }
+        ) { manual in
             ManualViewerView(
                 manual: manual,
                 storageService: appViewModel.storageService

@@ -10,6 +10,7 @@ struct DownloadsView: View {
             StickyBrandScrollView(title: "Downloads") {
                 VStack(spacing: 12) {
                     downloadAllButton
+                    cellularToggle
 
                     ForEach(appViewModel.catalog.packages) { package in
                         packageRow(package)
@@ -32,6 +33,28 @@ struct DownloadsView: View {
                 Text(deleteConfirmationMessage)
             }
         }
+    }
+
+    private var cellularToggle: some View {
+        Toggle(
+            isOn: Binding(
+                get: { downloadService.allowsCellularDownloads },
+                set: { downloadService.allowsCellularDownloads = $0 }
+            )
+        ) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Allow downloads over cellular")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.white)
+                Text("Off by default. Course downloads can be several gigabytes.")
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.62))
+            }
+        }
+        .tint(Theme.Colors.peach)
+        .padding(16)
+        .background(Theme.Colors.surface)
+        .clipShape(RoundedRectangle(cornerRadius: Theme.Layout.cardRadius, style: .continuous))
     }
 
     private var downloadAllButton: some View {
@@ -180,7 +203,7 @@ struct DownloadsView: View {
         switch state {
         case .ready:
             packagePendingDeletion = package
-        case .queued, .downloading:
+        case .queued, .waitingForWiFi, .downloading:
             downloadService.cancel(package.id)
         case .notDownloaded, .failed:
             downloadService.enqueue(package, baseURL: appViewModel.catalog.mediaBaseURL)
@@ -191,7 +214,7 @@ struct DownloadsView: View {
         switch state {
         case .ready:
             "trash"
-        case .queued, .downloading:
+        case .queued, .waitingForWiFi, .downloading:
             "xmark.circle"
         case .notDownloaded, .failed:
             "arrow.down.circle"
@@ -202,7 +225,7 @@ struct DownloadsView: View {
         switch state {
         case .ready:
             "Delete package"
-        case .queued, .downloading:
+        case .queued, .waitingForWiFi, .downloading:
             "Cancel download"
         case .notDownloaded, .failed:
             "Download package"

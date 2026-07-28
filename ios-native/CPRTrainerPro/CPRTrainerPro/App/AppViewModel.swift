@@ -1,5 +1,9 @@
 import Foundation
 
+struct ForegroundExperienceToken: Hashable {
+    fileprivate let id = UUID()
+}
+
 enum AppPrompt: Identifiable, Equatable {
     case initialDownload(DownloadContentEstimate)
     case contentUpdate(ContentUpdateSummary)
@@ -38,6 +42,8 @@ final class AppViewModel: ObservableObject {
     private let versionStore: ContentVersionStore
     private var didEvaluateInitialDownloadPrompt = false
     private var pendingContentUpdate: ContentUpdateSummary?
+    private var foregroundExperienceTokens: Set<ForegroundExperienceToken> = []
+    private var hourlyUpdateTask: Task<Void, Never>?
 
     init(manifestService: ContentManifestService = .init()) {
         let catalog = manifestService.loadBundledCatalog()
@@ -65,18 +71,30 @@ final class AppViewModel: ObservableObject {
             planStore: contentUpdatePlanStore,
             contentRevision: catalog.contentRevision
         )
-
-        self.catalog = catalog
-        self.versionStore = versionStore
-        self.storageService = storageService
-        self.downloadService = DownloadService(
+        let downloadService = DownloadService(
             storageService: storageService,
             versionStore: versionStore,
             queueStore: queueStore,
             downloadAllQueueStore: downloadAllQueueStore,
             contentRevision: catalog.contentRevision
         )
+
+        self.catalog = catalog
+        self.versionStore = versionStore
+        self.storageService = storageService
+        self.downloadService = downloadService
         self.contentUpdateService = contentUpdateService
+        downloadService.onNetworkPolicyChange = { [weak contentUpdateService] isAllowed, allowsCellular in
+            contentUpdateService?.applyNetworkPolicy(
+                isAllowed: isAllowed,
+                allowsCellular: allowsCellular
+            )
+        }
+        let policy = downloadService.transferPolicySnapshot
+        contentUpdateService.applyNetworkPolicy(
+            isAllowed: policy.isAllowed,
+            allowsCellular: policy.allowsCellular
+        )
         self.downloadService.refreshPackageStates(for: catalog.packages)
         self.contentUpdateService.onAvailableUpdate = { [weak self] summary in
             self?.receiveContentUpdate(summary)
@@ -87,9 +105,35 @@ final class AppViewModel: ObservableObject {
         LegacyContentCleanup.schedule(for: catalog.contentRevision)
     }
 
-    func synchronizeDownloadsAfterForeground() {
+    func appDidBecomeActive() {
         downloadService.synchronizeForegroundState(for: catalog.packages)
         contentUpdateService.synchronizeForegroundState()
+        checkForContentUpdates()
+        startHourlyUpdateChecks()
+        presentPendingContentUpdateAfterDismissal()
+    }
+
+    func appDidEnterBackground() {
+        hourlyUpdateTask?.cancel()
+        hourlyUpdateTask = nil
+    }
+
+    func acquireForegroundExperience(_ reason: String) -> ForegroundExperienceToken {
+        let token = ForegroundExperienceToken()
+        foregroundExperienceTokens.insert(token)
+        return token
+    }
+
+    func releaseForegroundExperience(_ token: ForegroundExperienceToken?) {
+        guard let token else { return }
+        foregroundExperienceTokens.remove(token)
+        presentPendingContentUpdateAfterDismissal()
+    }
+
+    func downloadAllStateDidChange() {
+        if !downloadService.isDownloadingAll {
+            presentPendingContentUpdateAfterDismissal()
+        }
     }
 
     var remainingDownloadEstimate: DownloadContentEstimate? {
@@ -109,12 +153,7 @@ final class AppViewModel: ObservableObject {
             presentPendingContentUpdateIfPossible()
         }
 
-        Task {
-            await contentUpdateService.checkForUpdates(
-                packages: catalog.packages,
-                baseURL: catalog.mediaBaseURL
-            )
-        }
+        checkForContentUpdates()
     }
 
     func dismissInitialDownloadPrompt() {
@@ -133,10 +172,12 @@ final class AppViewModel: ObservableObject {
             return
         }
 
-        downloadService.enqueueAll(
+        guard downloadService.enqueueAll(
             catalog.packages,
             baseURL: catalog.mediaBaseURL
-        )
+        ) else {
+            return
+        }
         if case .initialDownload = activePrompt {
             activePrompt = nil
         }
@@ -183,12 +224,35 @@ final class AppViewModel: ObservableObject {
         guard
             didEvaluateInitialDownloadPrompt,
             activePrompt == nil,
+            foregroundExperienceTokens.isEmpty,
+            !downloadService.isDownloadingAll,
             let pendingContentUpdate
         else {
             return
         }
 
         activePrompt = .contentUpdate(pendingContentUpdate)
+    }
+
+    private func checkForContentUpdates() {
+        Task { [weak self] in
+            guard let self else { return }
+            await self.contentUpdateService.checkForUpdates(
+                packages: self.catalog.packages,
+                baseURL: self.catalog.mediaBaseURL
+            )
+        }
+    }
+
+    private func startHourlyUpdateChecks() {
+        guard hourlyUpdateTask == nil else { return }
+        hourlyUpdateTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 60 * 60 * 1_000_000_000)
+                guard !Task.isCancelled, let self else { return }
+                self.checkForContentUpdates()
+            }
+        }
     }
 
     func vaEnabled(for courseID: Course.ID) -> Bool {

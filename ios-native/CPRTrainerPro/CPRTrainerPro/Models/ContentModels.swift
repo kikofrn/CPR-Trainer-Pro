@@ -320,8 +320,19 @@ struct ContentUpdateSummary: Identifiable, Equatable {
     let candidates: [ContentUpdateCandidate]
 
     var id: String {
+        fingerprint
+    }
+
+    var fingerprint: String {
         candidates
-            .map(\.asset.filename)
+            .map { candidate in
+                [
+                    candidate.asset.filename,
+                    candidate.remoteVersion.eTag ?? "no-etag",
+                    String(candidate.remoteVersion.byteCount)
+                ]
+                .joined(separator: "#")
+            }
             .sorted()
             .joined(separator: "|")
     }
@@ -338,6 +349,23 @@ struct ContentUpdateSummary: Identifiable, Equatable {
 
     var sizeText: String {
         ByteCountFormatter.string(fromByteCount: totalByteCount, countStyle: .file)
+    }
+
+    var durationText: String {
+        let bytesPerSecond = 25_000_000.0 / 8.0
+        let seconds = min(86_400, max(15, Double(totalByteCount) / bytesPerSecond))
+        if seconds < 60 {
+            return "less than 1 min"
+        }
+        let minutes = max(1, Int((seconds / 60).rounded(.up)))
+        if minutes < 60 {
+            return "about \(minutes) min"
+        }
+        let hours = minutes / 60
+        let remainder = minutes % 60
+        return remainder == 0
+            ? "about \(hours) hr"
+            : "about \(hours) hr \(remainder) min"
     }
 }
 
@@ -402,6 +430,7 @@ struct DownloadProgressSnapshot: Equatable {
 enum DownloadState: Equatable {
     case notDownloaded
     case queued
+    case waitingForWiFi
     case downloading(progress: DownloadProgressSnapshot)
     case ready
     case failed(message: String)
@@ -413,7 +442,7 @@ enum DownloadState: Equatable {
 
     var isActiveDownload: Bool {
         switch self {
-        case .queued, .downloading:
+        case .queued, .waitingForWiFi, .downloading:
             true
         default:
             false
@@ -503,7 +532,7 @@ extension TrainingCatalog {
     }
 }
 
-private extension MediaAsset {
+extension MediaAsset {
     var estimatedByteCount: Int64 {
         if let byteCount, byteCount > 0 {
             return byteCount
