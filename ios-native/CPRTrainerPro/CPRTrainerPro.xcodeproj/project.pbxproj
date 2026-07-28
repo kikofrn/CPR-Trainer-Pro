@@ -59,6 +59,7 @@
 		001000000000000000000150 /* ContentVersionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000052 /* ContentVersionStore.swift */; };
 		001000000000000000000151 /* ContentUpdateService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000053 /* ContentUpdateService.swift */; };
 		001000000000000000000152 /* InteractiveTabContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000054 /* InteractiveTabContainer.swift */; };
+		001000000000000000000153 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000055 /* PrivacyInfo.xcprivacy */; };
 		002000000000000000000101 /* ContentManifestContractTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 002000000000000000000001 /* ContentManifestContractTests.swift */; };
 		002000000000000000000102 /* content-manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000016 /* content-manifest.json */; };
 		002000000000000000000103 /* instructor-tips.json in Resources */ = {isa = PBXBuildFile; fileRef = 001000000000000000000038 /* instructor-tips.json */; };
@@ -157,6 +158,7 @@
 		001000000000000000000052 /* ContentVersionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentVersionStore.swift; sourceTree = "<group>"; };
 		001000000000000000000053 /* ContentUpdateService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentUpdateService.swift; sourceTree = "<group>"; };
 		001000000000000000000054 /* InteractiveTabContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InteractiveTabContainer.swift; sourceTree = "<group>"; };
+		001000000000000000000055 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		002000000000000000000001 /* ContentManifestContractTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentManifestContractTests.swift; sourceTree = "<group>"; };
 		002000000000000000000020 /* CPRTrainerProTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CPRTrainerProTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		003000000000000000000001 /* CPRTrainerProWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CPRTrainerProWatchApp.swift; sourceTree = "<group>"; };
@@ -380,6 +382,7 @@
 				001000000000000000000038 /* instructor-tips.json */,
 				001000000000000000000039 /* Assets.xcassets */,
 				001000000000000000000034 /* Info.plist */,
+				001000000000000000000055 /* PrivacyInfo.xcprivacy */,
 				001000000000000000000023 /* Subtitles */,
 				001000000000000000000028 /* Artwork */,
 			);
@@ -526,6 +529,7 @@
 				001000000000000000000137 /* Assets.xcassets in Resources */,
 				001000000000000000000122 /* Subtitles in Resources */,
 				001000000000000000000127 /* Artwork in Resources */,
+				001000000000000000000153 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -757,7 +761,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 8;
 				DEVELOPMENT_TEAM = 8ZGSY5NJPJ;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = CPRTrainerPro/Resources/Info.plist;
@@ -768,7 +772,7 @@
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 3.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.ehacademy.cpr-trainer-pro";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -785,7 +789,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 8;
 				DEVELOPMENT_TEAM = 8ZGSY5NJPJ;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = CPRTrainerPro/Resources/Info.plist;
@@ -796,7 +800,7 @@
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 3.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.ehacademy.cpr-trainer-pro";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -812,7 +816,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 8ZGSY5NJPJ;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -836,7 +840,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 8ZGSY5NJPJ;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -860,13 +864,13 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 8;
 				DEVELOPMENT_TEAM = 8ZGSY5NJPJ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = CPRTrainerProWatch/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 3.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.ehacademy.cpr-trainer-pro.watchkitapp";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "CPR Trainer Pro Watch Development";
@@ -885,13 +889,13 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 8;
 				DEVELOPMENT_TEAM = 8ZGSY5NJPJ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = CPRTrainerProWatch/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 3.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.ehacademy.cpr-trainer-pro.watchkitapp";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;

@@ -1,5 +1,134 @@
 import Foundation
 
+struct RemoteContentManifest: Equatable, Sendable {
+    struct Asset: Equatable, Sendable {
+        let key: String
+        let version: RemoteAssetVersion
+    }
+
+    let generatedAt: Date?
+    let assetsByKey: [String: Asset]
+}
+
+actor RemoteContentManifestClient {
+    private struct Payload: Decodable {
+        struct File: Decodable {
+            let key: String
+            let etag: String?
+            let uploaded: String?
+            let size: Int64
+        }
+
+        let generated: String?
+        let files: [File]
+    }
+
+    private let endpoint: URL
+    private let session: URLSession
+    private let maximumResponseBytes = 2 * 1_024 * 1_024
+    private var inFlight: Task<RemoteContentManifest?, Never>?
+    private var cachedManifest: RemoteContentManifest?
+    private var cachedAt: Date?
+
+    init(endpoint: URL) {
+        self.endpoint = endpoint
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.waitsForConnectivity = false
+        configuration.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
+        configuration.urlCache = nil
+        configuration.timeoutIntervalForRequest = 15
+        configuration.timeoutIntervalForResource = 30
+        self.session = URLSession(configuration: configuration)
+    }
+
+    func fetch(
+        cacheInterval: TimeInterval = 60 * 60,
+        forceRefresh: Bool = false
+    ) async -> RemoteContentManifest? {
+        if !forceRefresh,
+           let cachedManifest,
+           let cachedAt,
+           Date().timeIntervalSince(cachedAt) < cacheInterval {
+            return cachedManifest
+        }
+        if let inFlight {
+            return await inFlight.value
+        }
+
+        let endpoint = endpoint
+        let session = session
+        let maximumResponseBytes = maximumResponseBytes
+        let task = Task<RemoteContentManifest?, Never> {
+            guard endpoint.scheme?.lowercased() == "https" else { return nil }
+            do {
+                var request = URLRequest(url: endpoint)
+                request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
+                request.timeoutInterval = 15
+                request.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
+                request.setValue("application/json", forHTTPHeaderField: "Accept")
+
+                let (bytes, response) = try await session.bytes(for: request)
+                guard let response = response as? HTTPURLResponse,
+                      response.statusCode == 200,
+                      response.mimeType == "application/json" || response.mimeType == nil,
+                      response.expectedContentLength <= Int64(maximumResponseBytes)
+                else {
+                    return nil
+                }
+
+                var data = Data()
+                data.reserveCapacity(
+                    min(maximumResponseBytes, max(0, Int(response.expectedContentLength)))
+                )
+                for try await byte in bytes {
+                    guard data.count < maximumResponseBytes else { return nil }
+                    data.append(byte)
+                }
+
+                let payload = try JSONDecoder().decode(Payload.self, from: data)
+                var assetsByKey: [String: RemoteContentManifest.Asset] = [:]
+                assetsByKey.reserveCapacity(payload.files.count)
+                for file in payload.files {
+                    guard !file.key.isEmpty,
+                          !file.key.hasPrefix("/"),
+                          !file.key.split(separator: "/").contains(".."),
+                          file.size > 0,
+                          assetsByKey[file.key] == nil
+                    else {
+                        return nil
+                    }
+                    assetsByKey[file.key] = .init(
+                        key: file.key,
+                        version: .init(
+                            byteCount: file.size,
+                            eTag: file.etag,
+                            lastModified: file.uploaded
+                        )
+                    )
+                }
+                guard !assetsByKey.isEmpty else { return nil }
+                return RemoteContentManifest(
+                    generatedAt: payload.generated.flatMap {
+                        ISO8601DateFormatter().date(from: $0)
+                    },
+                    assetsByKey: assetsByKey
+                )
+            } catch {
+                return nil
+            }
+        }
+
+        inFlight = task
+        let result = await task.value
+        inFlight = nil
+        if let result {
+            cachedManifest = result
+            cachedAt = Date()
+        }
+        return result
+    }
+}
+
 struct ContentUpdatePlanStore {
     struct WorkItem: Codable, Equatable {
         let candidate: ContentUpdateCandidate
@@ -116,11 +245,12 @@ final class ContentUpdateService: NSObject, ObservableObject {
     private let storageService: StorageService
     private let versionStore: ContentVersionStore
     private let planStore: ContentUpdatePlanStore
+    private let manifestClient: RemoteContentManifestClient
     private let backgroundSessionIdentifier: String
-    private let maxConcurrentChecks = 4
     private let maxConcurrentUpdates = 3
     private let maxRetryAttempts = 3
-    private var didCheckThisLaunch = false
+    private var lastSuccessfulCheckAt: Date?
+    private var lastFailedCheckAt: Date?
     private var plan: ContentUpdatePlanStore.Plan?
     private var activeUpdates: [Int: ActiveUpdate] = [:]
     private var retryWakeTask: Task<Void, Never>?
@@ -133,16 +263,6 @@ final class ContentUpdateService: NSObject, ObservableObject {
     @Published private(set) var lastErrorMessage: String?
 
     var onAvailableUpdate: ((ContentUpdateSummary?) -> Void)?
-
-    private lazy var checkSession: URLSession = {
-        let configuration = URLSessionConfiguration.ephemeral
-        configuration.waitsForConnectivity = false
-        configuration.httpMaximumConnectionsPerHost = maxConcurrentChecks
-        configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
-        configuration.timeoutIntervalForRequest = 10
-        configuration.timeoutIntervalForResource = 20
-        return URLSession(configuration: configuration)
-    }()
 
     private lazy var updateSession: URLSession = {
         #if targetEnvironment(simulator)
@@ -173,6 +293,9 @@ final class ContentUpdateService: NSObject, ObservableObject {
         self.storageService = storageService
         self.versionStore = versionStore
         self.planStore = planStore
+        self.manifestClient = RemoteContentManifestClient(
+            endpoint: URLHelpers.mediaBaseURL.appendingPathComponent("api/manifest")
+        )
         let revisionComponent = contentRevision.replacingOccurrences(
             of: "[^A-Za-z0-9.-]",
             with: "-",
@@ -187,12 +310,18 @@ final class ContentUpdateService: NSObject, ObservableObject {
     }
 
     func checkForUpdates(packages: [DownloadPackage], baseURL: URL) async {
-        guard !didCheckThisLaunch else {
+        let now = Date()
+        if let lastSuccessfulCheckAt,
+           now.timeIntervalSince(lastSuccessfulCheckAt) < 60 * 60 {
             publishPersistedFailuresIfNeeded()
             return
         }
-        didCheckThisLaunch = true
-
+        if let lastFailedCheckAt,
+           now.timeIntervalSince(lastFailedCheckAt) < 60 {
+            publishPersistedFailuresIfNeeded()
+            return
+        }
+        guard !isChecking else { return }
         guard !isUpdating else { return }
 
         let activeFilenames = Set(activeUpdates.values.map(\.workItem.candidate.asset.filename))
@@ -219,58 +348,31 @@ final class ContentUpdateService: NSObject, ObservableObject {
         isChecking = true
         defer { isChecking = false }
 
+        guard let manifest = await manifestClient.fetch() else {
+            lastFailedCheckAt = Date()
+            publishPersistedFailuresIfNeeded()
+            return
+        }
+        lastSuccessfulCheckAt = Date()
+        lastFailedCheckAt = nil
+
         var checkedFilenames: [String] = []
         var candidates: [ContentUpdateCandidate] = []
 
-        for startIndex in stride(
-            from: 0,
-            to: uniqueAssets.count,
-            by: maxConcurrentChecks
-        ) {
-            let endIndex = min(startIndex + maxConcurrentChecks, uniqueAssets.count)
-            let batch = Array(uniqueAssets[startIndex..<endIndex])
-            let results = await withTaskGroup(
-                of: (MediaAsset, RemoteAssetVersion)?.self,
-                returning: [(MediaAsset, RemoteAssetVersion)].self
-            ) { group in
-                for asset in batch {
-                    let session = checkSession
-                    group.addTask {
-                        await Self.fetchRemoteVersion(
-                            for: asset,
-                            baseURL: baseURL,
-                            session: session
-                        )
-                    }
-                }
-
-                var values: [(MediaAsset, RemoteAssetVersion)] = []
-                for await result in group {
-                    if let result {
-                        values.append(result)
-                    }
-                }
-                return values
+        for asset in uniqueAssets {
+            guard let remoteVersion = manifest.assetsByKey[asset.filename]?.version else {
+                continue
             }
-
-            for (asset, remoteVersion) in results {
-                checkedFilenames.append(asset.filename)
-                guard
-                    let installedVersion = versionStore.installedVersion(
-                        for: asset.filename
-                    ),
-                    remoteVersion.representsUpdate(comparedTo: installedVersion)
-                else {
-                    continue
-                }
-
-                candidates.append(
-                    ContentUpdateCandidate(
-                        asset: asset,
-                        remoteVersion: remoteVersion
-                    )
-                )
+            checkedFilenames.append(asset.filename)
+            guard
+                let installedVersion = versionStore.installedVersion(for: asset.filename),
+                remoteVersion.representsUpdate(comparedTo: installedVersion)
+            else {
+                continue
             }
+            candidates.append(
+                ContentUpdateCandidate(asset: asset, remoteVersion: remoteVersion)
+            )
         }
 
         do {
@@ -279,8 +381,8 @@ final class ContentUpdateService: NSObject, ObservableObject {
             assertionFailure("Failed to save media check time: \(error)")
         }
 
-        // Put fresh HEAD results last so they replace an older failed candidate
-        // if the same R2 object changed again between update attempts.
+        // Fresh manifest results replace an older failed candidate if the same
+        // object changed again between update attempts.
         let mergedCandidates = Self.deduplicatedCandidates(
             persistedFailures + candidates
         )
@@ -425,9 +527,10 @@ final class ContentUpdateService: NSObject, ObservableObject {
 
             do {
                 var request = URLRequest(
-                    url: Self.remoteURL(
+                    url: Self.versionedRemoteURL(
                         forExactFilename: workItem.candidate.asset.filename,
-                        baseURL: URLHelpers.mediaBaseURL
+                        baseURL: URLHelpers.mediaBaseURL,
+                        version: workItem.candidate.remoteVersion
                     )
                 )
                 request.cachePolicy = .reloadIgnoringLocalCacheData
@@ -702,54 +805,11 @@ final class ContentUpdateService: NSObject, ObservableObject {
         return stagedURL
     }
 
-    nonisolated private static func fetchRemoteVersion(
-        for asset: MediaAsset,
-        baseURL: URL,
-        session: URLSession
-    ) async -> (MediaAsset, RemoteAssetVersion)? {
-        let url = remoteURL(
-            forExactFilename: asset.filename,
-            baseURL: baseURL
-        )
-
-        do {
-            var request = URLRequest(url: url)
-            request.httpMethod = "HEAD"
-            request.cachePolicy = .reloadIgnoringLocalCacheData
-            request.timeoutInterval = 10
-            request.setValue(
-                "CPRTrainerPro-iOS/0.1",
-                forHTTPHeaderField: "User-Agent"
-            )
-
-            var (_, response) = try await session.data(for: request)
-            if let httpResponse = response as? HTTPURLResponse,
-               [400, 403, 405, 501].contains(httpResponse.statusCode) {
-                request.httpMethod = "GET"
-                request.setValue(
-                    "bytes=0-0",
-                    forHTTPHeaderField: "Range"
-                )
-                (_, response) = try await session.data(for: request)
-            }
-
-            guard let httpResponse = response as? HTTPURLResponse,
-                  200..<400 ~= httpResponse.statusCode,
-                  let version = RemoteAssetVersion(response: httpResponse)
-            else {
-                return nil
-            }
-            return (asset, version)
-        } catch {
-            return nil
-        }
-    }
-
     nonisolated private static func uniqueRemoteAssets(
         in packages: [DownloadPackage]
     ) -> [MediaAsset] {
         var byFilename: [String: MediaAsset] = [:]
-        for asset in packages.flatMap(\.assets) where asset.kind != .subtitle {
+        for asset in packages.flatMap(\.assets) {
             byFilename[asset.filename] = asset
         }
         return byFilename.values.sorted {
@@ -800,6 +860,24 @@ final class ContentUpdateService: NSObject, ObservableObject {
                     isDirectory: false
                 )
             }
+    }
+
+    nonisolated private static func versionedRemoteURL(
+        forExactFilename filename: String,
+        baseURL: URL,
+        version: RemoteAssetVersion
+    ) -> URL {
+        let url = remoteURL(forExactFilename: filename, baseURL: baseURL)
+        guard let eTag = version.eTag,
+              var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+        else {
+            return url
+        }
+        var queryItems = components.queryItems ?? []
+        queryItems.removeAll { $0.name == "v" }
+        queryItems.append(URLQueryItem(name: "v", value: eTag))
+        components.queryItems = queryItems
+        return components.url ?? url
     }
 }
 

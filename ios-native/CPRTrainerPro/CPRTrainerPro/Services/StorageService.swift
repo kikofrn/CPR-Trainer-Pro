@@ -61,13 +61,13 @@ struct StorageService {
             return true
         }
 
-        guard let url = try? localURL(for: filename) else { return false }
+        guard let url = try? downloadDestinationURL(for: filename) else { return false }
         return fileManager.fileExists(atPath: url.path)
     }
 
     func fileExists(_ asset: MediaAsset) -> Bool {
         guard
-            let url = try? localURL(for: asset.filename),
+            let url = try? playbackURL(for: asset.filename),
             fileManager.fileExists(atPath: url.path),
             let byteCount = try? fileSize(at: url),
             byteCount > 0
@@ -86,15 +86,37 @@ struct StorageService {
     }
 
     func localURL(for filename: String) throws -> URL {
+        try playbackURL(for: filename)
+    }
+
+    func playbackURL(for filename: String) throws -> URL {
+        let downloadedURL = try downloadDestinationURL(for: filename)
+        if fileManager.fileExists(atPath: downloadedURL.path) {
+            return downloadedURL
+        }
         if let bundledURL = try bundledResourceURL(for: filename) {
             return bundledURL
         }
 
-        return try downloadedURL(for: filename)
+        return downloadedURL
+    }
+
+    func downloadDestinationURL(for filename: String) throws -> URL {
+        try downloadedURL(for: filename)
+    }
+
+    func hasDownloadedCopy(_ filename: String) -> Bool {
+        guard let url = try? downloadDestinationURL(for: filename) else { return false }
+        return fileManager.fileExists(atPath: url.path)
+    }
+
+    func hasPlayableCopy(_ filename: String) -> Bool {
+        guard let url = try? playbackURL(for: filename) else { return false }
+        return fileManager.fileExists(atPath: url.path)
     }
 
     func prepareParentDirectory(for filename: String) throws {
-        let parent = try localURL(for: filename).deletingLastPathComponent()
+        let parent = try downloadDestinationURL(for: filename).deletingLastPathComponent()
         try ensureDirectory(parent)
     }
 
@@ -103,7 +125,7 @@ struct StorageService {
         for asset: MediaAsset,
         expectedByteCount: Int64? = nil
     ) throws {
-        let destinationURL = try localURL(for: asset.filename)
+        let destinationURL = try downloadDestinationURL(for: asset.filename)
         try ensureDirectory(destinationURL.deletingLastPathComponent())
 
         let byteCount = try fileSize(at: temporaryURL)
@@ -157,7 +179,7 @@ struct StorageService {
                 continue
             }
 
-            let url = try localURL(for: asset.filename)
+            let url = try downloadDestinationURL(for: asset.filename)
             if fileManager.fileExists(atPath: url.path) {
                 try fileManager.removeItem(at: url)
             }
@@ -170,7 +192,7 @@ struct StorageService {
 
     func fileSizeIfExists(_ filename: String) -> Int64 {
         guard
-            let url = try? localURL(for: filename),
+            let url = try? playbackURL(for: filename),
             fileManager.fileExists(atPath: url.path),
             let attributes = try? fileManager.attributesOfItem(atPath: url.path),
             let size = attributes[.size] as? NSNumber
@@ -250,7 +272,7 @@ struct StorageService {
 
     private func bundledResourceURL(for filename: String) throws -> URL? {
         let clean = try sanitizedRelativePath(filename)
-        guard clean.hasPrefix("subtitles/") else { return nil }
+        guard clean.lowercased().hasPrefix("subtitles/") else { return nil }
 
         let subtitleName = String(clean.dropFirst("subtitles/".count))
         return Bundle.main.url(forResource: subtitleName, withExtension: nil, subdirectory: "Subtitles")
@@ -280,5 +302,88 @@ struct StorageService {
             ofItemAtPath: url.path
         )
         #endif
+    }
+}
+
+struct ContentStateMigrator {
+    struct Alias: Equatable {
+        let oldFilename: String
+        let newFilename: String
+    }
+
+    static let aliases = [
+        Alias(
+            oldFilename: "CPR AED Presentation Slides/14_EHAcademy - CPR AED Course Pres--Getting Help.png",
+            newFilename: "CPR AED Presentation Slides/14_EHAcademy - CPR AED Course Pres-Getting Help.png"
+        ),
+        Alias(
+            oldFilename: "Pedi First Aid Presentation Slides/07_EHAcademy - Pedi FA Course Pres- MEDICAL EMERGENCIES.png",
+            newFilename: "Pedi First Aid Presentation Slides/07_EHAcademy - Pedi FA Course Pres-MEDICAL EMERGENCIES.png"
+        )
+    ]
+
+    private let fileManager: FileManager
+    private let storageService: StorageService
+    private let versionStore: ContentVersionStore
+
+    init(
+        fileManager: FileManager = .default,
+        storageService: StorageService,
+        versionStore: ContentVersionStore
+    ) {
+        self.fileManager = fileManager
+        self.storageService = storageService
+        self.versionStore = versionStore
+    }
+
+    @discardableResult
+    func migrate(using catalog: TrainingCatalog) -> Set<String> {
+        let assetsByFilename = Dictionary(
+            catalog.packages.flatMap(\.assets).map { ($0.filename, $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
+        var migrated: Set<String> = []
+
+        for alias in Self.aliases {
+            guard
+                let correctedAsset = assetsByFilename[alias.newFilename],
+                let correctedVersion = RemoteAssetVersion(asset: correctedAsset),
+                let oldRecord = versionStore.record(for: alias.oldFilename),
+                oldRecord.version.matches(correctedVersion),
+                let oldURL = try? storageService.downloadDestinationURL(for: alias.oldFilename),
+                let newURL = try? storageService.downloadDestinationURL(for: alias.newFilename),
+                fileManager.fileExists(atPath: oldURL.path),
+                let attributes = try? fileManager.attributesOfItem(atPath: oldURL.path),
+                let onDiskSize = attributes[.size] as? NSNumber,
+                onDiskSize.int64Value == correctedVersion.byteCount
+            else {
+                continue
+            }
+
+            do {
+                try fileManager.createDirectory(
+                    at: newURL.deletingLastPathComponent(),
+                    withIntermediateDirectories: true
+                )
+                if fileManager.fileExists(atPath: newURL.path) {
+                    let newAttributes = try fileManager.attributesOfItem(atPath: newURL.path)
+                    let newSize = (newAttributes[.size] as? NSNumber)?.int64Value
+                    guard newSize == correctedVersion.byteCount else { continue }
+                    try fileManager.removeItem(at: oldURL)
+                } else {
+                    try fileManager.moveItem(at: oldURL, to: newURL)
+                }
+                try versionStore.migrateRecord(
+                    from: alias.oldFilename,
+                    to: alias.newFilename
+                )
+                migrated.insert(alias.newFilename)
+            } catch {
+                // The operation is intentionally idempotent. Leave either valid copy and
+                // retry on the next launch rather than deleting the last playable file.
+            }
+        }
+
+        return migrated
     }
 }

@@ -937,7 +937,7 @@
         {
           "id": "slide-14",
           "title": "-Getting Help",
-          "filename": "CPR AED Presentation Slides/14_EHAcademy - CPR AED Course Pres--Getting Help.png",
+          "filename": "CPR AED Presentation Slides/14_EHAcademy - CPR AED Course Pres-Getting Help.png",
           "type": "image",
           "isSectionHeader": false,
           "parentSectionId": "slide-12"
@@ -1573,7 +1573,7 @@
         {
           "id": "slide-7",
           "title": "MEDICAL EMERGENCIES",
-          "filename": "Pedi First Aid Presentation Slides/07_EHAcademy - Pedi FA Course Pres- MEDICAL EMERGENCIES.png",
+          "filename": "Pedi First Aid Presentation Slides/07_EHAcademy - Pedi FA Course Pres-MEDICAL EMERGENCIES.png",
           "type": "image",
           "isSectionHeader": false,
           "parentSectionId": null
@@ -2321,8 +2321,8 @@
           "lastModified": "Thu, 23 Jul 2026 22:03:38 GMT"
         },
         {
-          "id": "package.cpr-aed.slideshow.CPR AED Presentation Slides/14_EHAcademy - CPR AED Course Pres--Getting Help.png",
-          "filename": "CPR AED Presentation Slides/14_EHAcademy - CPR AED Course Pres--Getting Help.png",
+          "id": "package.cpr-aed.slideshow.CPR AED Presentation Slides/14_EHAcademy - CPR AED Course Pres-Getting Help.png",
+          "filename": "CPR AED Presentation Slides/14_EHAcademy - CPR AED Course Pres-Getting Help.png",
           "kind": "image",
           "byteCount": 422809,
           "eTag": "\"492ebcbccc5b4dcf0e1be4ea87ab9bc9\"",
@@ -2562,9 +2562,11 @@
         },
         {
           "id": "package.cpr-aed.video.subtitle.01_EHAcademy - CPR AED Course Video-Introduction.vtt",
-          "filename": "subtitles/01_EHAcademy - CPR AED Course Video-Introduction.vtt",
+          "filename": "Subtitles/01_EHAcademy - CPR AED Course Video-Introduction.vtt",
           "kind": "subtitle",
-          "byteCount": 1231
+          "byteCount": 1284,
+          "eTag": "1d3803995ba18a015b5f45711c8f40f5",
+          "lastModified": "2026-07-23T23:09:06.403Z"
         },
         {
           "id": "package.cpr-aed.video.CPR AED VA Slides/02_EHAcademy - CPR AED Course Video-Why are we here.mp4",
@@ -2576,9 +2578,11 @@
         },
         {
           "id": "package.cpr-aed.video.subtitle.02_EHAcademy - CPR AED Course Video-Why are we here.vtt",
-          "filename": "subtitles/02_EHAcademy - CPR AED Course Video-Why are we here.vtt",
+          "filename": "Subtitles/02_EHAcademy - CPR AED Course Video-Why are we here.vtt",
           "kind": "subtitle",
-          "byteCount": 10708
+          "byteCount": 11070,
+          "eTag": "9b4b26e4ca89833e6e10c58005f55b2c",
+          "lastModified": "2026-07-23T23:09:06.478Z"
         },
         {
           "id": "package.cpr-aed.video.CPR AED VA Slides/03_EHAcademy - CPR AED Course Video-Life and Death Drama.mp4",
@@ -2590,9 +2594,11 @@
         },
         {
           "id": "package.cpr-aed.video.subtitle.03_EHAcademy - CPR AED Course Video-Life and Death Drama.vtt",
-          "filename": "subtitles/03_EHAcademy - CPR AED Course Video-Life and Death Drama.vtt",
+          "filename": "Subtitles/03_EHAcademy - CPR AED Course Video-Life and Death Drama.vtt",
           "kind": "subtitle",
-          "byteCount": 1640
+          "byteCount": 1708,
+          "eTag": "7c50c8bcece8e372df987992d854f92e",
+          "lastModified": "2026-07-23T23:09:06.323Z"
         },
         {
           "id": "package.cpr-aed.video.CPR AED VA Slides/04_EHAcademy - CPR AED Course Video-Course Overview.mp4",
@@ -2604,9 +2610,11 @@
         },
         {
           "id": "package.cpr-aed.video.subtitle.04_EHAcademy - CPR AED Course Video-Course Overview.vtt",
-          "filename": "subtitles/04_EHAcademy - CPR AED Course Video-Course Overview.vtt",
+          "filename": "Subtitles/04_EHAcademy - CPR AED Course Video-Course Overview.vtt",
           "kind": "subtitle",
-          "byteCount": 2647
+          "byteCount": 2709,
+          "eTag": "4da45805f4e119932f922f9534b1e935",
+          "lastModified": "2026-07-23T23:09:07.849Z"
         },
         {
           "id": "package.cpr-aed.video.CPR AED VA Slides/05_EHAcademy - CPR AED Course Video-Recognizing the Emergency.mp4",
@@ -2618,9 +2626,11 @@
         },
         {
           "id": "package.cpr-aed.video.subtitle.05_EHAcademy - CPR AED Course Video-Recognizing the Emergency.vtt",
-          "filename": "subtitles/05_EHAcademy - CPR AED Course Video-Recognizing the Emergency.vtt",
+          "filename": "Subtitles/05_EHAcademy - CPR AED Course Video-Recognizing the Emergency.vtt",
           "kind": "subtitle",
-          "byteCount": 1631
+          "byteCount": 1702,
+          "eTag": "4a4909bbd25b4d0f5ef36e2a5e09d6cc",
+          "lastModified": "2026-07-23T23:09:08.111Z"
         },
         {
           "id": "package.cpr-aed.video.CPR AED VA Slides/06_EHAcademy - CPR AED Course Video-First Actions.mp4",
@@ -2632,9 +2642,11 @@
         },
         {
           "id": "package.cpr-aed.video.subtitle.06_EHAcademy - CPR AED Course Video-First Actions.vtt",
-          "filename": "subtitles/06_EHAcademy - CPR AED Course Video-First Actions.vtt",
+          "filename": "Subtitles/06_EHAcademy - CPR AED Course Video-First Actions.vtt",
           "kind": "subtitle",
-          "byteCount": 1485
+          "byteCount": 1523,
+          "eTag": "6a5b243ceda2bc19981353cd2b975be0",
+          "lastModified": "2026-07-23T23:09:09.075Z"
         },
         {
           "id": "package.cpr-aed.video.CPR AED VA Slides/07_EHAcademy - CPR AED Course Video-Assessment Example.mp4",
@@ -2646,9 +2658,11 @@
         },
         {
           "id": "package.cpr-aed.video.subtitle.07_EHAcademy - CPR AED Course Video-Assessment Example.vtt",
-          "filename": "subtitles/07_EHAcademy - CPR AED Course Video-Assessment Example.vtt",
+          "filename": "Subtitles/07_EHAcademy - CPR AED Course Video-Assessment Example.vtt",
           "kind": "subtitle",
-          "byteCount": 1412
+          "byteCount": 1492,
+          "eTag": "0956414310dfd55bae2b2c0481b326d5",
+          "lastModified": "2026-07-23T23:09:09.250Z"
         },
         {
           "id": "package.cpr-aed.video.CPR AED VA Slides/08_EHAcademy - CPR AED Course Video-Assessment and Activation.mp4",
@@ -2660,9 +2674,11 @@
         },
         {
           "id": "package.cpr-aed.video.subtitle.08_EHAcademy - CPR AED Course Video-Assessment and Activation.vtt",
-          "filename": "subtitles/08_EHAcademy - CPR AED Course Video-Assessment and Activation.vtt",
+          "filename": "Subtitles/08_EHAcademy - CPR AED Course Video-Assessment and Activation.vtt",
           "kind": "subtitle",
-          "byteCount": 6862
+          "byteCount": 7158,
+          "eTag": "a66a11977482f6aebeae3bd1e50cb45d",
+          "lastModified": "2026-07-23T23:09:09.780Z"
         },
         {
           "id": "package.cpr-aed.video.CPR AED VA Slides/09_EHAcademy - CPR AED Course Video-Chest Compressions Video.mp4",
@@ -2674,9 +2690,11 @@
         },
         {
           "id": "package.cpr-aed.video.subtitle.09_EHAcademy - CPR AED Course Video-Chest Compressions Video.vtt",
-          "filename": "subtitles/09_EHAcademy - CPR AED Course Video-Chest Compressions Video.vtt",
+          "filename": "Subtitles/09_EHAcademy - CPR AED Course Video-Chest Compressions Video.vtt",
           "kind": "subtitle",
-          "byteCount": 1273
+          "byteCount": 1329,
+          "eTag": "46fe74f3fd3cc30ef9755a85c63de782",
+          "lastModified": "2026-07-23T23:09:10.740Z"
         },
         {
           "id": "package.cpr-aed.video.CPR AED VA Slides/10_EHAcademy - CPR AED Course Video-Hand Placement.mp4",
@@ -2688,9 +2706,11 @@
         },
         {
           "id": "package.cpr-aed.video.subtitle.10_EHAcademy - CPR AED Course Video-Hand Placement.vtt",
-          "filename": "subtitles/10_EHAcademy - CPR AED Course Video-Hand Placement.vtt",
+          "filename": "Subtitles/10_EHAcademy - CPR AED Course Video-Hand Placement.vtt",
           "kind": "subtitle",
-          "byteCount": 2317
+          "byteCount": 2415,
+          "eTag": "51d55a2ab6f72372b2add33d9b3eae98",
+          "lastModified": "2026-07-23T23:09:11.015Z"
         },
         {
           "id": "package.cpr-aed.video.CPR AED VA Slides/11_EHAcademy - CPR AED Course Video-Compression Depth.mp4",
@@ -2702,9 +2722,11 @@
         },
         {
           "id": "package.cpr-aed.video.subtitle.11_EHAcademy - CPR AED Course Video-Compression Depth.vtt",
-          "filename": "subtitles/11_EHAcademy - CPR AED Course Video-Compression Depth.vtt",
+          "filename": "Subtitles/11_EHAcademy - CPR AED Course Video-Compression Depth.vtt",
           "kind": "subtitle",
-          "byteCount": 1029
+          "byteCount": 1070,
+          "eTag": "6b8e8e003aa5a99cdeebc9e8169abf4f",
+          "lastModified": "2026-07-23T23:09:12.064Z"
         },
         {
           "id": "package.cpr-aed.video.CPR AED VA Slides/12_EHAcademy - CPR AED Course Video-Rate and Rhythm.mp4",
@@ -2716,9 +2738,11 @@
         },
         {
           "id": "package.cpr-aed.video.subtitle.12_EHAcademy - CPR AED Course Video-Rate and Rhythm.vtt",
-          "filename": "subtitles/12_EHAcademy - CPR AED Course Video-Rate and Rhythm.vtt",
+          "filename": "Subtitles/12_EHAcademy - CPR AED Course Video-Rate and Rhythm.vtt",
           "kind": "subtitle",
-          "byteCount": 2381
+          "byteCount": 2482,
+          "eTag": "a06d7ea775fc7c91d909109b17cc9714",
+          "lastModified": "2026-07-23T23:09:12.488Z"
         },
         {
           "id": "package.cpr-aed.video.CPR AED VA Slides/13_EHAcademy - CPR AED Course Video-CPR Music.mp4",
@@ -2730,9 +2754,11 @@
         },
         {
           "id": "package.cpr-aed.video.subtitle.13_EHAcademy - CPR AED Course Video-CPR Music.vtt",
-          "filename": "subtitles/13_EHAcademy - CPR AED Course Video-CPR Music.vtt",
+          "filename": "Subtitles/13_EHAcademy - CPR AED Course Video-CPR Music.vtt",
           "kind": "subtitle",
-          "byteCount": 1154
+          "byteCount": 1201,
+          "eTag": "cc64c9ae0c8e70e20ab7c20def71dc9a",
+          "lastModified": "2026-07-23T23:09:12.663Z"
         },
         {
           "id": "package.cpr-aed.video.CPR AED VA Slides/14_EHAcademy - CPR AED Course Video-Practice Compressions.mp4",
@@ -2744,9 +2770,11 @@
         },
         {
           "id": "package.cpr-aed.video.subtitle.14_EHAcademy - CPR AED Course Video-Practice Compressions.vtt",
-          "filename": "subtitles/14_EHAcademy - CPR AED Course Video-Practice Compressions.vtt",
+          "filename": "Subtitles/14_EHAcademy - CPR AED Course Video-Practice Compressions.vtt",
           "kind": "subtitle",
-          "byteCount": 4005
+          "byteCount": 4181,
+          "eTag": "478be85f4b413f6e5f258b2a02e24871",
+          "lastModified": "2026-07-23T23:09:13.677Z"
         },
         {
           "id": "package.cpr-aed.video.CPR AED VA Slides/15_EHAcademy - CPR AED Course Video-Giving Breaths.mp4",
@@ -2758,9 +2786,11 @@
         },
         {
           "id": "package.cpr-aed.video.subtitle.15_EHAcademy - CPR AED Course Video-Giving Breaths.vtt",
-          "filename": "subtitles/15_EHAcademy - CPR AED Course Video-Giving Breaths.vtt",
+          "filename": "Subtitles/15_EHAcademy - CPR AED Course Video-Giving Breaths.vtt",
           "kind": "subtitle",
-          "byteCount": 2354
+          "byteCount": 2431,
+          "eTag": "9eaeb8fd3f27c07e8ba4300a652fc28d",
+          "lastModified": "2026-07-23T23:09:13.962Z"
         },
         {
           "id": "package.cpr-aed.video.CPR AED VA Slides/16_EHAcademy - CPR AED Course Video-Practice Breaths.mp4",
@@ -2772,9 +2802,11 @@
         },
         {
           "id": "package.cpr-aed.video.subtitle.16_EHAcademy - CPR AED Course Video-Practice Breaths.vtt",
-          "filename": "subtitles/16_EHAcademy - CPR AED Course Video-Practice Breaths.vtt",
+          "filename": "Subtitles/16_EHAcademy - CPR AED Course Video-Practice Breaths.vtt",
           "kind": "subtitle",
-          "byteCount": 1242
+          "byteCount": 1295,
+          "eTag": "e4f06d140eec6dc5d27386e1eedb169c",
+          "lastModified": "2026-07-23T23:09:14.909Z"
         },
         {
           "id": "package.cpr-aed.video.CPR AED VA Slides/17_EHAcademy - CPR AED Course Video-Using an AED.mp4",
@@ -2786,9 +2818,11 @@
         },
         {
           "id": "package.cpr-aed.video.subtitle.17_EHAcademy - CPR AED Course Video-Using an AED.vtt",
-          "filename": "subtitles/17_EHAcademy - CPR AED Course Video-Using an AED.vtt",
+          "filename": "Subtitles/17_EHAcademy - CPR AED Course Video-Using an AED.vtt",
           "kind": "subtitle",
-          "byteCount": 3222
+          "byteCount": 3359,
+          "eTag": "0636bb843016e6625f15356f57f317b7",
+          "lastModified": "2026-07-23T23:09:15.505Z"
         },
         {
           "id": "package.cpr-aed.video.CPR AED VA Slides/18_EHAcademy - CPR AED Course Video-Adult Scenario.mp4",
@@ -2800,9 +2834,11 @@
         },
         {
           "id": "package.cpr-aed.video.subtitle.18_EHAcademy - CPR AED Course Video-Adult Scenario.vtt",
-          "filename": "subtitles/18_EHAcademy - CPR AED Course Video-Adult Scenario.vtt",
+          "filename": "Subtitles/18_EHAcademy - CPR AED Course Video-Adult Scenario.vtt",
           "kind": "subtitle",
-          "byteCount": 1818
+          "byteCount": 1898,
+          "eTag": "ebc7e709274b407dc796bfef77307f37",
+          "lastModified": "2026-07-23T23:09:15.609Z"
         },
         {
           "id": "package.cpr-aed.video.CPR AED VA Slides/19_EHAcademy - CPR AED Course Video-Child CPR.mp4",
@@ -2814,9 +2850,11 @@
         },
         {
           "id": "package.cpr-aed.video.subtitle.19_EHAcademy - CPR AED Course Video-Child CPR.vtt",
-          "filename": "subtitles/19_EHAcademy - CPR AED Course Video-Child CPR.vtt",
+          "filename": "Subtitles/19_EHAcademy - CPR AED Course Video-Child CPR.vtt",
           "kind": "subtitle",
-          "byteCount": 2897
+          "byteCount": 2995,
+          "eTag": "4dc11c3c3f626ba8fac1d7212d065484",
+          "lastModified": "2026-07-23T23:09:16.715Z"
         },
         {
           "id": "package.cpr-aed.video.CPR AED VA Slides/20_EHAcademy - CPR AED Course Video-AED use on kids.mp4",
@@ -2828,9 +2866,11 @@
         },
         {
           "id": "package.cpr-aed.video.subtitle.20_EHAcademy - CPR AED Course Video-AED use on kids.vtt",
-          "filename": "subtitles/20_EHAcademy - CPR AED Course Video-AED use on kids.vtt",
+          "filename": "Subtitles/20_EHAcademy - CPR AED Course Video-AED use on kids.vtt",
           "kind": "subtitle",
-          "byteCount": 2094
+          "byteCount": 2153,
+          "eTag": "60a32edabadbf1f2381d0e3b91db712e",
+          "lastModified": "2026-07-23T23:09:17.088Z"
         },
         {
           "id": "package.cpr-aed.video.CPR AED VA Slides/21_EHAcademy - CPR AED Course Video-Infant CPR.mp4",
@@ -2842,9 +2882,11 @@
         },
         {
           "id": "package.cpr-aed.video.subtitle.21_EHAcademy - CPR AED Course Video-Infant CPR.vtt",
-          "filename": "subtitles/21_EHAcademy - CPR AED Course Video-Infant CPR.vtt",
+          "filename": "Subtitles/21_EHAcademy - CPR AED Course Video-Infant CPR.vtt",
           "kind": "subtitle",
-          "byteCount": 2423
+          "byteCount": 2524,
+          "eTag": "9b0b48c74d42e9f0bffca9e602b3b7e3",
+          "lastModified": "2026-07-23T23:09:18.209Z"
         },
         {
           "id": "package.cpr-aed.video.CPR AED VA Slides/22_EHAcademy - CPR AED Course Video-Infant Compressions.mp4",
@@ -2856,9 +2898,11 @@
         },
         {
           "id": "package.cpr-aed.video.subtitle.22_EHAcademy - CPR AED Course Video-Infant Compressions.vtt",
-          "filename": "subtitles/22_EHAcademy - CPR AED Course Video-Infant Compressions.vtt",
+          "filename": "Subtitles/22_EHAcademy - CPR AED Course Video-Infant Compressions.vtt",
           "kind": "subtitle",
-          "byteCount": 1427
+          "byteCount": 1486,
+          "eTag": "c16732de30efd03536a30651e9e739b5",
+          "lastModified": "2026-07-23T23:09:18.346Z"
         },
         {
           "id": "package.cpr-aed.video.CPR AED VA Slides/23_EHAcademy - CPR AED Course Video-Infant Breaths.mp4",
@@ -2870,9 +2914,11 @@
         },
         {
           "id": "package.cpr-aed.video.subtitle.23_EHAcademy - CPR AED Course Video-Infant Breaths.vtt",
-          "filename": "subtitles/23_EHAcademy - CPR AED Course Video-Infant Breaths.vtt",
+          "filename": "Subtitles/23_EHAcademy - CPR AED Course Video-Infant Breaths.vtt",
           "kind": "subtitle",
-          "byteCount": 1625
+          "byteCount": 1678,
+          "eTag": "88d4fe1669412b49c59595340cac4e88",
+          "lastModified": "2026-07-23T23:09:18.657Z"
         },
         {
           "id": "package.cpr-aed.video.CPR AED VA Slides/24_EHAcademy - CPR AED Course Video-Infant Scenario.mp4",
@@ -2884,9 +2930,11 @@
         },
         {
           "id": "package.cpr-aed.video.subtitle.24_EHAcademy - CPR AED Course Video-Infant Scenario.vtt",
-          "filename": "subtitles/24_EHAcademy - CPR AED Course Video-Infant Scenario.vtt",
+          "filename": "Subtitles/24_EHAcademy - CPR AED Course Video-Infant Scenario.vtt",
           "kind": "subtitle",
-          "byteCount": 642
+          "byteCount": 659,
+          "eTag": "de1eb43754df5ec5b770f4b83589c3bb",
+          "lastModified": "2026-07-23T23:09:19.720Z"
         },
         {
           "id": "package.cpr-aed.video.CPR AED VA Slides/25_EHAcademy - CPR AED Course Video-Mild Choking.mp4",
@@ -2898,9 +2946,11 @@
         },
         {
           "id": "package.cpr-aed.video.subtitle.25_EHAcademy - CPR AED Course Video-Mild Choking.vtt",
-          "filename": "subtitles/25_EHAcademy - CPR AED Course Video-Mild Choking.vtt",
+          "filename": "Subtitles/25_EHAcademy - CPR AED Course Video-Mild Choking.vtt",
           "kind": "subtitle",
-          "byteCount": 1062
+          "byteCount": 1109,
+          "eTag": "c70e08b72d008a355a64e9d6b0d7eb72",
+          "lastModified": "2026-07-23T23:09:20.021Z"
         },
         {
           "id": "package.cpr-aed.video.CPR AED VA Slides/26_EHAcademy - CPR AED Course Video-Severe Choking.mp4",
@@ -2912,9 +2962,11 @@
         },
         {
           "id": "package.cpr-aed.video.subtitle.26_EHAcademy - CPR AED Course Video-Severe Choking.vtt",
-          "filename": "subtitles/26_EHAcademy - CPR AED Course Video-Severe Choking.vtt",
+          "filename": "Subtitles/26_EHAcademy - CPR AED Course Video-Severe Choking.vtt",
           "kind": "subtitle",
-          "byteCount": 1021
+          "byteCount": 1065,
+          "eTag": "596126827ba165e70914d3925c23ee9a",
+          "lastModified": "2026-07-23T23:09:20.765Z"
         },
         {
           "id": "package.cpr-aed.video.CPR AED VA Slides/27_EHAcademy - CPR AED Course Video-Adult Choking Relief.mp4",
@@ -2926,9 +2978,11 @@
         },
         {
           "id": "package.cpr-aed.video.subtitle.27_EHAcademy - CPR AED Course Video-Adult Choking Relief.vtt",
-          "filename": "subtitles/27_EHAcademy - CPR AED Course Video-Adult Choking Relief.vtt",
+          "filename": "Subtitles/27_EHAcademy - CPR AED Course Video-Adult Choking Relief.vtt",
           "kind": "subtitle",
-          "byteCount": 1588
+          "byteCount": 1638,
+          "eTag": "aabc842b5eeb40cc3c242dabb89ffbc9",
+          "lastModified": "2026-07-23T23:09:21.460Z"
         },
         {
           "id": "package.cpr-aed.video.CPR AED VA Slides/28_EHAcademy - CPR AED Course Video-Child Choking Relief.mp4",
@@ -2940,9 +2994,11 @@
         },
         {
           "id": "package.cpr-aed.video.subtitle.28_EHAcademy - CPR AED Course Video-Child Choking Relief.vtt",
-          "filename": "subtitles/28_EHAcademy - CPR AED Course Video-Child Choking Relief.vtt",
+          "filename": "Subtitles/28_EHAcademy - CPR AED Course Video-Child Choking Relief.vtt",
           "kind": "subtitle",
-          "byteCount": 1407
+          "byteCount": 1466,
+          "eTag": "c26d8ba8e80c408c2ce1554876ba5b8e",
+          "lastModified": "2026-07-23T23:09:21.646Z"
         },
         {
           "id": "package.cpr-aed.video.CPR AED VA Slides/29_EHAcademy - CPR AED Course Video-Infant Choking Relief.mp4",
@@ -2954,9 +3010,11 @@
         },
         {
           "id": "package.cpr-aed.video.subtitle.29_EHAcademy - CPR AED Course Video-Infant Choking Relief.vtt",
-          "filename": "subtitles/29_EHAcademy - CPR AED Course Video-Infant Choking Relief.vtt",
+          "filename": "Subtitles/29_EHAcademy - CPR AED Course Video-Infant Choking Relief.vtt",
           "kind": "subtitle",
-          "byteCount": 2911
+          "byteCount": 3033,
+          "eTag": "1c197e5bfa6981acc4a269c6d056cc39",
+          "lastModified": "2026-07-23T23:09:22.467Z"
         },
         {
           "id": "package.cpr-aed.video.CPR AED VA Slides/30_EHAcademy - CPR AED Course Video-Conclusion.mp4",
@@ -2968,9 +3026,11 @@
         },
         {
           "id": "package.cpr-aed.video.subtitle.30_EHAcademy - CPR AED Course Video-Conclusion.vtt",
-          "filename": "subtitles/30_EHAcademy - CPR AED Course Video-Conclusion.vtt",
+          "filename": "Subtitles/30_EHAcademy - CPR AED Course Video-Conclusion.vtt",
           "kind": "subtitle",
-          "byteCount": 1596
+          "byteCount": 1664,
+          "eTag": "49a5c8f079c726431deb4829cdbeff97",
+          "lastModified": "2026-07-23T23:09:22.886Z"
         }
       ]
     },
@@ -3662,9 +3722,11 @@
         },
         {
           "id": "package.first-aid.video.subtitle.01_EHAcademy - First Aid Course-Introduction.vtt",
-          "filename": "subtitles/01_EHAcademy - First Aid Course-Introduction.vtt",
+          "filename": "Subtitles/01_EHAcademy - First Aid Course-Introduction.vtt",
           "kind": "subtitle",
-          "byteCount": 1415
+          "byteCount": 1462,
+          "eTag": "5ec9570fb753325ad13faba288391062",
+          "lastModified": "2026-07-23T23:09:06.480Z"
         },
         {
           "id": "package.first-aid.video.First Aid VA Slides/02_EHAcademy - First Aid Course-What is First Aid.mp4",
@@ -3676,9 +3738,11 @@
         },
         {
           "id": "package.first-aid.video.subtitle.02_EHAcademy - First Aid Course-What is First Aid.vtt",
-          "filename": "subtitles/02_EHAcademy - First Aid Course-What is First Aid.vtt",
+          "filename": "Subtitles/02_EHAcademy - First Aid Course-What is First Aid.vtt",
           "kind": "subtitle",
-          "byteCount": 1720
+          "byteCount": 1776,
+          "eTag": "24e6973eb9caf5bf443a66872e011491",
+          "lastModified": "2026-07-23T23:09:06.397Z"
         },
         {
           "id": "package.first-aid.video.First Aid VA Slides/03_EHAcademy - First Aid Course-First Aid Basics.mp4",
@@ -3690,9 +3754,11 @@
         },
         {
           "id": "package.first-aid.video.subtitle.03_EHAcademy - First Aid Course-First Aid Basics.vtt",
-          "filename": "subtitles/03_EHAcademy - First Aid Course-First Aid Basics.vtt",
+          "filename": "Subtitles/03_EHAcademy - First Aid Course-First Aid Basics.vtt",
           "kind": "subtitle",
-          "byteCount": 2576
+          "byteCount": 2683,
+          "eTag": "e2198078fb1fd63e1b8d1e627709d67b",
+          "lastModified": "2026-07-23T23:09:07.692Z"
         },
         {
           "id": "package.first-aid.video.First Aid VA Slides/04_EHAcademy - First Aid Course-Universal Precautions.mp4",
@@ -3704,9 +3770,11 @@
         },
         {
           "id": "package.first-aid.video.subtitle.04_EHAcademy - First Aid Course-Universal Precautions.vtt",
-          "filename": "subtitles/04_EHAcademy - First Aid Course-Universal Precautions.vtt",
+          "filename": "Subtitles/04_EHAcademy - First Aid Course-Universal Precautions.vtt",
           "kind": "subtitle",
-          "byteCount": 1732
+          "byteCount": 1788,
+          "eTag": "4232cf7ea7eef2ae50b85722680332aa",
+          "lastModified": "2026-07-23T23:09:07.854Z"
         },
         {
           "id": "package.first-aid.video.First Aid VA Slides/05_EHAcademy - First Aid Course-Legal Concerns.mp4",
@@ -3718,9 +3786,11 @@
         },
         {
           "id": "package.first-aid.video.subtitle.05_EHAcademy - First Aid Course-Legal Concerns.vtt",
-          "filename": "subtitles/05_EHAcademy - First Aid Course-Legal Concerns.vtt",
+          "filename": "Subtitles/05_EHAcademy - First Aid Course-Legal Concerns.vtt",
           "kind": "subtitle",
-          "byteCount": 1285
+          "byteCount": 1314,
+          "eTag": "7f24433e3c16eac61743c0fe750e25cd",
+          "lastModified": "2026-07-23T23:09:07.891Z"
         },
         {
           "id": "package.first-aid.video.First Aid VA Slides/06_EHAcademy - First Aid Course-Calling 911.mp4",
@@ -3732,9 +3802,11 @@
         },
         {
           "id": "package.first-aid.video.subtitle.06_EHAcademy - First Aid Course-Calling 911.vtt",
-          "filename": "subtitles/06_EHAcademy - First Aid Course-Calling 911.vtt",
+          "filename": "Subtitles/06_EHAcademy - First Aid Course-Calling 911.vtt",
           "kind": "subtitle",
-          "byteCount": 1617
+          "byteCount": 1670,
+          "eTag": "3a6202e087f0d1855848f4395001653a",
+          "lastModified": "2026-07-23T23:09:09.420Z"
         },
         {
           "id": "package.first-aid.video.First Aid VA Slides/07_EHAcademy - First Aid Course-MEDICAL EMERGENCIES.mp4",
@@ -3746,9 +3818,11 @@
         },
         {
           "id": "package.first-aid.video.subtitle.07_EHAcademy - First Aid Course-MEDICAL EMERGENCIES.vtt",
-          "filename": "subtitles/07_EHAcademy - First Aid Course-MEDICAL EMERGENCIES.vtt",
+          "filename": "Subtitles/07_EHAcademy - First Aid Course-MEDICAL EMERGENCIES.vtt",
           "kind": "subtitle",
-          "byteCount": 473
+          "byteCount": 490,
+          "eTag": "565fe60d948a98fb4f601eacfa4ce437",
+          "lastModified": "2026-07-23T23:09:09.552Z"
         },
         {
           "id": "package.first-aid.video.First Aid VA Slides/08_EHAcademy - First Aid Course-Heart Attack.mp4",
@@ -3760,9 +3834,11 @@
         },
         {
           "id": "package.first-aid.video.subtitle.08_EHAcademy - First Aid Course-Heart Attack.vtt",
-          "filename": "subtitles/08_EHAcademy - First Aid Course-Heart Attack.vtt",
+          "filename": "Subtitles/08_EHAcademy - First Aid Course-Heart Attack.vtt",
           "kind": "subtitle",
-          "byteCount": 3028
+          "byteCount": 3093,
+          "eTag": "76d7cd279fbbd639ede9e72c90047d1a",
+          "lastModified": "2026-07-23T23:09:10.598Z"
         },
         {
           "id": "package.first-aid.video.First Aid VA Slides/09_EHAcademy - First Aid Course-Stroke.mp4",
@@ -3774,9 +3850,11 @@
         },
         {
           "id": "package.first-aid.video.subtitle.09_EHAcademy - First Aid Course-Stroke.vtt",
-          "filename": "subtitles/09_EHAcademy - First Aid Course-Stroke.vtt",
+          "filename": "Subtitles/09_EHAcademy - First Aid Course-Stroke.vtt",
           "kind": "subtitle",
-          "byteCount": 2310
+          "byteCount": 2387,
+          "eTag": "3cd41b50094fe7e077bcd0d503c82c86",
+          "lastModified": "2026-07-23T23:09:10.960Z"
         },
         {
           "id": "package.first-aid.video.First Aid VA Slides/10_EHAcademy - First Aid Course Pres-Seizure Video.mp4",
@@ -3788,9 +3866,11 @@
         },
         {
           "id": "package.first-aid.video.subtitle.10_EHAcademy - First Aid Course Pres-Seizure Video.vtt",
-          "filename": "subtitles/10_EHAcademy - First Aid Course Pres-Seizure Video.vtt",
+          "filename": "Subtitles/10_EHAcademy - First Aid Course Pres-Seizure Video.vtt",
           "kind": "subtitle",
-          "byteCount": 1016
+          "byteCount": 1042,
+          "eTag": "0433cf036a69842a7a33fbc77f2eb195",
+          "lastModified": "2026-07-23T23:09:11.212Z"
         },
         {
           "id": "package.first-aid.video.First Aid VA Slides/11_EHAcademy - First Aid Course-Seizure.mp4",
@@ -3802,9 +3882,11 @@
         },
         {
           "id": "package.first-aid.video.subtitle.11_EHAcademy - First Aid Course-Seizure.vtt",
-          "filename": "subtitles/11_EHAcademy - First Aid Course-Seizure.vtt",
+          "filename": "Subtitles/11_EHAcademy - First Aid Course-Seizure.vtt",
           "kind": "subtitle",
-          "byteCount": 2291
+          "byteCount": 2365,
+          "eTag": "4ab805ca837d8f70559283717c455a44",
+          "lastModified": "2026-07-23T23:09:12.299Z"
         },
         {
           "id": "package.first-aid.video.First Aid VA Slides/12_EHAcademy - First Aid Course-Diabetes.mp4",
@@ -3816,9 +3898,11 @@
         },
         {
           "id": "package.first-aid.video.subtitle.12_EHAcademy - First Aid Course-Diabetes.vtt",
-          "filename": "subtitles/12_EHAcademy - First Aid Course-Diabetes.vtt",
+          "filename": "Subtitles/12_EHAcademy - First Aid Course-Diabetes.vtt",
           "kind": "subtitle",
-          "byteCount": 2335
+          "byteCount": 2415,
+          "eTag": "eed3ca406455d7c33616a150134fc43e",
+          "lastModified": "2026-07-23T23:09:12.445Z"
         },
         {
           "id": "package.first-aid.video.First Aid VA Slides/13_EHAcademy - First Aid Course-Difficulty Breathing.mp4",
@@ -3830,9 +3914,11 @@
         },
         {
           "id": "package.first-aid.video.subtitle.13_EHAcademy - First Aid Course-Difficulty Breathing.vtt",
-          "filename": "subtitles/13_EHAcademy - First Aid Course-Difficulty Breathing.vtt",
+          "filename": "Subtitles/13_EHAcademy - First Aid Course-Difficulty Breathing.vtt",
           "kind": "subtitle",
-          "byteCount": 1179
+          "byteCount": 1211,
+          "eTag": "62a66d51d9b03eb0beeae69fec1c85cd",
+          "lastModified": "2026-07-23T23:09:13.462Z"
         },
         {
           "id": "package.first-aid.video.First Aid VA Slides/14_EHAcademy - First Aid Course-Allergic Reaction.mp4",
@@ -3844,9 +3930,11 @@
         },
         {
           "id": "package.first-aid.video.subtitle.14_EHAcademy - First Aid Course-Allergic Reaction.vtt",
-          "filename": "subtitles/14_EHAcademy - First Aid Course-Allergic Reaction.vtt",
+          "filename": "Subtitles/14_EHAcademy - First Aid Course-Allergic Reaction.vtt",
           "kind": "subtitle",
-          "byteCount": 1382
+          "byteCount": 1429,
+          "eTag": "ee4c4a650a988e8cc7f1eedf8ff36b3c",
+          "lastModified": "2026-07-23T23:09:13.976Z"
         },
         {
           "id": "package.first-aid.video.First Aid VA Slides/15_EHAcademy - First Aid Course-Fainting.mp4",
@@ -3858,9 +3946,11 @@
         },
         {
           "id": "package.first-aid.video.subtitle.15_EHAcademy - First Aid Course-Fainting.vtt",
-          "filename": "subtitles/15_EHAcademy - First Aid Course-Fainting.vtt",
+          "filename": "Subtitles/15_EHAcademy - First Aid Course-Fainting.vtt",
           "kind": "subtitle",
-          "byteCount": 1632
+          "byteCount": 1682,
+          "eTag": "b2f3dbe1866cba2e3378587ccc95f4de",
+          "lastModified": "2026-07-23T23:09:14.123Z"
         },
         {
           "id": "package.first-aid.video.First Aid VA Slides/16_EHAcademy - First Aid Course-BLEEDING AND WOUNDS.mp4",
@@ -3872,9 +3962,11 @@
         },
         {
           "id": "package.first-aid.video.subtitle.16_EHAcademy - First Aid Course-BLEEDING AND WOUNDS.vtt",
-          "filename": "subtitles/16_EHAcademy - First Aid Course-BLEEDING AND WOUNDS.vtt",
+          "filename": "Subtitles/16_EHAcademy - First Aid Course-BLEEDING AND WOUNDS.vtt",
           "kind": "subtitle",
-          "byteCount": 1114
+          "byteCount": 1152,
+          "eTag": "04e62bb260bfc610a405415ad9b4fcc9",
+          "lastModified": "2026-07-23T23:09:15.380Z"
         },
         {
           "id": "package.first-aid.video.First Aid VA Slides/17_EHAcademy - First Aid Course-Minor Bleeding.mp4",
@@ -3886,9 +3978,11 @@
         },
         {
           "id": "package.first-aid.video.subtitle.17_EHAcademy - First Aid Course-Minor Bleeding.vtt",
-          "filename": "subtitles/17_EHAcademy - First Aid Course-Minor Bleeding.vtt",
+          "filename": "Subtitles/17_EHAcademy - First Aid Course-Minor Bleeding.vtt",
           "kind": "subtitle",
-          "byteCount": 1971
+          "byteCount": 2036,
+          "eTag": "b53c36f72475cb4d59f506d5f0ed01f0",
+          "lastModified": "2026-07-23T23:09:15.426Z"
         },
         {
           "id": "package.first-aid.video.First Aid VA Slides/18_EHAcademy - First Aid Course-Major Bleeding.mp4",
@@ -3900,9 +3994,11 @@
         },
         {
           "id": "package.first-aid.video.subtitle.18_EHAcademy - First Aid Course-Major Bleeding.vtt",
-          "filename": "subtitles/18_EHAcademy - First Aid Course-Major Bleeding.vtt",
+          "filename": "Subtitles/18_EHAcademy - First Aid Course-Major Bleeding.vtt",
           "kind": "subtitle",
-          "byteCount": 2280
+          "byteCount": 2351,
+          "eTag": "02b5b0ae32faa8683a5955bf9b5c7ad5",
+          "lastModified": "2026-07-23T23:09:16.300Z"
         },
         {
           "id": "package.first-aid.video.First Aid VA Slides/19_EHAcademy - First Aid Course-Using a Tourniquet.mp4",
@@ -3914,9 +4010,11 @@
         },
         {
           "id": "package.first-aid.video.subtitle.19_EHAcademy - First Aid Course-Using a Tourniquet.vtt",
-          "filename": "subtitles/19_EHAcademy - First Aid Course-Using a Tourniquet.vtt",
+          "filename": "Subtitles/19_EHAcademy - First Aid Course-Using a Tourniquet.vtt",
           "kind": "subtitle",
-          "byteCount": 2984
+          "byteCount": 3073,
+          "eTag": "da57f52049bfd050f4b692614c3c94cd",
+          "lastModified": "2026-07-23T23:09:16.919Z"
         },
         {
           "id": "package.first-aid.video.First Aid VA Slides/20_EHAcademy - First Aid Course-Nose Bleed.mp4",
@@ -3928,9 +4026,11 @@
         },
         {
           "id": "package.first-aid.video.subtitle.20_EHAcademy - First Aid Course-Nose Bleed.vtt",
-          "filename": "subtitles/20_EHAcademy - First Aid Course-Nose Bleed.vtt",
+          "filename": "Subtitles/20_EHAcademy - First Aid Course-Nose Bleed.vtt",
           "kind": "subtitle",
-          "byteCount": 1490
+          "byteCount": 1540,
+          "eTag": "c275c16f2e3ed55c129e084a5af271d4",
+          "lastModified": "2026-07-23T23:09:17.263Z"
         },
         {
           "id": "package.first-aid.video.First Aid VA Slides/21_EHAcademy - First Aid Course-Mouth Bleed.mp4",
@@ -3942,9 +4042,11 @@
         },
         {
           "id": "package.first-aid.video.subtitle.21_EHAcademy - First Aid Course-Mouth Bleed.vtt",
-          "filename": "subtitles/21_EHAcademy - First Aid Course-Mouth Bleed.vtt",
+          "filename": "Subtitles/21_EHAcademy - First Aid Course-Mouth Bleed.vtt",
           "kind": "subtitle",
-          "byteCount": 2494
+          "byteCount": 2604,
+          "eTag": "dff2ee5c52e672f35e1648c23cf7b5c0",
+          "lastModified": "2026-07-23T23:09:18.037Z"
         },
         {
           "id": "package.first-aid.video.First Aid VA Slides/22_EHAcademy - First Aid Course-Penetration Injuries.mp4",
@@ -3956,9 +4058,11 @@
         },
         {
           "id": "package.first-aid.video.subtitle.22_EHAcademy - First Aid Course-Penetration Injuries.vtt",
-          "filename": "subtitles/22_EHAcademy - First Aid Course-Penetration Injuries.vtt",
+          "filename": "Subtitles/22_EHAcademy - First Aid Course-Penetration Injuries.vtt",
           "kind": "subtitle",
-          "byteCount": 1843
+          "byteCount": 1890,
+          "eTag": "d5824255432e14e603ea83cffc139290",
+          "lastModified": "2026-07-23T23:09:18.557Z"
         },
         {
           "id": "package.first-aid.video.First Aid VA Slides/23_EHAcademy - First Aid Course-Internal Bleeding.mp4",
@@ -3970,9 +4074,11 @@
         },
         {
           "id": "package.first-aid.video.subtitle.23_EHAcademy - First Aid Course-Internal Bleeding.vtt",
-          "filename": "subtitles/23_EHAcademy - First Aid Course-Internal Bleeding.vtt",
+          "filename": "Subtitles/23_EHAcademy - First Aid Course-Internal Bleeding.vtt",
           "kind": "subtitle",
-          "byteCount": 1670
+          "byteCount": 1711,
+          "eTag": "7580ad70b15804bb6a0ad4b9006c77de",
+          "lastModified": "2026-07-23T23:09:19.359Z"
         },
         {
           "id": "package.first-aid.video.First Aid VA Slides/24_EHAcademy - First Aid Course-Amputation.mp4",
@@ -3984,9 +4090,11 @@
         },
         {
           "id": "package.first-aid.video.subtitle.24_EHAcademy - First Aid Course-Amputation.vtt",
-          "filename": "subtitles/24_EHAcademy - First Aid Course-Amputation.vtt",
+          "filename": "Subtitles/24_EHAcademy - First Aid Course-Amputation.vtt",
           "kind": "subtitle",
-          "byteCount": 1938
+          "byteCount": 2000,
+          "eTag": "f061674b19b2b5b5949d22e722088974",
+          "lastModified": "2026-07-23T23:09:20.082Z"
         },
         {
           "id": "package.first-aid.video.First Aid VA Slides/25_EHAcademy - First Aid Course-Shock.mp4",
@@ -3998,9 +4106,11 @@
         },
         {
           "id": "package.first-aid.video.subtitle.25_EHAcademy - First Aid Course-Shock.vtt",
-          "filename": "subtitles/25_EHAcademy - First Aid Course-Shock.vtt",
+          "filename": "Subtitles/25_EHAcademy - First Aid Course-Shock.vtt",
           "kind": "subtitle",
-          "byteCount": 2054
+          "byteCount": 2122,
+          "eTag": "718dc59b4574d655b8d17f05c1165df3",
+          "lastModified": "2026-07-23T23:09:20.107Z"
         },
         {
           "id": "package.first-aid.video.First Aid VA Slides/26_EHAcademy - First Aid Course-BODILY INJURIES.mp4",
@@ -4012,9 +4122,11 @@
         },
         {
           "id": "package.first-aid.video.subtitle.26_EHAcademy - First Aid Course-BODILY INJURIES.vtt",
-          "filename": "subtitles/26_EHAcademy - First Aid Course-BODILY INJURIES.vtt",
+          "filename": "Subtitles/26_EHAcademy - First Aid Course-BODILY INJURIES.vtt",
           "kind": "subtitle",
-          "byteCount": 630
+          "byteCount": 653,
+          "eTag": "2c64bde24bb99c6e524af3230b2f58d4",
+          "lastModified": "2026-07-23T23:09:21.122Z"
         },
         {
           "id": "package.first-aid.video.First Aid VA Slides/27_EHAcademy - First Aid Course-Eye Injury.mp4",
@@ -4026,9 +4138,11 @@
         },
         {
           "id": "package.first-aid.video.subtitle.27_EHAcademy - First Aid Course-Eye Injury.vtt",
-          "filename": "subtitles/27_EHAcademy - First Aid Course-Eye Injury.vtt",
+          "filename": "Subtitles/27_EHAcademy - First Aid Course-Eye Injury.vtt",
           "kind": "subtitle",
-          "byteCount": 2911
+          "byteCount": 3039,
+          "eTag": "b22cff924f26c498a9180d9c5261868b",
+          "lastModified": "2026-07-23T23:09:21.498Z"
         },
         {
           "id": "package.first-aid.video.First Aid VA Slides/28_EHAcademy - First Aid Course-Sprain or Fracture.mp4",
@@ -4040,9 +4154,11 @@
         },
         {
           "id": "package.first-aid.video.subtitle.28_EHAcademy - First Aid Course-Sprain or Fracture.vtt",
-          "filename": "subtitles/28_EHAcademy - First Aid Course-Sprain or Fracture.vtt",
+          "filename": "Subtitles/28_EHAcademy - First Aid Course-Sprain or Fracture.vtt",
           "kind": "subtitle",
-          "byteCount": 2252
+          "byteCount": 2329,
+          "eTag": "b4622fd31a7c4fc2ac197cddf6c92d5e",
+          "lastModified": "2026-07-23T23:09:22.022Z"
         },
         {
           "id": "package.first-aid.video.First Aid VA Slides/29_EHAcademy - First Aid Course-Head Neck or Spine Injury.mp4",
@@ -4054,9 +4170,11 @@
         },
         {
           "id": "package.first-aid.video.subtitle.29_EHAcademy - First Aid Course-Head Neck or Spine Injury.vtt",
-          "filename": "subtitles/29_EHAcademy - First Aid Course-Head Neck or Spine Injury.vtt",
+          "filename": "Subtitles/29_EHAcademy - First Aid Course-Head Neck or Spine Injury.vtt",
           "kind": "subtitle",
-          "byteCount": 2301
+          "byteCount": 2378,
+          "eTag": "b56215692667ace519930a863005023a",
+          "lastModified": "2026-07-23T23:09:22.988Z"
         },
         {
           "id": "package.first-aid.video.First Aid VA Slides/30_EHAcademy - First Aid Course-Burns.mp4",
@@ -4068,9 +4186,11 @@
         },
         {
           "id": "package.first-aid.video.subtitle.30_EHAcademy - First Aid Course-Burns.vtt",
-          "filename": "subtitles/30_EHAcademy - First Aid Course-Burns.vtt",
+          "filename": "Subtitles/30_EHAcademy - First Aid Course-Burns.vtt",
           "kind": "subtitle",
-          "byteCount": 3028
+          "byteCount": 3156,
+          "eTag": "a98691f3e6c3736c795eae695e63be37",
+          "lastModified": "2026-07-23T23:09:22.999Z"
         },
         {
           "id": "package.first-aid.video.First Aid VA Slides/31_EHAcademy - First Aid Course-Electrical Burns.mp4",
@@ -4082,9 +4202,11 @@
         },
         {
           "id": "package.first-aid.video.subtitle.31_EHAcademy - First Aid Course-Electrical Burns.vtt",
-          "filename": "subtitles/31_EHAcademy - First Aid Course-Electrical Burns.vtt",
+          "filename": "Subtitles/31_EHAcademy - First Aid Course-Electrical Burns.vtt",
           "kind": "subtitle",
-          "byteCount": 1624
+          "byteCount": 1674,
+          "eTag": "35d12933aa3e641ed99cfc5feb075190",
+          "lastModified": "2026-07-23T23:09:23.559Z"
         },
         {
           "id": "package.first-aid.video.First Aid VA Slides/32_EHAcademy - First Aid Course-ENVIRONMENTAL EMERGENCIES.mp4",
@@ -4096,9 +4218,11 @@
         },
         {
           "id": "package.first-aid.video.subtitle.32_EHAcademy - First Aid Course-ENVIRONMENTAL EMERGENCIES.vtt",
-          "filename": "subtitles/32_EHAcademy - First Aid Course-ENVIRONMENTAL EMERGENCIES.vtt",
+          "filename": "Subtitles/32_EHAcademy - First Aid Course-ENVIRONMENTAL EMERGENCIES.vtt",
           "kind": "subtitle",
-          "byteCount": 695
+          "byteCount": 727,
+          "eTag": "b0bc733885103ea448ad962063f9f72c",
+          "lastModified": "2026-07-23T23:09:23.642Z"
         },
         {
           "id": "package.first-aid.video.First Aid VA Slides/33_EHAcademy - First Aid Course-Animal or Human Bite.mp4",
@@ -4110,9 +4234,11 @@
         },
         {
           "id": "package.first-aid.video.subtitle.33_EHAcademy - First Aid Course-Animal or Human Bite.vtt",
-          "filename": "subtitles/33_EHAcademy - First Aid Course-Animal or Human Bite.vtt",
+          "filename": "Subtitles/33_EHAcademy - First Aid Course-Animal or Human Bite.vtt",
           "kind": "subtitle",
-          "byteCount": 1388
+          "byteCount": 1432,
+          "eTag": "fe8740318564e84dcf6493c6ff727a90",
+          "lastModified": "2026-07-23T23:09:24.203Z"
         },
         {
           "id": "package.first-aid.video.First Aid VA Slides/34_EHAcademy - First Aid Course-Snake Bite.mp4",
@@ -4124,9 +4250,11 @@
         },
         {
           "id": "package.first-aid.video.subtitle.34_EHAcademy - First Aid Course-Snake Bite.vtt",
-          "filename": "subtitles/34_EHAcademy - First Aid Course-Snake Bite.vtt",
+          "filename": "Subtitles/34_EHAcademy - First Aid Course-Snake Bite.vtt",
           "kind": "subtitle",
-          "byteCount": 1565
+          "byteCount": 1609,
+          "eTag": "a5f69dc2025b3584dee8deafd116f007",
+          "lastModified": "2026-07-23T23:09:24.379Z"
         },
         {
           "id": "package.first-aid.video.First Aid VA Slides/35_EHAcademy - First Aid Course-Bee Sting.mp4",
@@ -4138,9 +4266,11 @@
         },
         {
           "id": "package.first-aid.video.subtitle.35_EHAcademy - First Aid Course-Bee Sting.vtt",
-          "filename": "subtitles/35_EHAcademy - First Aid Course-Bee Sting.vtt",
+          "filename": "Subtitles/35_EHAcademy - First Aid Course-Bee Sting.vtt",
           "kind": "subtitle",
-          "byteCount": 1117
+          "byteCount": 1152,
+          "eTag": "ae7ceb7ac62648d25c8d24eebe947098",
+          "lastModified": "2026-07-23T23:09:24.452Z"
         },
         {
           "id": "package.first-aid.video.First Aid VA Slides/36_EHAcademy - First Aid Course-Spider or Scorpion.mp4",
@@ -4152,9 +4282,11 @@
         },
         {
           "id": "package.first-aid.video.subtitle.36_EHAcademy - First Aid Course-Spider or Scorpion.vtt",
-          "filename": "subtitles/36_EHAcademy - First Aid Course-Spider or Scorpion.vtt",
+          "filename": "Subtitles/36_EHAcademy - First Aid Course-Spider or Scorpion.vtt",
           "kind": "subtitle",
-          "byteCount": 1460
+          "byteCount": 1498,
+          "eTag": "6f952d7420b4e96a5ee8889970d2d248",
+          "lastModified": "2026-07-23T23:09:24.922Z"
         },
         {
           "id": "package.first-aid.video.First Aid VA Slides/37_EHAcademy - First Aid Course-Tick Bite.mp4",
@@ -4166,9 +4298,11 @@
         },
         {
           "id": "package.first-aid.video.subtitle.37_EHAcademy - First Aid Course-Tick Bite.vtt",
-          "filename": "subtitles/37_EHAcademy - First Aid Course-Tick Bite.vtt",
+          "filename": "Subtitles/37_EHAcademy - First Aid Course-Tick Bite.vtt",
           "kind": "subtitle",
-          "byteCount": 1916
+          "byteCount": 1978,
+          "eTag": "8d38e2f7383c39aa44896e883723507f",
+          "lastModified": "2026-07-23T23:09:24.968Z"
         },
         {
           "id": "package.first-aid.video.First Aid VA Slides/38_EHAcademy - First Aid Course-Marine Life.mp4",
@@ -4180,9 +4314,11 @@
         },
         {
           "id": "package.first-aid.video.subtitle.38_EHAcademy - First Aid Course-Marine Life.vtt",
-          "filename": "subtitles/38_EHAcademy - First Aid Course-Marine Life.vtt",
+          "filename": "Subtitles/38_EHAcademy - First Aid Course-Marine Life.vtt",
           "kind": "subtitle",
-          "byteCount": 1979
+          "byteCount": 2041,
+          "eTag": "6d9ece4134055c7626cea27570edd58b",
+          "lastModified": "2026-07-23T23:09:25.633Z"
         },
         {
           "id": "package.first-aid.video.First Aid VA Slides/39_EHAcademy - First Aid Course-Drowning.mp4",
@@ -4194,9 +4330,11 @@
         },
         {
           "id": "package.first-aid.video.subtitle.39_EHAcademy - First Aid Course-Drowning.vtt",
-          "filename": "subtitles/39_EHAcademy - First Aid Course-Drowning.vtt",
+          "filename": "Subtitles/39_EHAcademy - First Aid Course-Drowning.vtt",
           "kind": "subtitle",
-          "byteCount": 1871
+          "byteCount": 1930,
+          "eTag": "dafc7d4ab125d27c597874aac77cf3af",
+          "lastModified": "2026-07-23T23:09:25.800Z"
         },
         {
           "id": "package.first-aid.video.First Aid VA Slides/40_EHAcademy - First Aid Course-Poisoning.mp4",
@@ -4208,9 +4346,11 @@
         },
         {
           "id": "package.first-aid.video.subtitle.40_EHAcademy - First Aid Course-Poisoning.vtt",
-          "filename": "subtitles/40_EHAcademy - First Aid Course-Poisoning.vtt",
+          "filename": "Subtitles/40_EHAcademy - First Aid Course-Poisoning.vtt",
           "kind": "subtitle",
-          "byteCount": 2234
+          "byteCount": 2308,
+          "eTag": "eb0551b74f6ae67bc881bf14d156df8c",
+          "lastModified": "2026-07-23T23:09:25.981Z"
         },
         {
           "id": "package.first-aid.video.First Aid VA Slides/41_EHAcademy - First Aid Course-Opioids and Overdose.mp4",
@@ -4222,9 +4362,11 @@
         },
         {
           "id": "package.first-aid.video.subtitle.41_EHAcademy - First Aid Course-Opioids and Overdose.vtt",
-          "filename": "subtitles/41_EHAcademy - First Aid Course-Opioids and Overdose.vtt",
+          "filename": "Subtitles/41_EHAcademy - First Aid Course-Opioids and Overdose.vtt",
           "kind": "subtitle",
-          "byteCount": 1908
+          "byteCount": 1970,
+          "eTag": "351e3257135775b9b7f535d578d051cf",
+          "lastModified": "2026-07-23T23:09:26.276Z"
         },
         {
           "id": "package.first-aid.video.First Aid VA Slides/42_EHAcademy - First Aid Course-TEMPERATURE RELATED ILLNESS.mp4",
@@ -4236,9 +4378,11 @@
         },
         {
           "id": "package.first-aid.video.subtitle.42_EHAcademy - First Aid Course-TEMPERATURE RELATED ILLNESS.vtt",
-          "filename": "subtitles/42_EHAcademy - First Aid Course-TEMPERATURE RELATED ILLNESS.vtt",
+          "filename": "Subtitles/42_EHAcademy - First Aid Course-TEMPERATURE RELATED ILLNESS.vtt",
           "kind": "subtitle",
-          "byteCount": 778
+          "byteCount": 810,
+          "eTag": "6a15143378c55adf1a868647d999b516",
+          "lastModified": "2026-07-23T23:09:26.379Z"
         },
         {
           "id": "package.first-aid.video.First Aid VA Slides/43_EHAcademy - First Aid Course-Heat Related Illness.mp4",
@@ -4250,9 +4394,11 @@
         },
         {
           "id": "package.first-aid.video.subtitle.43_EHAcademy - First Aid Course-Heat Related Illness.vtt",
-          "filename": "subtitles/43_EHAcademy - First Aid Course-Heat Related Illness.vtt",
+          "filename": "Subtitles/43_EHAcademy - First Aid Course-Heat Related Illness.vtt",
           "kind": "subtitle",
-          "byteCount": 1876
+          "byteCount": 1932,
+          "eTag": "067cdbf657ba2a546a4f03329b4910f7",
+          "lastModified": "2026-07-23T23:09:27.078Z"
         },
         {
           "id": "package.first-aid.video.First Aid VA Slides/44_EHAcademy - First Aid Course-Cold Related Illness.mp4",
@@ -4264,9 +4410,11 @@
         },
         {
           "id": "package.first-aid.video.subtitle.44_EHAcademy - First Aid Course-Cold Related Illness.vtt",
-          "filename": "subtitles/44_EHAcademy - First Aid Course-Cold Related Illness.vtt",
+          "filename": "Subtitles/44_EHAcademy - First Aid Course-Cold Related Illness.vtt",
           "kind": "subtitle",
-          "byteCount": 2156
+          "byteCount": 2227,
+          "eTag": "25d6acf0a217d8b6958ab28175035d3d",
+          "lastModified": "2026-07-23T23:09:27.203Z"
         },
         {
           "id": "package.first-aid.video.First Aid VA Slides/45_EHAcademy - First Aid Course-Conclusion.mp4",
@@ -4278,9 +4426,11 @@
         },
         {
           "id": "package.first-aid.video.subtitle.45_EHAcademy - First Aid Course-Conclusion.vtt",
-          "filename": "subtitles/45_EHAcademy - First Aid Course-Conclusion.vtt",
+          "filename": "Subtitles/45_EHAcademy - First Aid Course-Conclusion.vtt",
           "kind": "subtitle",
-          "byteCount": 737
+          "byteCount": 763,
+          "eTag": "3351043b0df7a5088fac4a436baefb2b",
+          "lastModified": "2026-07-23T23:09:27.440Z"
         }
       ]
     },
@@ -4337,8 +4487,8 @@
           "lastModified": "Thu, 23 Jul 2026 22:18:32 GMT"
         },
         {
-          "id": "package.first-aid.pediatric-slideshow.Pedi First Aid Presentation Slides/07_EHAcademy - Pedi FA Course Pres- MEDICAL EMERGENCIES.png",
-          "filename": "Pedi First Aid Presentation Slides/07_EHAcademy - Pedi FA Course Pres- MEDICAL EMERGENCIES.png",
+          "id": "package.first-aid.pediatric-slideshow.Pedi First Aid Presentation Slides/07_EHAcademy - Pedi FA Course Pres-MEDICAL EMERGENCIES.png",
+          "filename": "Pedi First Aid Presentation Slides/07_EHAcademy - Pedi FA Course Pres-MEDICAL EMERGENCIES.png",
           "kind": "image",
           "byteCount": 4391491,
           "eTag": "\"768e7f390fe5f0606d1521e3df5b975d\"",

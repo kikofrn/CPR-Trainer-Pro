@@ -22,9 +22,6 @@ struct CoursesView: View {
                     VStack(alignment: .leading, spacing: 10) {
                         courseSection(for: course)
                     }
-                    .onAppear {
-                        appViewModel.select(course)
-                    }
                 } else {
                     MissingCourseView()
                 }
@@ -64,6 +61,7 @@ struct CoursesView: View {
     @ViewBuilder
     private func courseSection(for course: Course) -> some View {
         let selectedMode = appViewModel.primaryMode(for: course)
+        let isComingSoon = appViewModel.isUnavailableModeSelected(for: course.id)
         let state = selectedMode.map { downloadService.state(for: $0.packageID) } ?? .notDownloaded
         let cardCopy = courseCardCopy(for: course, selectedMode: selectedMode)
 
@@ -73,10 +71,9 @@ struct CoursesView: View {
                 selectedMode: selectedMode,
                 copy: cardCopy,
                 downloadState: state,
+                isComingSoon: isComingSoon,
                 isSelected: true,
-                onSelect: {
-                    appViewModel.select(course)
-                },
+                onSelect: {},
                 onStatusTap: {
                     launchOrPromptDownload(
                         course: course,
@@ -88,17 +85,32 @@ struct CoursesView: View {
 
             modeControls(for: course)
 
-            PrimaryActionButton(
-                title: "Launch Course",
-                systemImage: "play.fill",
-                action: {
-                    launchOrPromptDownload(
-                        course: course,
-                        mode: selectedMode,
-                        state: state
+            if isComingSoon {
+                Text("To launch the Pediatric course, disable the Virtual Assistant.")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.white.opacity(0.78))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(14)
+                    .background(Theme.Colors.surface)
+                    .clipShape(
+                        RoundedRectangle(
+                            cornerRadius: Theme.Layout.cardRadius,
+                            style: .continuous
+                        )
                     )
-                }
-            )
+            } else {
+                PrimaryActionButton(
+                    title: "Launch Course",
+                    systemImage: "play.fill",
+                    action: {
+                        launchOrPromptDownload(
+                            course: course,
+                            mode: selectedMode,
+                            state: state
+                        )
+                    }
+                )
+            }
         }
     }
 
@@ -133,19 +145,12 @@ struct CoursesView: View {
             get: { appViewModel.pediatricFocused(for: course.id) },
             set: { appViewModel.setPediatricFocused($0, for: course.id) }
         )
-        let isPediatric = pediatricBinding.wrappedValue
-        let isVA = vaBinding.wrappedValue
-
         VStack(spacing: 10) {
             Toggle("Enable Virtual Assistant?", isOn: vaBinding)
                 .tint(Theme.Colors.peach)
-                .disabled(isPediatric)
-                .opacity(isPediatric ? 0.45 : 1)
 
             Toggle("Pediatric Focused?", isOn: pediatricBinding)
                 .tint(Theme.Colors.peach)
-                .disabled(isVA)
-                .opacity(isVA ? 0.45 : 1)
         }
         .font(.subheadline.weight(.semibold))
         .foregroundStyle(.white)

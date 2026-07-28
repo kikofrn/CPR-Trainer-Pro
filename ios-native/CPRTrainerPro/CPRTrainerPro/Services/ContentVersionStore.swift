@@ -19,6 +19,7 @@ final class ContentVersionStore: @unchecked Sendable {
     private let explicitSupportDirectoryURL: URL?
     private let lock = NSLock()
     private var records: [String: Record]
+    private var malformedOriginalData: Data?
 
     init(
         fileManager: FileManager = .default,
@@ -31,19 +32,34 @@ final class ContentVersionStore: @unchecked Sendable {
         self.contentRevision = contentRevision
         self.explicitSupportDirectoryURL = supportDirectoryURL
 
-        if let storeURL = try? Self.resolvedStoreURL(
+        let resolvedURL = try? Self.resolvedStoreURL(
             fileManager: fileManager,
             explicitStoreURL: storeURL,
             contentRevision: contentRevision,
             explicitSupportDirectoryURL: supportDirectoryURL
-        ),
-           fileManager.fileExists(atPath: storeURL.path),
-           let data = try? Data(contentsOf: storeURL),
-           let payload = try? JSONDecoder().decode(StorePayload.self, from: data),
-           payload.schemaVersion == 1 {
-            self.records = payload.records
+        )
+        if let resolvedURL,
+           fileManager.fileExists(atPath: resolvedURL.path),
+           let data = try? Data(contentsOf: resolvedURL) {
+            if let payload = try? JSONDecoder().decode(StorePayload.self, from: data),
+               payload.schemaVersion == 1 || payload.schemaVersion == 2 {
+                self.records = payload.records
+                self.malformedOriginalData = nil
+                if payload.schemaVersion == 1 {
+                    try? Self.persist(
+                        records: payload.records,
+                        to: resolvedURL,
+                        malformedOriginalData: nil,
+                        fileManager: fileManager
+                    )
+                }
+            } else {
+                self.records = [:]
+                self.malformedOriginalData = data
+            }
         } else {
             self.records = [:]
+            self.malformedOriginalData = nil
         }
     }
 
@@ -100,6 +116,28 @@ final class ContentVersionStore: @unchecked Sendable {
         try saveLocked()
     }
 
+    func migrateRecord(from oldFilename: String, to newFilename: String) throws {
+        lock.lock()
+        defer { lock.unlock() }
+        guard var record = records[oldFilename] else { return }
+        record = Record(
+            filename: newFilename,
+            version: record.version,
+            installedAt: record.installedAt,
+            lastCheckedAt: record.lastCheckedAt
+        )
+        records[newFilename] = record
+        records.removeValue(forKey: oldFilename)
+        try saveLocked()
+    }
+
+    func removeRecord(for filename: String) throws {
+        lock.lock()
+        defer { lock.unlock() }
+        guard records.removeValue(forKey: filename) != nil else { return }
+        try saveLocked()
+    }
+
     func markChecked(filename: String, at date: Date = Date()) throws {
         try markChecked(filenames: [filename], at: date)
     }
@@ -131,12 +169,37 @@ final class ContentVersionStore: @unchecked Sendable {
             withIntermediateDirectories: true
         )
 
-        let payload = StorePayload(schemaVersion: 1, records: records)
+        try Self.persist(
+            records: records,
+            to: url,
+            malformedOriginalData: malformedOriginalData,
+            fileManager: fileManager
+        )
+        malformedOriginalData = nil
+    }
+
+    private static func persist(
+        records: [String: Record],
+        to url: URL,
+        malformedOriginalData: Data?,
+        fileManager: FileManager
+    ) throws {
+        if let malformedOriginalData {
+            let diagnosticURL = url
+                .deletingLastPathComponent()
+                .appendingPathComponent("installed-assets.malformed.json")
+            if !fileManager.fileExists(atPath: diagnosticURL.path) {
+                try malformedOriginalData.write(to: diagnosticURL, options: [.atomic])
+                try excludeFromBackup(diagnosticURL)
+            }
+        }
+
+        let payload = StorePayload(schemaVersion: 2, records: records)
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
         let data = try encoder.encode(payload)
         try data.write(to: url, options: [.atomic])
-        try Self.excludeFromBackup(url)
+        try excludeFromBackup(url)
     }
 
     private static func resolvedStoreURL(

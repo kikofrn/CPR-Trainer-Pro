@@ -210,13 +210,13 @@ private struct ContentUpdatePromptView: View {
                     .accessibilityHidden(true)
 
                 VStack(spacing: 8) {
-                    Text("Fresh Course Files Just Dropped")
+                    Text("New course files just dropped.")
                         .font(.title2.weight(.bold))
                         .foregroundStyle(.white)
                         .multilineTextAlignment(.center)
 
                     Text(
-                        "Cloudflare has newer versions of some downloaded course files. Tap Update Now and we'll swap them in."
+                        "Update now to make sure you're using the latest materials."
                     )
                     .font(.subheadline)
                     .multilineTextAlignment(.center)

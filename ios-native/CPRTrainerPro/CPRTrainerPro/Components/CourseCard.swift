@@ -12,6 +12,7 @@ struct CourseCard: View {
     let selectedMode: CourseLaunchMode?
     let copy: CourseCardCopy
     let downloadState: DownloadState
+    let isComingSoon: Bool
     let isSelected: Bool
     let onSelect: () -> Void
     let onStatusTap: () -> Void
@@ -68,7 +69,15 @@ struct CourseCard: View {
 
     @ViewBuilder
     private var statusBadge: some View {
-        if downloadState.isReady {
+        if isComingSoon {
+            Text("COMING SOON")
+                .font(.caption2.weight(.black))
+                .foregroundStyle(.black)
+                .padding(.horizontal, 9)
+                .padding(.vertical, 6)
+                .background(Theme.Colors.peach)
+                .clipShape(Capsule())
+        } else if downloadState.isReady {
             DownloadStatusBadge(state: downloadState)
         } else {
             Button(action: onStatusTap) {
@@ -127,17 +136,22 @@ struct CourseCard: View {
     }
 
     private var artworkName: String {
+        if isComingSoon {
+            return course.id == .cprAED
+                ? "Pediatric CPR AED Cover.webp"
+                : "Pediatric First Aid Cover.webp"
+        }
         switch selectedMode?.id {
         case .cprVideo:
-            "CPR AED for All Ages with VA.webp"
+            return "CPR AED for All Ages with VA.webp"
         case .firstAidVideo:
-            "First Aid for All Ages with VA.webp"
+            return "First Aid for All Ages with VA.webp"
         case .pediatricCPRSlideshow:
-            "Pediatric CPR AED Cover.webp"
+            return "Pediatric CPR AED Cover.webp"
         case .pediatricSlideshow:
-            "Pediatric First Aid Cover.webp"
+            return "Pediatric First Aid Cover.webp"
         default:
-            course.artworkName
+            return course.artworkName
         }
     }
 }

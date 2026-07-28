@@ -177,15 +177,37 @@ struct DownloadContentEstimate: Equatable {
     }
 }
 
-struct RemoteAssetVersion: Codable, Equatable {
+struct RemoteAssetVersion: Codable, Equatable, Sendable {
     let byteCount: Int64
     let eTag: String?
     let lastModified: String?
 
     init(byteCount: Int64, eTag: String?, lastModified: String?) {
         self.byteCount = byteCount
-        self.eTag = Self.normalizedHeader(eTag)
+        self.eTag = Self.canonicalETag(eTag)
         self.lastModified = Self.normalizedHeader(lastModified)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case byteCount
+        case eTag
+        case lastModified
+    }
+
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(
+            byteCount: try values.decode(Int64.self, forKey: .byteCount),
+            eTag: try values.decodeIfPresent(String.self, forKey: .eTag),
+            lastModified: try values.decodeIfPresent(String.self, forKey: .lastModified)
+        )
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var values = encoder.container(keyedBy: CodingKeys.self)
+        try values.encode(byteCount, forKey: .byteCount)
+        try values.encodeIfPresent(eTag, forKey: .eTag)
+        try values.encodeIfPresent(lastModified, forKey: .lastModified)
     }
 
     init?(asset: MediaAsset) {
@@ -216,17 +238,18 @@ struct RemoteAssetVersion: Codable, Equatable {
     }
 
     func representsUpdate(comparedTo installed: RemoteAssetVersion) -> Bool {
-        if byteCount != installed.byteCount {
+        if byteCount > 0, installed.byteCount > 0, byteCount != installed.byteCount {
             return true
         }
 
-        if let eTag, let installedETag = installed.eTag, eTag != installedETag {
-            return true
+        if let eTag, let installedETag = installed.eTag {
+            return eTag != installedETag
         }
 
         if
-            let remoteDate = Self.httpDate(lastModified),
-            let installedDate = Self.httpDate(installed.lastModified),
+            installed.eTag == nil,
+            let remoteDate = Self.parsedDate(lastModified),
+            let installedDate = Self.parsedDate(installed.lastModified),
             remoteDate > installedDate
         {
             return true
@@ -237,13 +260,32 @@ struct RemoteAssetVersion: Codable, Equatable {
 
     func matches(_ other: RemoteAssetVersion) -> Bool {
         guard byteCount == other.byteCount else { return false }
-        if let eTag {
-            guard other.eTag == eTag else { return false }
+        if let eTag, let otherETag = other.eTag {
+            return otherETag == eTag
         }
-        if let lastModified {
-            guard other.lastModified == lastModified else { return false }
+        return eTag == nil
+    }
+
+    static func canonicalETag(_ value: String?) -> String? {
+        guard let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !trimmed.isEmpty
+        else {
+            return nil
         }
-        return true
+
+        var canonical = trimmed
+        if canonical.lowercased().hasPrefix("w/") {
+            canonical.removeFirst(2)
+            canonical = canonical.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        if canonical.count >= 2,
+           canonical.first == "\"",
+           canonical.last == "\"" {
+            canonical.removeFirst()
+            canonical.removeLast()
+        }
+        canonical = canonical.trimmingCharacters(in: .whitespacesAndNewlines)
+        return canonical.isEmpty ? nil : canonical
     }
 
     private static func normalizedHeader(_ value: String?) -> String? {
@@ -255,9 +297,13 @@ struct RemoteAssetVersion: Codable, Equatable {
         return trimmed
     }
 
-    private static func httpDate(_ value: String?) -> Date? {
+    private static func parsedDate(_ value: String?) -> Date? {
         guard let value else { return nil }
-        return HTTPDateParser.date(from: value)
+        let fractionalFormatter = ISO8601DateFormatter()
+        fractionalFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return fractionalFormatter.date(from: value)
+            ?? ISO8601DateFormatter().date(from: value)
+            ?? HTTPDateParser.date(from: value)
     }
 }
 

@@ -276,7 +276,7 @@ final class DownloadService: NSObject, ObservableObject {
             QueuedAsset(
                 packageID: package.id,
                 asset: asset,
-                remoteURL: Self.remoteURL(forExactFilename: asset.filename, baseURL: baseURL),
+                remoteURL: Self.remoteURL(for: asset, baseURL: baseURL),
                 attempt: 0
             )
         }
@@ -515,7 +515,7 @@ final class DownloadService: NSObject, ObservableObject {
                     QueuedAsset(
                         packageID: package.id,
                         asset: asset,
-                        remoteURL: Self.remoteURL(forExactFilename: asset.filename, baseURL: plan.baseURL),
+                        remoteURL: Self.remoteURL(for: asset, baseURL: plan.baseURL),
                         attempt: 0
                     )
                 }
@@ -588,6 +588,14 @@ final class DownloadService: NSObject, ObservableObject {
             guard let remoteVersion = RemoteAssetVersion(response: httpResponse) else {
                 throw StorageService.StorageError.emptyDownloadedFile(
                     activeDownload.asset.filename
+                )
+            }
+            if let expectedVersion = RemoteAssetVersion(asset: activeDownload.asset),
+               !expectedVersion.matches(remoteVersion) {
+                throw StorageService.StorageError.unexpectedFileSize(
+                    filename: activeDownload.asset.filename,
+                    expected: expectedVersion.byteCount,
+                    actual: remoteVersion.byteCount
                 )
             }
             try storageService.moveDownloadedFile(
@@ -982,6 +990,17 @@ final class DownloadService: NSObject, ObservableObject {
             .reduce(baseURL) { partialURL, component in
                 partialURL.appendingPathComponent(String(component), isDirectory: false)
             }
+    }
+
+    private static func remoteURL(for asset: MediaAsset, baseURL: URL) -> URL {
+        let url = remoteURL(forExactFilename: asset.filename, baseURL: baseURL)
+        guard let eTag = RemoteAssetVersion(asset: asset)?.eTag,
+              var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+        else {
+            return url
+        }
+        components.queryItems = [URLQueryItem(name: "v", value: eTag)]
+        return components.url ?? url
     }
 }
 

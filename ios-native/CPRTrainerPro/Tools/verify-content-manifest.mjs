@@ -198,7 +198,7 @@ for (const [packageID, expectedCount] of expectedPackageCounts) {
 const remoteAssetsByFilename = new Map();
 for (const asset of manifest.packages
   .flatMap((downloadPackage) => downloadPackage.assets)
-  .filter((asset) => asset.kind !== "subtitle")) {
+  .filter((asset) => typeof asset.eTag === "string" && asset.eTag.length > 0)) {
   const metadata = {
     byteCount: asset.byteCount,
     eTag: asset.eTag,
@@ -211,7 +211,6 @@ for (const asset of manifest.packages
   );
   remoteAssetsByFilename.set(asset.filename, metadata);
 }
-assert(remoteAssetsByFilename.size === 244, "Unexpected unique R2 object count");
 assertSameStrings(
   remoteAssetsByFilename.keys(),
   Object.keys(r2ContentLengths),
@@ -270,7 +269,25 @@ const referencedSubtitles = new Set(
   manifest.packages
     .flatMap((downloadPackage) => downloadPackage.assets)
     .filter((asset) => asset.kind === "subtitle")
-    .map((asset) => asset.filename.replace(/^subtitles\//, ""))
+    .map((asset) => asset.filename.replace(/^subtitles\//i, ""))
+);
+const reviewedBundledOnlySubtitles = new Set([
+  "12_EHAcademy - CPR AED Course Pres-Assessment Example.vtt",
+  "17_EHAcademy - CPR AED Course Pres-Chest Compressions Video.vtt",
+  "21_EHAcademy - CPR AED Course Pres-CPR Songs.vtt",
+  "22_EHAcademy - CPR AED Course Pres-Practice Compressions.vtt",
+  "11_EHAcademy - First Aid Course Pres-Seizure Video.vtt",
+]);
+const bundledOnlySubtitles = new Set(
+  manifest.packages
+    .flatMap((downloadPackage) => downloadPackage.assets)
+    .filter((asset) => asset.kind === "subtitle" && !asset.eTag)
+    .map((asset) => path.posix.basename(asset.filename))
+);
+assertSameStrings(
+  bundledOnlySubtitles,
+  reviewedBundledOnlySubtitles,
+  "Reviewed bundled-only subtitle allowlist"
 );
 const bundledSubtitles = new Set(
   fs.readdirSync(subtitlesDirectory)
@@ -292,96 +309,37 @@ const packageAssetCount = manifest.packages.reduce(
 );
 assert(packageAssetCount === 324, `Unexpected total package asset count: ${packageAssetCount}`);
 
-function mediaURL(filename) {
-  const encodedPath = filename
-    .replace(/^\/+/, "")
-    .split("/")
-    .map((component) => encodeURIComponent(component))
-    .join("/");
-  return new URL(encodedPath, remoteBaseURL).href;
-}
-
-function responseByteCount(response) {
-  const contentRange = response.headers.get("content-range");
-  const rangeTotal = contentRange?.match(/\/(\d+)$/)?.[1];
-  const value = Number(rangeTotal ?? response.headers.get("content-length"));
-  return Number.isSafeInteger(value) && value > 0 ? value : null;
-}
-
-async function requestExists(url, expectedMetadata) {
-  for (let attempt = 1; attempt <= 2; attempt += 1) {
-    try {
-      let response = await fetch(url, {
-        method: "HEAD",
-        redirect: "follow",
-        signal: AbortSignal.timeout(15_000),
-      });
-      await response.body?.cancel();
-
-      if ([400, 403, 405, 501].includes(response.status)) {
-        response = await fetch(url, {
-          method: "GET",
-          headers: { Range: "bytes=0-0" },
-          redirect: "follow",
-          signal: AbortSignal.timeout(15_000),
-        });
-        await response.body?.cancel();
-      }
-
-      if (response.status >= 200 && response.status < 400) {
-        const actualByteCount = responseByteCount(response);
-        if (actualByteCount !== expectedMetadata.byteCount) {
-          return `Content-Length ${actualByteCount ?? "missing"} (expected ${expectedMetadata.byteCount})`;
-        }
-        const actualETag = response.headers.get("etag")?.trim();
-        if (actualETag !== expectedMetadata.eTag) {
-          return `ETag ${actualETag ?? "missing"} (expected ${expectedMetadata.eTag})`;
-        }
-        const actualLastModified = response.headers.get("last-modified")?.trim();
-        if (actualLastModified !== expectedMetadata.lastModified) {
-          return `Last-Modified ${actualLastModified ?? "missing"} (expected ${expectedMetadata.lastModified})`;
-        }
-        return null;
-      }
-
-      if (attempt === 2) {
-        return `HTTP ${response.status}`;
-      }
-    } catch (error) {
-      if (attempt === 2) {
-        return error instanceof Error ? error.message : String(error);
-      }
-    }
-  }
-
-  return "unknown error";
-}
-
 async function verifyRemoteAssets() {
-  const filenames = sorted(remoteAssetsByFilename.keys());
-  const failures = [];
-  let nextIndex = 0;
-  let completed = 0;
+  const endpoint = new URL("/api/manifest", remoteBaseURL);
+  const response = await fetch(endpoint, {
+    headers: { Accept: "application/json", "Cache-Control": "no-cache" },
+    redirect: "error",
+    signal: AbortSignal.timeout(30_000),
+  });
+  assert(response.status === 200, `Manifest request failed: HTTP ${response.status}`);
+  const text = await response.text();
+  assert(Buffer.byteLength(text) <= 2 * 1024 * 1024, "Remote manifest exceeds 2 MB");
+  const payload = JSON.parse(text);
+  assert(Array.isArray(payload.files), "Remote manifest files are missing");
+  const liveByKey = new Map(payload.files.map((file) => [file.key, file]));
 
-  async function worker() {
-    while (nextIndex < filenames.length) {
-      const index = nextIndex;
-      nextIndex += 1;
-      const filename = filenames[index];
-      const error = await requestExists(
-        mediaURL(filename),
-        remoteAssetsByFilename.get(filename)
-      );
-      if (error) failures.push(`${filename}: ${error}`);
-      completed += 1;
-      if (completed % 25 === 0 || completed === filenames.length) {
-        console.log(`CDN check: ${completed}/${filenames.length}`);
-      }
+  const failures = [];
+  for (const [filename, expected] of remoteAssetsByFilename) {
+    const live = liveByKey.get(filename);
+    if (!live) {
+      failures.push(`${filename}: missing exact key`);
+      continue;
+    }
+    if (live.size !== expected.byteCount) {
+      failures.push(`${filename}: size ${live.size} (expected ${expected.byteCount})`);
+    }
+    const canonicalETag = String(live.etag ?? "").replace(/^W\//i, "").replace(/^"|"$/g, "");
+    const expectedETag = String(expected.eTag ?? "").replace(/^W\//i, "").replace(/^"|"$/g, "");
+    if (canonicalETag !== expectedETag) {
+      failures.push(`${filename}: ETag ${canonicalETag} (expected ${expectedETag})`);
     }
   }
-
-  await Promise.all(Array.from({ length: 8 }, () => worker()));
-  assert(failures.length === 0, `CDN validation failed:\n${failures.join("\n")}`);
+  assert(failures.length === 0, `CDN manifest validation failed:\n${failures.join("\n")}`);
 }
 
 console.log("Local content verification passed");

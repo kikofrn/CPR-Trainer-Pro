@@ -225,12 +225,26 @@ function subtitleCandidatesFor(filename) {
 function subtitleAssetsFor(filename, prefix, subtitleNames) {
   return subtitleCandidatesFor(filename)
     .filter((candidate) => subtitleNames.has(candidate))
-    .map((candidate) => ({
-      id: `${prefix}.subtitle.${candidate}`,
-      filename: `subtitles/${candidate}`,
-      kind: "subtitle",
-      byteCount: fs.statSync(path.join(subtitlesDir, candidate)).size,
-    }));
+    .map((candidate) => {
+      const remoteFilename = `Subtitles/${candidate}`;
+      const metadata = r2ObjectMetadata[remoteFilename];
+      if (metadata) {
+        return {
+          id: `${prefix}.subtitle.${candidate}`,
+          filename: remoteFilename,
+          kind: "subtitle",
+          byteCount: metadata.byteCount,
+          eTag: metadata.eTag,
+          lastModified: metadata.lastModified,
+        };
+      }
+      return {
+        id: `${prefix}.subtitle.${candidate}`,
+        filename: `subtitles/${candidate}`,
+        kind: "subtitle",
+        byteCount: fs.statSync(path.join(subtitlesDir, candidate)).size,
+      };
+    });
 }
 
 const slideshows = evaluateArray("SLIDESHOWS")
@@ -498,7 +512,7 @@ const packages = [
 const expectedR2Filenames = new Set(
   packages
     .flatMap((downloadPackage) => downloadPackage.assets)
-    .filter((asset) => asset.kind !== "subtitle")
+    .filter((asset) => typeof asset.eTag === "string" && asset.eTag.length > 0)
     .map((asset) => asset.filename)
 );
 assert(

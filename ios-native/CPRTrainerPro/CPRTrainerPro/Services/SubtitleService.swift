@@ -28,13 +28,15 @@ struct SubtitleService {
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .replacingOccurrences(of: "^/+", with: "", options: .regularExpression)
 
-        if clean.hasPrefix("subtitles/") {
+        if clean.lowercased().hasPrefix("subtitles/") {
             return [clean]
         }
 
         let basename = (clean as NSString).lastPathComponent
         let withoutExtension = (basename as NSString).deletingPathExtension
         return [
+            "Subtitles/\(withoutExtension).vtt",
+            "Subtitles/\(basename).vtt",
             "subtitles/\(withoutExtension).vtt",
             "subtitles/\(basename).vtt"
         ]

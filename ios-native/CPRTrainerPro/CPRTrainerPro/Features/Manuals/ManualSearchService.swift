@@ -54,18 +54,24 @@ actor ManualSearchService {
         let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedQuery.isEmpty else { return [] }
 
-        let foldedQuery = Self.fold(trimmedQuery)
-        guard !foldedQuery.isEmpty else { return [] }
-
         return index.pages.compactMap { page in
-            let foldedText = Self.fold(page.text)
-            guard let firstRange = foldedText.range(of: foldedQuery) else { return nil }
+            let options: String.CompareOptions = [.caseInsensitive, .diacriticInsensitive]
+            guard let firstRange = page.text.range(
+                of: trimmedQuery,
+                options: options
+            ) else {
+                return nil
+            }
 
-            let matchCount = Self.matchCount(for: foldedQuery, in: foldedText)
-            let snippet = Self.snippet(from: page.text, foldedText: foldedText, firstRange: firstRange)
+            let matchCount = Self.matchCount(
+                for: trimmedQuery,
+                in: page.text,
+                options: options
+            )
+            let snippet = Self.snippet(from: page.text, firstRange: firstRange)
 
             return ManualSearchResult(
-                id: "search-\(page.pageIndex)-\(foldedText.distance(from: foldedText.startIndex, to: firstRange.lowerBound))",
+                id: "search-\(page.pageIndex)-\(page.text.distance(from: page.text.startIndex, to: firstRange.lowerBound))",
                 pageIndex: page.pageIndex,
                 pageNumber: page.pageNumber,
                 snippet: snippet,
@@ -74,16 +80,20 @@ actor ManualSearchService {
         }
     }
 
-    private nonisolated static func fold(_ text: String) -> String {
-        text.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
-    }
-
-    private nonisolated static func matchCount(for query: String, in foldedText: String) -> Int {
+    private nonisolated static func matchCount(
+        for query: String,
+        in text: String,
+        options: String.CompareOptions
+    ) -> Int {
         var count = 0
-        var searchStart = foldedText.startIndex
+        var searchStart = text.startIndex
 
-        while searchStart < foldedText.endIndex,
-              let range = foldedText.range(of: query, range: searchStart..<foldedText.endIndex) {
+        while searchStart < text.endIndex,
+              let range = text.range(
+                of: query,
+                options: options,
+                range: searchStart..<text.endIndex
+              ) {
             count += 1
             searchStart = range.upperBound
         }
@@ -91,8 +101,11 @@ actor ManualSearchService {
         return count
     }
 
-    private nonisolated static func snippet(from text: String, foldedText: String, firstRange: Range<String.Index>) -> String {
-        let matchOffset = foldedText.distance(from: foldedText.startIndex, to: firstRange.lowerBound)
+    private nonisolated static func snippet(
+        from text: String,
+        firstRange: Range<String.Index>
+    ) -> String {
+        let matchOffset = text.distance(from: text.startIndex, to: firstRange.lowerBound)
         let contextLength = 72
 
         let lowerOffset = max(0, matchOffset - contextLength)

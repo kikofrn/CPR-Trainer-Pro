@@ -18,11 +18,18 @@ enum AppPrompt: Identifiable, Equatable {
 final class AppViewModel: ObservableObject {
     @Published private(set) var catalog: TrainingCatalog
     @Published var selectedTab: AppTab = .cprAED
-    @Published var selectedCourseID: Course.ID?
-    @Published private(set) var cprVAEnabled = false
-    @Published private(set) var cprPediatricFocused = false
-    @Published private(set) var firstAidVAEnabled = false
-    @Published private(set) var firstAidPediatricFocused = false
+    @Published private(set) var cprVAEnabled = UserDefaults.standard.bool(
+        forKey: "courseMode.cpr.va"
+    )
+    @Published private(set) var cprPediatricFocused = UserDefaults.standard.bool(
+        forKey: "courseMode.cpr.pediatric"
+    )
+    @Published private(set) var firstAidVAEnabled = UserDefaults.standard.bool(
+        forKey: "courseMode.firstAid.va"
+    )
+    @Published private(set) var firstAidPediatricFocused = UserDefaults.standard.bool(
+        forKey: "courseMode.firstAid.pediatric"
+    )
     @Published private(set) var activePrompt: AppPrompt?
 
     let storageService: StorageService
@@ -41,6 +48,10 @@ final class AppViewModel: ObservableObject {
             contentRevision: catalog.contentRevision,
             versionStore: versionStore
         )
+        ContentStateMigrator(
+            storageService: storageService,
+            versionStore: versionStore
+        ).migrate(using: catalog)
         let queueStore = DownloadQueueStore(contentRevision: catalog.contentRevision)
         let downloadAllQueueStore = DownloadAllQueueStore(
             contentRevision: catalog.contentRevision
@@ -66,7 +77,6 @@ final class AppViewModel: ObservableObject {
             contentRevision: catalog.contentRevision
         )
         self.contentUpdateService = contentUpdateService
-        self.selectedCourseID = catalog.courses.first?.id
         self.downloadService.refreshPackageStates(for: catalog.packages)
         self.contentUpdateService.onAvailableUpdate = { [weak self] summary in
             self?.receiveContentUpdate(summary)
@@ -75,15 +85,6 @@ final class AppViewModel: ObservableObject {
             receiveContentUpdate(availableUpdate)
         }
         LegacyContentCleanup.schedule(for: catalog.contentRevision)
-    }
-
-    var selectedCourse: Course? {
-        guard let selectedCourseID else { return catalog.courses.first }
-        return catalog.courses.first { $0.id == selectedCourseID }
-    }
-
-    func select(_ course: Course) {
-        selectedCourseID = course.id
     }
 
     func synchronizeDownloadsAfterForeground() {
@@ -212,14 +213,10 @@ final class AppViewModel: ObservableObject {
         switch courseID {
         case .cprAED:
             cprVAEnabled = enabled
-            if enabled {
-                cprPediatricFocused = false
-            }
+            UserDefaults.standard.set(enabled, forKey: "courseMode.cpr.va")
         case .firstAid:
             firstAidVAEnabled = enabled
-            if enabled {
-                firstAidPediatricFocused = false
-            }
+            UserDefaults.standard.set(enabled, forKey: "courseMode.firstAid.va")
         }
     }
 
@@ -227,18 +224,19 @@ final class AppViewModel: ObservableObject {
         switch courseID {
         case .cprAED:
             cprPediatricFocused = enabled
-            if enabled {
-                cprVAEnabled = false
-            }
+            UserDefaults.standard.set(enabled, forKey: "courseMode.cpr.pediatric")
         case .firstAid:
             firstAidPediatricFocused = enabled
-            if enabled {
-                firstAidVAEnabled = false
-            }
+            UserDefaults.standard.set(enabled, forKey: "courseMode.firstAid.pediatric")
         }
     }
 
+    func isUnavailableModeSelected(for courseID: Course.ID) -> Bool {
+        vaEnabled(for: courseID) && pediatricFocused(for: courseID)
+    }
+
     func primaryMode(for course: Course) -> CourseLaunchMode? {
+        guard !isUnavailableModeSelected(for: course.id) else { return nil }
         if pediatricFocused(for: course.id) {
             let pediatricModeID: CourseLaunchMode.ID =
                 course.id == .cprAED ? .pediatricCPRSlideshow : .pediatricSlideshow
