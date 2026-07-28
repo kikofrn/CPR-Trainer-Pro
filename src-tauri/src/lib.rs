@@ -441,6 +441,9 @@ fn get_media_file_mtimes(
     let media_dir = find_media_dir(&app);
     let mut result = std::collections::HashMap::new();
     for filename in filenames {
+        if filename.contains("..") {
+            continue;
+        }
         let clean = filename.trim_start_matches('/').to_string();
         let file_path = media_dir.join(&clean);
         if let Ok(metadata) = std::fs::metadata(&file_path) {

@@ -64,6 +64,7 @@ class DownloadManager {
   };
 
   private listeners: Set<DownloadStateListener> = new Set();
+  private completionListeners: Set<(filename: string) => void> = new Set();
   private speedSamples: { time: number; bytes: number }[] = [];
   private lastProgressTime = 0;
   private lastBytesWritten = 0;
@@ -99,6 +100,13 @@ class DownloadManager {
     listener({ ...this.state });
     return () => {
       this.listeners.delete(listener);
+    };
+  }
+
+  public onFileComplete(cb: (filename: string) => void): () => void {
+    this.completionListeners.add(cb);
+    return () => {
+      this.completionListeners.delete(cb);
     };
   }
 
@@ -198,6 +206,9 @@ class DownloadManager {
     
     // Mark file as downloaded
     this.state.fileStatuses[filename] = true;
+    
+    // Invoke completion listeners
+    this.completionListeners.forEach(cb => cb(filename));
     
     // Update avgSpeedBps
     if (this.state.currentSpeed > 0) {

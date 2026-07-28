@@ -65,7 +65,8 @@ export default function App() {
   const [contentUpdateFiles, setContentUpdateFiles] = useState<ChangedFile[]>([]);
   const [showContentUpdatePrompt, setShowContentUpdatePrompt] = useState(false);
   const [contentUpdateAvgSpeed, setContentUpdateAvgSpeed] = useState(0);
-  const pendingUpdatesRef = useRef<Record<string, { etag: string; uploaded: string; size: number }>>({});
+  const manifestStashRef = useRef<Record<string, { etag: string; uploaded: string; size: number }>>({});
+  const pendingUpdatesRef = useRef<Record<string, { originalKey: string; etag: string; uploaded: string; size: number }>>({});
 
   useEffect(() => {
     if (!isTauri || !navigator.onLine) return;
@@ -122,7 +123,7 @@ export default function App() {
           for (const f of result.changedFiles) {
             const manifest = manifestMap.get(f.key);
             if (manifest) {
-              pendingUpdatesRef.current[f.key] = {
+              manifestStashRef.current[f.key] = {
                 etag: manifest.etag,
                 uploaded: manifest.uploaded,
                 size: manifest.size,
@@ -131,6 +132,13 @@ export default function App() {
           }
 
           if (silentFiles.length > 0) {
+            silentFiles.forEach(f => {
+              const stash = manifestStashRef.current[f.key];
+              if (stash) {
+                const normalized = f.key.trim().replace(/^\//, '');
+                pendingUpdatesRef.current[normalized] = { originalKey: f.key, ...stash };
+              }
+            });
             downloadManager.queueSpecificFiles(silentFiles.map(f => ({ filename: f.key, version: f.version })));
           }
 
@@ -403,24 +411,19 @@ export default function App() {
 
   const [isSettingsExpanded, setIsSettingsExpanded] = useState(false);
   useEffect(() => {
-    const unsub = downloadManager.subscribe((state) => {
-      setDlState(state);
-      
-      const newlyDownloadedKeys: string[] = [];
-      for (const key in pendingUpdatesRef.current) {
-        const clean = key.trim().replace(/^\//, '');
-        if (state.fileStatuses[clean]) {
-           newlyDownloadedKeys.push(key);
-        }
-      }
+    const unsub = downloadManager.subscribe(setDlState);
+    return unsub;
+  }, []);
 
-      if (newlyDownloadedKeys.length > 0) {
-        const mergeEntries: Record<string, any> = {};
-        for (const key of newlyDownloadedKeys) {
-          mergeEntries[key] = pendingUpdatesRef.current[key];
-          delete pendingUpdatesRef.current[key];
-        }
-        snapshotStore.mergeFiles(mergeEntries).catch(console.error);
+  useEffect(() => {
+    const unsub = downloadManager.onFileComplete((normalizedFilename) => {
+      const pending = pendingUpdatesRef.current[normalizedFilename];
+      if (pending) {
+        const { originalKey, etag, uploaded, size } = pending;
+        snapshotStore.mergeFiles({
+          [originalKey]: { etag, uploaded, size }
+        }).catch(console.error);
+        delete pendingUpdatesRef.current[normalizedFilename];
       }
     });
     return unsub;
@@ -1095,6 +1098,13 @@ export default function App() {
           avgSpeedBps={contentUpdateAvgSpeed}
           onUpdateNow={() => {
             setShowContentUpdatePrompt(false);
+            contentUpdateFiles.forEach(f => {
+              const stash = manifestStashRef.current[f.key];
+              if (stash) {
+                const normalized = f.key.trim().replace(/^\//, '');
+                pendingUpdatesRef.current[normalized] = { originalKey: f.key, ...stash };
+              }
+            });
             downloadManager.queueSpecificFiles(
               contentUpdateFiles.map(f => ({ filename: f.key, version: f.version }))
             );
