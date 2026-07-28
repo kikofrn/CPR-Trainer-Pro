@@ -2,6 +2,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen, Event } from '@tauri-apps/api/event';
 import { COURSES, MANUALS, SLIDESHOWS } from './chapters';
 import { snapshotStore } from './snapshot-store';
+import { THUMBNAIL_KEYS } from './thumbnails';
 
 const COMING_SOON_IDS = ['cpr-aed-spanish-course', 'first-aid-spanish-course'];
 
@@ -638,6 +639,10 @@ class DownloadManager {
       slideshow.slides.forEach((slide) => {
         if (slide.filename) allFiles.push(this.normalizeFilename(slide.filename));
       });
+    });
+
+    THUMBNAIL_KEYS.forEach(key => {
+      allFiles.push(this.normalizeFilename(key));
     });
 
     MANUALS.forEach((manual) => {

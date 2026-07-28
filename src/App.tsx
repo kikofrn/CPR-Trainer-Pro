@@ -114,12 +114,24 @@ export default function App() {
         await snapshotStore.mergeFiles(result.missingEtagsToUpdate);
         await snapshotStore.setLastCheck(new Date().toISOString());
 
+        const manifestMap = new Map<string, ManifestFile>();
+        manifestFiles.forEach(m => manifestMap.set(m.key, m));
+
+        const missingThumbnails = THUMBNAIL_KEYS
+          .filter(k => !localExistsMap[k.replace(/^\//, '')])
+          .map(k => {
+            const m = manifestMap.get(k);
+            return m ? { key: k, version: m.etag, isSilent: true } : null;
+          })
+          .filter((f): f is ChangedFile => f !== null);
+
+        if (missingThumbnails.length > 0) {
+          result.changedFiles.push(...missingThumbnails);
+        }
+
         if (result.changedFiles.length > 0) {
           const silentFiles = result.changedFiles.filter(f => f.isSilent);
           const promptFiles = result.changedFiles.filter(f => !f.isSilent);
-
-          const manifestMap = new Map<string, ManifestFile>();
-          manifestFiles.forEach(m => manifestMap.set(m.key, m));
 
           for (const f of result.changedFiles) {
             const manifest = manifestMap.get(f.key);
