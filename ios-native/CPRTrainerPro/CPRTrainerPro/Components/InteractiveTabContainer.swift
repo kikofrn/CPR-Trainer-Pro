@@ -8,18 +8,18 @@ struct InteractiveTabContainer: View {
     @Environment(\.launchExperienceTrigger) private var launchExperienceTrigger
     @State private var headerProgressByTab: [AppTab: CGFloat] = [:]
     @State private var heartbeatTapTimes: [Date] = []
-    @State private var isPagingTransitionInProgress = false
+    @State private var tabRequestSequence = 0
+    @State private var tabSelectionRequest: TabSelectionRequest?
 
     var body: some View {
         ZStack(alignment: .topLeading) {
             InteractiveTabPager(
                 selection: $selection,
+                selectionRequest: tabSelectionRequest,
                 appViewModel: appViewModel,
                 launchExperienceTrigger: launchExperienceTrigger,
                 onHeaderProgressChange: recordHeaderProgress,
-                onTransitionActivityChange: { isActive in
-                    isPagingTransitionInProgress = isActive
-                }
+                onTransitionActivityChange: { _ in }
             )
 
             sharedBrandLogo
@@ -27,10 +27,18 @@ struct InteractiveTabContainer: View {
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             MainTabBar(
-                selection: $selection,
-                isInteractionEnabled: !isPagingTransitionInProgress
+                selection: selection,
+                onSelectionRequest: requestTabSelection
             )
         }
+    }
+
+    private func requestTabSelection(_ tab: AppTab) {
+        tabRequestSequence &+= 1
+        tabSelectionRequest = TabSelectionRequest(
+            sequence: tabRequestSequence,
+            tab: tab
+        )
     }
 
     private var sharedBrandLogo: some View {
@@ -81,8 +89,14 @@ struct InteractiveTabContainer: View {
     }
 }
 
+private struct TabSelectionRequest: Equatable {
+    let sequence: Int
+    let tab: AppTab
+}
+
 private struct InteractiveTabPager: UIViewControllerRepresentable {
     @Binding var selection: AppTab
+    let selectionRequest: TabSelectionRequest?
     @ObservedObject var appViewModel: AppViewModel
 
     let launchExperienceTrigger: () -> Void
@@ -127,7 +141,14 @@ private struct InteractiveTabPager: UIViewControllerRepresentable {
         context.coordinator.selection = $selection
         context.coordinator.onHeaderProgressChange = onHeaderProgressChange
         context.coordinator.onTransitionActivityChange = onTransitionActivityChange
-        controller.select(selection, animated: false, notifiesSelection: false)
+        if let selectionRequest {
+            controller.requestSelection(
+                selectionRequest.tab,
+                requestSequence: selectionRequest.sequence
+            )
+        } else {
+            controller.reconcileVisiblePageIfIdle()
+        }
     }
 
     private func makeHostingController(
@@ -233,8 +254,13 @@ final class InteractiveTabViewController: UIViewController {
     private let pageViewController: UIPageViewController
 
     private var currentIndex: Int
-    private var pendingInteractiveIndex: Int?
+    private var interactiveDestination: Int?
+    private var queuedRequestedIndex: Int?
     private var isProgrammaticTransitionInFlight = false
+    private var transitionGeneration = 0
+    private var lastHandledRequestSequence = 0
+    private weak var pagingScrollView: UIScrollView?
+    private var recoveryTask: Task<Void, Never>?
 
     init(
         tabs: [AppTab],
@@ -269,25 +295,28 @@ final class InteractiveTabViewController: UIViewController {
         installLayout()
     }
 
-    func select(
-        _ tab: AppTab,
-        animated: Bool,
-        notifiesSelection: Bool
-    ) {
-        guard
-            let targetIndex = tabs.firstIndex(of: tab),
-            targetIndex != currentIndex,
-            !isProgrammaticTransitionInFlight,
-            pendingInteractiveIndex == nil
-        else {
+    deinit {
+        recoveryTask?.cancel()
+    }
+
+    func requestSelection(_ tab: AppTab, requestSequence: Int) {
+        guard requestSequence > lastHandledRequestSequence else { return }
+        lastHandledRequestSequence = requestSequence
+        guard let targetIndex = tabs.firstIndex(of: tab) else { return }
+
+        if isPagingBusy {
+            queuedRequestedIndex = targetIndex
+            scheduleRecovery(for: transitionGeneration)
             return
         }
 
-        transition(
-            to: targetIndex,
-            animated: animated,
-            notifiesSelection: notifiesSelection
-        )
+        guard targetIndex != currentIndex else { return }
+        transition(to: targetIndex)
+    }
+
+    func reconcileVisiblePageIfIdle() {
+        guard !isPagingBusy else { return }
+        commitVisiblePage()
     }
 
     private func configurePageViewController() {
@@ -304,6 +333,7 @@ final class InteractiveTabViewController: UIViewController {
             .compactMap({ $0 as? UIScrollView })
             .first
         {
+            self.pagingScrollView = pagingScrollView
             pagingScrollView.isDirectionalLockEnabled = true
             pagingScrollView.alwaysBounceVertical = false
         }
@@ -325,62 +355,105 @@ final class InteractiveTabViewController: UIViewController {
         pageViewController.didMove(toParent: self)
     }
 
-    private func transition(
-        to targetIndex: Int,
-        animated: Bool,
-        notifiesSelection: Bool
-    ) {
+    private func transition(to targetIndex: Int) {
+        guard !isPagingBusy, targetIndex != currentIndex else {
+            queuedRequestedIndex = targetIndex
+            scheduleRecovery(for: transitionGeneration)
+            return
+        }
+
         let previousIndex = currentIndex
         let direction: UIPageViewController.NavigationDirection =
             targetIndex > previousIndex ? .forward : .reverse
 
+        transitionGeneration &+= 1
+        let generation = transitionGeneration
         isProgrammaticTransitionInFlight = true
-        setNavigationInteractionEnabled(false)
         onTransitionActivityChange?(true)
 
         pageViewController.setViewControllers(
             [pages[targetIndex]],
             direction: direction,
-            animated: animated
-        ) { [weak self] finished in
+            animated: false
+        ) { [weak self] _ in
             guard let self else { return }
-
-            let finalIndex: Int
-            if
-                finished,
-                self.pageViewController.viewControllers?.first === self.pages[targetIndex]
-            {
-                finalIndex = targetIndex
-            } else {
-                finalIndex = self.index(
-                    of: self.pageViewController.viewControllers?.first
-                ) ?? previousIndex
-            }
-
-            self.finishTransition(
-                at: finalIndex,
-                notifiesSelection: notifiesSelection && finalIndex == targetIndex
-            )
+            guard generation == self.transitionGeneration else { return }
+            self.isProgrammaticTransitionInFlight = false
+            self.commitVisiblePage(fallbackIndex: previousIndex)
+            self.finishTransitionCycle()
         }
     }
 
-    private func finishTransition(
-        at index: Int,
-        notifiesSelection: Bool
-    ) {
-        currentIndex = index
-        pendingInteractiveIndex = nil
-        isProgrammaticTransitionInFlight = false
-        setNavigationInteractionEnabled(true)
+    private var isPagingBusy: Bool {
+        isProgrammaticTransitionInFlight
+            || interactiveDestination != nil
+            || pagingScrollView?.isTracking == true
+            || pagingScrollView?.isDragging == true
+            || pagingScrollView?.isDecelerating == true
+    }
+
+    private func commitVisiblePage(fallbackIndex: Int? = nil) {
+        let visibleIndex = index(of: pageViewController.viewControllers?.first)
+            ?? fallbackIndex
+            ?? currentIndex
+        guard pages.indices.contains(visibleIndex) else { return }
+        let changed = visibleIndex != currentIndex
+        currentIndex = visibleIndex
+        guard changed else { return }
+
+        let selectedTab = tabs[visibleIndex]
+        DispatchQueue.main.async { [weak self] in
+            self?.onSelectionChange?(selectedTab)
+        }
+    }
+
+    private func finishTransitionCycle() {
+        guard !isPagingBusy else {
+            scheduleRecovery(for: transitionGeneration)
+            return
+        }
+
         onTransitionActivityChange?(false)
+        applyQueuedRequestIfPossible()
+    }
 
-        if notifiesSelection {
-            onSelectionChange?(tabs[index])
+    private func applyQueuedRequestIfPossible() {
+        guard let targetIndex = queuedRequestedIndex else { return }
+        queuedRequestedIndex = nil
+        guard targetIndex != currentIndex else { return }
+
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            if self.isPagingBusy {
+                self.queuedRequestedIndex = targetIndex
+                self.scheduleRecovery(for: self.transitionGeneration)
+            } else {
+                self.transition(to: targetIndex)
+            }
         }
     }
 
-    private func setNavigationInteractionEnabled(_ isEnabled: Bool) {
-        pageViewController.view.isUserInteractionEnabled = isEnabled
+    private func scheduleRecovery(for generation: Int) {
+        recoveryTask?.cancel()
+        recoveryTask = Task { @MainActor [weak self] in
+            for _ in 0..<80 {
+                try? await Task.sleep(nanoseconds: 50_000_000)
+                guard !Task.isCancelled, let self else { return }
+                guard generation == self.transitionGeneration else { return }
+                guard !self.isProgrammaticTransitionInFlight else { continue }
+                guard self.pagingScrollView?.isTracking != true,
+                      self.pagingScrollView?.isDragging != true,
+                      self.pagingScrollView?.isDecelerating != true
+                else {
+                    continue
+                }
+
+                self.interactiveDestination = nil
+                self.commitVisiblePage()
+                self.finishTransitionCycle()
+                return
+            }
+        }
     }
 
     private func index(of controller: UIViewController?) -> Int? {
@@ -424,8 +497,10 @@ extension InteractiveTabViewController: UIPageViewControllerDelegate {
         _ pageViewController: UIPageViewController,
         willTransitionTo pendingViewControllers: [UIViewController]
     ) {
-        pendingInteractiveIndex = index(of: pendingViewControllers.first)
+        transitionGeneration &+= 1
+        interactiveDestination = index(of: pendingViewControllers.first)
         onTransitionActivityChange?(true)
+        scheduleRecovery(for: transitionGeneration)
     }
 
     func pageViewController(
@@ -434,38 +509,34 @@ extension InteractiveTabViewController: UIPageViewControllerDelegate {
         previousViewControllers: [UIViewController],
         transitionCompleted completed: Bool
     ) {
-        defer {
-            pendingInteractiveIndex = nil
-            onTransitionActivityChange?(false)
-        }
-
-        guard
-            completed,
-            let visibleIndex = index(of: pageViewController.viewControllers?.first)
-        else {
-            return
-        }
-
-        currentIndex = visibleIndex
-        onSelectionChange?(tabs[visibleIndex])
+        transitionGeneration &+= 1
+        recoveryTask?.cancel()
+        interactiveDestination = nil
+        commitVisiblePage()
+        finishTransitionCycle()
     }
 }
 
 private struct MainTabBar: View {
-    @Binding var selection: AppTab
-    let isInteractionEnabled: Bool
+    let selection: AppTab
+    let onSelectionRequest: (AppTab) -> Void
+    @ScaledMetric(relativeTo: .body) private var iconSize = 20
 
     var body: some View {
         HStack(spacing: 0) {
-            ForEach(AppTab.orderedTabs, id: \.self) { tab in
+            ForEach(Array(AppTab.orderedTabs.enumerated()), id: \.element) { index, tab in
                 Button {
-                    guard isInteractionEnabled else { return }
-                    selection = tab
+                    onSelectionRequest(tab)
                 } label: {
                     VStack(spacing: 4) {
                         Image(systemName: tab.systemImageName)
                             .symbolRenderingMode(.monochrome)
-                            .font(.system(size: 20, weight: .semibold))
+                            .font(
+                                .system(
+                                    size: min(25, max(18, iconSize)),
+                                    weight: .semibold
+                                )
+                            )
                             .frame(height: 23)
 
                         Text(tab.tabTitle)
@@ -484,8 +555,8 @@ private struct MainTabBar: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .disabled(!isInteractionEnabled)
                 .accessibilityLabel(tab.tabTitle)
+                .accessibilityValue("tab \(index + 1) of \(AppTab.orderedTabs.count)")
                 .accessibilityAddTraits(tab == selection ? .isSelected : [])
                 .accessibilityIdentifier("main-tab-\(tab.accessibilityIdentifier)")
             }
