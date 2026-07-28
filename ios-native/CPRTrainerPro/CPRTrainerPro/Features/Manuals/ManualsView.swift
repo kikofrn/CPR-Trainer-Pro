@@ -49,6 +49,9 @@ struct ManualsView: View {
                             PrimaryActionButton(
                                 title: downloadService.state(for: manual.packageID).isReady ? "Open Manual" : "Download Manual",
                                 systemImage: downloadService.state(for: manual.packageID).isReady ? "book.fill" : "arrow.down.circle.fill",
+                                backgroundColor: downloadService.state(for: manual.packageID).isReady
+                                    ? Theme.Colors.manualReady
+                                    : Theme.Colors.red,
                                 action: {
                                     if downloadService.state(for: manual.packageID).isReady {
                                         experienceToken = appViewModel.acquireForegroundExperience(

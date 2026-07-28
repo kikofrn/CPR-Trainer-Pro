@@ -102,6 +102,8 @@ struct ArtworkImage: View {
                     .scaledToFit()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .clipped()
+                    .id(ObjectIdentifier(image))
+                    .transition(.opacity)
             } else {
                 Rectangle()
                     .fill(Theme.Colors.red.gradient)
@@ -115,16 +117,21 @@ struct ArtworkImage: View {
         .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
         .task(id: "\(appViewModel.catalog.contentRevision)#\(source.taskID)") {
             let revision = appViewModel.catalog.contentRevision
-            image = await CourseArtworkRepository.shared.localImage(
+            let localImage = await CourseArtworkRepository.shared.localImage(
                 for: source,
                 contentRevision: revision
             )
+            withAnimation(.easeInOut(duration: 0.18)) {
+                image = localImage
+            }
             if case .course(let state) = source,
                let refreshed = await CourseArtworkRepository.shared.refreshedImage(
                    for: state,
                    contentRevision: revision
                ) {
-                image = refreshed
+                withAnimation(.easeInOut(duration: 0.18)) {
+                    image = refreshed
+                }
             }
         }
     }

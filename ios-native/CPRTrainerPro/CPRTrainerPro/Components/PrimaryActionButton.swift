@@ -3,6 +3,7 @@ import SwiftUI
 struct PrimaryActionButton: View {
     let title: String
     let systemImage: String
+    var backgroundColor = Theme.Colors.red
     let action: () -> Void
 
     var body: some View {
@@ -14,9 +15,8 @@ struct PrimaryActionButton: View {
         }
         .buttonStyle(.plain)
         .foregroundStyle(.white)
-        .background(Theme.Colors.red)
+        .background(backgroundColor)
         .clipShape(RoundedRectangle(cornerRadius: Theme.Layout.controlRadius, style: .continuous))
         .accessibilityIdentifier("primary-action-\(title)")
     }
 }
-

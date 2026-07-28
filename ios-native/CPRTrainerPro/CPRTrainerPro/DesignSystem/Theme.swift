@@ -9,7 +9,12 @@ enum Theme {
         static let peach = Color(red: 1.00, green: 0.70, blue: 0.53)
         static let blue = Color(red: 0.15, green: 0.50, blue: 0.78)
         static let tabItem = Color(red: 0.18, green: 0.62, blue: 0.98)
-        static let selectedTabItem = Color(red: 0.04, green: 0.32, blue: 0.56)
+        static let selectedTabItem = Color(
+            red: 254.0 / 255.0,
+            green: 222.0 / 255.0,
+            blue: 202.0 / 255.0
+        )
+        static let manualReady = Color(red: 0.08, green: 0.36, blue: 0.62)
         static let success = Color(red: 0.18, green: 0.67, blue: 0.38)
         static let warning = Color(red: 0.95, green: 0.66, blue: 0.20)
         static let failure = Color(red: 0.90, green: 0.19, blue: 0.22)

@@ -267,7 +267,7 @@ struct CoursesView: View {
 
 private extension CoursesView {
     static let slideshowBluebellBubbles = [
-        "Teach at your own pace",
+        "Full Certification Course taught at your own pace",
         "Includes slide-by-slide teaching tips"
     ]
 
@@ -278,16 +278,12 @@ private extension CoursesView {
 
     static let pediatricCPRBluebellBubbles = [
         "Pediatric Focused CPR & AED Certification",
-        "Designed for childcare providers & teachers",
-        "Covers Child & Infant CPR",
-        "Interactive slides with practice cues"
+        "Designed for childcare providers & teachers"
     ]
 
     static let pediatricFirstAidBluebellBubbles = [
         "Pediatric Focused First Aid Certification",
-        "Designed for childcare providers & teachers",
-        "Covers common pediatric emergencies",
-        "Interactive slides with practice cues"
+        "Designed for childcare providers & teachers"
     ]
 
     static let cprCertificationDescription = "Course content includes Adult, Child, and Infant CPR as well as choking relief. This is a full certification course built strictly on the latest 2025 AHA/ILCOR guidelines. All certifications meet or exceed federal OSHA workplace safety requirements and satisfy state licensing mandates including pediatric hands-on skills validation. Official certification cards are valid for 2 years and can only be issued through the EHAcademy.com web portal by an approved EHAcademy Instructor with valid credentials."
