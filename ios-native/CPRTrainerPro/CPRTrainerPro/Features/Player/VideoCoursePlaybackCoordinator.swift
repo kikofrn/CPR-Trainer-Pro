@@ -116,7 +116,16 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
     let storageService: StorageService
     let ownerID = UUID()
 
-    @Published var selectedChapterID: Chapter.ID?
+    @Published var selectedChapterID: Chapter.ID? {
+        didSet {
+            if let selectedChapterID {
+                UserDefaults.standard.set(
+                    selectedChapterID,
+                    forKey: "videoCourse.lastChapter.\(videoCourse.id)"
+                )
+            }
+        }
+    }
     @Published private(set) var player: AVPlayer?
     @Published private(set) var currentSubtitleText: String?
     @Published private(set) var playbackStatus: PlaybackStatus = .idle
@@ -129,6 +138,10 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
     }
     @Published var captionsEnabled = false {
         didSet {
+            UserDefaults.standard.set(
+                captionsEnabled,
+                forKey: "videoCourse.captions.\(videoCourse.id)"
+            )
             if !captionsEnabled {
                 currentSubtitleText = nil
                 currentCueIndex = nil
@@ -145,6 +158,10 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
     }
     @Published var continuousPlayEnabled = false {
         didSet {
+            UserDefaults.standard.set(
+                continuousPlayEnabled,
+                forKey: "videoCourse.continuousPlay.\(videoCourse.id)"
+            )
             PresentationHub.shared.session.updateContinuousPlay(
                 ownerID: ownerID,
                 isEnabled: continuousPlayEnabled
@@ -154,6 +171,8 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
 
     private let subtitleService: SubtitleService
     private var subtitleCues: [SubtitleCue] = []
+    private var subtitleTask: Task<Void, Never>?
+    private var subtitleGeneration = 0
     private var currentCueIndex: Int?
     private var timeObserver: Any?
     private var scrubberTimeObserver: Any?
@@ -165,11 +184,19 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
     private var hasAcquiredIdleTimer = false
     private var hasAcquiredAudioSession = false
     private var isTornDown = false
+    private var wasPlayingBeforeInterruption = false
 
     init(videoCourse: VideoCourse, storageService: StorageService) {
         self.videoCourse = videoCourse
         self.storageService = storageService
         self.subtitleService = SubtitleService(storageService: storageService)
+        let defaults = UserDefaults.standard
+        self.captionsEnabled = defaults.bool(
+            forKey: "videoCourse.captions.\(videoCourse.id)"
+        )
+        self.continuousPlayEnabled = defaults.bool(
+            forKey: "videoCourse.continuousPlay.\(videoCourse.id)"
+        )
     }
 
     deinit {
@@ -236,7 +263,12 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
         attachAudioRouteObservers()
 
         if selectedChapterID == nil {
-            selectedChapterID = playableChapters.first?.id
+            let savedID = UserDefaults.standard.string(
+                forKey: "videoCourse.lastChapter.\(videoCourse.id)"
+            )
+            selectedChapterID = playableChapters.first {
+                $0.id == savedID
+            }?.id ?? playableChapters.first?.id
         }
 
         loadSelectedChapter()
@@ -271,7 +303,19 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
 
     func play() {
         ensurePlaybackResources()
-        player?.playImmediately(atRate: playbackRate)
+        guard let player else { return }
+        if playbackStatus == .ended {
+            player.seek(to: .zero) { [weak self, weak player] finished in
+                guard finished else { return }
+                Task { @MainActor [weak self, weak player] in
+                    guard let self, let player else { return }
+                    self.updateScrubberProgress(from: player, time: 0)
+                    player.playImmediately(atRate: self.playbackRate)
+                }
+            }
+        } else {
+            player.playImmediately(atRate: playbackRate)
+        }
     }
 
     func pause() {
@@ -392,7 +436,10 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
         itemStatusObservation = nil
         player?.replaceCurrentItem(with: nil)
         player = nil
+        subtitleTask?.cancel()
+        subtitleTask = nil
         subtitleCues = []
+        subtitleGeneration += 1
         currentCueIndex = nil
         currentSubtitleText = nil
         resetScrubberState()
@@ -412,6 +459,9 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
     }
 
     private func loadSelectedChapter() {
+        subtitleGeneration += 1
+        subtitleTask?.cancel()
+        subtitleTask = nil
         cancelScrubbing(restorePlayback: false)
         removeScrubberTimeObserver()
         removeTimeObserver()
@@ -453,7 +503,21 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
         nextPlayer.replaceCurrentItem(with: playerItem)
         player = nextPlayer
 
-        subtitleCues = subtitleService.cues(forMediaFilename: selectedChapter.filename)
+        let generation = subtitleGeneration
+        let subtitleService = subtitleService
+        let subtitleFilename = selectedChapter.filename
+        subtitleTask = Task { [weak self] in
+            let cues = await subtitleService.cuesAsync(
+                forMediaFilename: subtitleFilename
+            )
+            guard !Task.isCancelled,
+                  let self,
+                  generation == self.subtitleGeneration
+            else { return }
+            self.subtitleCues = cues
+            self.currentCueIndex = nil
+            self.updateSubtitle(at: self.player?.currentTime().seconds ?? 0)
+        }
         attachEndObserver(to: playerItem)
         attachItemStatusObserver(to: playerItem)
         attachTimeControlObserver(to: nextPlayer)
@@ -589,29 +653,48 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
     private func attachAudioRouteObservers() {
         guard routeChangeObserver == nil else { return }
 
-        routeChangeObserver = NotificationCenter.default.addObserver(
-            forName: AVAudioSession.routeChangeNotification,
-            object: nil,
-            queue: .main
-        ) { _ in
-            // Route changes are expected when AirPlay or HDMI connects. The session state stays source-of-truth.
-        }
-
         interruptionObserver = NotificationCenter.default.addObserver(
             forName: AVAudioSession.interruptionNotification,
             object: nil,
             queue: .main
         ) { [weak self] notification in
-            guard
-                let typeValue = notification.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt,
-                let type = AVAudioSession.InterruptionType(rawValue: typeValue),
-                type == .began
-            else {
-                return
-            }
-
             Task { @MainActor [weak self] in
-                self?.cancelScrubbing(restorePlayback: false)
+                guard let self,
+                      let typeValue = notification.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt,
+                      let type = AVAudioSession.InterruptionType(rawValue: typeValue)
+                else { return }
+
+                switch type {
+                case .began:
+                    self.wasPlayingBeforeInterruption =
+                        self.player?.timeControlStatus == .playing
+                    self.cancelScrubbing(restorePlayback: false)
+                    self.pause()
+                case .ended:
+                    let optionsValue =
+                        notification.userInfo?[AVAudioSessionInterruptionOptionKey] as? UInt ?? 0
+                    let options = AVAudioSession.InterruptionOptions(rawValue: optionsValue)
+                    if self.wasPlayingBeforeInterruption, options.contains(.shouldResume) {
+                        self.ensurePlaybackResources()
+                        self.play()
+                    }
+                    self.wasPlayingBeforeInterruption = false
+                @unknown default:
+                    break
+                }
+            }
+        }
+
+        routeChangeObserver = NotificationCenter.default.addObserver(
+            forName: AVAudioSession.routeChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            guard
+                let reasonValue = notification.userInfo?[AVAudioSessionRouteChangeReasonKey] as? UInt,
+                AVAudioSession.RouteChangeReason(rawValue: reasonValue) == .oldDeviceUnavailable
+            else { return }
+            Task { @MainActor [weak self] in
                 self?.pause()
             }
         }

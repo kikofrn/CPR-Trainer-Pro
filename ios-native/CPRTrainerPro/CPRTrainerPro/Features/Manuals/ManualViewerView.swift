@@ -200,8 +200,6 @@ private struct PDFKitDocumentView: UIViewRepresentable {
         context.coordinator.currentPageIndex = $currentPageIndex
         context.coordinator.onRequestConsumed = onRequestConsumed
 
-        configure(pdfView)
-
         if pdfView.document !== document {
             pdfView.document = document
             context.coordinator.restore(pageIndex: currentPageIndex, in: pdfView)

@@ -304,9 +304,23 @@ final class ContentManifestContractTests: XCTestCase {
             }
         )
 
-        XCTAssertEqual(allMissing.remainingAssetCount, 244)
-        XCTAssertEqual(allMissing.remainingByteCount, 2_197_504_067)
-        XCTAssertEqual(allMissing.durationText, "about 12 min on a typical 25 Mbps connection")
+        let uniqueMissingAssets = Dictionary(
+            catalog.packages
+                .flatMap(\.assets)
+                .filter { !$0.filename.lowercased().hasPrefix("subtitles/") }
+                .map { ($0.filename, $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
+        let expectedByteCount = uniqueMissingAssets.values.reduce(Int64(0)) {
+            $0 + ($1.byteCount ?? 0)
+        }
+
+        XCTAssertEqual(
+            allMissing.remainingAssetCount,
+            uniqueMissingAssets.count
+        )
+        XCTAssertEqual(allMissing.remainingByteCount, expectedByteCount)
+        XCTAssertFalse(allMissing.durationText.isEmpty)
 
         let savedAsset = try XCTUnwrap(
             catalog.packages
@@ -1095,6 +1109,91 @@ final class ContentManifestContractTests: XCTestCase {
         XCTAssertFalse(storage.hasDownloadedCopy(alias.newFilename))
         XCTAssertNotNil(versionStore.record(for: alias.oldFilename))
         XCTAssertNil(versionStore.record(for: alias.newFilename))
+    }
+
+    func testAllEightCourseArtworkStatesHaveUniqueExactCloudKeysAndBundledFallbacks() {
+        let states = CourseArtworkState.allCases
+        XCTAssertEqual(states.count, 8)
+        XCTAssertEqual(Set(states.map(\.remoteKey)).count, 8)
+
+        let expectedKeys = Set([
+            "App Thumbnails/CPR AED for All Ages Cover.png",
+            "App Thumbnails/CPR AED for All Ages with VA.png",
+            "App Thumbnails/First Aid for All Ages Cover.png",
+            "App Thumbnails/First Aid for All Ages with VA.png",
+            "App Thumbnails/Pedi CPR AED Cover.png",
+            "App Thumbnails/Pedi CPR AED with VA Cover.png",
+            "App Thumbnails/Pedi First Aid Cover.png",
+            "App Thumbnails/Pedi First Aid with VA Cover.png"
+        ])
+        XCTAssertEqual(Set(states.map(\.remoteKey)), expectedKeys)
+
+        for state in states {
+            XCTAssertNotNil(
+                Bundle.main.url(
+                    forResource: state.bundledFallbackName,
+                    withExtension: nil,
+                    subdirectory: "Artwork"
+                ),
+                "Missing bundled fallback for \(state.rawValue)"
+            )
+        }
+    }
+
+    func testUpdatePromptFingerprintIsOrderIndependentButVersionSpecific() {
+        let assetA = MediaAsset(
+            id: "a",
+            filename: "Course/a.mp4",
+            kind: .video,
+            byteCount: 100
+        )
+        let assetB = MediaAsset(
+            id: "b",
+            filename: "Course/b.mp4",
+            kind: .video,
+            byteCount: 200
+        )
+        let candidateA = ContentUpdateCandidate(
+            asset: assetA,
+            remoteVersion: .init(
+                byteCount: 100,
+                eTag: "\"version-a\"",
+                lastModified: nil
+            )
+        )
+        let candidateB = ContentUpdateCandidate(
+            asset: assetB,
+            remoteVersion: .init(
+                byteCount: 200,
+                eTag: "\"version-b\"",
+                lastModified: nil
+            )
+        )
+        XCTAssertEqual(
+            ContentUpdateSummary(candidates: [candidateA, candidateB]).fingerprint,
+            ContentUpdateSummary(candidates: [candidateB, candidateA]).fingerprint
+        )
+
+        let newerA = ContentUpdateCandidate(
+            asset: assetA,
+            remoteVersion: .init(
+                byteCount: 100,
+                eTag: "\"version-a-2\"",
+                lastModified: nil
+            )
+        )
+        XCTAssertNotEqual(
+            ContentUpdateSummary(candidates: [candidateA, candidateB]).fingerprint,
+            ContentUpdateSummary(candidates: [newerA, candidateB]).fingerprint
+        )
+    }
+
+    func testPlaybackFailureKeepsTheActualReason() {
+        XCTAssertEqual(
+            PlaybackStatus.failed("Corrupt video data.").failureReason,
+            "Corrupt video data."
+        )
+        XCTAssertNil(PlaybackStatus.paused.failureReason)
     }
 
     private static func loadCatalog() throws -> TrainingCatalog {

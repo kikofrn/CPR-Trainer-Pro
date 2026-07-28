@@ -38,11 +38,15 @@ struct InstructorTipsService {
 
         let data = try Data(contentsOf: url)
         let manifest = try JSONDecoder().decode(InstructorTipsManifest.self, from: data)
-        return Dictionary(
-            uniqueKeysWithValues: manifest.slideshows.map { slideshow in
-                (slideshow.id, slideshow.tips)
+        var result: [String: [InstructorSlideTip]] = [:]
+        for slideshow in manifest.slideshows {
+            var seenSlideIDs: Set<String> = []
+            let uniqueTips = slideshow.tips.filter {
+                seenSlideIDs.insert($0.slideID).inserted
             }
-        )
+            result[slideshow.id] = uniqueTips
+        }
+        return result
     }
 }
 

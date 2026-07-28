@@ -3,15 +3,13 @@ import PDFKit
 
 @MainActor
 struct ManualTOCService {
-    func entries(from document: PDFDocument, manualID: String, pageCount: Int) -> (entries: [ManualTOCEntry], source: ManualTOCSource) {
+    func entries(
+        from document: PDFDocument,
+        pageCount: Int
+    ) -> (entries: [ManualTOCEntry], source: ManualTOCSource) {
         let outlineEntries = embeddedOutlineEntries(from: document, pageCount: pageCount)
         if !outlineEntries.isEmpty {
             return (outlineEntries, .embeddedOutline)
-        }
-
-        let jsonEntries = bundledJSONEntries(manualID: manualID, pageCount: pageCount)
-        if !jsonEntries.isEmpty {
-            return (jsonEntries, .bundledJSON)
         }
 
         let pageEntries = generatedPageEntries(pageCount: pageCount)
@@ -102,40 +100,8 @@ struct ManualTOCService {
         return nil
     }
 
-    private func bundledJSONEntries(manualID: String, pageCount: Int) -> [ManualTOCEntry] {
-        guard
-            let url = Bundle.main.url(forResource: "manual-toc", withExtension: "json"),
-            let data = try? Data(contentsOf: url),
-            let decoded = try? JSONDecoder().decode([String: [ManualTOCJSONEntry]].self, from: data),
-            let entries = decoded[manualID]
-        else {
-            return []
-        }
-
-        return entries.enumerated().compactMap { offset, entry in
-            let pageIndex = entry.page - 1
-            guard pageIndex >= 0, pageIndex < pageCount else { return nil }
-
-            let trimmedTitle = entry.title.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !trimmedTitle.isEmpty else { return nil }
-
-            return ManualTOCEntry(
-                id: "json-\(manualID)-\(offset)-page-\(pageIndex)",
-                title: trimmedTitle,
-                pageIndex: pageIndex,
-                level: max(0, entry.level ?? 0)
-            )
-        }
-    }
-
     nonisolated static func shouldIncludeOutlineTitle(_ title: String) -> Bool {
         title.trimmingCharacters(in: .whitespacesAndNewlines)
             .localizedCaseInsensitiveCompare("Untitled") != .orderedSame
     }
-}
-
-private struct ManualTOCJSONEntry: Decodable {
-    let title: String
-    let page: Int
-    let level: Int?
 }

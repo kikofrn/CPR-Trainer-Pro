@@ -39,7 +39,7 @@ struct SlideshowPlayerView: View {
     }
 
     private var isPresentingExternally: Bool {
-        presentationSession.state.externalSceneActive &&
+        presentationSession.state.externalSceneConnected &&
             presentationSession.state.activeOwnerID == coordinator.ownerID
     }
 
@@ -154,9 +154,11 @@ struct SlideshowPlayerView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(.black)
         .contentShape(Rectangle())
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 40)
-                .onEnded(handleSwipe)
+        .modifier(
+            SlideSwipeGestureModifier(
+                isEnabled: activeSlide?.type == .image,
+                onEnded: handleSwipe
+            )
         )
         .simultaneousGesture(
             TapGesture().onEnded {
@@ -359,7 +361,7 @@ struct SlideshowPlayerView: View {
                 .font(.headline)
                 .foregroundStyle(.white)
 
-            Text(slide.filename)
+            Text(coordinator.playbackStatus.failureReason ?? slide.filename)
                 .font(.caption)
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.white.opacity(0.58))
@@ -389,6 +391,33 @@ struct SlideshowPlayerView: View {
                 .padding(.horizontal, 10)
                 .padding(.vertical, 5)
                 .background(.white.opacity(0.08), in: Capsule())
+
+            HStack(spacing: 18) {
+                Button {
+                    coordinator.toggleVideoPlayback()
+                } label: {
+                    Image(
+                        systemName: coordinator.playbackStatus == .playing
+                            ? "pause.circle.fill"
+                            : "play.circle.fill"
+                    )
+                    .font(.system(size: 38))
+                    .frame(width: 56, height: 56)
+                }
+                .accessibilityLabel(
+                    coordinator.playbackStatus == .playing ? "Pause video" : "Play video"
+                )
+
+                Button {
+                    coordinator.replayVideo()
+                } label: {
+                    Image(systemName: "arrow.counterclockwise.circle.fill")
+                        .font(.system(size: 38))
+                        .frame(width: 56, height: 56)
+                }
+                .accessibilityLabel("Replay video")
+            }
+            .foregroundStyle(Theme.Colors.peach)
         }
         .padding(20)
     }
@@ -472,6 +501,23 @@ struct SlideshowPlayerView: View {
                     overlayControlsVisible = false
                 }
             }
+        }
+    }
+}
+
+private struct SlideSwipeGestureModifier: ViewModifier {
+    let isEnabled: Bool
+    let onEnded: (DragGesture.Value) -> Void
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if isEnabled {
+            content.simultaneousGesture(
+                DragGesture(minimumDistance: 40)
+                    .onEnded(onEnded)
+            )
+        } else {
+            content
         }
     }
 }

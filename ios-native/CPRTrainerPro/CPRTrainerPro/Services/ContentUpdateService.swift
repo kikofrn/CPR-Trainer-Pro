@@ -11,6 +11,10 @@ struct RemoteContentManifest: Equatable, Sendable {
 }
 
 actor RemoteContentManifestClient {
+    static let shared = RemoteContentManifestClient(
+        endpoint: URLHelpers.mediaBaseURL.appendingPathComponent("api/manifest")
+    )
+
     private struct Payload: Decodable {
         struct File: Decodable {
             let key: String
@@ -297,9 +301,7 @@ final class ContentUpdateService: NSObject, ObservableObject {
         self.storageService = storageService
         self.versionStore = versionStore
         self.planStore = planStore
-        self.manifestClient = RemoteContentManifestClient(
-            endpoint: URLHelpers.mediaBaseURL.appendingPathComponent("api/manifest")
-        )
+        self.manifestClient = .shared
         let revisionComponent = contentRevision.replacingOccurrences(
             of: "[^A-Za-z0-9.-]",
             with: "-",
@@ -393,8 +395,10 @@ final class ContentUpdateService: NSObject, ObservableObject {
         publishAvailableUpdate(mergedCandidates)
     }
 
-    func beginAvailableUpdates(_ summary: ContentUpdateSummary) {
-        guard !summary.candidates.isEmpty else { return }
+    @discardableResult
+    func beginAvailableUpdates(_ summary: ContentUpdateSummary) -> Bool {
+        guard !summary.candidates.isEmpty else { return false }
+        guard diskPreflightAllows(summary.candidates) else { return false }
 
         var nextPlan = plan ?? .init(pending: [], failed: [])
         let alreadyPending = Set(nextPlan.pending.map(\.candidate.asset.filename))
@@ -429,6 +433,7 @@ final class ContentUpdateService: NSObject, ObservableObject {
         isUpdating = !nextPlan.pending.isEmpty || !activeUpdates.isEmpty
         savePlan()
         pumpQueue()
+        return true
     }
 
     func dismissAvailableUpdate() {
@@ -464,6 +469,34 @@ final class ContentUpdateService: NSObject, ObservableObject {
             try? planStore.remove()
             assertionFailure("Failed to load content update plan: \(error)")
         }
+    }
+
+    private func diskPreflightAllows(
+        _ candidates: [ContentUpdateCandidate]
+    ) -> Bool {
+        let remainingBytes = candidates.reduce(Int64(0)) {
+            $0 + max(0, $1.remoteVersion.byteCount)
+        }
+        guard remainingBytes > 0,
+              let availableBytes = storageService.availableDiskBytes()
+        else {
+            return true
+        }
+
+        let largestAsset = candidates
+            .map(\.remoteVersion.byteCount)
+            .max() ?? 0
+        let safetyMargin = max(Int64(100_000_000), remainingBytes / 10)
+        let requiredBytes = remainingBytes + largestAsset + safetyMargin
+        guard availableBytes >= requiredBytes else {
+            let formatter = ByteCountFormatter()
+            formatter.countStyle = .file
+            lastErrorMessage =
+                "These updates need \(formatter.string(fromByteCount: requiredBytes)), "
+                + "but \(formatter.string(fromByteCount: availableBytes)) is available."
+            return false
+        }
+        return true
     }
 
     private func recoverBackgroundTasks() {
@@ -606,7 +639,7 @@ final class ContentUpdateService: NSObject, ObservableObject {
               candidate.remoteVersion.matches(receivedVersion)
         else {
             try? FileManager.default.removeItem(at: temporaryURL)
-            handleFailure(
+            refreshVersionAfterMismatch(
                 taskIdentifier: taskIdentifier,
                 message: "The course file changed while it was downloading. It will be checked again."
             )
@@ -657,8 +690,54 @@ final class ContentUpdateService: NSObject, ObservableObject {
         ) else {
             return
         }
+        recordFailure(activeUpdate.workItem, message: message)
+    }
 
-        let filename = activeUpdate.workItem.candidate.asset.filename
+    private func refreshVersionAfterMismatch(
+        taskIdentifier: Int,
+        message: String
+    ) {
+        guard let activeUpdate = activeUpdates.removeValue(
+            forKey: taskIdentifier
+        ) else {
+            return
+        }
+        let workItem = activeUpdate.workItem
+        let filename = workItem.candidate.asset.filename
+
+        Task { [weak self] in
+            guard let self else { return }
+            let manifest = await self.manifestClient.fetch(forceRefresh: true)
+            guard
+                let refreshedVersion = manifest?.assetsByKey[filename]?.version,
+                var currentPlan = self.plan,
+                let index = currentPlan.pending.firstIndex(where: {
+                    $0.candidate.asset.filename == filename
+                })
+            else {
+                self.recordFailure(workItem, message: message)
+                return
+            }
+
+            currentPlan.pending[index] = .init(
+                candidate: .init(
+                    asset: workItem.candidate.asset,
+                    remoteVersion: refreshedVersion
+                ),
+                attempt: 0,
+                retryAfter: nil
+            )
+            self.plan = currentPlan
+            self.savePlan()
+            self.pumpQueue()
+        }
+    }
+
+    private func recordFailure(
+        _ failedWorkItem: ContentUpdatePlanStore.WorkItem,
+        message: String
+    ) {
+        let filename = failedWorkItem.candidate.asset.filename
         guard var currentPlan = plan,
               let index = currentPlan.pending.firstIndex(where: {
                   $0.candidate.asset.filename == filename

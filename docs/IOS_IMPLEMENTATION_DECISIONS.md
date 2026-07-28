@@ -29,6 +29,30 @@ material, private runtime state, or credentials.
   retained until its replacement passes validation.
 - Subtitle updates are user-visible. Thumbnail refreshes are silent and never
   contribute to Download All totals.
+- The legacy per-file detection ladder was removed from the app target. A
+  source audit after conversion found zero runtime `HEAD` or
+  `Range: bytes=0-0` probe requests.
+- Course, update, subtitle, and artwork requests share one cellular policy.
+  Blocked work remains queued as “Waiting for Wi-Fi” and resumes when the path
+  becomes eligible.
+- Large transfers use a live disk preflight that includes remaining bytes, the
+  largest staging file, and a safety margin.
+
+## Prompt and foreground coordination
+
+- Immersive teaching surfaces acquire app-level foreground-experience tokens.
+  Update candidates may be retained while a token is active, but prompts wait
+  until all tokens and the initial Download All experience have cleared.
+- Deferring an update suppresses only that exact filename/version fingerprint
+  for the current process; a genuinely newer version remains eligible.
+
+## Artwork and rendering
+
+- Eight explicit course artwork states map one-to-one to exact cloud keys.
+  Artwork refresh is silent, version-pinned, downsampled, and cached; the last
+  validated download or bundled image remains visible on every failure path.
+- Slideshow image work is bounded to the current slide and its immediate
+  neighbors. Video slides do not install the deck-swipe recognizer.
 
 ## Course modes
 
@@ -43,6 +67,9 @@ material, private runtime state, or credentials.
   13 physically tests keyboard and first-responder behavior with a projector
   attached. If that regression reproduces, the pre-approved fallback is
   `isHidden = false`.
+- A connected external scene owns the shared video surface even while that
+  scene temporarily resigns active. Becoming active republishes presentation
+  state so the external layer can verify attachment.
 
 ## Deferred Watch work
 

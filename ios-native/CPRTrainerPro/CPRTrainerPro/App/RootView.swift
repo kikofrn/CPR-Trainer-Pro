@@ -219,6 +219,7 @@ private struct InitialDownloadPromptView: View {
 }
 
 private struct ContentUpdatePromptView: View {
+    @EnvironmentObject private var appViewModel: AppViewModel
     let summary: ContentUpdateSummary
     let onUpdate: () -> Void
     let onNotYet: () -> Void
@@ -282,6 +283,14 @@ private struct ContentUpdatePromptView: View {
                 .padding(14)
                 .background(Theme.Colors.surface)
                 .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+
+                if let message = appViewModel.contentUpdateService.lastErrorMessage {
+                    Text(message)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Theme.Colors.failure)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
 
                 Text(
                     "*The current files stay safely in place until their replacements finish downloading and pass validation."
@@ -391,6 +400,8 @@ private struct LaunchExperienceView: View {
     @State private var showsLogo = false
     @State private var settlesLogo = false
     @State private var fadesOut = false
+    @State private var sequenceTask: Task<Void, Never>?
+    @State private var didFinish = false
 
     var body: some View {
         GeometryReader { proxy in
@@ -405,12 +416,22 @@ private struct LaunchExperienceView: View {
                 }
             }
             .opacity(fadesOut ? 0 : 1)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                if mode == .startup {
+                    finishOnce()
+                }
+            }
             .onAppear {
                 if mode == .startup {
                     runLaunchSequence()
                 } else {
                     showsLogo = true
                 }
+            }
+            .onDisappear {
+                sequenceTask?.cancel()
+                sequenceTask = nil
             }
         }
     }
@@ -479,26 +500,49 @@ private struct LaunchExperienceView: View {
     }
 
     private func runLaunchSequence() {
-        Task {
-            try? await Task.sleep(nanoseconds: 450_000_000)
+        sequenceTask?.cancel()
+        sequenceTask = Task {
+            do {
+                try await Task.sleep(nanoseconds: 450_000_000)
+            } catch {
+                return
+            }
             withAnimation(.easeOut(duration: 0.45)) {
                 showsLogo = true
             }
 
-            try? await Task.sleep(nanoseconds: 1_650_000_000)
+            do {
+                try await Task.sleep(nanoseconds: 1_650_000_000)
+            } catch {
+                return
+            }
             withAnimation(.spring(response: 0.62, dampingFraction: 0.86)) {
                 settlesLogo = true
             }
 
-            try? await Task.sleep(nanoseconds: 650_000_000)
+            do {
+                try await Task.sleep(nanoseconds: 650_000_000)
+            } catch {
+                return
+            }
             withAnimation(.easeInOut(duration: 0.32)) {
                 fadesOut = true
             }
 
-            try? await Task.sleep(nanoseconds: 340_000_000)
-            await MainActor.run {
-                onFinished()
+            do {
+                try await Task.sleep(nanoseconds: 340_000_000)
+            } catch {
+                return
             }
+            finishOnce()
         }
+    }
+
+    private func finishOnce() {
+        guard !didFinish else { return }
+        didFinish = true
+        sequenceTask?.cancel()
+        sequenceTask = nil
+        onFinished()
     }
 }

@@ -31,7 +31,7 @@ struct VideoCoursePlayerView: View {
     }
 
     private var isPresentingExternally: Bool {
-        presentationSession.state.externalSceneActive &&
+        presentationSession.state.externalSceneConnected &&
             presentationSession.state.activeOwnerID == coordinator.ownerID
     }
 
@@ -170,7 +170,10 @@ struct VideoCoursePlayerView: View {
                 .font(.headline)
                 .foregroundStyle(.white)
 
-            Text("This chapter is not available in local storage yet.")
+            Text(
+                coordinator.playbackStatus.failureReason
+                    ?? "This chapter is not available in local storage yet."
+            )
                 .font(.subheadline)
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.white.opacity(0.68))

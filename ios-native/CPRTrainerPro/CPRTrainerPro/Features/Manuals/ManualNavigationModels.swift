@@ -10,7 +10,6 @@ enum ManualNavigationTab: String, CaseIterable, Identifiable {
 
 enum ManualTOCSource: Equatable {
     case embeddedOutline
-    case bundledJSON
     case generatedPages
     case unavailable
 
@@ -18,8 +17,6 @@ enum ManualTOCSource: Equatable {
         switch self {
         case .embeddedOutline:
             "PDF bookmarks"
-        case .bundledJSON:
-            "Manual contents"
         case .generatedPages:
             "Page list"
         case .unavailable:

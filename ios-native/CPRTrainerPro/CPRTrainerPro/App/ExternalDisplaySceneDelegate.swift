@@ -27,6 +27,7 @@ final class ExternalDisplaySceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     func sceneDidBecomeActive(_ scene: UIScene) {
         PresentationHub.shared.session.setExternalSceneActive(true)
+        PresentationHub.shared.session.republishExternalPresentation()
     }
 
     func sceneWillResignActive(_ scene: UIScene) {

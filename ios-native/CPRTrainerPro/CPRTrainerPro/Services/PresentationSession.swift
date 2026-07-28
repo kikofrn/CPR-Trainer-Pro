@@ -28,6 +28,11 @@ enum PlaybackStatus: Equatable {
             "Playback issue"
         }
     }
+
+    var failureReason: String? {
+        guard case .failed(let message) = self else { return nil }
+        return message
+    }
 }
 
 enum ExternalMediaKind {
@@ -94,6 +99,10 @@ final class PresentationSession: ObservableObject {
         var nextState = state
         nextState.externalSceneActive = isActive
         state = nextState
+    }
+
+    func republishExternalPresentation() {
+        state = state
     }
 
     func setExternalSceneError(_ message: String?) {

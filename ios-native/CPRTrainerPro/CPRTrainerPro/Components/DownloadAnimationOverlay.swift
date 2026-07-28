@@ -68,7 +68,7 @@ struct LoopingVideoView: UIViewRepresentable {
         }
 
         let item = AVPlayerItem(url: url)
-        let player = AVQueuePlayer(playerItem: item)
+        let player = AVQueuePlayer()
         player.isMuted = true
         player.actionAtItemEnd = .none
         context.coordinator.attach(player)

@@ -185,9 +185,9 @@ final class AppViewModel: ObservableObject {
     }
 
     func beginContentUpdate(_ summary: ContentUpdateSummary) {
+        guard contentUpdateService.beginAvailableUpdates(summary) else { return }
         pendingContentUpdate = nil
         activePrompt = nil
-        contentUpdateService.beginAvailableUpdates(summary)
     }
 
     func dismissContentUpdatePrompt() {

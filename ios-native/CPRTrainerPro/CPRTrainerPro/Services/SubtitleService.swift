@@ -23,6 +23,26 @@ struct SubtitleService {
         return []
     }
 
+    func cuesAsync(forMediaFilename filename: String) async -> [SubtitleCue] {
+        let urls = Self.candidateSubtitleFilenames(forMediaFilename: filename)
+            .compactMap { subtitleFilename -> URL? in
+                guard storageService.fileExists(subtitleFilename) else { return nil }
+                return try? storageService.localURL(for: subtitleFilename)
+            }
+
+        return await Task.detached(priority: .userInitiated) {
+            for url in urls {
+                guard !Task.isCancelled,
+                      let content = try? String(contentsOf: url, encoding: .utf8)
+                else {
+                    continue
+                }
+                return Self.parseWebVTT(content)
+            }
+            return []
+        }.value
+    }
+
     static func candidateSubtitleFilenames(forMediaFilename filename: String) -> [String] {
         let clean = filename
             .trimmingCharacters(in: .whitespacesAndNewlines)

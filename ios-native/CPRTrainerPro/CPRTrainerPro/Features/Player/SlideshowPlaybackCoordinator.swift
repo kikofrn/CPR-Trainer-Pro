@@ -9,13 +9,24 @@ final class SlideshowPlaybackCoordinator: ObservableObject {
     let storageService: StorageService
     let ownerID = UUID()
 
-    @Published private(set) var slideIndex = 0
+    @Published private(set) var slideIndex = 0 {
+        didSet {
+            UserDefaults.standard.set(
+                slideIndex,
+                forKey: "slideshow.lastSlide.\(slideshow.id)"
+            )
+        }
+    }
     @Published private(set) var videoPlayer: AVPlayer?
     @Published private(set) var currentImage: UIImage?
     @Published private(set) var currentSubtitleText: String?
     @Published private(set) var playbackStatus: PlaybackStatus = .idle
     @Published var captionsEnabled = true {
         didSet {
+            UserDefaults.standard.set(
+                captionsEnabled,
+                forKey: "slideshow.captions.\(slideshow.id)"
+            )
             if !captionsEnabled {
                 currentSubtitleText = nil
                 currentCueIndex = nil
@@ -33,6 +44,8 @@ final class SlideshowPlaybackCoordinator: ObservableObject {
 
     private let subtitleService: SubtitleService
     private var subtitleCues: [SubtitleCue] = []
+    private var subtitleTask: Task<Void, Never>?
+    private var subtitleGeneration = 0
     private var currentCueIndex: Int?
     private var timeObserver: Any?
     private var endObserver: NSObjectProtocol?
@@ -41,16 +54,27 @@ final class SlideshowPlaybackCoordinator: ObservableObject {
     private var timeControlObservation: NSKeyValueObservation?
     private var itemStatusObservation: NSKeyValueObservation?
     private var imagePreparationTask: Task<Void, Never>?
+    private var neighborImageTasks: [String: Task<Void, Never>] = [:]
     private var imageCache: [String: UIImage] = [:]
     private var imageGeneration = 0
     private var hasAcquiredIdleTimer = false
     private var hasAcquiredAudioSession = false
     private var isTornDown = false
+    private var wasPlayingBeforeInterruption = false
 
     init(slideshow: Slideshow, storageService: StorageService) {
         self.slideshow = slideshow
         self.storageService = storageService
         self.subtitleService = SubtitleService(storageService: storageService)
+        let defaults = UserDefaults.standard
+        let savedIndex = defaults.integer(
+            forKey: "slideshow.lastSlide.\(slideshow.id)"
+        )
+        self.slideIndex = min(max(0, savedIndex), max(0, slideshow.slides.count - 1))
+        let captionsKey = "slideshow.captions.\(slideshow.id)"
+        self.captionsEnabled = defaults.object(forKey: captionsKey) == nil
+            ? true
+            : defaults.bool(forKey: captionsKey)
     }
 
     deinit {
@@ -69,6 +93,7 @@ final class SlideshowPlaybackCoordinator: ObservableObject {
         isTornDown = false
         attachAudioRouteObservers()
         ensureIdleTimer()
+        ensureAudioSession()
         loadActiveSlide()
     }
 
@@ -96,6 +121,10 @@ final class SlideshowPlaybackCoordinator: ObservableObject {
 
         imagePreparationTask?.cancel()
         imagePreparationTask = nil
+        subtitleTask?.cancel()
+        subtitleTask = nil
+        neighborImageTasks.values.forEach { $0.cancel() }
+        neighborImageTasks.removeAll()
         videoPlayer?.pause()
         removeTimeObserver()
         removeEndObserver()
@@ -130,7 +159,12 @@ final class SlideshowPlaybackCoordinator: ObservableObject {
 
     private func loadActiveSlide() {
         imageGeneration += 1
+        subtitleGeneration += 1
+        subtitleTask?.cancel()
+        subtitleTask = nil
         imagePreparationTask?.cancel()
+        neighborImageTasks.values.forEach { $0.cancel() }
+        neighborImageTasks.removeAll()
         removeVideoPlayback()
         currentSubtitleText = nil
         currentCueIndex = nil
@@ -152,7 +186,6 @@ final class SlideshowPlaybackCoordinator: ObservableObject {
     }
 
     private func loadImageSlide(_ slide: Slide, generation: Int) {
-        releaseAudioSessionIfNeeded()
         setPlaybackStatus(.loading)
 
         guard
@@ -218,7 +251,21 @@ final class SlideshowPlaybackCoordinator: ObservableObject {
         nextPlayer.replaceCurrentItem(with: playerItem)
         videoPlayer = nextPlayer
 
-        subtitleCues = subtitleService.cues(forMediaFilename: slide.filename)
+        let generation = subtitleGeneration
+        let subtitleService = subtitleService
+        let subtitleFilename = slide.filename
+        subtitleTask = Task { [weak self] in
+            let cues = await subtitleService.cuesAsync(
+                forMediaFilename: subtitleFilename
+            )
+            guard !Task.isCancelled,
+                  let self,
+                  generation == self.subtitleGeneration
+            else { return }
+            self.subtitleCues = cues
+            self.currentCueIndex = nil
+            self.updateSubtitle(at: self.videoPlayer?.currentTime().seconds ?? 0)
+        }
         attachEndObserver(to: playerItem)
         attachItemStatusObserver(to: playerItem)
         attachTimeControlObserver(to: nextPlayer)
@@ -282,12 +329,6 @@ final class SlideshowPlaybackCoordinator: ObservableObject {
         hasAcquiredAudioSession = true
     }
 
-    private func releaseAudioSessionIfNeeded() {
-        guard hasAcquiredAudioSession else { return }
-        PresentationHub.shared.releaseAudioSession()
-        hasAcquiredAudioSession = false
-    }
-
     private func removeVideoPlayback() {
         removeTimeObserver()
         removeEndObserver()
@@ -297,7 +338,6 @@ final class SlideshowPlaybackCoordinator: ObservableObject {
         itemStatusObservation = nil
         videoPlayer?.pause()
         videoPlayer?.replaceCurrentItem(with: nil)
-        videoPlayer = nil
     }
 
     private func attachTimeControlObserver(to player: AVPlayer) {
@@ -370,8 +410,15 @@ final class SlideshowPlaybackCoordinator: ObservableObject {
             forName: AVAudioSession.routeChangeNotification,
             object: nil,
             queue: .main
-        ) { _ in
-            // Route changes are expected when AirPlay or HDMI connects. The session state stays source-of-truth.
+        ) { [weak self] notification in
+            guard
+                let reasonValue = notification.userInfo?[AVAudioSessionRouteChangeReasonKey] as? UInt,
+                AVAudioSession.RouteChangeReason(rawValue: reasonValue) == .oldDeviceUnavailable
+            else { return }
+            Task { @MainActor [weak self] in
+                self?.videoPlayer?.pause()
+                self?.setPlaybackStatus(.paused)
+            }
         }
 
         interruptionObserver = NotificationCenter.default.addObserver(
@@ -379,17 +426,52 @@ final class SlideshowPlaybackCoordinator: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] notification in
-            guard
-                let typeValue = notification.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt,
-                let type = AVAudioSession.InterruptionType(rawValue: typeValue),
-                type == .began
-            else {
-                return
-            }
-
             Task { @MainActor [weak self] in
-                self?.videoPlayer?.pause()
-                self?.setPlaybackStatus(.paused)
+                guard let self,
+                      let typeValue = notification.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt,
+                      let type = AVAudioSession.InterruptionType(rawValue: typeValue)
+                else { return }
+                switch type {
+                case .began:
+                    self.wasPlayingBeforeInterruption =
+                        self.videoPlayer?.timeControlStatus == .playing
+                    self.videoPlayer?.pause()
+                    self.setPlaybackStatus(.paused)
+                case .ended:
+                    let optionsValue =
+                        notification.userInfo?[AVAudioSessionInterruptionOptionKey] as? UInt ?? 0
+                    let options = AVAudioSession.InterruptionOptions(rawValue: optionsValue)
+                    if self.wasPlayingBeforeInterruption, options.contains(.shouldResume) {
+                        self.ensureAudioSession()
+                        self.videoPlayer?.play()
+                    }
+                    self.wasPlayingBeforeInterruption = false
+                @unknown default:
+                    break
+                }
+            }
+        }
+    }
+
+    func toggleVideoPlayback() {
+        guard activeSlide?.type == .video, let videoPlayer else { return }
+        if playbackStatus == .playing || playbackStatus == .stalled {
+            videoPlayer.pause()
+        } else if playbackStatus == .ended {
+            replayVideo()
+        } else {
+            ensureAudioSession()
+            videoPlayer.play()
+        }
+    }
+
+    func replayVideo() {
+        guard activeSlide?.type == .video, let videoPlayer else { return }
+        ensureAudioSession()
+        videoPlayer.seek(to: .zero) { [weak videoPlayer] finished in
+            guard finished else { return }
+            Task { @MainActor [weak videoPlayer] in
+                videoPlayer?.play()
             }
         }
     }
@@ -472,16 +554,19 @@ final class SlideshowPlaybackCoordinator: ObservableObject {
                 continue
             }
 
-            Task.detached(priority: .utility) { [url, filename = slide.filename] in
+            let task = Task.detached(priority: .utility) { [url, filename = slide.filename] in
                 guard let preparedImage = Self.preparedImage(from: url, maxPixelSize: maxPixelSize) else {
                     return
                 }
 
                 await MainActor.run {
+                    guard self.neighborImageTasks[filename] != nil else { return }
                     self.imageCache[filename] = preparedImage
+                    self.neighborImageTasks[filename] = nil
                     self.pruneImageCache()
                 }
             }
+            neighborImageTasks[slide.filename] = task
         }
     }
 

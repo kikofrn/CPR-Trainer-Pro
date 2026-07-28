@@ -92,7 +92,10 @@ final class ManualViewerViewModel: ObservableObject {
         pageCount = loadedPageCount
         currentPageIndex = clampedPageIndex(currentPageIndex)
 
-        let tocResult = tocService.entries(from: loadedDocument, manualID: manual.id, pageCount: loadedPageCount)
+        let tocResult = tocService.entries(
+            from: loadedDocument,
+            pageCount: loadedPageCount
+        )
         tocEntries = tocResult.entries
         tocSource = tocResult.source
         document = loadedDocument

@@ -90,7 +90,7 @@ struct CourseCard: View {
 
     private var artwork: some View {
         ArtworkImage(
-            name: artworkName,
+            courseState: artworkState,
             placeholderSystemName: course.id == .cprAED ? "heart.text.square.fill" : "cross.case.fill"
         )
         .frame(maxWidth: .infinity)
@@ -135,23 +135,24 @@ struct CourseCard: View {
         }
     }
 
-    private var artworkName: String {
-        if isComingSoon {
-            return course.id == .cprAED
-                ? "Pediatric CPR AED Cover.webp"
-                : "Pediatric First Aid Cover.webp"
-        }
-        switch selectedMode?.id {
-        case .cprVideo:
-            return "CPR AED for All Ages with VA.webp"
-        case .firstAidVideo:
-            return "First Aid for All Ages with VA.webp"
-        case .pediatricCPRSlideshow:
-            return "Pediatric CPR AED Cover.webp"
-        case .pediatricSlideshow:
-            return "Pediatric First Aid Cover.webp"
-        default:
-            return course.artworkName
+    private var artworkState: CourseArtworkState {
+        switch (course.id, selectedMode?.id, isComingSoon) {
+        case (.cprAED, _, true):
+            .cprPediatricVirtualAssistant
+        case (.firstAid, _, true):
+            .firstAidPediatricVirtualAssistant
+        case (.cprAED, .cprVideo, false):
+            .cprVirtualAssistant
+        case (.cprAED, .pediatricCPRSlideshow, false):
+            .cprPediatric
+        case (.cprAED, _, false):
+            .cprStandard
+        case (.firstAid, .firstAidVideo, false):
+            .firstAidVirtualAssistant
+        case (.firstAid, .pediatricSlideshow, false):
+            .firstAidPediatric
+        case (.firstAid, _, false):
+            .firstAidStandard
         }
     }
 }
