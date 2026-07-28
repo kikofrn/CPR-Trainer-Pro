@@ -2,8 +2,11 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, ChevronDown, CheckCircle2, HelpCircle, BookOpen, ChevronRight, GraduationCap, Baby, Book, Award, Heart } from 'lucide-react';
 import { COURSES } from '../chapters';
+import { THUMBNAILS } from '../thumbnails';
+import { mediaUrl } from '../media-resolver';
 
 interface HeaderNavProps {
+  dlState: any;
   showSidebar: boolean;
   setShowSidebar: (v: boolean) => void;
   setActiveCourseIndex: (i: number | null) => void;
@@ -56,6 +59,7 @@ interface HeaderNavProps {
 }
 
 export function HeaderNav({
+  dlState,
   showSidebar, setShowSidebar,
   setActiveCourseIndex, activeCourseIndex, setActiveSlideshowIndex, activeSlideshowIndex, setSelectedManual, setActiveTab,
   lastCprView, showCprSelector, setShowCprSelector, isCprActive, cprVaEnabled, setCprVaEnabled, cprPediatric, setCprPediatric,
@@ -72,6 +76,17 @@ export function HeaderNav({
 
   const pediFaCourse = COURSES.find(c => c.id === 'pediatric-first-aid');
   const isFaBothOnComingSoon = faPediatric && faVaEnabled && pediFaCourse?.isComingSoon;
+
+  const getThumbSrc = (key: string) => {
+    const thumb = THUMBNAILS[key];
+    if (!thumb) return '';
+    const cleanKey = thumb.key.replace(/^\//, '');
+    if (dlState?.fileStatuses?.[cleanKey]) {
+      return mediaUrl(thumb.key);
+    }
+    return thumb.fallback;
+  };
+  const getThumbFallback = (key: string) => THUMBNAILS[key]?.fallback || '';
 
   return (
     <header className={`h-20 pr-4 xl:pr-8 border-b border-eh-peach/10 flex items-center justify-between bg-black z-[60] shrink-0 transition-[padding-left] duration-[400ms] ease-in-out relative ${
@@ -194,7 +209,8 @@ export function HeaderNav({
                           <AnimatePresence mode="popLayout">
                             <motion.img 
                               key={cprPediatric && cprVaEnabled ? 'cpr-both' : cprPediatric ? 'cpr-pedi' : cprVaEnabled ? 'cpr-va' : 'cpr-std'}
-                              src={cprPediatric && cprVaEnabled ? "/Pedi CPR AED with VA Cover.webp" : cprPediatric ? "/Pediatric CPR AED Cover.webp" : cprVaEnabled ? "/CPR AED for All Ages with VA.webp" : "/CPR AED for All Ages Cover.webp"} 
+                              src={getThumbSrc(cprPediatric && cprVaEnabled ? 'cpr-both' : cprPediatric ? 'cpr-pedi' : cprVaEnabled ? 'cpr-va' : 'cpr-std')}
+                              onError={(e) => { e.currentTarget.src = getThumbFallback(cprPediatric && cprVaEnabled ? 'cpr-both' : cprPediatric ? 'cpr-pedi' : cprVaEnabled ? 'cpr-va' : 'cpr-std'); }}
                               alt="CPR AED Course Cover" 
                               className="w-full h-full object-cover absolute inset-0"
                               initial={{ opacity: 0, scale: 0.98, filter: 'blur(4px)' }}
@@ -326,7 +342,8 @@ export function HeaderNav({
                           <AnimatePresence mode="popLayout">
                             <motion.img 
                               key={faPediatric && faVaEnabled ? 'fa-both' : faPediatric ? 'fa-pedi' : faVaEnabled ? 'fa-va' : 'fa-std'}
-                              src={faPediatric && faVaEnabled ? "/Pedi First Aid with VA Cover.webp" : faPediatric ? "/Pediatric First Aid Cover.webp" : faVaEnabled ? "/First Aid for All Ages with VA.webp" : "/First Aid for All Ages Cover.webp"} 
+                              src={getThumbSrc(faPediatric && faVaEnabled ? 'fa-both' : faPediatric ? 'fa-pedi' : faVaEnabled ? 'fa-va' : 'fa-std')}
+                              onError={(e) => { e.currentTarget.src = getThumbFallback(faPediatric && faVaEnabled ? 'fa-both' : faPediatric ? 'fa-pedi' : faVaEnabled ? 'fa-va' : 'fa-std'); }}
                               alt="First Aid Course Cover" 
                               className="w-full h-full object-cover absolute inset-0"
                               initial={{ opacity: 0, scale: 0.98, filter: 'blur(4px)' }}

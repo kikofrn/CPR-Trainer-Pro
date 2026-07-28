@@ -17,6 +17,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { parseVTT, type SubtitleCue } from './utils/vtt-parser';
 import { getRelevantKeys, checkUpdates, ChangedFile, ManifestFile } from './update-checker';
 import { snapshotStore } from './snapshot-store';
+import { THUMBNAIL_KEYS } from './thumbnails';
 import { UpdatePrompt } from './components/UpdatePrompt';
 const SendCertsPage = lazy(() => import('./components/SendCertsPage').then(m => ({ default: m.SendCertsPage })));
 const HowToGuideModal = lazy(() => import('./components/HowToGuideModal').then(m => ({ default: m.HowToGuideModal })));
@@ -82,7 +83,7 @@ export default function App() {
         const data = await res.json();
         const manifestFiles: ManifestFile[] = data.files;
 
-        const relevantKeys = getRelevantKeys(SLIDESHOWS, COURSES, MANUALS, []);
+        const relevantKeys = getRelevantKeys(SLIDESHOWS, COURSES, MANUALS, THUMBNAIL_KEYS);
         
         // get local existence
         const localExistsMap = await downloadManager.checkStatusesForFiles(Array.from(relevantKeys));
@@ -107,7 +108,7 @@ export default function App() {
           manifestFiles,
           snapshot.files,
           localFiles,
-          new Set()
+          new Set(THUMBNAIL_KEYS)
         );
 
         await snapshotStore.mergeFiles(result.missingEtagsToUpdate);
@@ -1213,6 +1214,7 @@ export default function App() {
       <main className="flex-1 flex flex-col relative min-w-0 h-full">
         {/* Top Header */}
         <HeaderNav
+          dlState={dlState}
           showSidebar={showSidebar}
           setShowSidebar={setShowSidebar}
           setActiveCourseIndex={setActiveCourseIndex}
