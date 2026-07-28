@@ -462,6 +462,7 @@ final class InteractiveTabViewController: UIViewController {
 
         let transitionID = transitionState.beginProgrammaticTransition(to: targetIndex)
         onTransitionActivityChange?(true)
+        scheduleRecovery()
 
         pageViewController.setViewControllers(
             [pages[targetIndex]],

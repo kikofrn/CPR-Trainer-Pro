@@ -252,6 +252,10 @@ struct TransferNetworkPolicySnapshot: Equatable {
         isKnown && isSatisfied && !isExpensive
     }
 
+    var requiresContentUpdateCellularConfirmation: Bool {
+        isKnown && isSatisfied && isExpensive
+    }
+
     var allowsTransfers: Bool {
         guard isKnown else { return true }
         return isSatisfied && (!isExpensive || allowsCellular)

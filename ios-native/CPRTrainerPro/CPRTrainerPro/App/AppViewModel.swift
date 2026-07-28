@@ -70,6 +70,7 @@ final class AppViewModel: ObservableObject {
         )
         do {
             try queueStore.migrateObsoleteFilenames(using: catalog)
+            try downloadAllQueueStore.migrateObsoletePackageIDs(using: catalog)
             try contentUpdatePlanStore.migrateObsoleteFilenames(using: catalog)
         } catch {
             assertionFailure("Failed to migrate persisted content queues: \(error)")
@@ -189,10 +190,10 @@ final class AppViewModel: ObservableObject {
 
     func requestContentUpdate(_ summary: ContentUpdateSummary) {
         let policy = downloadService.transferPolicySnapshot
-        if policy.isConfirmedWiFi || (policy.isKnown && !policy.isSatisfied) {
-            beginContentUpdate(summary, allowsCellularForBatch: false)
-        } else {
+        if policy.requiresContentUpdateCellularConfirmation {
             activePrompt = .cellularUpdateConfirmation(summary)
+        } else {
+            beginContentUpdate(summary, allowsCellularForBatch: false)
         }
     }
 

@@ -788,14 +788,13 @@ final class DownloadService: NSObject, ObservableObject {
             try? await Task.sleep(nanoseconds: UInt64(delaySeconds * 1_000_000_000))
             guard packageProgress[activeDownload.packageID] != nil else { return }
 
-            queue.insert(
+            prependUniqueQueuedAsset(
                 QueuedAsset(
                     packageID: activeDownload.packageID,
                     asset: activeDownload.asset,
                     remoteURL: activeDownload.remoteURL,
                     attempt: nextAttempt
-                ),
-                at: 0
+                )
             )
             pumpQueue()
         }
@@ -838,7 +837,7 @@ final class DownloadService: NSObject, ObservableObject {
                 refreshedAsset,
                 packageID: activeDownload.packageID
             )
-            queue.insert(
+            prependUniqueQueuedAsset(
                 QueuedAsset(
                     packageID: activeDownload.packageID,
                     asset: refreshedAsset,
@@ -848,8 +847,7 @@ final class DownloadService: NSObject, ObservableObject {
                             ?? URLHelpers.mediaBaseURL
                     ),
                     attempt: nextAttempt
-                ),
-                at: 0
+                )
             )
             states[activeDownload.packageID] = downloadsAllowedOnCurrentPath
                 ? .queued
@@ -1155,6 +1153,16 @@ final class DownloadService: NSObject, ObservableObject {
         }
     }
 
+    private func prependUniqueQueuedAsset(_ asset: QueuedAsset) {
+        guard !activeDownloads.values.contains(where: {
+            $0.asset.filename == asset.asset.filename
+        }) else {
+            return
+        }
+        queue.removeAll { $0.asset.filename == asset.asset.filename }
+        queue.insert(asset, at: 0)
+    }
+
     private func reconcilePackagesAfterSharedAsset(
         _ filename: String,
         excluding ownerPackageID: DownloadPackage.ID
@@ -1299,7 +1307,7 @@ final class DownloadService: NSObject, ObservableObject {
         var seen = Set<DownloadPackage.ID>()
         let reconciledIDs = plan.packageIDs.filter { packageID in
             guard seen.insert(packageID).inserted else { return false }
-            guard let package = knownPackages[packageID] else { return true }
+            guard let package = knownPackages[packageID] else { return false }
 
             if storageService.packageIsReady(package) {
                 states[packageID] = .ready

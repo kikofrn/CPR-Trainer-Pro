@@ -170,7 +170,13 @@ struct ContentUpdatePlanStore {
     struct Plan: Codable, Equatable {
         var pending: [WorkItem]
         var failed: [ContentUpdateCandidate]
-        var allowsCellularForBatch: Bool
+        var batchFingerprint: String
+        var cellularApprovalFingerprint: String?
+
+        var allowsCellularForBatch: Bool {
+            !batchFingerprint.isEmpty
+                && cellularApprovalFingerprint == batchFingerprint
+        }
 
         init(
             pending: [WorkItem],
@@ -179,12 +185,17 @@ struct ContentUpdatePlanStore {
         ) {
             self.pending = pending
             self.failed = failed
-            self.allowsCellularForBatch = allowsCellularForBatch
+            self.batchFingerprint = Self.fingerprint(for: pending)
+            self.cellularApprovalFingerprint = allowsCellularForBatch
+                ? batchFingerprint
+                : nil
         }
 
         private enum CodingKeys: String, CodingKey {
             case pending
             case failed
+            case batchFingerprint
+            case cellularApprovalFingerprint
             case allowsCellularForBatch
         }
 
@@ -192,10 +203,42 @@ struct ContentUpdatePlanStore {
             let values = try decoder.container(keyedBy: CodingKeys.self)
             pending = try values.decode([WorkItem].self, forKey: .pending)
             failed = try values.decode([ContentUpdateCandidate].self, forKey: .failed)
-            allowsCellularForBatch = try values.decodeIfPresent(
+            let calculatedFingerprint = Self.fingerprint(for: pending)
+            batchFingerprint = try values.decodeIfPresent(
+                String.self,
+                forKey: .batchFingerprint
+            ) ?? calculatedFingerprint
+            cellularApprovalFingerprint = try values.decodeIfPresent(
+                String.self,
+                forKey: .cellularApprovalFingerprint
+            )
+            if cellularApprovalFingerprint != batchFingerprint {
+                cellularApprovalFingerprint = nil
+            }
+
+            // A legacy unscoped boolean cannot prove which candidate set the
+            // user approved, so it is intentionally not carried forward.
+            _ = try values.decodeIfPresent(
                 Bool.self,
                 forKey: .allowsCellularForBatch
-            ) ?? false
+            )
+        }
+
+        func encode(to encoder: Encoder) throws {
+            var values = encoder.container(keyedBy: CodingKeys.self)
+            try values.encode(pending, forKey: .pending)
+            try values.encode(failed, forKey: .failed)
+            try values.encode(batchFingerprint, forKey: .batchFingerprint)
+            try values.encodeIfPresent(
+                cellularApprovalFingerprint,
+                forKey: .cellularApprovalFingerprint
+            )
+        }
+
+        static func fingerprint(for pending: [WorkItem]) -> String {
+            ContentUpdateSummary(
+                candidates: pending.map(\.candidate)
+            ).fingerprint
         }
     }
 
@@ -291,6 +334,8 @@ struct ContentUpdatePlanStore {
         }
         plan.pending = migratedPending
         plan.failed = migratedFailed
+        plan.batchFingerprint = Plan.fingerprint(for: migratedPending)
+        plan.cellularApprovalFingerprint = nil
         try save(plan)
         return true
     }
@@ -507,8 +552,7 @@ final class ContentUpdateService: NSObject, ObservableObject {
         guard diskPreflightAllows(summary.candidates) else { return false }
 
         var nextPlan = plan ?? .init(pending: [], failed: [])
-        nextPlan.allowsCellularForBatch = nextPlan.allowsCellularForBatch
-            || allowsCellularForBatch
+        let hadApprovalForExistingBatch = nextPlan.allowsCellularForBatch
         let alreadyPending = Set(nextPlan.pending.map(\.candidate.asset.filename))
         let activeFilenames = Set(activeUpdates.values.map(\.workItem.candidate.asset.filename))
 
@@ -527,6 +571,18 @@ final class ContentUpdateService: NSObject, ObservableObject {
         let enqueuedFilenames = Set(summary.candidates.map(\.asset.filename))
         nextPlan.failed.removeAll {
             enqueuedFilenames.contains($0.asset.filename)
+        }
+        let nextBatchFingerprint = ContentUpdatePlanStore.Plan.fingerprint(
+            for: nextPlan.pending
+        )
+        let preservesExistingApproval = hadApprovalForExistingBatch
+            && nextPlan.batchFingerprint == nextBatchFingerprint
+        nextPlan.batchFingerprint = nextBatchFingerprint
+        if allowsCellularForBatch,
+           summary.fingerprint == nextBatchFingerprint {
+            nextPlan.cellularApprovalFingerprint = nextBatchFingerprint
+        } else if !preservesExistingApproval {
+            nextPlan.cellularApprovalFingerprint = nil
         }
 
         plan = nextPlan
@@ -571,12 +627,11 @@ final class ContentUpdateService: NSObject, ObservableObject {
         guard networkPolicy.isKnown else { return true }
         guard networkPolicy.isSatisfied else { return false }
         return !networkPolicy.isExpensive
-            || networkPolicy.allowsCellular
             || plan?.allowsCellularForBatch == true
     }
 
     private var allowsExpensiveTransfersForCurrentPlan: Bool {
-        networkPolicy.allowsCellular || plan?.allowsCellularForBatch == true
+        plan?.allowsCellularForBatch == true
     }
 
     private func pauseActiveTransfersForNetworkPolicy() {

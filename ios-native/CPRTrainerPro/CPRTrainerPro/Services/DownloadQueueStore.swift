@@ -189,6 +189,25 @@ struct DownloadAllQueueStore {
         try excludeFromBackup(url)
     }
 
+    @discardableResult
+    func migrateObsoletePackageIDs(using catalog: TrainingCatalog) throws -> Bool {
+        guard var plan = try load() else { return false }
+        let validPackageIDs = Set(catalog.packages.map(\.id))
+        var seen = Set<DownloadPackage.ID>()
+        let migratedPackageIDs = plan.packageIDs.filter {
+            validPackageIDs.contains($0) && seen.insert($0).inserted
+        }
+        guard migratedPackageIDs != plan.packageIDs else { return false }
+
+        plan.packageIDs = migratedPackageIDs
+        if plan.packageIDs.isEmpty {
+            try remove()
+        } else {
+            try save(plan)
+        }
+        return true
+    }
+
     func remove() throws {
         let url = try resolvedStoreURL()
         guard fileManager.fileExists(atPath: url.path) else { return }

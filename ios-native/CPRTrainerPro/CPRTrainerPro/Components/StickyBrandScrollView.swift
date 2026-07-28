@@ -11,6 +11,7 @@ struct StickyBrandScrollView<Content: View>: View {
     @State private var initialReaderY: CGFloat?
     @State private var heartbeatTapTimes: [Date] = []
     @State private var layoutSignature: StickyBrandLayoutSignature?
+    @State private var pendingScrollOffsetAfterLayoutChange: CGFloat?
 
     init(
         title: String? = nil,
@@ -38,6 +39,16 @@ struct StickyBrandScrollView<Content: View>: View {
             }
             .coordinateSpace(name: StickyBrandScrollSpace.name)
             .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
+                if let preservedOffset = pendingScrollOffsetAfterLayoutChange {
+                    initialReaderY = value + preservedOffset
+                    pendingScrollOffsetAfterLayoutChange = nil
+                    scrollOffset = preservedOffset
+                    onHeaderProgressChange?(
+                        StickyBrandHeaderMetrics.progress(for: preservedOffset)
+                    )
+                    return
+                }
+
                 if initialReaderY == nil {
                     initialReaderY = value
                 }
@@ -68,9 +79,8 @@ struct StickyBrandScrollView<Content: View>: View {
             let hadPreviousLayout = layoutSignature != nil
             layoutSignature = signature
             if hadPreviousLayout {
+                pendingScrollOffsetAfterLayoutChange = scrollOffset
                 initialReaderY = nil
-                scrollOffset = 0
-                onHeaderProgressChange?(0)
             }
         }
     }

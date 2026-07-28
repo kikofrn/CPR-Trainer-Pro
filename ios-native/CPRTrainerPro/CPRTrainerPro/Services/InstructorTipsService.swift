@@ -19,10 +19,17 @@ final class InstructorTipsService: ObservableObject {
     init(bundle: Bundle) {
         Task { [weak self] in
             let result = await Task.detached(priority: .utility) {
-                try? Self.loadTips(from: bundle)
+                Result {
+                    try Self.loadTips(from: bundle)
+                }
             }.value
-            guard let self, let result else { return }
-            tipsBySlideshowID = result
+            guard let self else { return }
+            switch result {
+            case .success(let tips):
+                tipsBySlideshowID = tips
+            case .failure(let error):
+                assertionFailure("Failed to load instructor tips: \(error)")
+            }
         }
     }
 

@@ -66,6 +66,12 @@ final class ContentManifestContractTests: XCTestCase {
     }
 
     func testTransferNetworkPolicyDistinguishesWiFiFromCellular() {
+        let unknown = TransferNetworkPolicySnapshot(
+            isKnown: false,
+            isSatisfied: true,
+            isExpensive: false,
+            allowsCellular: false
+        )
         let wifi = TransferNetworkPolicySnapshot(
             isKnown: true,
             isSatisfied: true,
@@ -85,11 +91,15 @@ final class ContentManifestContractTests: XCTestCase {
             allowsCellular: true
         )
 
+        XCTAssertFalse(unknown.requiresContentUpdateCellularConfirmation)
         XCTAssertTrue(wifi.isConfirmedWiFi)
         XCTAssertTrue(wifi.allowsTransfers)
+        XCTAssertFalse(wifi.requiresContentUpdateCellularConfirmation)
         XCTAssertFalse(blockedCellular.isConfirmedWiFi)
         XCTAssertFalse(blockedCellular.allowsTransfers)
+        XCTAssertTrue(blockedCellular.requiresContentUpdateCellularConfirmation)
         XCTAssertTrue(approvedCellular.allowsTransfers)
+        XCTAssertTrue(approvedCellular.requiresContentUpdateCellularConfirmation)
     }
 
     func testCatalogExcludesSpanishContentForInitialNativeBuild() {
@@ -634,6 +644,32 @@ final class ContentManifestContractTests: XCTestCase {
         XCTAssertNil(try store.load())
     }
 
+    func testDownloadAllQueueStoreDropsPackagesMissingFromCurrentCatalog() throws {
+        let directoryURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let storeURL = directoryURL.appendingPathComponent("download-all.json")
+        let store = DownloadAllQueueStore(storeURL: storeURL)
+        defer { try? FileManager.default.removeItem(at: directoryURL) }
+
+        let removedPackageID = DownloadPackage.ID.cprVideo
+        var reducedCatalog = try XCTUnwrap(catalog)
+        reducedCatalog.packages.removeAll { $0.id == removedPackageID }
+        let plan = DownloadAllQueueStore.Plan(
+            packageIDs: [
+                .cprSlideshow,
+                removedPackageID,
+                .cprSlideshow
+            ],
+            baseURL: URL(string: "https://media.ehacademy.com/")!
+        )
+        try store.save(plan)
+
+        XCTAssertTrue(
+            try store.migrateObsoletePackageIDs(using: reducedCatalog)
+        )
+        XCTAssertEqual(try store.load()?.packageIDs, [.cprSlideshow])
+    }
+
     func testContentUpdatePlanStoreRoundTripsAndRemovesPlans() throws {
         let directoryURL = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
@@ -665,14 +701,87 @@ final class ContentManifestContractTests: XCTestCase {
                     retryAfter: Date(timeIntervalSince1970: 1_790_000_000)
                 )
             ],
-            failed: [candidate]
+            failed: [candidate],
+            allowsCellularForBatch: true
         )
 
+        XCTAssertTrue(plan.allowsCellularForBatch)
         try store.save(plan)
-        XCTAssertEqual(try store.load(), plan)
+        let loadedPlan = try XCTUnwrap(store.load())
+        XCTAssertEqual(loadedPlan, plan)
+        XCTAssertTrue(loadedPlan.allowsCellularForBatch)
+
+        var legacyPayload = try XCTUnwrap(
+            JSONSerialization.jsonObject(
+                with: Data(contentsOf: storeURL)
+            ) as? [String: Any]
+        )
+        var legacyPlan = try XCTUnwrap(
+            legacyPayload["plan"] as? [String: Any]
+        )
+        legacyPlan.removeValue(forKey: "batchFingerprint")
+        legacyPlan.removeValue(forKey: "cellularApprovalFingerprint")
+        legacyPlan["allowsCellularForBatch"] = true
+        legacyPayload["plan"] = legacyPlan
+        try JSONSerialization.data(
+            withJSONObject: legacyPayload,
+            options: [.sortedKeys]
+        ).write(to: storeURL, options: .atomic)
+
+        let migratedLegacyPlan = try XCTUnwrap(store.load())
+        XCTAssertFalse(migratedLegacyPlan.allowsCellularForBatch)
 
         try store.remove()
         XCTAssertNil(try store.load())
+    }
+
+    func testContentUpdateCellularApprovalIsBoundToExactBatchFingerprint() {
+        let first = ContentUpdateCandidate(
+            asset: MediaAsset(
+                id: "test.first",
+                filename: "Test/first.mp4",
+                kind: .video,
+                byteCount: 10,
+                eTag: "first-old",
+                lastModified: nil
+            ),
+            remoteVersion: RemoteAssetVersion(
+                byteCount: 12,
+                eTag: "first-new",
+                lastModified: nil
+            )
+        )
+        let second = ContentUpdateCandidate(
+            asset: MediaAsset(
+                id: "test.second",
+                filename: "Test/second.mp4",
+                kind: .video,
+                byteCount: 20,
+                eTag: "second-old",
+                lastModified: nil
+            ),
+            remoteVersion: RemoteAssetVersion(
+                byteCount: 24,
+                eTag: "second-new",
+                lastModified: nil
+            )
+        )
+        var plan = ContentUpdatePlanStore.Plan(
+            pending: [
+                .init(candidate: first, attempt: 0, retryAfter: nil)
+            ],
+            failed: [],
+            allowsCellularForBatch: true
+        )
+
+        XCTAssertTrue(plan.allowsCellularForBatch)
+        plan.pending.append(
+            .init(candidate: second, attempt: 0, retryAfter: nil)
+        )
+        plan.batchFingerprint = ContentUpdatePlanStore.Plan.fingerprint(
+            for: plan.pending
+        )
+        XCTAssertFalse(plan.allowsCellularForBatch)
     }
 
     func testSubtitleParserHandlesWebVTTTimingAndText() {

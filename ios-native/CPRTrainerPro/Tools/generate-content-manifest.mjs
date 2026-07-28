@@ -330,6 +330,8 @@ function validateSequentialItems(items, prefix, ownerID) {
       `Unexpected item id ${item.id} at position ${index + 1} in ${ownerID}`
     );
     assert(item.filename.length > 0, `Missing filename for ${item.id} in ${ownerID}`);
+    assert(!item.filename.includes("Pres--"), `Suspicious doubled dash in ${item.filename}`);
+    assert(!/Pres-\s/.test(item.filename), `Suspicious space after Pres- in ${item.filename}`);
   }
 
   for (const item of items) {

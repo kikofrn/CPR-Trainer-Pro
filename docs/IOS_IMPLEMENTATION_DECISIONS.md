@@ -38,6 +38,11 @@ material, private runtime state, or credentials.
 - Tapping “Update Now” on a non-Wi-Fi path requires an exact-size confirmation.
   Approval applies only to that persisted update batch and does not silently
   change the user’s global cellular-download preference.
+- The update-specific confirmation is required for every known cellular path,
+  regardless of batch size or the general cellular-download setting. This
+  preserves the explicit product requirement. An unknown initial path never
+  presents a cellular prompt; update requests disallow expensive access until
+  the path is identified or that exact batch is approved.
 - If an eligible path becomes ineligible, in-flight course and update tasks are
   cancelled back to their validated queue state and restart from byte zero.
   Partial bytes from different object versions are never combined.
@@ -82,3 +87,14 @@ material, private runtime state, or credentials.
 - Evaluate the `physical-therapy` background mode in a dedicated Watch change.
 - Evaluate an additional “Start CPR” shortcut phrase in a dedicated Watch
   change.
+
+## Accepted verification deltas
+
+- The one-second ETA refresh is intentionally retained because it is bounded
+  and makes slow transfers feel responsive without reintroducing filesystem
+  scans.
+- Pager controller stress and remote-manifest timeout/single-flight behavior
+  remain physical-device and integration release gates. Pure state-machine,
+  decoding, size-cap, and content-contract coverage stays in the unit suite.
+- Foreground-experience reason strings are retained as lightweight diagnostic
+  context even though release behavior depends only on token ownership.
