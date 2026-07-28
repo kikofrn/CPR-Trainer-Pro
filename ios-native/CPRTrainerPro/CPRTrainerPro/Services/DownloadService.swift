@@ -126,6 +126,7 @@ final class DownloadService: NSObject, ObservableObject {
     private let versionStore: ContentVersionStore?
     private let queueStore: DownloadQueueStore
     private let downloadAllQueueStore: DownloadAllQueueStore
+    private let manifestClient: RemoteContentManifestClient
     private let backgroundSessionIdentifier: String
     private let maxConcurrentDownloads = 3
     private let maxRetryAttempts = 3
@@ -147,8 +148,10 @@ final class DownloadService: NSObject, ObservableObject {
     private var pathIsExpensive = false
 
     @Published private var states: [DownloadPackage.ID: DownloadState] = [:]
+    @Published private var downloadedSizeTexts: [DownloadPackage.ID: String] = [:]
     @Published private(set) var isDownloadingAll = false
     @Published private(set) var lastPreflightErrorMessage: String?
+    @Published private(set) var nonBlockingWarnings: [DownloadPackage.ID: String] = [:]
     @Published var allowsCellularDownloads: Bool {
         didSet {
             UserDefaults.standard.set(
@@ -161,10 +164,15 @@ final class DownloadService: NSObject, ObservableObject {
 
     private static let allowsCellularDownloadsKey =
         "downloads.allowExpensiveNetworkAccess"
-    var onNetworkPolicyChange: ((Bool, Bool) -> Void)?
+    var onNetworkPolicyChange: ((TransferNetworkPolicySnapshot) -> Void)?
 
-    var transferPolicySnapshot: (isAllowed: Bool, allowsCellular: Bool) {
-        (downloadsAllowedOnCurrentPath, allowsCellularDownloads)
+    var transferPolicySnapshot: TransferNetworkPolicySnapshot {
+        TransferNetworkPolicySnapshot(
+            isKnown: pathIsKnown,
+            isSatisfied: pathIsSatisfied,
+            isExpensive: pathIsExpensive,
+            allowsCellular: allowsCellularDownloads
+        )
     }
 
     private lazy var session: URLSession = {
@@ -198,6 +206,7 @@ final class DownloadService: NSObject, ObservableObject {
         self.versionStore = versionStore
         self.queueStore = queueStore
         self.downloadAllQueueStore = downloadAllQueueStore
+        self.manifestClient = .shared
         self.allowsCellularDownloads = UserDefaults.standard.bool(
             forKey: Self.allowsCellularDownloadsKey
         )
@@ -225,9 +234,7 @@ final class DownloadService: NSObject, ObservableObject {
     }
 
     func downloadedSizeText(for package: DownloadPackage) -> String? {
-        let byteCount = storageService.downloadedPackageByteCount(package)
-        guard byteCount > 0 else { return nil }
-        return ByteCountFormatter.string(fromByteCount: byteCount, countStyle: .file)
+        downloadedSizeTexts[package.id]
     }
 
     @discardableResult
@@ -264,9 +271,24 @@ final class DownloadService: NSObject, ObservableObject {
 
     func refreshPackageStates(for packages: [DownloadPackage]) {
         remember(packages)
+        refreshDownloadedSizeCache(for: packages)
 
-        for package in packages where storageService.packageIsReady(package) {
-            states[package.id] = .ready
+        for package in packages {
+            if storageService.packageIsReady(package) {
+                states[package.id] = .ready
+                nonBlockingWarnings[package.id] = nil
+            } else if storageService.packageHasRequiredContent(package),
+                      package.assets
+                          .filter({ asset in
+                              !storageService.fileExists(asset)
+                          })
+                          .allSatisfy({ asset in
+                              !asset.isRequiredForLaunch
+                          }) {
+                states[package.id] = .ready
+                nonBlockingWarnings[package.id] =
+                    "The course is ready, but an optional caption file is unavailable."
+            }
         }
 
         reconcileDownloadAllPlan()
@@ -292,6 +314,7 @@ final class DownloadService: NSObject, ObservableObject {
 
     func enqueue(_ package: DownloadPackage, baseURL: URL) {
         remember([package])
+        nonBlockingWarnings[package.id] = nil
 
         if storageService.packageIsReady(package) {
             states[package.id] = .ready
@@ -333,7 +356,7 @@ final class DownloadService: NSObject, ObservableObject {
         }
 
         queue.removeAll { $0.packageID == package.id }
-        queue.append(contentsOf: queuedAssets)
+        appendUniqueQueuedAssets(queuedAssets)
         pumpQueue()
         startProgressTickerIfNeeded()
     }
@@ -356,11 +379,13 @@ final class DownloadService: NSObject, ObservableObject {
         }
 
         states[packageID] = .notDownloaded
+        nonBlockingWarnings[packageID] = nil
         packageProgress[packageID] = nil
         removePersistedPlan(packageID)
         stopProgressTickerIfIdle()
         removePackageFromDownloadAllPlan(packageID)
         advanceDownloadAllQueueIfNeeded()
+        restorePersistedDownloads()
     }
 
     func delete(_ package: DownloadPackage) {
@@ -369,7 +394,14 @@ final class DownloadService: NSObject, ObservableObject {
 
         do {
             try storageService.deletePackage(package)
+            if let versionStore {
+                for asset in package.assets {
+                    try? versionStore.removeRecord(for: asset.filename)
+                }
+            }
             states[package.id] = .notDownloaded
+            nonBlockingWarnings[package.id] = nil
+            downloadedSizeTexts[package.id] = nil
         } catch {
             states[package.id] = .failed(message: error.localizedDescription)
         }
@@ -424,6 +456,12 @@ final class DownloadService: NSObject, ObservableObject {
                 let description = task.taskDescription,
                 let decoded = try? decodeTaskDescription(description)
             else {
+                continue
+            }
+
+            guard ContentFilenameAliases.canonicalFilename(decoded.asset.filename)
+                == decoded.asset.filename else {
+                task.cancel()
                 continue
             }
 
@@ -535,7 +573,7 @@ final class DownloadService: NSObject, ObservableObject {
 
         var shouldPumpQueue = false
 
-        for plan in persistedPlans.values {
+        for plan in Array(persistedPlans.values) {
             let package = plan.package
             let activeFilenames = Set(
                 activeDownloads.values
@@ -577,7 +615,7 @@ final class DownloadService: NSObject, ObservableObject {
                     )
                 }
 
-                queue.append(contentsOf: queuedAssets)
+                appendUniqueQueuedAssets(queuedAssets)
                 shouldPumpQueue = true
             }
 
@@ -649,11 +687,12 @@ final class DownloadService: NSObject, ObservableObject {
             }
             if let expectedVersion = RemoteAssetVersion(asset: activeDownload.asset),
                !expectedVersion.matches(remoteVersion) {
-                throw StorageService.StorageError.unexpectedFileSize(
-                    filename: activeDownload.asset.filename,
-                    expected: expectedVersion.byteCount,
-                    actual: remoteVersion.byteCount
+                try? FileManager.default.removeItem(at: temporaryURL)
+                activeDownloads[taskIdentifier] = nil
+                refreshVersionAfterMismatch(
+                    activeDownload
                 )
+                return
             }
             try storageService.moveDownloadedFile(
                 from: temporaryURL,
@@ -674,11 +713,23 @@ final class DownloadService: NSObject, ObservableObject {
             )
             packageProgress[activeDownload.packageID]?.activeAssetProgress[activeDownload.asset.filename] = nil
             activeDownloads[taskIdentifier] = nil
+            if let package = knownPackages[activeDownload.packageID]
+                ?? persistedPlans[activeDownload.packageID]?.package {
+                refreshDownloadedSizeCache(for: [package])
+            }
+            reconcilePackagesAfterSharedAsset(
+                activeDownload.asset.filename,
+                excluding: activeDownload.packageID
+            )
 
             if packageHasActiveOrQueuedWork(activeDownload.packageID) {
                 setPackageStateDownloading(activeDownload.packageID)
             } else {
                 states[activeDownload.packageID] = .ready
+                if let package = knownPackages[activeDownload.packageID],
+                   storageService.packageIsReady(package) {
+                    nonBlockingWarnings[activeDownload.packageID] = nil
+                }
                 packageProgress[activeDownload.packageID] = nil
                 removePersistedPlan(activeDownload.packageID)
                 removePackageFromDownloadAllPlan(activeDownload.packageID)
@@ -720,8 +771,12 @@ final class DownloadService: NSObject, ObservableObject {
     }
 
     private func retryOrFail(_ activeDownload: ActiveDownload, message: String) {
-        guard activeDownload.attempt < maxRetryAttempts else {
-            failPackage(activeDownload.packageID, message: message)
+        guard activeDownload.attempt + 1 < maxRetryAttempts else {
+            if activeDownload.asset.isRequiredForLaunch {
+                failPackage(activeDownload.packageID, message: message)
+            } else {
+                finishOptionalAssetFailure(activeDownload, message: message)
+            }
             return
         }
 
@@ -743,6 +798,98 @@ final class DownloadService: NSObject, ObservableObject {
                 at: 0
             )
             pumpQueue()
+        }
+    }
+
+    private func refreshVersionAfterMismatch(
+        _ activeDownload: ActiveDownload
+    ) {
+        let nextAttempt = activeDownload.attempt + 1
+        guard nextAttempt < maxRetryAttempts else {
+            retryOrFail(
+                ActiveDownload(
+                    packageID: activeDownload.packageID,
+                    asset: activeDownload.asset,
+                    remoteURL: activeDownload.remoteURL,
+                    attempt: maxRetryAttempts
+                ),
+                message: "The downloaded version of \(activeDownload.asset.filename) did not match the manifest."
+            )
+            return
+        }
+
+        Task { [weak self] in
+            guard let self else { return }
+            let manifest = await manifestClient.fetch(forceRefresh: true)
+            guard packageProgress[activeDownload.packageID] != nil else { return }
+            guard let refreshedVersion = manifest?
+                .assetsByKey[activeDownload.asset.filename]?
+                .version else {
+                retryOrFail(
+                    activeDownload,
+                    message: "The course file changed while downloading and the live manifest could not be refreshed."
+                )
+                return
+            }
+            let refreshedAsset = activeDownload.asset.replacingRemoteVersion(
+                refreshedVersion
+            )
+            updatePersistedAsset(
+                refreshedAsset,
+                packageID: activeDownload.packageID
+            )
+            queue.insert(
+                QueuedAsset(
+                    packageID: activeDownload.packageID,
+                    asset: refreshedAsset,
+                    remoteURL: Self.remoteURL(
+                        for: refreshedAsset,
+                        baseURL: persistedPlans[activeDownload.packageID]?.baseURL
+                            ?? URLHelpers.mediaBaseURL
+                    ),
+                    attempt: nextAttempt
+                ),
+                at: 0
+            )
+            states[activeDownload.packageID] = downloadsAllowedOnCurrentPath
+                ? .queued
+                : .waitingForWiFi
+            pumpQueue()
+        }
+    }
+
+    private func finishOptionalAssetFailure(
+        _ activeDownload: ActiveDownload,
+        message: String
+    ) {
+        let packageID = activeDownload.packageID
+        queue.removeAll {
+            $0.packageID == packageID
+                && $0.asset.filename == activeDownload.asset.filename
+        }
+        packageProgress[packageID]?.activeAssetProgress[
+            activeDownload.asset.filename
+        ] = nil
+        nonBlockingWarnings[packageID] =
+            "The course is ready, but an optional caption file could not be refreshed. "
+            + "Bundled captions remain available when provided."
+
+        if packageHasActiveOrQueuedWork(packageID) {
+            setPackageStateDownloading(packageID)
+            pumpQueue()
+            return
+        }
+
+        let package = knownPackages[packageID] ?? persistedPlans[packageID]?.package
+        if let package, storageService.packageHasRequiredContent(package) {
+            states[packageID] = .ready
+            packageProgress[packageID] = nil
+            removePersistedPlan(packageID)
+            removePackageFromDownloadAllPlan(packageID)
+            stopProgressTickerIfIdle()
+            advanceDownloadAllQueueIfNeeded()
+        } else {
+            failPackage(packageID, message: message)
         }
     }
 
@@ -769,6 +916,7 @@ final class DownloadService: NSObject, ObservableObject {
         removePackageFromDownloadAllPlan(packageID)
         stopProgressTickerIfIdle()
         advanceDownloadAllQueueIfNeeded()
+        restorePersistedDownloads()
     }
 
     private func packageHasActiveOrQueuedWork(_ packageID: DownloadPackage.ID) -> Bool {
@@ -831,7 +979,8 @@ final class DownloadService: NSObject, ObservableObject {
 
     private func publishProgressIfNeeded(
         for packageID: DownloadPackage.ID,
-        force: Bool = false
+        force: Bool = false,
+        recordETASample: Bool = true
     ) {
         guard downloadsAllowedOnCurrentPath else {
             states[packageID] = .waitingForWiFi
@@ -844,7 +993,9 @@ final class DownloadService: NSObject, ObservableObject {
         let delta = abs(fraction - (lastPublishedFraction[packageID] ?? 0))
         guard force || elapsed >= 0.25 || delta >= 0.01 else { return }
 
-        progress.recordSample(at: now)
+        if recordETASample {
+            progress.recordSample(at: now)
+        }
         packageProgress[packageID] = progress
         states[packageID] = .downloading(progress: progress.snapshot)
         lastProgressPublicationAt[packageID] = now
@@ -855,6 +1006,18 @@ final class DownloadService: NSObject, ObservableObject {
     private func remember(_ packages: [DownloadPackage]) {
         for package in packages {
             knownPackages[package.id] = package
+        }
+    }
+
+    private func refreshDownloadedSizeCache(for packages: [DownloadPackage]) {
+        for package in packages {
+            let byteCount = storageService.downloadedPackageByteCount(package)
+            downloadedSizeTexts[package.id] = byteCount > 0
+                ? ByteCountFormatter.string(
+                    fromByteCount: byteCount,
+                    countStyle: .file
+                )
+                : nil
         }
     }
 
@@ -902,7 +1065,12 @@ final class DownloadService: NSObject, ObservableObject {
         }
 
         for packageID in packageProgress.keys {
-            publishProgressIfNeeded(for: packageID, force: true)
+            packageProgress[packageID]?.recordSample()
+            publishProgressIfNeeded(
+                for: packageID,
+                force: true,
+                recordETASample: false
+            )
         }
         stopProgressTickerIfIdle()
     }
@@ -926,17 +1094,14 @@ final class DownloadService: NSObject, ObservableObject {
     }
 
     private func updateWaitingStatesAndPump() {
-        onNetworkPolicyChange?(
-            downloadsAllowedOnCurrentPath,
-            allowsCellularDownloads
-        )
+        onNetworkPolicyChange?(transferPolicySnapshot)
         if downloadsAllowedOnCurrentPath {
             for packageID in states.keys where states[packageID] == .waitingForWiFi {
                 states[packageID] = .queued
             }
             pumpQueue()
         } else {
-            markTrackedPackagesWaitingForWiFi()
+            pauseActiveTransfersForNetworkPolicy()
         }
     }
 
@@ -945,6 +1110,71 @@ final class DownloadService: NSObject, ObservableObject {
             .union(activeDownloads.values.map(\.packageID))
         for packageID in packageIDs {
             states[packageID] = .waitingForWiFi
+        }
+    }
+
+    private func pauseActiveTransfersForNetworkPolicy() {
+        let paused = activeDownloads
+        guard !paused.isEmpty else {
+            markTrackedPackagesWaitingForWiFi()
+            return
+        }
+
+        let taskIdentifiers = Set(paused.keys)
+        for (taskIdentifier, active) in paused {
+            activeDownloads[taskIdentifier] = nil
+            packageProgress[active.packageID]?.activeAssetProgress[
+                active.asset.filename
+            ] = nil
+            appendUniqueQueuedAssets([
+                QueuedAsset(
+                    packageID: active.packageID,
+                    asset: active.asset,
+                    remoteURL: active.remoteURL,
+                    attempt: active.attempt
+                )
+            ])
+        }
+
+        session.getAllTasks { tasks in
+            for task in tasks where taskIdentifiers.contains(task.taskIdentifier) {
+                task.cancel()
+            }
+        }
+        markTrackedPackagesWaitingForWiFi()
+    }
+
+    private func appendUniqueQueuedAssets(_ assets: [QueuedAsset]) {
+        var existing = Set(queue.map(\.asset.filename))
+        existing.formUnion(
+            activeDownloads.values.map(\.asset.filename)
+        )
+        for asset in assets {
+            guard existing.insert(asset.asset.filename).inserted else { continue }
+            queue.append(asset)
+        }
+    }
+
+    private func reconcilePackagesAfterSharedAsset(
+        _ filename: String,
+        excluding ownerPackageID: DownloadPackage.ID
+    ) {
+        let candidateIDs = persistedPlans.values.compactMap { plan in
+            plan.package.id != ownerPackageID
+                && plan.package.assets.contains { $0.filename == filename }
+                ? plan.package.id
+                : nil
+        }
+        for packageID in candidateIDs {
+            guard let package = persistedPlans[packageID]?.package else { continue }
+            refreshDownloadedSizeCache(for: [package])
+            if storageService.packageIsReady(package) {
+                queue.removeAll { $0.packageID == packageID }
+                states[packageID] = .ready
+                packageProgress[packageID] = nil
+                removePersistedPlan(packageID)
+                removePackageFromDownloadAllPlan(packageID)
+            }
         }
     }
 
@@ -1020,6 +1250,21 @@ final class DownloadService: NSObject, ObservableObject {
     private func persistPlan(for package: DownloadPackage, baseURL: URL) {
         let plan = DownloadQueueStore.PackagePlan(package: package, baseURL: baseURL)
         persistedPlans[package.id] = plan
+        savePersistedPlans()
+    }
+
+    private func updatePersistedAsset(
+        _ asset: MediaAsset,
+        packageID: DownloadPackage.ID
+    ) {
+        guard let plan = persistedPlans[packageID] else { return }
+        let assets = plan.package.assets.map {
+            $0.filename == asset.filename ? asset : $0
+        }
+        persistedPlans[packageID] = .init(
+            package: plan.package.replacingAssets(assets),
+            baseURL: plan.baseURL
+        )
         savePersistedPlans()
     }
 

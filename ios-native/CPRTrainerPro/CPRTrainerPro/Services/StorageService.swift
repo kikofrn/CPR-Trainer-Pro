@@ -175,10 +175,6 @@ struct StorageService {
 
     func deletePackage(_ package: DownloadPackage) throws {
         for asset in package.assets {
-            if (try? bundledResourceURL(for: asset.filename)) != nil {
-                continue
-            }
-
             let url = try downloadDestinationURL(for: asset.filename)
             if fileManager.fileExists(atPath: url.path) {
                 try fileManager.removeItem(at: url)
@@ -188,6 +184,10 @@ struct StorageService {
 
     func packageIsReady(_ package: DownloadPackage) -> Bool {
         package.assets.allSatisfy(fileExists)
+    }
+
+    func packageHasRequiredContent(_ package: DownloadPackage) -> Bool {
+        package.requiredAssets.allSatisfy(fileExists)
     }
 
     func fileSizeIfExists(_ filename: String) -> Int64 {
@@ -216,7 +216,6 @@ struct StorageService {
     }
 
     private func downloadedFileSizeIfExists(_ filename: String) -> Int64 {
-        guard (try? bundledResourceURL(for: filename)) == nil else { return 0 }
         guard
             let url = try? downloadedURL(for: filename),
             fileManager.fileExists(atPath: url.path),
@@ -305,13 +304,13 @@ struct StorageService {
     }
 }
 
-struct ContentStateMigrator {
+enum ContentFilenameAliases {
     struct Alias: Equatable {
         let oldFilename: String
         let newFilename: String
     }
 
-    static let aliases = [
+    static let all = [
         Alias(
             oldFilename: "CPR AED Presentation Slides/14_EHAcademy - CPR AED Course Pres--Getting Help.png",
             newFilename: "CPR AED Presentation Slides/14_EHAcademy - CPR AED Course Pres-Getting Help.png"
@@ -321,6 +320,43 @@ struct ContentStateMigrator {
             newFilename: "Pedi First Aid Presentation Slides/07_EHAcademy - Pedi FA Course Pres-MEDICAL EMERGENCIES.png"
         )
     ]
+
+    static func canonicalFilename(_ filename: String) -> String {
+        all.first { $0.oldFilename == filename }?.newFilename ?? filename
+    }
+
+    static func canonicalAsset(
+        _ asset: MediaAsset,
+        catalogAssetsByFilename: [String: MediaAsset]
+    ) -> MediaAsset? {
+        let canonicalFilename = canonicalFilename(asset.filename)
+        if canonicalFilename == asset.filename {
+            return catalogAssetsByFilename[canonicalFilename] ?? asset
+        }
+        return catalogAssetsByFilename[canonicalFilename]
+    }
+
+    static func canonicalPackage(
+        _ package: DownloadPackage,
+        catalog: TrainingCatalog
+    ) -> DownloadPackage {
+        guard let catalogPackage = catalog.packages.first(where: { $0.id == package.id }) else {
+            return package
+        }
+        let catalogAssets = Dictionary(
+            catalogPackage.assets.map { ($0.filename, $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
+        let migratedAssets = package.assets.compactMap {
+            canonicalAsset($0, catalogAssetsByFilename: catalogAssets)
+        }
+        return catalogPackage.replacingAssets(migratedAssets)
+    }
+}
+
+struct ContentStateMigrator {
+    typealias Alias = ContentFilenameAliases.Alias
+    static let aliases = ContentFilenameAliases.all
 
     private let fileManager: FileManager
     private let storageService: StorageService

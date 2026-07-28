@@ -63,7 +63,7 @@ struct CoursesView: View {
     private func courseSection(for course: Course) -> some View {
         let selectedMode = appViewModel.primaryMode(for: course)
         let isComingSoon = appViewModel.isUnavailableModeSelected(for: course.id)
-        let state = selectedMode.map { downloadService.state(for: $0.packageID) } ?? .notDownloaded
+        let state = selectedMode?.packageID.map(downloadService.state) ?? .notDownloaded
         let cardCopy = courseCardCopy(for: course, selectedMode: selectedMode)
 
         VStack(alignment: .leading, spacing: 12) {
@@ -118,12 +118,14 @@ struct CoursesView: View {
     private func launchOrPromptDownload(course: Course, mode: CourseLaunchMode?, state: DownloadState) {
         guard
             let mode,
-            let package = appViewModel.catalog.package(with: mode.packageID)
+            mode.isAvailable,
+            let packageID = mode.packageID,
+            let package = appViewModel.catalog.package(with: packageID)
         else {
             return
         }
 
-        if state.isReady {
+        if appViewModel.storageService.packageHasRequiredContent(package) {
             experienceToken = appViewModel.acquireForegroundExperience("course")
             activeLaunch = CourseLaunchRequest(mode: mode)
             return
@@ -153,10 +155,10 @@ struct CoursesView: View {
             set: { appViewModel.setPediatricFocused($0, for: course.id) }
         )
         VStack(spacing: 10) {
-            Toggle("Enable Virtual Assistant?", isOn: vaBinding)
+            Toggle("Pediatric Focused?", isOn: pediatricBinding)
                 .tint(Theme.Colors.peach)
 
-            Toggle("Pediatric Focused?", isOn: pediatricBinding)
+            Toggle("Enable Virtual Assistant?", isOn: vaBinding)
                 .tint(Theme.Colors.peach)
         }
         .font(.subheadline.weight(.semibold))
@@ -170,7 +172,9 @@ struct CoursesView: View {
     private func launchView(for mode: CourseLaunchMode) -> some View {
         switch mode.kind {
         case .video:
-            if let videoCourse = appViewModel.catalog.videoCourse(for: mode) {
+            if !mode.isAvailable {
+                MissingLaunchView(title: "Coming Soon")
+            } else if let videoCourse = appViewModel.catalog.videoCourse(for: mode) {
                 VideoCoursePlayerView(
                     videoCourse: videoCourse,
                     storageService: appViewModel.storageService
@@ -179,7 +183,9 @@ struct CoursesView: View {
                 MissingLaunchView(title: "Video Course Missing")
             }
         case .slideshow:
-            if let slideshow = appViewModel.catalog.slideshow(for: mode) {
+            if !mode.isAvailable {
+                MissingLaunchView(title: "Coming Soon")
+            } else if let slideshow = appViewModel.catalog.slideshow(for: mode) {
                 SlideshowPlayerView(
                     slideshow: slideshow,
                     storageService: appViewModel.storageService

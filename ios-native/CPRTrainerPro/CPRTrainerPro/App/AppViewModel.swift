@@ -7,6 +7,7 @@ struct ForegroundExperienceToken: Hashable {
 enum AppPrompt: Identifiable, Equatable {
     case initialDownload(DownloadContentEstimate)
     case contentUpdate(ContentUpdateSummary)
+    case cellularUpdateConfirmation(ContentUpdateSummary)
 
     var id: String {
         switch self {
@@ -14,6 +15,8 @@ enum AppPrompt: Identifiable, Equatable {
             "initial-download"
         case .contentUpdate(let summary):
             "content-update-\(summary.id)"
+        case .cellularUpdateConfirmation(let summary):
+            "cellular-update-confirmation-\(summary.id)"
         }
     }
 }
@@ -42,7 +45,7 @@ final class AppViewModel: ObservableObject {
     private let versionStore: ContentVersionStore
     private var didEvaluateInitialDownloadPrompt = false
     private var pendingContentUpdate: ContentUpdateSummary?
-    private var foregroundExperienceTokens: Set<ForegroundExperienceToken> = []
+    private var foregroundExperienceTokens: [ForegroundExperienceToken: String] = [:]
     private var hourlyUpdateTask: Task<Void, Never>?
 
     init(manifestService: ContentManifestService = .init()) {
@@ -65,6 +68,12 @@ final class AppViewModel: ObservableObject {
         let contentUpdatePlanStore = ContentUpdatePlanStore(
             contentRevision: catalog.contentRevision
         )
+        do {
+            try queueStore.migrateObsoleteFilenames(using: catalog)
+            try contentUpdatePlanStore.migrateObsoleteFilenames(using: catalog)
+        } catch {
+            assertionFailure("Failed to migrate persisted content queues: \(error)")
+        }
         let contentUpdateService = ContentUpdateService(
             storageService: storageService,
             versionStore: versionStore,
@@ -84,17 +93,11 @@ final class AppViewModel: ObservableObject {
         self.storageService = storageService
         self.downloadService = downloadService
         self.contentUpdateService = contentUpdateService
-        downloadService.onNetworkPolicyChange = { [weak contentUpdateService] isAllowed, allowsCellular in
-            contentUpdateService?.applyNetworkPolicy(
-                isAllowed: isAllowed,
-                allowsCellular: allowsCellular
-            )
+        downloadService.onNetworkPolicyChange = { [weak contentUpdateService] policy in
+            contentUpdateService?.applyNetworkPolicy(policy)
         }
         let policy = downloadService.transferPolicySnapshot
-        contentUpdateService.applyNetworkPolicy(
-            isAllowed: policy.isAllowed,
-            allowsCellular: policy.allowsCellular
-        )
+        contentUpdateService.applyNetworkPolicy(policy)
         self.downloadService.refreshPackageStates(for: catalog.packages)
         self.contentUpdateService.onAvailableUpdate = { [weak self] summary in
             self?.receiveContentUpdate(summary)
@@ -120,13 +123,13 @@ final class AppViewModel: ObservableObject {
 
     func acquireForegroundExperience(_ reason: String) -> ForegroundExperienceToken {
         let token = ForegroundExperienceToken()
-        foregroundExperienceTokens.insert(token)
+        foregroundExperienceTokens[token] = reason
         return token
     }
 
     func releaseForegroundExperience(_ token: ForegroundExperienceToken?) {
         guard let token else { return }
-        foregroundExperienceTokens.remove(token)
+        foregroundExperienceTokens[token] = nil
         presentPendingContentUpdateAfterDismissal()
     }
 
@@ -184,8 +187,31 @@ final class AppViewModel: ObservableObject {
         presentPendingContentUpdateAfterDismissal()
     }
 
-    func beginContentUpdate(_ summary: ContentUpdateSummary) {
-        guard contentUpdateService.beginAvailableUpdates(summary) else { return }
+    func requestContentUpdate(_ summary: ContentUpdateSummary) {
+        let policy = downloadService.transferPolicySnapshot
+        if policy.isConfirmedWiFi || (policy.isKnown && !policy.isSatisfied) {
+            beginContentUpdate(summary, allowsCellularForBatch: false)
+        } else {
+            activePrompt = .cellularUpdateConfirmation(summary)
+        }
+    }
+
+    func confirmCellularContentUpdate(_ summary: ContentUpdateSummary) {
+        beginContentUpdate(summary, allowsCellularForBatch: true)
+    }
+
+    func cancelCellularContentUpdate(_ summary: ContentUpdateSummary) {
+        activePrompt = .contentUpdate(summary)
+    }
+
+    private func beginContentUpdate(
+        _ summary: ContentUpdateSummary,
+        allowsCellularForBatch: Bool
+    ) {
+        guard contentUpdateService.beginAvailableUpdates(
+            summary,
+            allowsCellularForBatch: allowsCellularForBatch
+        ) else { return }
         pendingContentUpdate = nil
         activePrompt = nil
     }
@@ -202,6 +228,8 @@ final class AppViewModel: ObservableObject {
             dismissInitialDownloadPrompt()
         case .contentUpdate:
             dismissContentUpdatePrompt()
+        case .cellularUpdateConfirmation(let summary):
+            cancelCellularContentUpdate(summary)
         case nil:
             break
         }
@@ -209,6 +237,23 @@ final class AppViewModel: ObservableObject {
 
     private func receiveContentUpdate(_ summary: ContentUpdateSummary?) {
         pendingContentUpdate = summary
+        if let summary {
+            switch activePrompt {
+            case .contentUpdate:
+                activePrompt = .contentUpdate(summary)
+            case .cellularUpdateConfirmation:
+                activePrompt = .cellularUpdateConfirmation(summary)
+            default:
+                break
+            }
+        } else {
+            switch activePrompt {
+            case .contentUpdate, .cellularUpdateConfirmation:
+                activePrompt = nil
+            default:
+                break
+            }
+        }
         presentPendingContentUpdateIfPossible()
     }
 
@@ -296,20 +341,37 @@ final class AppViewModel: ObservableObject {
     }
 
     func isUnavailableModeSelected(for courseID: Course.ID) -> Bool {
-        vaEnabled(for: courseID) && pediatricFocused(for: courseID)
+        guard let course = catalog.courses.first(where: { $0.id == courseID }) else {
+            return false
+        }
+        return primaryMode(for: course)?.isAvailable == false
     }
 
     func primaryMode(for course: Course) -> CourseLaunchMode? {
-        guard !isUnavailableModeSelected(for: course.id) else { return nil }
-        if pediatricFocused(for: course.id) {
-            let pediatricModeID: CourseLaunchMode.ID =
-                course.id == .cprAED ? .pediatricCPRSlideshow : .pediatricSlideshow
-            return course.modes.first { $0.id == pediatricModeID }
+        let modeID: CourseLaunchMode.ID
+        switch (
+            course.id,
+            pediatricFocused(for: course.id),
+            vaEnabled(for: course.id)
+        ) {
+        case (.cprAED, true, true):
+            modeID = .pediatricCPRVideo
+        case (.cprAED, true, false):
+            modeID = .pediatricCPRSlideshow
+        case (.cprAED, false, true):
+            modeID = .cprVideo
+        case (.cprAED, false, false):
+            modeID = .cprSlideshow
+        case (.firstAid, true, true):
+            modeID = .pediatricFirstAidVideo
+        case (.firstAid, true, false):
+            modeID = .pediatricSlideshow
+        case (.firstAid, false, true):
+            modeID = .firstAidVideo
+        case (.firstAid, false, false):
+            modeID = .firstAidSlideshow
         }
-
-        let preferredKind: CourseLaunchMode.Kind =
-            vaEnabled(for: course.id) ? .video : .slideshow
-        return course.modes.first { $0.kind == preferredKind }
+        return course.modes.first { $0.id == modeID }
     }
 }
 

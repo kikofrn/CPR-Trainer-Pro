@@ -10,7 +10,7 @@ struct FullScreenToggleButton: View {
             Image(systemName: isFullScreen ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(.white)
-                .frame(width: 34, height: 34)
+                .frame(width: 44, height: 44)
                 .background(.white.opacity(0.12))
                 .clipShape(Circle())
         }
@@ -29,7 +29,7 @@ struct CaptionToggleButton: View {
             Image(systemName: captionsEnabled ? "captions.bubble.fill" : "captions.bubble")
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(captionsEnabled ? .white : .white.opacity(0.58))
-                .frame(width: 34, height: 34)
+                .frame(width: 44, height: 44)
                 .background(.white.opacity(captionsEnabled ? 0.16 : 0.08))
                 .clipShape(Circle())
         }
@@ -48,7 +48,7 @@ struct ContinuousPlayToggleButton: View {
             Image(systemName: "repeat")
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(isEnabled ? .white : .white.opacity(0.58))
-                .frame(width: 34, height: 34)
+                .frame(width: 44, height: 44)
                 .background(.white.opacity(isEnabled ? 0.16 : 0.08))
                 .clipShape(Circle())
                 .overlay {

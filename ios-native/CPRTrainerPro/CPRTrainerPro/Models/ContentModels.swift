@@ -30,9 +30,11 @@ struct CourseLaunchMode: Identifiable, Codable, Equatable {
         case cprSlideshow = "cpr-aed-course"
         case cprVideo = "cpr-aed"
         case pediatricCPRSlideshow = "pediatric-cpr-aed-course"
+        case pediatricCPRVideo = "pediatric-cpr-aed"
         case firstAidSlideshow = "first-aid-course"
         case firstAidVideo = "first-aid"
         case pediatricSlideshow = "pediatric-first-aid-course"
+        case pediatricFirstAidVideo = "pediatric-first-aid"
     }
 
     enum Kind: String, Codable, Equatable {
@@ -43,7 +45,47 @@ struct CourseLaunchMode: Identifiable, Codable, Equatable {
     let id: ID
     let kind: Kind
     let title: String
-    let packageID: DownloadPackage.ID
+    let packageID: DownloadPackage.ID?
+    let isAvailable: Bool
+
+    init(
+        id: ID,
+        kind: Kind,
+        title: String,
+        packageID: DownloadPackage.ID?,
+        isAvailable: Bool = true
+    ) {
+        self.id = id
+        self.kind = kind
+        self.title = title
+        self.packageID = packageID
+        self.isAvailable = isAvailable
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case kind
+        case title
+        case packageID
+        case isAvailable
+    }
+
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(
+            id: try values.decode(ID.self, forKey: .id),
+            kind: try values.decode(Kind.self, forKey: .kind),
+            title: try values.decode(String.self, forKey: .title),
+            packageID: try values.decodeIfPresent(
+                DownloadPackage.ID.self,
+                forKey: .packageID
+            ),
+            isAvailable: try values.decodeIfPresent(
+                Bool.self,
+                forKey: .isAvailable
+            ) ?? true
+        )
+    }
 }
 
 struct VideoCourse: Identifiable, Codable, Equatable {
@@ -124,6 +166,21 @@ struct MediaAsset: Identifiable, Codable, Equatable {
         self.eTag = eTag
         self.lastModified = lastModified
     }
+
+    var isRequiredForLaunch: Bool {
+        kind != .subtitle
+    }
+
+    func replacingRemoteVersion(_ version: RemoteAssetVersion) -> MediaAsset {
+        return MediaAsset(
+            id: id,
+            filename: filename,
+            kind: kind,
+            byteCount: version.byteCount,
+            eTag: version.eTag,
+            lastModified: version.lastModified
+        )
+    }
 }
 
 struct DownloadPackage: Identifiable, Codable, Equatable {
@@ -142,6 +199,14 @@ struct DownloadPackage: Identifiable, Codable, Equatable {
     let id: ID
     let title: String
     let assets: [MediaAsset]
+
+    var requiredAssets: [MediaAsset] {
+        assets.filter(\.isRequiredForLaunch)
+    }
+
+    func replacingAssets(_ assets: [MediaAsset]) -> DownloadPackage {
+        DownloadPackage(id: id, title: title, assets: assets)
+    }
 }
 
 struct DownloadContentEstimate: Equatable {
@@ -174,6 +239,22 @@ struct DownloadContentEstimate: Equatable {
         }
 
         return "about \(hours) hr \(minutes) min on a typical 25 Mbps connection"
+    }
+}
+
+struct TransferNetworkPolicySnapshot: Equatable {
+    let isKnown: Bool
+    let isSatisfied: Bool
+    let isExpensive: Bool
+    let allowsCellular: Bool
+
+    var isConfirmedWiFi: Bool {
+        isKnown && isSatisfied && !isExpensive
+    }
+
+    var allowsTransfers: Bool {
+        guard isKnown else { return true }
+        return isSatisfied && (!isExpensive || allowsCellular)
     }
 }
 
@@ -250,7 +331,7 @@ struct RemoteAssetVersion: Codable, Equatable, Sendable {
             installed.eTag == nil,
             let remoteDate = Self.parsedDate(lastModified),
             let installedDate = Self.parsedDate(installed.lastModified),
-            remoteDate > installedDate
+            remoteDate.timeIntervalSince(installedDate) > 10 * 60
         {
             return true
         }

@@ -52,6 +52,7 @@ enum CourseArtworkState: String, CaseIterable, Sendable {
 }
 
 struct ArtworkImage: View {
+    @EnvironmentObject private var appViewModel: AppViewModel
     fileprivate enum Source: Equatable {
         case bundled(String)
         case course(CourseArtworkState)
@@ -112,10 +113,17 @@ struct ArtworkImage: View {
         }
         .clipped()
         .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
-        .task(id: source.taskID) {
-            image = await CourseArtworkRepository.shared.localImage(for: source)
+        .task(id: "\(appViewModel.catalog.contentRevision)#\(source.taskID)") {
+            let revision = appViewModel.catalog.contentRevision
+            image = await CourseArtworkRepository.shared.localImage(
+                for: source,
+                contentRevision: revision
+            )
             if case .course(let state) = source,
-               let refreshed = await CourseArtworkRepository.shared.refreshedImage(for: state) {
+               let refreshed = await CourseArtworkRepository.shared.refreshedImage(
+                   for: state,
+                   contentRevision: revision
+               ) {
                 image = refreshed
             }
         }
@@ -126,19 +134,13 @@ private actor CourseArtworkRepository {
     static let shared = CourseArtworkRepository()
 
     private let cache = NSCache<NSString, UIImage>()
-    private let storageService: StorageService
-    private let versionStore: ContentVersionStore
+    private var configuredRevision: String?
+    private var storageService: StorageService?
+    private var versionStore: ContentVersionStore?
     private let manifestClient = RemoteContentManifestClient.shared
     private let session: URLSession
 
     init() {
-        let versionStore = ContentVersionStore(contentRevision: "experiment-3.0")
-        self.versionStore = versionStore
-        self.storageService = StorageService(
-            contentRevision: "experiment-3.0",
-            versionStore: versionStore
-        )
-
         let configuration = URLSessionConfiguration.ephemeral
         configuration.waitsForConnectivity = false
         configuration.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
@@ -150,7 +152,11 @@ private actor CourseArtworkRepository {
         cache.totalCostLimit = 24 * 1_024 * 1_024
     }
 
-    func localImage(for source: ArtworkImage.Source) -> UIImage? {
+    func localImage(
+        for source: ArtworkImage.Source,
+        contentRevision: String
+    ) -> UIImage? {
+        configureIfNeeded(contentRevision: contentRevision)
         switch source {
         case .bundled(let name):
             return downsampledBundledImage(named: name)
@@ -162,7 +168,11 @@ private actor CourseArtworkRepository {
         }
     }
 
-    func refreshedImage(for state: CourseArtworkState) async -> UIImage? {
+    func refreshedImage(
+        for state: CourseArtworkState,
+        contentRevision: String
+    ) async -> UIImage? {
+        configureIfNeeded(contentRevision: contentRevision)
         await refreshIfNeeded(state)
         if let downloaded = downsampledDownloadedImage(for: state.remoteKey) {
             return downloaded
@@ -172,6 +182,8 @@ private actor CourseArtworkRepository {
 
     private func refreshIfNeeded(_ state: CourseArtworkState) async {
         guard
+            let storageService,
+            let versionStore,
             let manifest = await manifestClient.fetch(),
             let remoteVersion = manifest.assetsByKey[state.remoteKey]?.version
         else {
@@ -250,12 +262,27 @@ private actor CourseArtworkRepository {
     }
 
     private func downsampledDownloadedImage(for filename: String) -> UIImage? {
-        guard storageService.hasDownloadedCopy(filename),
+        guard let storageService,
+              storageService.hasDownloadedCopy(filename),
               let url = try? storageService.downloadDestinationURL(for: filename)
         else {
             return nil
         }
         return downsampledImage(at: url, cacheKey: filename)
+    }
+
+    private func configureIfNeeded(contentRevision: String) {
+        guard configuredRevision != contentRevision else { return }
+        let nextVersionStore = ContentVersionStore(
+            contentRevision: contentRevision
+        )
+        versionStore = nextVersionStore
+        storageService = StorageService(
+            contentRevision: contentRevision,
+            versionStore: nextVersionStore
+        )
+        configuredRevision = contentRevision
+        cache.removeAllObjects()
     }
 
     private func downsampledBundledImage(named name: String) -> UIImage? {

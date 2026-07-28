@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 
 struct InstructorSlideTip: Identifiable, Decodable, Equatable {
@@ -9,17 +10,19 @@ struct InstructorSlideTip: Identifiable, Decodable, Equatable {
     var id: String { slideID }
 }
 
-struct InstructorTipsService {
+@MainActor
+final class InstructorTipsService: ObservableObject {
     static let shared = InstructorTipsService(bundle: .main)
 
-    private let tipsBySlideshowID: [String: [InstructorSlideTip]]
+    @Published private var tipsBySlideshowID: [String: [InstructorSlideTip]] = [:]
 
     init(bundle: Bundle) {
-        do {
-            tipsBySlideshowID = try Self.loadTips(from: bundle)
-        } catch {
-            assertionFailure("Failed to load instructor-tips.json: \(error)")
-            tipsBySlideshowID = [:]
+        Task { [weak self] in
+            let result = await Task.detached(priority: .utility) {
+                try? Self.loadTips(from: bundle)
+            }.value
+            guard let self, let result else { return }
+            tipsBySlideshowID = result
         }
     }
 
@@ -31,7 +34,9 @@ struct InstructorTipsService {
         tipsBySlideshowID[slideshowID] ?? []
     }
 
-    static func loadTips(from bundle: Bundle) throws -> [String: [InstructorSlideTip]] {
+    nonisolated static func loadTips(
+        from bundle: Bundle
+    ) throws -> [String: [InstructorSlideTip]] {
         guard let url = bundle.url(forResource: "instructor-tips", withExtension: "json") else {
             throw LoadingError.missingResource
         }

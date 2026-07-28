@@ -50,7 +50,7 @@ struct InstructorTipsPanel: View {
                     Image(systemName: "chevron.down")
                         .font(.system(size: 16, weight: .bold))
                         .foregroundStyle(.white)
-                        .frame(width: 36, height: 36)
+                        .frame(width: 44, height: 44)
                         .background(.white.opacity(0.10))
                         .clipShape(Circle())
                 }
@@ -110,7 +110,7 @@ struct SlidePickerPanel: View {
                     Image(systemName: "xmark")
                         .font(.system(size: 15, weight: .bold))
                         .foregroundStyle(.white)
-                        .frame(width: 36, height: 36)
+                        .frame(width: 44, height: 44)
                         .background(.white.opacity(0.10))
                         .clipShape(Circle())
                 }
@@ -129,7 +129,7 @@ struct SlidePickerPanel: View {
                                     Text("\(index + 1)")
                                         .font(.subheadline.monospacedDigit().weight(.bold))
                                         .foregroundStyle(index == selectedIndex ? .black : Theme.Colors.peach)
-                                        .frame(width: 34, height: 34)
+                                        .frame(width: 44, height: 44)
                                         .background(index == selectedIndex ? Theme.Colors.peach : .white.opacity(0.08))
                                         .clipShape(Circle())
 

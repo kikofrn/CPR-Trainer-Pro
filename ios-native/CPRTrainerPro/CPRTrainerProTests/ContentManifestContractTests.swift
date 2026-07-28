@@ -31,6 +31,67 @@ final class ContentManifestContractTests: XCTestCase {
         XCTAssertEqual(AppTab.settings.adjacentTab(direction: 1), .settings)
     }
 
+    func testPagerStateMachineCannotStrandProgrammaticTransitionDuringPan() {
+        var state = TabPagerStateMachine(currentIndex: 0)
+        let staleProgrammaticID = state.beginProgrammaticTransition(to: 1)
+        state.beginInteractiveTransition(to: 2)
+
+        XCTAssertNil(state.programmaticTransitionID)
+        XCTAssertFalse(
+            state.finishProgrammaticTransition(
+                id: staleProgrammaticID,
+                visibleIndex: 1
+            )
+        )
+
+        state.queueRequest(3)
+        state.queueRequest(4)
+        XCTAssertTrue(state.finishInteractiveTransition(visibleIndex: 2))
+        XCTAssertEqual(state.currentIndex, 2)
+        XCTAssertEqual(state.takeQueuedRequest(), 4)
+        XCTAssertFalse(state.hasTransitionInFlight)
+    }
+
+    func testPagerStateMachineIdleRecoveryClearsEveryBusyMarker() {
+        var state = TabPagerStateMachine(currentIndex: 1)
+        _ = state.beginProgrammaticTransition(to: 3)
+        state.queueRequest(4)
+
+        XCTAssertTrue(state.hasTransitionInFlight)
+        XCTAssertTrue(state.recoverAtIdle(visibleIndex: 3))
+        XCTAssertFalse(state.hasTransitionInFlight)
+        XCTAssertEqual(state.currentIndex, 3)
+        XCTAssertEqual(state.takeQueuedRequest(), 4)
+        XCTAssertNil(state.takeQueuedRequest())
+    }
+
+    func testTransferNetworkPolicyDistinguishesWiFiFromCellular() {
+        let wifi = TransferNetworkPolicySnapshot(
+            isKnown: true,
+            isSatisfied: true,
+            isExpensive: false,
+            allowsCellular: false
+        )
+        let blockedCellular = TransferNetworkPolicySnapshot(
+            isKnown: true,
+            isSatisfied: true,
+            isExpensive: true,
+            allowsCellular: false
+        )
+        let approvedCellular = TransferNetworkPolicySnapshot(
+            isKnown: true,
+            isSatisfied: true,
+            isExpensive: true,
+            allowsCellular: true
+        )
+
+        XCTAssertTrue(wifi.isConfirmedWiFi)
+        XCTAssertTrue(wifi.allowsTransfers)
+        XCTAssertFalse(blockedCellular.isConfirmedWiFi)
+        XCTAssertFalse(blockedCellular.allowsTransfers)
+        XCTAssertTrue(approvedCellular.allowsTransfers)
+    }
+
     func testCatalogExcludesSpanishContentForInitialNativeBuild() {
         var strings: [String] = []
 
@@ -72,23 +133,45 @@ final class ContentManifestContractTests: XCTestCase {
         XCTAssertFalse(searchableText.contains("first-aid-spanish"))
     }
 
+    func testCatalogHasNoDuplicateTransferFilenamesAcrossPackages() {
+        let filenames = catalog.packages.flatMap(\.assets).map(\.filename)
+        XCTAssertEqual(Set(filenames).count, filenames.count)
+    }
+
     func testCourseShapeMatchesInstructorWorkflow() throws {
         XCTAssertEqual(catalog.courses.map(\.id), [.cprAED, .firstAid])
 
         let cpr = try XCTUnwrap(catalog.courses.first { $0.id == .cprAED })
         XCTAssertEqual(
             cpr.modes.map(\.id),
-            [.cprSlideshow, .cprVideo, .pediatricCPRSlideshow]
+            [
+                .cprSlideshow,
+                .cprVideo,
+                .pediatricCPRSlideshow,
+                .pediatricCPRVideo
+            ]
         )
         XCTAssertEqual(cpr.modes.first?.kind, .slideshow)
-        XCTAssertEqual(cpr.modes.last?.kind, .slideshow)
-        XCTAssertEqual(cpr.modes.last?.packageID, .pediatricCPRSlideshow)
+        XCTAssertEqual(cpr.modes[2].kind, .slideshow)
+        XCTAssertEqual(cpr.modes[2].packageID, .pediatricCPRSlideshow)
+        XCTAssertFalse(cpr.modes[3].isAvailable)
+        XCTAssertNil(cpr.modes[3].packageID)
 
         let firstAid = try XCTUnwrap(catalog.courses.first { $0.id == .firstAid })
-        XCTAssertEqual(firstAid.modes.map(\.id), [.firstAidSlideshow, .firstAidVideo, .pediatricSlideshow])
+        XCTAssertEqual(
+            firstAid.modes.map(\.id),
+            [
+                .firstAidSlideshow,
+                .firstAidVideo,
+                .pediatricSlideshow,
+                .pediatricFirstAidVideo
+            ]
+        )
         XCTAssertEqual(firstAid.modes.first?.kind, .slideshow)
-        XCTAssertEqual(firstAid.modes.last?.kind, .slideshow)
-        XCTAssertEqual(firstAid.modes.last?.packageID, .pediatricSlideshow)
+        XCTAssertEqual(firstAid.modes[2].kind, .slideshow)
+        XCTAssertEqual(firstAid.modes[2].packageID, .pediatricSlideshow)
+        XCTAssertFalse(firstAid.modes[3].isAvailable)
+        XCTAssertNil(firstAid.modes[3].packageID)
     }
 
     func testPrimarySlideshowsAndVideoCoursesArePresent() throws {
@@ -878,7 +961,8 @@ final class ContentManifestContractTests: XCTestCase {
         viewModel.setPediatricFocused(true, for: .cprAED)
         XCTAssertTrue(viewModel.vaEnabled(for: .cprAED))
         XCTAssertTrue(viewModel.isUnavailableModeSelected(for: .cprAED))
-        XCTAssertNil(viewModel.primaryMode(for: cpr))
+        XCTAssertEqual(viewModel.primaryMode(for: cpr)?.id, .pediatricCPRVideo)
+        XCTAssertFalse(viewModel.primaryMode(for: cpr)?.isAvailable ?? true)
 
         viewModel.setPediatricFocused(true, for: .firstAid)
         XCTAssertEqual(viewModel.primaryMode(for: firstAid)?.id, .pediatricSlideshow)
@@ -886,7 +970,11 @@ final class ContentManifestContractTests: XCTestCase {
         viewModel.setVAEnabled(true, for: .firstAid)
         XCTAssertTrue(viewModel.pediatricFocused(for: .firstAid))
         XCTAssertTrue(viewModel.isUnavailableModeSelected(for: .firstAid))
-        XCTAssertNil(viewModel.primaryMode(for: firstAid))
+        XCTAssertEqual(
+            viewModel.primaryMode(for: firstAid)?.id,
+            .pediatricFirstAidVideo
+        )
+        XCTAssertFalse(viewModel.primaryMode(for: firstAid)?.isAvailable ?? true)
     }
 
     func testVideoScrubberFormatsTimeLabels() {
@@ -1027,6 +1115,47 @@ final class ContentManifestContractTests: XCTestCase {
         XCTAssertNil(RemoteAssetVersion.canonicalETag("  "))
     }
 
+    func testRemoteManifestClientDecodesStrictExactKeysAndCanonicalETags() throws {
+        let data = try JSONSerialization.data(withJSONObject: [
+            "generated": "2026-07-28T12:00:00.123Z",
+            "files": [
+                [
+                    "key": "Course/Chapter 01.mp4",
+                    "etag": #" W/"version-one" "#,
+                    "uploaded": "2026-07-28T11:00:00.000Z",
+                    "size": 1234
+                ]
+            ]
+        ])
+
+        let decoded = try XCTUnwrap(
+            RemoteContentManifestClient.decodePayload(data)
+        )
+        let asset = try XCTUnwrap(
+            decoded.assetsByKey["Course/Chapter 01.mp4"]
+        )
+        XCTAssertEqual(asset.version.byteCount, 1234)
+        XCTAssertEqual(asset.version.eTag, "version-one")
+        XCTAssertNotNil(decoded.generatedAt)
+    }
+
+    func testRemoteManifestClientRejectsDuplicateOrUnsafeKeys() throws {
+        let duplicate = try JSONSerialization.data(withJSONObject: [
+            "files": [
+                ["key": "Course/a.mp4", "size": 10],
+                ["key": "Course/a.mp4", "size": 10]
+            ]
+        ])
+        let unsafe = try JSONSerialization.data(withJSONObject: [
+            "files": [
+                ["key": "Course/../secret.mp4", "size": 10]
+            ]
+        ])
+
+        XCTAssertNil(RemoteContentManifestClient.decodePayload(duplicate))
+        XCTAssertNil(RemoteContentManifestClient.decodePayload(unsafe))
+    }
+
     func testSchemaV1VersionStoreMigratesAllRecordsAndDatesToV2() throws {
         let directoryURL = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
@@ -1066,6 +1195,128 @@ final class ContentManifestContractTests: XCTestCase {
             with: Data(contentsOf: storeURL)
         ) as? [String: Any]
         XCTAssertEqual(persisted?["schemaVersion"] as? Int, 2)
+    }
+
+    func testFullyDownloadedSchemaV1StoreProducesNoFalseUpdateCandidates() throws {
+        let directoryURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let storeURL = directoryURL.appendingPathComponent("versions.json")
+        defer { try? FileManager.default.removeItem(at: directoryURL) }
+        try FileManager.default.createDirectory(
+            at: directoryURL,
+            withIntermediateDirectories: true
+        )
+
+        let versionedAssets = catalog.packages
+            .flatMap(\.assets)
+            .filter { RemoteAssetVersion(asset: $0) != nil }
+        var records: [String: Any] = [:]
+        for asset in versionedAssets {
+            let version = try XCTUnwrap(RemoteAssetVersion(asset: asset))
+            var versionObject: [String: Any] = [
+                "byteCount": version.byteCount
+            ]
+            if let eTag = version.eTag {
+                versionObject["eTag"] = #" W/""# + eTag + #"""#
+            }
+            if let lastModified = version.lastModified {
+                versionObject["lastModified"] = lastModified
+            }
+            records[asset.filename] = [
+                "filename": asset.filename,
+                "version": versionObject,
+                "installedAt": 800_000_000,
+                "lastCheckedAt": 800_086_400
+            ]
+        }
+        let data = try JSONSerialization.data(
+            withJSONObject: ["schemaVersion": 1, "records": records]
+        )
+        try data.write(to: storeURL, options: [.atomic])
+
+        let store = ContentVersionStore(storeURL: storeURL)
+        let falseCandidates = versionedAssets.filter { asset in
+            guard
+                let remote = RemoteAssetVersion(asset: asset),
+                let installed = store.installedVersion(for: asset.filename)
+            else {
+                return true
+            }
+            return remote.representsUpdate(comparedTo: installed)
+        }
+        XCTAssertTrue(falseCandidates.isEmpty)
+    }
+
+    func testPersistedDownloadAndUpdatePlansTranslateObsoleteFilenames() throws {
+        let alias = try XCTUnwrap(ContentStateMigrator.aliases.first)
+        let correctedPackage = try XCTUnwrap(
+            catalog.packages.first {
+                $0.assets.contains { $0.filename == alias.newFilename }
+            }
+        )
+        let correctedAsset = try XCTUnwrap(
+            correctedPackage.assets.first { $0.filename == alias.newFilename }
+        )
+        let legacyAsset = MediaAsset(
+            id: correctedAsset.id,
+            filename: alias.oldFilename,
+            kind: correctedAsset.kind,
+            byteCount: correctedAsset.byteCount,
+            eTag: correctedAsset.eTag,
+            lastModified: correctedAsset.lastModified
+        )
+        let legacyPackage = correctedPackage.replacingAssets(
+            correctedPackage.assets.map {
+                $0.filename == alias.newFilename ? legacyAsset : $0
+            }
+        )
+        let directoryURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directoryURL) }
+
+        let queueStore = DownloadQueueStore(
+            storeURL: directoryURL.appendingPathComponent("queue.json")
+        )
+        try queueStore.save([
+            .init(package: legacyPackage, baseURL: catalog.mediaBaseURL)
+        ])
+        XCTAssertTrue(try queueStore.migrateObsoleteFilenames(using: catalog))
+        let migratedQueue = try XCTUnwrap(queueStore.load().first)
+        XCTAssertTrue(
+            migratedQueue.package.assets.contains {
+                $0.filename == alias.newFilename
+            }
+        )
+        XCTAssertFalse(
+            migratedQueue.package.assets.contains {
+                $0.filename == alias.oldFilename
+            }
+        )
+
+        let updateStore = ContentUpdatePlanStore(
+            storeURL: directoryURL.appendingPathComponent("updates.json")
+        )
+        let version = try XCTUnwrap(RemoteAssetVersion(asset: correctedAsset))
+        try updateStore.save(
+            .init(
+                pending: [
+                    .init(
+                        candidate: .init(
+                            asset: legacyAsset,
+                            remoteVersion: version
+                        ),
+                        attempt: 1,
+                        retryAfter: nil
+                    )
+                ],
+                failed: []
+            )
+        )
+        XCTAssertTrue(try updateStore.migrateObsoleteFilenames(using: catalog))
+        XCTAssertEqual(
+            try updateStore.load()?.pending.first?.candidate.asset.filename,
+            alias.newFilename
+        )
     }
 
     func testContentStateMigrationRejectsTruncatedFileEvenWhenRecordMatches() throws {

@@ -71,6 +71,23 @@ struct DownloadQueueStore {
         try save(plans)
     }
 
+    @discardableResult
+    func migrateObsoleteFilenames(using catalog: TrainingCatalog) throws -> Bool {
+        let plans = try load()
+        let migrated = plans.map { plan in
+            PackagePlan(
+                package: ContentFilenameAliases.canonicalPackage(
+                    plan.package,
+                    catalog: catalog
+                ),
+                baseURL: plan.baseURL
+            )
+        }
+        guard migrated != plans else { return false }
+        try save(migrated)
+        return true
+    }
+
     func removeLegacyStore() throws {
         let legacyRoot = try applicationSupportDirectory()
             .appendingPathComponent("DownloadQueue", isDirectory: true)

@@ -69,8 +69,8 @@ assertSameStrings(
 );
 
 const expectedCourseModes = new Map([
-  ["cpr-aed", ["cpr-aed-course", "cpr-aed", "pediatric-cpr-aed-course"]],
-  ["first-aid", ["first-aid-course", "first-aid", "pediatric-first-aid-course"]],
+  ["cpr-aed", ["cpr-aed-course", "cpr-aed", "pediatric-cpr-aed-course", "pediatric-cpr-aed"]],
+  ["first-aid", ["first-aid-course", "first-aid", "pediatric-first-aid-course", "pediatric-first-aid"]],
 ]);
 for (const course of manifest.courses) {
   assertSameStrings(
@@ -80,8 +80,12 @@ for (const course of manifest.courses) {
   );
 
   for (const mode of course.modes) {
-    if (mode.id.startsWith("pediatric-")) {
+    assert(typeof mode.isAvailable === "boolean", `${mode.id} must declare isAvailable`);
+    if (mode.isAvailable && mode.id.startsWith("pediatric-")) {
       assert(mode.kind === "slideshow", `${mode.id} must be a non-VA slideshow`);
+    }
+    if (!mode.isAvailable) {
+      assert(!mode.packageID, `${mode.id} must not reference a downloadable package`);
     }
   }
 }
@@ -211,6 +215,10 @@ for (const asset of manifest.packages
   );
   remoteAssetsByFilename.set(asset.filename, metadata);
 }
+for (const filename of manifest.packages.flatMap((item) => item.assets).map((asset) => asset.filename)) {
+  assert(!filename.includes("Pres--"), `Suspicious doubled dash in ${filename}`);
+  assert(!/Pres-\s/.test(filename), `Suspicious space after Pres- in ${filename}`);
+}
 assertSameStrings(
   remoteAssetsByFilename.keys(),
   Object.keys(r2ContentLengths),
@@ -234,6 +242,9 @@ for (const [filename, metadata] of remoteAssetsByFilename) {
 
 const modes = manifest.courses.flatMap((course) => course.modes);
 for (const mode of modes) {
+  if (!mode.isAvailable) {
+    continue;
+  }
   const downloadPackage = packagesByID.get(mode.packageID);
   assert(downloadPackage, `Missing package for ${mode.id}`);
   const filenames = new Set(downloadPackage.assets.map((asset) => asset.filename));

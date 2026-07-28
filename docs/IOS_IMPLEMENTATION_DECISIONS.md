@@ -35,6 +35,12 @@ material, private runtime state, or credentials.
 - Course, update, subtitle, and artwork requests share one cellular policy.
   Blocked work remains queued as “Waiting for Wi-Fi” and resumes when the path
   becomes eligible.
+- Tapping “Update Now” on a non-Wi-Fi path requires an exact-size confirmation.
+  Approval applies only to that persisted update batch and does not silently
+  change the user’s global cellular-download preference.
+- If an eligible path becomes ineligible, in-flight course and update tasks are
+  cancelled back to their validated queue state and restart from byte zero.
+  Partial bytes from different object versions are never combined.
 - Large transfers use a live disk preflight that includes remaining bytes, the
   largest staging file, and a safety margin.
 

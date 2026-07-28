@@ -10,6 +10,7 @@ struct StickyBrandScrollView<Content: View>: View {
     @State private var scrollOffset: CGFloat = 0
     @State private var initialReaderY: CGFloat?
     @State private var heartbeatTapTimes: [Date] = []
+    @State private var layoutSignature: StickyBrandLayoutSignature?
 
     init(
         title: String? = nil,
@@ -51,6 +52,27 @@ struct StickyBrandScrollView<Content: View>: View {
             stickyHeader
         }
         .appBackground()
+        .background {
+            GeometryReader { proxy in
+                Color.clear.preference(
+                    key: StickyBrandLayoutPreferenceKey.self,
+                    value: StickyBrandLayoutSignature(
+                        size: proxy.size,
+                        safeAreaInsets: proxy.safeAreaInsets
+                    )
+                )
+            }
+        }
+        .onPreferenceChange(StickyBrandLayoutPreferenceKey.self) { signature in
+            guard layoutSignature != signature else { return }
+            let hadPreviousLayout = layoutSignature != nil
+            layoutSignature = signature
+            if hadPreviousLayout {
+                initialReaderY = nil
+                scrollOffset = 0
+                onHeaderProgressChange?(0)
+            }
+        }
     }
 
     private var stickyHeader: some View {
@@ -168,6 +190,25 @@ private struct ScrollOffsetPreferenceKey: PreferenceKey {
     static var defaultValue: CGFloat = 0
 
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
+    }
+}
+
+private struct StickyBrandLayoutSignature: Equatable {
+    let size: CGSize
+    let safeAreaInsets: EdgeInsets
+}
+
+private struct StickyBrandLayoutPreferenceKey: PreferenceKey {
+    static var defaultValue = StickyBrandLayoutSignature(
+        size: .zero,
+        safeAreaInsets: EdgeInsets()
+    )
+
+    static func reduce(
+        value: inout StickyBrandLayoutSignature,
+        nextValue: () -> StickyBrandLayoutSignature
+    ) {
         value = nextValue()
     }
 }

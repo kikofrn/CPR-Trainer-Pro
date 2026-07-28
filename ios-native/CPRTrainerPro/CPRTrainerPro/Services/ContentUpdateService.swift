@@ -84,39 +84,23 @@ actor RemoteContentManifestClient {
                 data.reserveCapacity(
                     min(maximumResponseBytes, max(0, Int(response.expectedContentLength)))
                 )
+                var chunk: [UInt8] = []
+                chunk.reserveCapacity(16 * 1_024)
+                var receivedByteCount = 0
                 for try await byte in bytes {
-                    guard data.count < maximumResponseBytes else { return nil }
-                    data.append(byte)
+                    guard receivedByteCount < maximumResponseBytes else { return nil }
+                    chunk.append(byte)
+                    receivedByteCount += 1
+                    if chunk.count >= 16 * 1_024 {
+                        data.append(contentsOf: chunk)
+                        chunk.removeAll(keepingCapacity: true)
+                    }
+                }
+                if !chunk.isEmpty {
+                    data.append(contentsOf: chunk)
                 }
 
-                let payload = try JSONDecoder().decode(Payload.self, from: data)
-                var assetsByKey: [String: RemoteContentManifest.Asset] = [:]
-                assetsByKey.reserveCapacity(payload.files.count)
-                for file in payload.files {
-                    guard !file.key.isEmpty,
-                          !file.key.hasPrefix("/"),
-                          !file.key.split(separator: "/").contains(".."),
-                          file.size > 0,
-                          assetsByKey[file.key] == nil
-                    else {
-                        return nil
-                    }
-                    assetsByKey[file.key] = .init(
-                        key: file.key,
-                        version: .init(
-                            byteCount: file.size,
-                            eTag: file.etag,
-                            lastModified: file.uploaded
-                        )
-                    )
-                }
-                guard !assetsByKey.isEmpty else { return nil }
-                return RemoteContentManifest(
-                    generatedAt: payload.generated.flatMap {
-                        ISO8601DateFormatter().date(from: $0)
-                    },
-                    assetsByKey: assetsByKey
-                )
+                return Self.decodePayload(data)
             } catch {
                 return nil
             }
@@ -131,6 +115,49 @@ actor RemoteContentManifestClient {
         }
         return result
     }
+
+    nonisolated static func decodePayload(
+        _ data: Data
+    ) -> RemoteContentManifest? {
+        guard let payload = try? JSONDecoder().decode(Payload.self, from: data) else {
+            return nil
+        }
+        var assetsByKey: [String: RemoteContentManifest.Asset] = [:]
+        assetsByKey.reserveCapacity(payload.files.count)
+        for file in payload.files {
+            guard !file.key.isEmpty,
+                  !file.key.hasPrefix("/"),
+                  !file.key.split(separator: "/").contains(".."),
+                  file.size > 0,
+                  assetsByKey[file.key] == nil
+            else {
+                return nil
+            }
+            assetsByKey[file.key] = .init(
+                key: file.key,
+                version: .init(
+                    byteCount: file.size,
+                    eTag: file.etag,
+                    lastModified: file.uploaded
+                )
+            )
+        }
+        guard !assetsByKey.isEmpty else { return nil }
+
+        let generatedAt = payload.generated.flatMap { value -> Date? in
+            let fractional = ISO8601DateFormatter()
+            fractional.formatOptions = [
+                .withInternetDateTime,
+                .withFractionalSeconds
+            ]
+            return fractional.date(from: value)
+                ?? ISO8601DateFormatter().date(from: value)
+        }
+        return RemoteContentManifest(
+            generatedAt: generatedAt,
+            assetsByKey: assetsByKey
+        )
+    }
 }
 
 struct ContentUpdatePlanStore {
@@ -143,6 +170,33 @@ struct ContentUpdatePlanStore {
     struct Plan: Codable, Equatable {
         var pending: [WorkItem]
         var failed: [ContentUpdateCandidate]
+        var allowsCellularForBatch: Bool
+
+        init(
+            pending: [WorkItem],
+            failed: [ContentUpdateCandidate],
+            allowsCellularForBatch: Bool = false
+        ) {
+            self.pending = pending
+            self.failed = failed
+            self.allowsCellularForBatch = allowsCellularForBatch
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case pending
+            case failed
+            case allowsCellularForBatch
+        }
+
+        init(from decoder: Decoder) throws {
+            let values = try decoder.container(keyedBy: CodingKeys.self)
+            pending = try values.decode([WorkItem].self, forKey: .pending)
+            failed = try values.decode([ContentUpdateCandidate].self, forKey: .failed)
+            allowsCellularForBatch = try values.decodeIfPresent(
+                Bool.self,
+                forKey: .allowsCellularForBatch
+            ) ?? false
+        }
     }
 
     private struct StorePayload: Codable {
@@ -194,6 +248,51 @@ struct ContentUpdatePlanStore {
         let url = try resolvedStoreURL()
         guard fileManager.fileExists(atPath: url.path) else { return }
         try fileManager.removeItem(at: url)
+    }
+
+    @discardableResult
+    func migrateObsoleteFilenames(using catalog: TrainingCatalog) throws -> Bool {
+        guard var plan = try load() else { return false }
+        let assets = Dictionary(
+            catalog.packages.flatMap(\.assets).map { ($0.filename, $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
+
+        let migratedPending = plan.pending.compactMap { item -> WorkItem? in
+            guard let asset = ContentFilenameAliases.canonicalAsset(
+                item.candidate.asset,
+                catalogAssetsByFilename: assets
+            ) else {
+                return nil
+            }
+            return WorkItem(
+                candidate: ContentUpdateCandidate(
+                    asset: asset,
+                    remoteVersion: item.candidate.remoteVersion
+                ),
+                attempt: item.attempt,
+                retryAfter: item.retryAfter
+            )
+        }
+        let migratedFailed = plan.failed.compactMap { candidate -> ContentUpdateCandidate? in
+            guard let asset = ContentFilenameAliases.canonicalAsset(
+                candidate.asset,
+                catalogAssetsByFilename: assets
+            ) else {
+                return nil
+            }
+            return ContentUpdateCandidate(
+                asset: asset,
+                remoteVersion: candidate.remoteVersion
+            )
+        }
+        guard migratedPending != plan.pending || migratedFailed != plan.failed else {
+            return false
+        }
+        plan.pending = migratedPending
+        plan.failed = migratedFailed
+        try save(plan)
+        return true
     }
 
     private func resolvedStoreURL() throws -> URL {
@@ -259,8 +358,12 @@ final class ContentUpdateService: NSObject, ObservableObject {
     private var plan: ContentUpdatePlanStore.Plan?
     private var activeUpdates: [Int: ActiveUpdate] = [:]
     private var retryWakeTask: Task<Void, Never>?
-    private var networkAllowsTransfers = true
-    private var allowsCellularTransfers = false
+    private var networkPolicy = TransferNetworkPolicySnapshot(
+        isKnown: false,
+        isSatisfied: true,
+        isExpensive: false,
+        allowsCellular: false
+    )
 
     @Published private(set) var availableUpdate: ContentUpdateSummary?
     @Published private(set) var isChecking = false
@@ -396,11 +499,16 @@ final class ContentUpdateService: NSObject, ObservableObject {
     }
 
     @discardableResult
-    func beginAvailableUpdates(_ summary: ContentUpdateSummary) -> Bool {
+    func beginAvailableUpdates(
+        _ summary: ContentUpdateSummary,
+        allowsCellularForBatch: Bool = false
+    ) -> Bool {
         guard !summary.candidates.isEmpty else { return false }
         guard diskPreflightAllows(summary.candidates) else { return false }
 
         var nextPlan = plan ?? .init(pending: [], failed: [])
+        nextPlan.allowsCellularForBatch = nextPlan.allowsCellularForBatch
+            || allowsCellularForBatch
         let alreadyPending = Set(nextPlan.pending.map(\.candidate.asset.filename))
         let activeFilenames = Set(activeUpdates.values.map(\.workItem.candidate.asset.filename))
 
@@ -446,15 +554,46 @@ final class ContentUpdateService: NSObject, ObservableObject {
         recoverBackgroundTasks()
     }
 
-    func applyNetworkPolicy(isAllowed: Bool, allowsCellular: Bool) {
-        networkAllowsTransfers = isAllowed
-        allowsCellularTransfers = allowsCellular
+    func applyNetworkPolicy(_ policy: TransferNetworkPolicySnapshot) {
+        networkPolicy = policy
+        let isAllowed = effectiveNetworkAllowsTransfers
         isWaitingForWiFi = !isAllowed && (
             !activeUpdates.isEmpty || plan?.pending.isEmpty == false
         )
         if isAllowed {
             pumpQueue()
+        } else {
+            pauseActiveTransfersForNetworkPolicy()
         }
+    }
+
+    private var effectiveNetworkAllowsTransfers: Bool {
+        guard networkPolicy.isKnown else { return true }
+        guard networkPolicy.isSatisfied else { return false }
+        return !networkPolicy.isExpensive
+            || networkPolicy.allowsCellular
+            || plan?.allowsCellularForBatch == true
+    }
+
+    private var allowsExpensiveTransfersForCurrentPlan: Bool {
+        networkPolicy.allowsCellular || plan?.allowsCellularForBatch == true
+    }
+
+    private func pauseActiveTransfersForNetworkPolicy() {
+        let taskIdentifiers = Set(activeUpdates.keys)
+        guard !taskIdentifiers.isEmpty else { return }
+
+        for taskIdentifier in taskIdentifiers {
+            activeUpdates[taskIdentifier] = nil
+        }
+        updateSession.getAllTasks { tasks in
+            for task in tasks where taskIdentifiers.contains(task.taskIdentifier) {
+                task.cancel()
+            }
+        }
+        isWaitingForWiFi = true
+        isUpdating = plan?.pending.isEmpty == false
+        savePlan()
     }
 
     private func loadPlan() {
@@ -518,6 +657,13 @@ final class ContentUpdateService: NSObject, ObservableObject {
                 continue
             }
 
+            guard ContentFilenameAliases.canonicalFilename(
+                decoded.workItem.candidate.asset.filename
+            ) == decoded.workItem.candidate.asset.filename else {
+                task.cancel()
+                continue
+            }
+
             activeUpdates[task.taskIdentifier] = ActiveUpdate(
                 workItem: decoded.workItem
             )
@@ -552,7 +698,7 @@ final class ContentUpdateService: NSObject, ObservableObject {
             finishPlanIfNeeded()
             return
         }
-        guard networkAllowsTransfers else {
+        guard effectiveNetworkAllowsTransfers else {
             isUpdating = !currentPlan.pending.isEmpty || !activeUpdates.isEmpty
             isWaitingForWiFi = isUpdating
             return
@@ -590,7 +736,8 @@ final class ContentUpdateService: NSObject, ObservableObject {
                 )
                 request.cachePolicy = .reloadIgnoringLocalCacheData
                 request.timeoutInterval = 60
-                request.allowsExpensiveNetworkAccess = allowsCellularTransfers
+                request.allowsExpensiveNetworkAccess =
+                    allowsExpensiveTransfersForCurrentPlan
                 request.setValue(
                     "CPRTrainerPro-iOS/0.1",
                     forHTTPHeaderField: "User-Agent"
@@ -704,6 +851,11 @@ final class ContentUpdateService: NSObject, ObservableObject {
         }
         let workItem = activeUpdate.workItem
         let filename = workItem.candidate.asset.filename
+        let nextAttempt = workItem.attempt + 1
+        guard nextAttempt < maxRetryAttempts else {
+            recordFailure(workItem, message: message)
+            return
+        }
 
         Task { [weak self] in
             guard let self else { return }
@@ -721,10 +873,12 @@ final class ContentUpdateService: NSObject, ObservableObject {
 
             currentPlan.pending[index] = .init(
                 candidate: .init(
-                    asset: workItem.candidate.asset,
+                    asset: workItem.candidate.asset.replacingRemoteVersion(
+                        refreshedVersion
+                    ),
                     remoteVersion: refreshedVersion
                 ),
-                attempt: 0,
+                attempt: nextAttempt,
                 retryAfter: nil
             )
             self.plan = currentPlan

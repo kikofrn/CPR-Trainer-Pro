@@ -18,6 +18,7 @@ final class SlideshowPlaybackCoordinator: ObservableObject {
         }
     }
     @Published private(set) var videoPlayer: AVPlayer?
+    @Published private(set) var loadedVideoSlideID: String?
     @Published private(set) var currentImage: UIImage?
     @Published private(set) var currentSubtitleText: String?
     @Published private(set) var playbackStatus: PlaybackStatus = .idle
@@ -87,6 +88,13 @@ final class SlideshowPlaybackCoordinator: ObservableObject {
     var activeSlide: Slide? {
         guard slideshow.slides.indices.contains(slideIndex) else { return nil }
         return slideshow.slides[slideIndex]
+    }
+
+    var hasVideoItemForActiveSlide: Bool {
+        guard let activeSlide, activeSlide.type == .video else { return false }
+        return loadedVideoSlideID == activeSlide.id
+            && videoPlayer?.currentItem != nil
+            && playbackStatus.failureReason == nil
     }
 
     func appear() {
@@ -250,6 +258,7 @@ final class SlideshowPlaybackCoordinator: ObservableObject {
         nextPlayer.automaticallyWaitsToMinimizeStalling = false
         nextPlayer.replaceCurrentItem(with: playerItem)
         videoPlayer = nextPlayer
+        loadedVideoSlideID = slide.id
 
         let generation = subtitleGeneration
         let subtitleService = subtitleService
@@ -338,6 +347,7 @@ final class SlideshowPlaybackCoordinator: ObservableObject {
         itemStatusObservation = nil
         videoPlayer?.pause()
         videoPlayer?.replaceCurrentItem(with: nil)
+        loadedVideoSlideID = nil
     }
 
     private func attachTimeControlObserver(to player: AVPlayer) {
@@ -416,6 +426,7 @@ final class SlideshowPlaybackCoordinator: ObservableObject {
                 AVAudioSession.RouteChangeReason(rawValue: reasonValue) == .oldDeviceUnavailable
             else { return }
             Task { @MainActor [weak self] in
+                self?.wasPlayingBeforeInterruption = false
                 self?.videoPlayer?.pause()
                 self?.setPlaybackStatus(.paused)
             }

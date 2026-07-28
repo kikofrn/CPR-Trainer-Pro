@@ -338,6 +338,7 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
     func beginScrubbing() {
         guard scrubberProgress.canSeek, let player else { return }
 
+        invalidatePendingScrubSeek()
         var nextProgress = scrubberProgress
         nextProgress.isScrubbing = true
         nextProgress.wasPlaybackActiveBeforeScrub = player.timeControlStatus == .playing ||
@@ -695,6 +696,7 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
                 AVAudioSession.RouteChangeReason(rawValue: reasonValue) == .oldDeviceUnavailable
             else { return }
             Task { @MainActor [weak self] in
+                self?.wasPlayingBeforeInterruption = false
                 self?.pause()
             }
         }

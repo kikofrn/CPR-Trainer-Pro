@@ -48,9 +48,14 @@ struct ExternalPresentationView: View {
 
     @ViewBuilder
     private func videoPresentation(_ videoState: VideoCourseExternalState) -> some View {
-        if let player = videoState.player {
+        if let failureReason = session.state.playbackStatus.failureReason {
+            externalErrorView(failureReason)
+        } else if let player = videoState.player {
             GeometryReader { proxy in
-                CoursePlayerLayerView(player: player)
+                CoursePlayerLayerView(
+                    player: player,
+                    revision: session.state.presentationRevision
+                )
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .ignoresSafeArea()
 
@@ -80,9 +85,14 @@ struct ExternalPresentationView: View {
                 )
             }
         case .slideshowVideo:
-            if let player = slideshowState.player {
+            if let failureReason = session.state.playbackStatus.failureReason {
+                externalErrorView(failureReason)
+            } else if let player = slideshowState.player {
                 GeometryReader { proxy in
-                    CoursePlayerLayerView(player: player)
+                    CoursePlayerLayerView(
+                        player: player,
+                        revision: session.state.presentationRevision
+                    )
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .ignoresSafeArea()
 

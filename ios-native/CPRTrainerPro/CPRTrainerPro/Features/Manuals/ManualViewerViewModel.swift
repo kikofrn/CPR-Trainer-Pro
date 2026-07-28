@@ -38,6 +38,7 @@ final class ManualViewerViewModel: ObservableObject {
     private let tocService = ManualTOCService()
     private let searchService = ManualSearchService()
     private var searchIndex: ManualSearchIndex?
+    private var documentLoadTask: Task<Void, Never>?
     private var indexingTask: Task<Void, Never>?
     private var searchTask: Task<Void, Never>?
     private let lastPageKey: String
@@ -50,6 +51,7 @@ final class ManualViewerViewModel: ObservableObject {
     }
 
     deinit {
+        documentLoadTask?.cancel()
         indexingTask?.cancel()
         searchTask?.cancel()
     }
@@ -72,35 +74,62 @@ final class ManualViewerViewModel: ObservableObject {
     }
 
     func loadDocumentIfNeeded() {
-        guard document == nil, loadErrorMessage == nil else { return }
-
-        guard let loadedDocument = PDFDocument(url: url) else {
-            loadErrorMessage = "This PDF could not be opened."
-            searchState = .unavailable("Search is unavailable because this PDF could not be opened.")
-            tocSource = .unavailable
+        guard document == nil,
+              loadErrorMessage == nil,
+              documentLoadTask == nil
+        else {
             return
         }
 
-        let loadedPageCount = loadedDocument.pageCount
-        guard loadedPageCount > 0 else {
-            loadErrorMessage = "This PDF does not contain any pages."
-            searchState = .unavailable("Search is unavailable because this PDF does not contain any pages.")
-            tocSource = .unavailable
-            return
+        let manualURL = url
+        documentLoadTask = Task { [weak self] in
+            let data = await Task.detached(priority: .userInitiated) {
+                try? Data(contentsOf: manualURL, options: [.mappedIfSafe])
+            }.value
+            guard !Task.isCancelled, let self else { return }
+            guard let data, let loadedDocument = PDFDocument(data: data) else {
+                loadErrorMessage = "This PDF could not be opened."
+                searchState = .unavailable(
+                    "Search is unavailable because this PDF could not be opened."
+                )
+                tocSource = .unavailable
+                documentLoadTask = nil
+                return
+            }
+
+            let loadedPageCount = loadedDocument.pageCount
+            guard loadedPageCount > 0 else {
+                loadErrorMessage = "This PDF does not contain any pages."
+                searchState = .unavailable(
+                    "Search is unavailable because this PDF does not contain any pages."
+                )
+                tocSource = .unavailable
+                documentLoadTask = nil
+                return
+            }
+
+            pageCount = loadedPageCount
+            currentPageIndex = clampedPageIndex(currentPageIndex)
+            document = loadedDocument
+            startSearchIndexing()
+
+            let tocResult = await Task.detached(priority: .utility) {
+                guard let metadataDocument = PDFDocument(data: data) else {
+                    return (entries: [ManualTOCEntry](), source: ManualTOCSource.unavailable)
+                }
+                return ManualTOCService().entries(
+                    from: metadataDocument,
+                    pageCount: metadataDocument.pageCount
+                )
+            }.value
+            guard !Task.isCancelled else {
+                documentLoadTask = nil
+                return
+            }
+            tocEntries = tocResult.entries
+            tocSource = tocResult.source
+            documentLoadTask = nil
         }
-
-        pageCount = loadedPageCount
-        currentPageIndex = clampedPageIndex(currentPageIndex)
-
-        let tocResult = tocService.entries(
-            from: loadedDocument,
-            pageCount: loadedPageCount
-        )
-        tocEntries = tocResult.entries
-        tocSource = tocResult.source
-        document = loadedDocument
-
-        startSearchIndexing()
     }
 
     func openNavigationPanel(tab: ManualNavigationTab) {
@@ -135,8 +164,10 @@ final class ManualViewerViewModel: ObservableObject {
     }
 
     func tearDown() {
+        documentLoadTask?.cancel()
         indexingTask?.cancel()
         searchTask?.cancel()
+        documentLoadTask = nil
         indexingTask = nil
         searchTask = nil
     }

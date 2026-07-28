@@ -16,7 +16,8 @@ struct SlideshowPlayerView: View {
     @State private var instructorTipsVisible = false
     @State private var slidePickerVisible = false
 
-    private let instructorTipsService = InstructorTipsService.shared
+    @ObservedObject private var instructorTipsService =
+        InstructorTipsService.shared
 
     init(slideshow: Slideshow, storageService: StorageService) {
         self.slideshow = slideshow
@@ -129,7 +130,8 @@ struct SlideshowPlayerView: View {
                         missingSlideView(activeSlide)
                     }
                 case .video:
-                    if let videoPlayer = coordinator.videoPlayer {
+                    if coordinator.hasVideoItemForActiveSlide,
+                       let videoPlayer = coordinator.videoPlayer {
                         if isPresentingExternally {
                             externalPlaybackStatusSurface
                         } else {

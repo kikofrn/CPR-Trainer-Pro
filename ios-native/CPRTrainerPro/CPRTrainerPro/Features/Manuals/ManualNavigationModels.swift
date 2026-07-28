@@ -8,7 +8,7 @@ enum ManualNavigationTab: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 }
 
-enum ManualTOCSource: Equatable {
+enum ManualTOCSource: Equatable, Sendable {
     case embeddedOutline
     case generatedPages
     case unavailable

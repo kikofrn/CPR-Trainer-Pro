@@ -77,6 +77,7 @@ struct PresentationSessionState {
     var playbackStatus: PlaybackStatus = .idle
     var continuousPlayEnabled = false
     var externalSceneErrorMessage: String?
+    var presentationRevision: UInt64 = 0
 }
 
 @MainActor
@@ -102,7 +103,9 @@ final class PresentationSession: ObservableObject {
     }
 
     func republishExternalPresentation() {
-        state = state
+        var nextState = state
+        nextState.presentationRevision &+= 1
+        state = nextState
     }
 
     func setExternalSceneError(_ message: String?) {

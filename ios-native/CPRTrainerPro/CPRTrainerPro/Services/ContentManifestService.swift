@@ -37,6 +37,13 @@ private extension ContentManifestService {
                         kind: .slideshow,
                         title: "Pediatric Focused",
                         packageID: .pediatricCPRSlideshow
+                    ),
+                    CourseLaunchMode(
+                        id: .pediatricCPRVideo,
+                        kind: .video,
+                        title: "Pediatric + Virtual Assistant",
+                        packageID: nil,
+                        isAvailable: false
                     )
                 ]
             ),
@@ -48,7 +55,14 @@ private extension ContentManifestService {
                 modes: [
                     CourseLaunchMode(id: .firstAidSlideshow, kind: .slideshow, title: "Slideshow", packageID: .firstAidSlideshow),
                     CourseLaunchMode(id: .firstAidVideo, kind: .video, title: "Virtual Assistant?", packageID: .firstAidVideo),
-                    CourseLaunchMode(id: .pediatricSlideshow, kind: .slideshow, title: "Pediatric Focused", packageID: .pediatricSlideshow)
+                    CourseLaunchMode(id: .pediatricSlideshow, kind: .slideshow, title: "Pediatric Focused", packageID: .pediatricSlideshow),
+                    CourseLaunchMode(
+                        id: .pediatricFirstAidVideo,
+                        kind: .video,
+                        title: "Pediatric + Virtual Assistant",
+                        packageID: nil,
+                        isAvailable: false
+                    )
                 ]
             )
         ],

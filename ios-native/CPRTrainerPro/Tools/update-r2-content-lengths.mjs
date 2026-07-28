@@ -11,83 +11,105 @@ const manifestPath = path.join(
 const contentLengthsOutputPath = path.join(toolDirectory, "r2-content-lengths.json");
 const metadataOutputPath = path.join(toolDirectory, "r2-object-metadata.json");
 const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
-
-function mediaURL(filename) {
-  const encodedPath = filename
-    .replace(/^\/+/, "")
-    .split("/")
-    .map((component) => encodeURIComponent(component))
-    .join("/");
-  return new URL(encodedPath, manifest.mediaBaseURL).href;
-}
+const previousMetadata = Object.fromEntries(
+  manifest.packages
+    .flatMap((downloadPackage) => downloadPackage.assets)
+    .filter((asset) => asset.eTag)
+    .map((asset) => [
+      asset.filename,
+      {
+        byteCount: asset.byteCount,
+        eTag: asset.eTag,
+        lastModified: asset.lastModified,
+      },
+    ])
+);
 
 const filenames = [...new Set(
   manifest.packages
     .flatMap((downloadPackage) => downloadPackage.assets)
-    .filter((asset) => asset.kind !== "subtitle")
     .map((asset) => asset.filename)
 )].sort((left, right) => left.localeCompare(right));
 
+const reviewedBundledOnlySubtitles = new Set([
+  "subtitles/12_EHAcademy - CPR AED Course Pres-Assessment Example.vtt",
+  "subtitles/17_EHAcademy - CPR AED Course Pres-Chest Compressions Video.vtt",
+  "subtitles/21_EHAcademy - CPR AED Course Pres-CPR Songs.vtt",
+  "subtitles/22_EHAcademy - CPR AED Course Pres-Practice Compressions.vtt",
+  "subtitles/11_EHAcademy - First Aid Course Pres-Seizure Video.vtt",
+]);
+
+const endpoint = new URL("/api/manifest", manifest.mediaBaseURL);
+const response = await fetch(endpoint, {
+  headers: { Accept: "application/json", "Cache-Control": "no-cache" },
+  method: "GET",
+    redirect: "follow",
+  signal: AbortSignal.timeout(30_000),
+});
+if (response.status !== 200) {
+  throw new Error(`R2 manifest request failed: HTTP ${response.status}`);
+}
+const text = await response.text();
+if (Buffer.byteLength(text) > 2 * 1024 * 1024) {
+  throw new Error("R2 manifest exceeds the 2 MB safety limit");
+}
+const payload = JSON.parse(text);
+if (!Array.isArray(payload.files)) {
+  throw new Error("R2 manifest is missing its files array");
+}
+const liveByKey = new Map(payload.files.map((file) => [file.key, file]));
 const objectMetadata = {};
 const failures = [];
-let nextIndex = 0;
-let completed = 0;
 
-async function readObjectMetadata(filename) {
-  const response = await fetch(mediaURL(filename), {
-    method: "HEAD",
-    redirect: "follow",
-    signal: AbortSignal.timeout(20_000),
-  });
-  await response.body?.cancel();
-
-  if (response.status < 200 || response.status >= 400) {
-    throw new Error(`HTTP ${response.status}`);
-  }
-
-  const byteCount = Number(response.headers.get("content-length"));
-  if (!Number.isSafeInteger(byteCount) || byteCount <= 0) {
-    throw new Error("missing or invalid Content-Length");
-  }
-
-  const eTag = response.headers.get("etag")?.trim();
-  if (!eTag) {
-    throw new Error("missing ETag");
-  }
-
-  const lastModified = response.headers.get("last-modified")?.trim();
-  if (!lastModified || Number.isNaN(Date.parse(lastModified))) {
-    throw new Error("missing or invalid Last-Modified");
-  }
-
-  return { byteCount, eTag, lastModified };
-}
-
-async function worker() {
-  while (nextIndex < filenames.length) {
-    const index = nextIndex;
-    nextIndex += 1;
-    const filename = filenames[index];
-
-    try {
-      objectMetadata[filename] = await readObjectMetadata(filename);
-    } catch (error) {
-      failures.push(
-        `${filename}: ${error instanceof Error ? error.message : String(error)}`
-      );
+for (const filename of filenames) {
+  const file = liveByKey.get(filename);
+  if (!file) {
+    if (!reviewedBundledOnlySubtitles.has(filename)) {
+      failures.push(`${filename}: missing exact key`);
     }
-
-    completed += 1;
-    if (completed % 25 === 0 || completed === filenames.length) {
-      console.log(`R2 size check: ${completed}/${filenames.length}`);
-    }
+    continue;
+  }
+  if (!Number.isSafeInteger(file.size) || file.size <= 0) {
+    failures.push(`${filename}: missing or invalid size`);
+    continue;
+  }
+  const rawETag = String(file.etag ?? "").trim();
+  const uploaded = String(file.uploaded ?? "").trim();
+  const canonicalETag = rawETag
+    .replace(/^W\//i, "")
+    .replace(/^"|"$/g, "");
+  if (!canonicalETag) {
+    failures.push(`${filename}: missing ETag`);
+    continue;
+  }
+  if (!uploaded || Number.isNaN(Date.parse(uploaded))) {
+    failures.push(`${filename}: missing or invalid upload date`);
+    continue;
+  }
+  const previous = previousMetadata[filename];
+  const previousCanonicalETag = String(previous?.eTag ?? "")
+    .trim()
+    .replace(/^W\//i, "")
+    .replace(/^"|"$/g, "");
+  if (
+    previous?.byteCount === file.size
+    && previousCanonicalETag === canonicalETag
+  ) {
+    objectMetadata[filename] = previous;
+  } else {
+    const isSubtitle = filename.startsWith("Subtitles/");
+    objectMetadata[filename] = {
+      byteCount: file.size,
+      eTag: isSubtitle ? canonicalETag : `"${canonicalETag}"`,
+      lastModified: isSubtitle
+        ? uploaded
+        : new Date(uploaded).toUTCString(),
+    };
   }
 }
-
-await Promise.all(Array.from({ length: 8 }, () => worker()));
 
 if (failures.length > 0) {
-  throw new Error(`R2 size discovery failed:\n${failures.join("\n")}`);
+  throw new Error(`R2 manifest discovery failed:\n${failures.join("\n")}`);
 }
 
 const orderedMetadata = Object.fromEntries(
@@ -114,5 +136,6 @@ const totalBytes = Object.values(orderedContentLengths)
   .reduce((total, byteCount) => total + byteCount, 0);
 console.log(`Wrote ${path.relative(projectDirectory, contentLengthsOutputPath)}`);
 console.log(`Wrote ${path.relative(projectDirectory, metadataOutputPath)}`);
-console.log(`Unique R2 objects: ${filenames.length}`);
+console.log(`Referenced R2 objects: ${Object.keys(orderedMetadata).length}`);
+console.log(`Reviewed bundled-only captions: ${reviewedBundledOnlySubtitles.size}`);
 console.log(`Total bytes: ${totalBytes}`);

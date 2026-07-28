@@ -1,7 +1,6 @@
 import Foundation
 import PDFKit
 
-@MainActor
 struct ManualTOCService {
     func entries(
         from document: PDFDocument,

@@ -19,7 +19,8 @@ struct InteractiveTabContainer: View {
                 appViewModel: appViewModel,
                 launchExperienceTrigger: launchExperienceTrigger,
                 onHeaderProgressChange: recordHeaderProgress,
-                onTransitionActivityChange: { _ in }
+                onTransitionActivityChange: { _ in },
+                onSelectionRequestConsumed: consumeTabSelectionRequest
             )
 
             sharedBrandLogo
@@ -41,9 +42,14 @@ struct InteractiveTabContainer: View {
         )
     }
 
+    private func consumeTabSelectionRequest(_ sequence: Int) {
+        guard tabSelectionRequest?.sequence == sequence else { return }
+        tabSelectionRequest = nil
+    }
+
     private var sharedBrandLogo: some View {
         let progress = headerProgressByTab[selection] ?? 0
-        let logoHeight = StickyBrandHeaderMetrics.logoHeight(for: progress)
+        let logoHeight = StickyBrandHeaderMetrics.logoHeight(for: progress) * 1.04
         let headerHeight = StickyBrandHeaderMetrics.headerHeight(for: progress)
 
         return HStack(spacing: 0) {
@@ -60,7 +66,7 @@ struct InteractiveTabContainer: View {
 
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, Theme.Layout.screenPadding)
+        .padding(.trailing, Theme.Layout.screenPadding)
         .frame(maxWidth: .infinity)
         .frame(height: headerHeight)
         .animation(.easeInOut(duration: 0.18), value: progress)
@@ -102,6 +108,7 @@ private struct InteractiveTabPager: UIViewControllerRepresentable {
     let launchExperienceTrigger: () -> Void
     let onHeaderProgressChange: (AppTab, CGFloat) -> Void
     let onTransitionActivityChange: (Bool) -> Void
+    let onSelectionRequestConsumed: (Int) -> Void
 
     func makeCoordinator() -> Coordinator {
         Coordinator(
@@ -146,6 +153,10 @@ private struct InteractiveTabPager: UIViewControllerRepresentable {
                 selectionRequest.tab,
                 requestSequence: selectionRequest.sequence
             )
+            let sequence = selectionRequest.sequence
+            DispatchQueue.main.async {
+                onSelectionRequestConsumed(sequence)
+            }
         } else {
             controller.reconcileVisiblePageIfIdle()
         }
@@ -244,6 +255,75 @@ private struct InteractiveTabPager: UIViewControllerRepresentable {
     }
 }
 
+struct TabPagerStateMachine: Equatable {
+    private(set) var currentIndex: Int
+    private(set) var interactiveDestination: Int?
+    private(set) var queuedRequestedIndex: Int?
+    private(set) var programmaticTransitionID: Int?
+    private var nextProgrammaticTransitionID = 0
+
+    init(currentIndex: Int) {
+        self.currentIndex = currentIndex
+    }
+
+    var hasTransitionInFlight: Bool {
+        programmaticTransitionID != nil || interactiveDestination != nil
+    }
+
+    mutating func queueRequest(_ index: Int) {
+        queuedRequestedIndex = index
+    }
+
+    mutating func beginProgrammaticTransition(to index: Int) -> Int {
+        nextProgrammaticTransitionID &+= 1
+        programmaticTransitionID = nextProgrammaticTransitionID
+        return nextProgrammaticTransitionID
+    }
+
+    @discardableResult
+    mutating func finishProgrammaticTransition(
+        id: Int,
+        visibleIndex: Int
+    ) -> Bool {
+        guard programmaticTransitionID == id else { return false }
+        programmaticTransitionID = nil
+        return commitVisibleIndex(visibleIndex)
+    }
+
+    mutating func beginInteractiveTransition(to index: Int?) {
+        // An interactive gesture owns the visible transition from this point.
+        // Clearing the programmatic marker prevents a stale completion from
+        // stranding the pager in a permanently busy state.
+        programmaticTransitionID = nil
+        interactiveDestination = index
+    }
+
+    @discardableResult
+    mutating func finishInteractiveTransition(visibleIndex: Int) -> Bool {
+        interactiveDestination = nil
+        return commitVisibleIndex(visibleIndex)
+    }
+
+    @discardableResult
+    mutating func recoverAtIdle(visibleIndex: Int) -> Bool {
+        programmaticTransitionID = nil
+        interactiveDestination = nil
+        return commitVisibleIndex(visibleIndex)
+    }
+
+    mutating func takeQueuedRequest() -> Int? {
+        defer { queuedRequestedIndex = nil }
+        return queuedRequestedIndex
+    }
+
+    @discardableResult
+    mutating func commitVisibleIndex(_ index: Int) -> Bool {
+        guard currentIndex != index else { return false }
+        currentIndex = index
+        return true
+    }
+}
+
 @MainActor
 final class InteractiveTabViewController: UIViewController {
     var onSelectionChange: ((AppTab) -> Void)?
@@ -253,14 +333,11 @@ final class InteractiveTabViewController: UIViewController {
     private let pages: [UIViewController]
     private let pageViewController: UIPageViewController
 
-    private var currentIndex: Int
-    private var interactiveDestination: Int?
-    private var queuedRequestedIndex: Int?
-    private var isProgrammaticTransitionInFlight = false
-    private var transitionGeneration = 0
+    private var transitionState: TabPagerStateMachine
     private var lastHandledRequestSequence = 0
     private weak var pagingScrollView: UIScrollView?
     private var recoveryTask: Task<Void, Never>?
+    private var foregroundObserver: NSObjectProtocol?
 
     init(
         tabs: [AppTab],
@@ -272,7 +349,9 @@ final class InteractiveTabViewController: UIViewController {
 
         self.tabs = tabs
         self.pages = pages
-        self.currentIndex = tabs.firstIndex(of: initialSelection) ?? 0
+        self.transitionState = TabPagerStateMachine(
+            currentIndex: tabs.firstIndex(of: initialSelection) ?? 0
+        )
         self.pageViewController = UIPageViewController(
             transitionStyle: .scroll,
             navigationOrientation: .horizontal,
@@ -293,10 +372,25 @@ final class InteractiveTabViewController: UIViewController {
         view.backgroundColor = UIColor(Theme.Colors.background)
         configurePageViewController()
         installLayout()
+        foregroundObserver = NotificationCenter.default.addObserver(
+            forName: UIApplication.didBecomeActiveNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.reconcileVisiblePageIfIdle()
+            }
+        }
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        reconcileVisiblePageIfIdle()
     }
 
     deinit {
         recoveryTask?.cancel()
+        foregroundObserver.map(NotificationCenter.default.removeObserver)
     }
 
     func requestSelection(_ tab: AppTab, requestSequence: Int) {
@@ -305,12 +399,12 @@ final class InteractiveTabViewController: UIViewController {
         guard let targetIndex = tabs.firstIndex(of: tab) else { return }
 
         if isPagingBusy {
-            queuedRequestedIndex = targetIndex
-            scheduleRecovery(for: transitionGeneration)
+            transitionState.queueRequest(targetIndex)
+            scheduleRecovery()
             return
         }
 
-        guard targetIndex != currentIndex else { return }
+        guard targetIndex != transitionState.currentIndex else { return }
         transition(to: targetIndex)
     }
 
@@ -324,7 +418,7 @@ final class InteractiveTabViewController: UIViewController {
         pageViewController.delegate = self
         pageViewController.view.backgroundColor = UIColor(Theme.Colors.background)
         pageViewController.setViewControllers(
-            [pages[currentIndex]],
+            [pages[transitionState.currentIndex]],
             direction: .forward,
             animated: false
         )
@@ -356,19 +450,17 @@ final class InteractiveTabViewController: UIViewController {
     }
 
     private func transition(to targetIndex: Int) {
-        guard !isPagingBusy, targetIndex != currentIndex else {
-            queuedRequestedIndex = targetIndex
-            scheduleRecovery(for: transitionGeneration)
+        guard !isPagingBusy, targetIndex != transitionState.currentIndex else {
+            transitionState.queueRequest(targetIndex)
+            scheduleRecovery()
             return
         }
 
-        let previousIndex = currentIndex
+        let previousIndex = transitionState.currentIndex
         let direction: UIPageViewController.NavigationDirection =
             targetIndex > previousIndex ? .forward : .reverse
 
-        transitionGeneration &+= 1
-        let generation = transitionGeneration
-        isProgrammaticTransitionInFlight = true
+        let transitionID = transitionState.beginProgrammaticTransition(to: targetIndex)
         onTransitionActivityChange?(true)
 
         pageViewController.setViewControllers(
@@ -377,16 +469,23 @@ final class InteractiveTabViewController: UIViewController {
             animated: false
         ) { [weak self] _ in
             guard let self else { return }
-            guard generation == self.transitionGeneration else { return }
-            self.isProgrammaticTransitionInFlight = false
-            self.commitVisiblePage(fallbackIndex: previousIndex)
+            let visibleIndex = self.index(
+                of: self.pageViewController.viewControllers?.first
+            ) ?? previousIndex
+            guard self.transitionState.finishProgrammaticTransition(
+                id: transitionID,
+                visibleIndex: visibleIndex
+            ) else {
+                self.scheduleRecovery()
+                return
+            }
+            self.publishCommittedSelectionIfNeeded()
             self.finishTransitionCycle()
         }
     }
 
     private var isPagingBusy: Bool {
-        isProgrammaticTransitionInFlight
-            || interactiveDestination != nil
+        transitionState.hasTransitionInFlight
             || pagingScrollView?.isTracking == true
             || pagingScrollView?.isDragging == true
             || pagingScrollView?.isDecelerating == true
@@ -395,13 +494,14 @@ final class InteractiveTabViewController: UIViewController {
     private func commitVisiblePage(fallbackIndex: Int? = nil) {
         let visibleIndex = index(of: pageViewController.viewControllers?.first)
             ?? fallbackIndex
-            ?? currentIndex
+            ?? transitionState.currentIndex
         guard pages.indices.contains(visibleIndex) else { return }
-        let changed = visibleIndex != currentIndex
-        currentIndex = visibleIndex
-        guard changed else { return }
+        guard transitionState.commitVisibleIndex(visibleIndex) else { return }
+        publishCommittedSelectionIfNeeded()
+    }
 
-        let selectedTab = tabs[visibleIndex]
+    private func publishCommittedSelectionIfNeeded() {
+        let selectedTab = tabs[transitionState.currentIndex]
         DispatchQueue.main.async { [weak self] in
             self?.onSelectionChange?(selectedTab)
         }
@@ -409,7 +509,7 @@ final class InteractiveTabViewController: UIViewController {
 
     private func finishTransitionCycle() {
         guard !isPagingBusy else {
-            scheduleRecovery(for: transitionGeneration)
+            scheduleRecovery()
             return
         }
 
@@ -418,29 +518,26 @@ final class InteractiveTabViewController: UIViewController {
     }
 
     private func applyQueuedRequestIfPossible() {
-        guard let targetIndex = queuedRequestedIndex else { return }
-        queuedRequestedIndex = nil
-        guard targetIndex != currentIndex else { return }
+        guard let targetIndex = transitionState.takeQueuedRequest() else { return }
+        guard targetIndex != transitionState.currentIndex else { return }
 
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
             if self.isPagingBusy {
-                self.queuedRequestedIndex = targetIndex
-                self.scheduleRecovery(for: self.transitionGeneration)
+                self.transitionState.queueRequest(targetIndex)
+                self.scheduleRecovery()
             } else {
                 self.transition(to: targetIndex)
             }
         }
     }
 
-    private func scheduleRecovery(for generation: Int) {
+    private func scheduleRecovery() {
         recoveryTask?.cancel()
         recoveryTask = Task { @MainActor [weak self] in
             for _ in 0..<80 {
                 try? await Task.sleep(nanoseconds: 50_000_000)
                 guard !Task.isCancelled, let self else { return }
-                guard generation == self.transitionGeneration else { return }
-                guard !self.isProgrammaticTransitionInFlight else { continue }
                 guard self.pagingScrollView?.isTracking != true,
                       self.pagingScrollView?.isDragging != true,
                       self.pagingScrollView?.isDecelerating != true
@@ -448,8 +545,15 @@ final class InteractiveTabViewController: UIViewController {
                     continue
                 }
 
-                self.interactiveDestination = nil
-                self.commitVisiblePage()
+                let visibleIndex = self.index(
+                    of: self.pageViewController.viewControllers?.first
+                ) ?? self.transitionState.currentIndex
+                let changed = self.transitionState.recoverAtIdle(
+                    visibleIndex: visibleIndex
+                )
+                if changed {
+                    self.publishCommittedSelectionIfNeeded()
+                }
                 self.finishTransitionCycle()
                 return
             }
@@ -497,10 +601,11 @@ extension InteractiveTabViewController: UIPageViewControllerDelegate {
         _ pageViewController: UIPageViewController,
         willTransitionTo pendingViewControllers: [UIViewController]
     ) {
-        transitionGeneration &+= 1
-        interactiveDestination = index(of: pendingViewControllers.first)
+        transitionState.beginInteractiveTransition(
+            to: index(of: pendingViewControllers.first)
+        )
         onTransitionActivityChange?(true)
-        scheduleRecovery(for: transitionGeneration)
+        scheduleRecovery()
     }
 
     func pageViewController(
@@ -509,10 +614,14 @@ extension InteractiveTabViewController: UIPageViewControllerDelegate {
         previousViewControllers: [UIViewController],
         transitionCompleted completed: Bool
     ) {
-        transitionGeneration &+= 1
         recoveryTask?.cancel()
-        interactiveDestination = nil
-        commitVisiblePage()
+        let visibleIndex = index(of: pageViewController.viewControllers?.first)
+            ?? transitionState.currentIndex
+        if transitionState.finishInteractiveTransition(
+            visibleIndex: visibleIndex
+        ) {
+            publishCommittedSelectionIfNeeded()
+        }
         finishTransitionCycle()
     }
 }
@@ -521,6 +630,7 @@ private struct MainTabBar: View {
     let selection: AppTab
     let onSelectionRequest: (AppTab) -> Void
     @ScaledMetric(relativeTo: .body) private var iconSize = 20
+    @ScaledMetric(relativeTo: .caption2) private var labelSize = 10
 
     var body: some View {
         HStack(spacing: 0) {
@@ -540,7 +650,12 @@ private struct MainTabBar: View {
                             .frame(height: 23)
 
                         Text(tab.tabTitle)
-                            .font(.system(size: 10, weight: tab == selection ? .bold : .semibold))
+                            .font(
+                                .system(
+                                    size: min(13, max(10, labelSize)),
+                                    weight: tab == selection ? .bold : .semibold
+                                )
+                            )
                             .lineLimit(1)
                             .minimumScaleFactor(0.82)
                             .allowsTightening(true)

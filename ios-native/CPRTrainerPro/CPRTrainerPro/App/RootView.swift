@@ -53,9 +53,19 @@ struct RootView: View {
                     ContentUpdatePromptView(
                         summary: summary,
                         onUpdate: {
-                            appViewModel.beginContentUpdate(summary)
+                            appViewModel.requestContentUpdate(summary)
                         },
                         onNotYet: appViewModel.dismissContentUpdatePrompt
+                    )
+                case .cellularUpdateConfirmation(let summary):
+                    CellularUpdateConfirmationView(
+                        summary: summary,
+                        onContinue: {
+                            appViewModel.confirmCellularContentUpdate(summary)
+                        },
+                        onCancel: {
+                            appViewModel.cancelCellularContentUpdate(summary)
+                        }
                     )
                 }
             }
@@ -218,6 +228,51 @@ private struct InitialDownloadPromptView: View {
     }
 }
 
+private struct CellularUpdateConfirmationView: View {
+    let summary: ContentUpdateSummary
+    let onContinue: () -> Void
+    let onCancel: () -> Void
+
+    var body: some View {
+        VStack(spacing: 18) {
+            Image(systemName: "antenna.radiowaves.left.and.right")
+                .font(.system(size: 42, weight: .bold))
+                .foregroundStyle(Theme.Colors.peach)
+                .accessibilityHidden(true)
+
+            Text("Wi‑Fi’s taking the day off.")
+                .font(.title2.weight(.bold))
+                .foregroundStyle(.white)
+                .multilineTextAlignment(.center)
+
+            Text(
+                "These course updates will use about \(summary.sizeText) of cellular data. Continue?"
+            )
+            .font(.subheadline)
+            .foregroundStyle(.white.opacity(0.78))
+            .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
+
+            Button("Use Cellular Data", action: onContinue)
+                .font(.headline.weight(.bold))
+                .foregroundStyle(.black)
+                .frame(maxWidth: .infinity)
+                .frame(height: 50)
+                .background(Theme.Colors.peach)
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+
+            Button("Cancel", action: onCancel)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.white.opacity(0.82))
+                .frame(maxWidth: .infinity)
+                .frame(height: 44)
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 22)
+        .padding(.vertical, 28)
+    }
+}
+
 private struct ContentUpdatePromptView: View {
     @EnvironmentObject private var appViewModel: AppViewModel
     let summary: ContentUpdateSummary
@@ -314,7 +369,7 @@ private struct ContentUpdatePromptView: View {
                             )
                         )
 
-                    Button("Not Yet", action: onNotYet)
+                    Button("I’ll do it later", action: onNotYet)
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.white.opacity(0.82))
                         .frame(maxWidth: .infinity)

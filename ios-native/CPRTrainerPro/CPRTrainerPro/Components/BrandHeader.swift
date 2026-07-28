@@ -21,7 +21,7 @@ struct BrandHeader: View {
         }
     }
 
-    private static var logoImage: UIImage? {
+    private static let logoImage: UIImage? = {
         guard let url = Bundle.main.url(
             forResource: "EHAcademyTrainerProLogo.png",
             withExtension: nil,
@@ -31,7 +31,7 @@ struct BrandHeader: View {
         }
 
         return UIImage(contentsOfFile: url.path)
-    }
+    }()
 }
 
 struct HeartbeatBrandHeader: View {

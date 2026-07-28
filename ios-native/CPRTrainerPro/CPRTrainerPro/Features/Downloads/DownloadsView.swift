@@ -4,6 +4,7 @@ struct DownloadsView: View {
     @EnvironmentObject private var appViewModel: AppViewModel
     @EnvironmentObject private var downloadService: DownloadService
     @State private var packagePendingDeletion: DownloadPackage?
+    @State private var confirmsCellularDownloads = false
 
     var body: some View {
         NavigationStack {
@@ -39,7 +40,13 @@ struct DownloadsView: View {
         Toggle(
             isOn: Binding(
                 get: { downloadService.allowsCellularDownloads },
-                set: { downloadService.allowsCellularDownloads = $0 }
+                set: { enabled in
+                    if enabled {
+                        confirmsCellularDownloads = true
+                    } else {
+                        downloadService.allowsCellularDownloads = false
+                    }
+                }
             )
         ) {
             VStack(alignment: .leading, spacing: 3) {
@@ -55,6 +62,21 @@ struct DownloadsView: View {
         .padding(16)
         .background(Theme.Colors.surface)
         .clipShape(RoundedRectangle(cornerRadius: Theme.Layout.cardRadius, style: .continuous))
+        .alert("Use Cellular Data?", isPresented: $confirmsCellularDownloads) {
+            Button("Cancel", role: .cancel) {}
+            Button("Allow Cellular Downloads") {
+                downloadService.allowsCellularDownloads = true
+            }
+        } message: {
+            if let estimate = appViewModel.remainingDownloadEstimate {
+                Text(
+                    "The remaining course files total about \(estimate.sizeText). "
+                    + "Your carrier’s data charges may apply."
+                )
+            } else {
+                Text("Future course downloads may be several gigabytes.")
+            }
+        }
     }
 
     private var downloadAllButton: some View {
@@ -172,6 +194,14 @@ struct DownloadsView: View {
                     Text(message)
                         .font(.caption2)
                         .foregroundStyle(Theme.Colors.failure)
+                        .lineLimit(4)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                if let warning = downloadService.nonBlockingWarnings[package.id] {
+                    Text(warning)
+                        .font(.caption2)
+                        .foregroundStyle(.yellow.opacity(0.84))
                         .lineLimit(4)
                         .fixedSize(horizontal: false, vertical: true)
                 }
