@@ -81,6 +81,15 @@ material, private runtime state, or credentials.
 - A connected external scene owns the shared video surface even while that
   scene temporarily resigns active. Becoming active republishes presentation
   state so the external layer can verify attachment.
+- Video courses prefer native AVPlayer external playback only when an external
+  scene is connected, the current audio output is AirPlay, no HDMI or USB audio
+  output is present, captions are off, and the compile-time feature flag is
+  enabled. The actual player-reported external-playback state remains
+  authoritative, so unsupported receivers fall back to mirrored video.
+- Captions keep video courses on the mirrored external window because the
+  current captions are app-rendered overlays rather than embedded media tracks.
+  Wired displays, user-selected route-picker playback, and all slideshow media
+  retain their existing behavior.
 
 ## Deferred Watch work
 

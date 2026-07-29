@@ -1,5 +1,25 @@
 import AVFoundation
+import Combine
 import Foundation
+
+enum VideoCourseExternalPlaybackPolicy {
+    static let featureEnabled = true
+
+    static func shouldPreferNativeAirPlay(
+        featureEnabled: Bool,
+        externalSceneConnected: Bool,
+        captionsEnabled: Bool,
+        outputPorts: [AVAudioSession.Port]
+    ) -> Bool {
+        guard featureEnabled, externalSceneConnected, !captionsEnabled else {
+            return false
+        }
+
+        let hasAirPlayOutput = outputPorts.contains(.airPlay)
+        let hasWiredOutput = outputPorts.contains(.HDMI) || outputPorts.contains(.usbAudio)
+        return hasAirPlayOutput && !hasWiredOutput
+    }
+}
 
 struct VideoPlaybackSpeedOption: Identifiable, Equatable {
     let rate: Float
@@ -130,6 +150,7 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
     @Published private(set) var currentSubtitleText: String?
     @Published private(set) var playbackStatus: PlaybackStatus = .idle
     @Published private(set) var scrubberProgress = VideoCourseScrubberProgress()
+    @Published private(set) var isExternalPlaybackActive = false
     @Published var playbackRate: Float = 1.0 {
         didSet {
             guard abs(playbackRate - oldValue) > 0.001 else { return }
@@ -154,6 +175,7 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
                 isEnabled: captionsEnabled,
                 subtitleText: currentSubtitleText
             )
+            applyNativeAirPlayPreference()
         }
     }
     @Published var continuousPlayEnabled = false {
@@ -179,8 +201,10 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
     private var endObserver: NSObjectProtocol?
     private var routeChangeObserver: NSObjectProtocol?
     private var interruptionObserver: NSObjectProtocol?
+    private var presentationStateObservation: AnyCancellable?
     private var timeControlObservation: NSKeyValueObservation?
     private var itemStatusObservation: NSKeyValueObservation?
+    private var externalPlaybackObservation: NSKeyValueObservation?
     private var hasAcquiredIdleTimer = false
     private var hasAcquiredAudioSession = false
     private var isTornDown = false
@@ -260,6 +284,7 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
 
     func appear() {
         isTornDown = false
+        attachPresentationStateObserver()
         attachAudioRouteObservers()
 
         if selectedChapterID == nil {
@@ -431,12 +456,17 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
         interruptionObserver.map(NotificationCenter.default.removeObserver)
         routeChangeObserver = nil
         interruptionObserver = nil
+        presentationStateObservation?.cancel()
+        presentationStateObservation = nil
         timeControlObservation?.invalidate()
         itemStatusObservation?.invalidate()
+        externalPlaybackObservation?.invalidate()
         timeControlObservation = nil
         itemStatusObservation = nil
+        externalPlaybackObservation = nil
         player?.replaceCurrentItem(with: nil)
         player = nil
+        isExternalPlaybackActive = false
         subtitleTask?.cancel()
         subtitleTask = nil
         subtitleCues = []
@@ -498,11 +528,16 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
         let playerItem = AVPlayerItem(url: url)
         playerItem.preferredForwardBufferDuration = 5
 
+        let isNewPlayer = player == nil
         let nextPlayer = player ?? AVPlayer()
         nextPlayer.automaticallyWaitsToMinimizeStalling = false
         nextPlayer.defaultRate = playbackRate
+        applyNativeAirPlayPreference(to: nextPlayer)
         nextPlayer.replaceCurrentItem(with: playerItem)
         player = nextPlayer
+        if isNewPlayer {
+            attachExternalPlaybackObserver(to: nextPlayer)
+        }
 
         let generation = subtitleGeneration
         let subtitleService = subtitleService
@@ -539,7 +574,8 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
             captionsEnabled: captionsEnabled,
             subtitleText: currentSubtitleText,
             playbackStatus: playbackStatus,
-            continuousPlayEnabled: continuousPlayEnabled
+            continuousPlayEnabled: continuousPlayEnabled,
+            isExternalPlaybackActive: player != nil && isExternalPlaybackActive
         )
     }
 
@@ -578,6 +614,35 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
                 self?.handleTimeControlStatus(player.timeControlStatus)
             }
         }
+    }
+
+    private func attachExternalPlaybackObserver(to player: AVPlayer) {
+        externalPlaybackObservation?.invalidate()
+        externalPlaybackObservation = player.observe(
+            \.isExternalPlaybackActive,
+            options: [.initial, .new]
+        ) { [weak self] observedPlayer, _ in
+            let isActive = observedPlayer.isExternalPlaybackActive
+            Task { @MainActor [weak self, weak observedPlayer] in
+                guard
+                    let self,
+                    let observedPlayer,
+                    !self.isTornDown,
+                    self.player === observedPlayer
+                else { return }
+
+                self.updateExternalPlaybackState(isActive)
+            }
+        }
+    }
+
+    private func updateExternalPlaybackState(_ isActive: Bool) {
+        guard isExternalPlaybackActive != isActive else { return }
+        isExternalPlaybackActive = isActive
+        PresentationHub.shared.session.updateVideoExternalPlayback(
+            ownerID: ownerID,
+            isActive: isActive
+        )
     }
 
     private func attachItemStatusObserver(to item: AVPlayerItem) {
@@ -691,15 +756,47 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] notification in
-            guard
-                let reasonValue = notification.userInfo?[AVAudioSessionRouteChangeReasonKey] as? UInt,
-                AVAudioSession.RouteChangeReason(rawValue: reasonValue) == .oldDeviceUnavailable
-            else { return }
             Task { @MainActor [weak self] in
-                self?.wasPlayingBeforeInterruption = false
-                self?.pause()
+                guard let self else { return }
+                self.applyNativeAirPlayPreference()
+
+                guard
+                    let reasonValue = notification.userInfo?[AVAudioSessionRouteChangeReasonKey] as? UInt,
+                    AVAudioSession.RouteChangeReason(rawValue: reasonValue) == .oldDeviceUnavailable
+                else { return }
+
+                self.wasPlayingBeforeInterruption = false
+                self.pause()
             }
         }
+    }
+
+    private func attachPresentationStateObserver() {
+        guard presentationStateObservation == nil else { return }
+
+        presentationStateObservation = PresentationHub.shared.session.$state
+            .map(\.externalSceneConnected)
+            .removeDuplicates()
+            .sink { [weak self] _ in
+                Task { @MainActor [weak self] in
+                    self?.applyNativeAirPlayPreference()
+                }
+            }
+    }
+
+    private func applyNativeAirPlayPreference(to targetPlayer: AVPlayer? = nil) {
+        let outputPorts = AVAudioSession.sharedInstance().currentRoute.outputs.map(\.portType)
+        let shouldPreferNativeAirPlay =
+            VideoCourseExternalPlaybackPolicy.shouldPreferNativeAirPlay(
+                featureEnabled: VideoCourseExternalPlaybackPolicy.featureEnabled,
+                externalSceneConnected:
+                    PresentationHub.shared.session.state.externalSceneConnected,
+                captionsEnabled: captionsEnabled,
+                outputPorts: outputPorts
+            )
+
+        (targetPlayer ?? player)?
+            .usesExternalPlaybackWhileExternalScreenIsActive = shouldPreferNativeAirPlay
     }
 
     private func updateSubtitle(at time: TimeInterval) {

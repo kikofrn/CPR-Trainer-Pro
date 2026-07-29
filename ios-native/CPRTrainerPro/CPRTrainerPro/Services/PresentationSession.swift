@@ -47,6 +47,7 @@ struct VideoCourseExternalState {
     let chapterTitle: String
     let player: AVPlayer?
     let missingMessage: String?
+    let isExternalPlaybackActive: Bool
 }
 
 struct SlideshowExternalState {
@@ -124,7 +125,8 @@ final class PresentationSession: ObservableObject {
         captionsEnabled: Bool,
         subtitleText: String?,
         playbackStatus: PlaybackStatus,
-        continuousPlayEnabled: Bool
+        continuousPlayEnabled: Bool,
+        isExternalPlaybackActive: Bool
     ) {
         var nextState = state
         nextState.activeOwnerID = ownerID
@@ -134,7 +136,8 @@ final class PresentationSession: ObservableObject {
                 courseTitle: courseTitle,
                 chapterTitle: chapterTitle,
                 player: player,
-                missingMessage: missingMessage
+                missingMessage: missingMessage,
+                isExternalPlaybackActive: isExternalPlaybackActive
             )
         )
         nextState.captionsEnabled = captionsEnabled
@@ -201,9 +204,33 @@ final class PresentationSession: ObservableObject {
                 courseTitle: videoState.courseTitle,
                 chapterTitle: chapterTitle,
                 player: player,
-                missingMessage: missingMessage
+                missingMessage: missingMessage,
+                isExternalPlaybackActive: videoState.isExternalPlaybackActive
             )
         )
+        state = nextState
+    }
+
+    func updateVideoExternalPlayback(ownerID: UUID, isActive: Bool) {
+        guard state.activeOwnerID == ownerID,
+              case .video(let videoState) = state.presentation,
+              videoState.isExternalPlaybackActive != isActive
+        else {
+            return
+        }
+
+        var nextState = state
+        nextState.presentation = .video(
+            VideoCourseExternalState(
+                ownerID: videoState.ownerID,
+                courseTitle: videoState.courseTitle,
+                chapterTitle: videoState.chapterTitle,
+                player: videoState.player,
+                missingMessage: videoState.missingMessage,
+                isExternalPlaybackActive: isActive
+            )
+        )
+        nextState.presentationRevision &+= 1
         state = nextState
     }
 

@@ -50,6 +50,8 @@ struct ExternalPresentationView: View {
     private func videoPresentation(_ videoState: VideoCourseExternalState) -> some View {
         if let failureReason = session.state.playbackStatus.failureReason {
             externalErrorView(failureReason)
+        } else if videoState.isExternalPlaybackActive {
+            nativeAirPlayStatusView(videoState)
         } else if let player = videoState.player {
             GeometryReader { proxy in
                 CoursePlayerLayerView(
@@ -66,6 +68,26 @@ struct ExternalPresentationView: View {
         } else {
             externalErrorView(videoState.missingMessage ?? "Video is not available on this device.")
         }
+    }
+
+    private func nativeAirPlayStatusView(_ videoState: VideoCourseExternalState) -> some View {
+        VStack(spacing: 16) {
+            Image(systemName: "airplayvideo")
+                .font(.system(size: 54, weight: .semibold))
+                .foregroundStyle(Theme.Colors.peach)
+
+            Text("Playing Directly on Your TV")
+                .font(.title2.weight(.bold))
+                .foregroundStyle(.white)
+
+            Text(videoState.chapterTitle)
+                .font(.body.weight(.medium))
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.white.opacity(0.68))
+                .lineLimit(2)
+        }
+        .padding(32)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     @ViewBuilder

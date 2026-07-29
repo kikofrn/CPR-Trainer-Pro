@@ -1,3 +1,4 @@
+import AVFoundation
 import XCTest
 @testable import CPRTrainerPro
 
@@ -1554,6 +1555,162 @@ final class ContentManifestContractTests: XCTestCase {
             "Corrupt video data."
         )
         XCTAssertNil(PlaybackStatus.paused.failureReason)
+    }
+
+    func testVideoCourseExternalPlaybackPolicyIsConservative() {
+        struct PolicyCase {
+            let name: String
+            let featureEnabled: Bool
+            let externalSceneConnected: Bool
+            let captionsEnabled: Bool
+            let outputPorts: [AVAudioSession.Port]
+            let expected: Bool
+        }
+
+        let cases = [
+            PolicyCase(
+                name: "wireless mirror",
+                featureEnabled: true,
+                externalSceneConnected: true,
+                captionsEnabled: false,
+                outputPorts: [.airPlay],
+                expected: true
+            ),
+            PolicyCase(
+                name: "feature disabled",
+                featureEnabled: false,
+                externalSceneConnected: true,
+                captionsEnabled: false,
+                outputPorts: [.airPlay],
+                expected: false
+            ),
+            PolicyCase(
+                name: "no external scene",
+                featureEnabled: true,
+                externalSceneConnected: false,
+                captionsEnabled: false,
+                outputPorts: [.airPlay],
+                expected: false
+            ),
+            PolicyCase(
+                name: "captions enabled",
+                featureEnabled: true,
+                externalSceneConnected: true,
+                captionsEnabled: true,
+                outputPorts: [.airPlay],
+                expected: false
+            ),
+            PolicyCase(
+                name: "HDMI",
+                featureEnabled: true,
+                externalSceneConnected: true,
+                captionsEnabled: false,
+                outputPorts: [.HDMI],
+                expected: false
+            ),
+            PolicyCase(
+                name: "USB audio",
+                featureEnabled: true,
+                externalSceneConnected: true,
+                captionsEnabled: false,
+                outputPorts: [.usbAudio],
+                expected: false
+            ),
+            PolicyCase(
+                name: "ambiguous AirPlay and HDMI",
+                featureEnabled: true,
+                externalSceneConnected: true,
+                captionsEnabled: false,
+                outputPorts: [.airPlay, .HDMI],
+                expected: false
+            ),
+            PolicyCase(
+                name: "ambiguous AirPlay and USB",
+                featureEnabled: true,
+                externalSceneConnected: true,
+                captionsEnabled: false,
+                outputPorts: [.airPlay, .usbAudio],
+                expected: false
+            ),
+            PolicyCase(
+                name: "built-in speaker",
+                featureEnabled: true,
+                externalSceneConnected: true,
+                captionsEnabled: false,
+                outputPorts: [.builtInSpeaker],
+                expected: false
+            ),
+            PolicyCase(
+                name: "empty route",
+                featureEnabled: true,
+                externalSceneConnected: true,
+                captionsEnabled: false,
+                outputPorts: [],
+                expected: false
+            )
+        ]
+
+        for policyCase in cases {
+            XCTAssertEqual(
+                VideoCourseExternalPlaybackPolicy.shouldPreferNativeAirPlay(
+                    featureEnabled: policyCase.featureEnabled,
+                    externalSceneConnected: policyCase.externalSceneConnected,
+                    captionsEnabled: policyCase.captionsEnabled,
+                    outputPorts: policyCase.outputPorts
+                ),
+                policyCase.expected,
+                policyCase.name
+            )
+        }
+    }
+
+    @MainActor
+    func testVideoExternalPlaybackStateIsOwnerScopedAndRevisionedAtomically() {
+        let session = PresentationSession()
+        let ownerID = UUID()
+        let player = AVPlayer()
+
+        session.beginVideo(
+            ownerID: ownerID,
+            courseTitle: "CPR Course",
+            chapterTitle: "Introduction",
+            player: player,
+            missingMessage: nil,
+            captionsEnabled: false,
+            subtitleText: nil,
+            playbackStatus: .playing,
+            continuousPlayEnabled: true,
+            isExternalPlaybackActive: false
+        )
+
+        let initialRevision = session.state.presentationRevision
+        session.updateVideoExternalPlayback(ownerID: ownerID, isActive: true)
+
+        guard case .video(let activeState) = session.state.presentation else {
+            return XCTFail("Expected video presentation state.")
+        }
+        XCTAssertTrue(activeState.isExternalPlaybackActive)
+        XCTAssertTrue(activeState.player === player)
+        XCTAssertEqual(activeState.courseTitle, "CPR Course")
+        XCTAssertEqual(activeState.chapterTitle, "Introduction")
+        XCTAssertEqual(session.state.presentationRevision, initialRevision + 1)
+
+        session.updateVideoExternalPlayback(ownerID: UUID(), isActive: false)
+        session.updateVideoExternalPlayback(ownerID: ownerID, isActive: true)
+        XCTAssertEqual(session.state.presentationRevision, initialRevision + 1)
+
+        session.updateVideoPresentation(
+            ownerID: ownerID,
+            chapterTitle: "Chest Compressions",
+            player: player,
+            missingMessage: nil
+        )
+        guard case .video(let updatedState) = session.state.presentation else {
+            return XCTFail("Expected updated video presentation state.")
+        }
+        XCTAssertTrue(updatedState.isExternalPlaybackActive)
+        XCTAssertEqual(updatedState.chapterTitle, "Chest Compressions")
+        XCTAssertTrue(updatedState.player === player)
     }
 
     private static func loadCatalog() throws -> TrainingCatalog {

@@ -183,11 +183,19 @@ struct VideoCoursePlayerView: View {
 
     private var externalPlaybackStatusSurface: some View {
         VStack(spacing: 14) {
-            Image(systemName: "tv.and.mediabox")
+            Image(
+                systemName: coordinator.isExternalPlaybackActive
+                    ? "airplayvideo"
+                    : "tv.and.mediabox"
+            )
                 .font(.system(size: 42, weight: .semibold))
                 .foregroundStyle(Theme.Colors.peach)
 
-            Text("Playing on External Display")
+            Text(
+                coordinator.isExternalPlaybackActive
+                    ? "Playing on TV"
+                    : "Playing on External Display"
+            )
                 .font(.headline.weight(.semibold))
                 .foregroundStyle(.white)
 
