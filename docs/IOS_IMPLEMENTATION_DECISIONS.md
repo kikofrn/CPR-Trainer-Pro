@@ -81,15 +81,62 @@ material, private runtime state, or credentials.
 - A connected external scene owns the shared video surface even while that
   scene temporarily resigns active. Becoming active republishes presentation
   state so the external layer can verify attachment.
-- Video courses prefer native AVPlayer external playback only when an external
-  scene is connected, the current audio output is AirPlay, no HDMI or USB audio
-  output is present, captions are off, and the compile-time feature flag is
-  enabled. The actual player-reported external-playback state remains
-  authoritative, so unsupported receivers fall back to mirrored video.
-- Captions keep video courses on the mirrored external window because the
-  current captions are app-rendered overlays rather than embedded media tracks.
-  Wired displays, user-selected route-picker playback, and all slideshow media
-  retain their existing behavior.
+- Build 13's automatic conversion from the mirrored external window to native
+  AVPlayer external playback failed on the classroom receiver while the player
+  was using locally stored video. The exact AVFoundation error domain and code
+  were not captured, so the failure must not be documented as a proven
+  file-URL platform limitation. A URL scheme is not a capability test.
+- Build 14 explicitly applies `allowsExternalPlayback = false` and
+  `usesExternalPlaybackWhileExternalScreenIsActive = false` to every local
+  video-course and slideshow-video player before installing each item. The
+  video-course coordinator also reapplies that policy when routes or
+  external-scene state change. This prevents a route selection from exposing a
+  local item to native handoff and keeps Screen Mirroring and HDMI on the
+  app-rendered external window.
+- In build 14, the in-app AirPlay picker is intentionally an audio-output
+  control. Selecting an AirPlay route without Screen Mirroring keeps video on
+  the iPhone while audio uses the selected route. A non-blocking message shown
+  once per AirPlay route session directs instructors to Control Center's
+  Screen Mirroring control when they want video on the TV.
+- Local player-item failures retain the existing user-facing fatal path and
+  now emit structured diagnostics containing the real error domain/code, route
+  types, external-scene state, external-playback flags, and item identity.
+- Captions remain app-rendered overlays on the local path. No subtitle work is
+  attached to a native remote item.
+- Build 14 hardware testing on Sheep (iPhone 16 Pro, iOS 27 beta) verified that
+  a Virtual Assistant video keeps playing through Screen Mirroring connect,
+  disconnect, and reconnect transitions. Video returned to the phone on
+  disconnect and moved back to the classroom TV on reconnect without the prior
+  external-player failure. TV audio remained lip-synced, and the app caption,
+  playback-speed, and native Enhance Dialogue controls did not interrupt
+  playback.
+- iOS 27 can generate subtitles on-device for downloaded file-based media and
+  AVKit can show them automatically when playback is muted. The smaller
+  subtitles observed during the hardware test were independent of the app's
+  larger authored WebVTT overlay: inspection of the downloaded test clip found
+  only H.264 video and AAC audio tracks, with no embedded subtitle track. The
+  native player subtitle menu controls the generated subtitles; the app caption
+  button continues to control only the authored course captions. This iOS 27
+  beta behavior is not an AirPlay failure and does not justify suppressing a
+  system accessibility feature.
+- The Build 14 hardware gate remains open for the audio-only in-app AirPlay
+  picker, a slideshow video slide under Screen Mirroring, HDMI, and the
+  projector/keyboard/first-responder regression check.
+- Native AirPlay video is deferred to a separately authorized build 15
+  split-path implementation using a version-matched HTTPS media item; build 14
+  remains a complete release candidate if that later round does not pass.
+- Build 15 planning deliberately reverses the earlier “do not consolidate
+  stable URL builders” decision because even small drift between update and
+  streaming URL construction could select different bytes. That later
+  consolidation requires byte-for-byte equivalence tests and the complete
+  existing download/update suite to pass.
+- Known build 15 test considerations are recorded before implementation:
+  chapter changes may pause the TV for up to the bounded preflight duration;
+  a receiver that remains externally active while stalled has no automatic
+  recovery in that round; position is captured at the moment playback pauses;
+  and hardware testing must verify that the controller phone remains awake.
+  Next-chapter preverification and stalled-active recovery are explicitly
+  future work.
 
 ## Deferred Watch work
 

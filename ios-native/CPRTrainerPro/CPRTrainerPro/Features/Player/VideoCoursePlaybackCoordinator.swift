@@ -1,23 +1,23 @@
 import AVFoundation
 import Combine
 import Foundation
+import OSLog
 
-enum VideoCourseExternalPlaybackPolicy {
-    static let featureEnabled = true
+struct LocalVideoExternalPlaybackConfiguration: Equatable {
+    let allowsExternalPlayback: Bool
+    let usesExternalPlaybackWhileExternalScreenIsActive: Bool
+}
 
-    static func shouldPreferNativeAirPlay(
-        featureEnabled: Bool,
-        externalSceneConnected: Bool,
-        captionsEnabled: Bool,
-        outputPorts: [AVAudioSession.Port]
-    ) -> Bool {
-        guard featureEnabled, externalSceneConnected, !captionsEnabled else {
-            return false
-        }
+enum LocalVideoExternalPlaybackPolicy {
+    static let configuration = LocalVideoExternalPlaybackConfiguration(
+        allowsExternalPlayback: false,
+        usesExternalPlaybackWhileExternalScreenIsActive: false
+    )
 
-        let hasAirPlayOutput = outputPorts.contains(.airPlay)
-        let hasWiredOutput = outputPorts.contains(.HDMI) || outputPorts.contains(.usbAudio)
-        return hasAirPlayOutput && !hasWiredOutput
+    static func apply(to player: AVPlayer) {
+        player.allowsExternalPlayback = configuration.allowsExternalPlayback
+        player.usesExternalPlaybackWhileExternalScreenIsActive =
+            configuration.usesExternalPlaybackWhileExternalScreenIsActive
     }
 }
 
@@ -151,6 +151,7 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
     @Published private(set) var playbackStatus: PlaybackStatus = .idle
     @Published private(set) var scrubberProgress = VideoCourseScrubberProgress()
     @Published private(set) var isExternalPlaybackActive = false
+    @Published private(set) var audioOutputGuidanceMessage: String?
     @Published var playbackRate: Float = 1.0 {
         didSet {
             guard abs(playbackRate - oldValue) > 0.001 else { return }
@@ -175,7 +176,7 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
                 isEnabled: captionsEnabled,
                 subtitleText: currentSubtitleText
             )
-            applyNativeAirPlayPreference()
+            enforceLocalExternalPlaybackPolicy()
         }
     }
     @Published var continuousPlayEnabled = false {
@@ -209,6 +210,12 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
     private var hasAcquiredAudioSession = false
     private var isTornDown = false
     private var wasPlayingBeforeInterruption = false
+    private var audioOutputGuidanceTracker = AirPlayAudioOutputGuidanceTracker()
+    private var audioOutputGuidanceDismissTask: Task<Void, Never>?
+    private let playbackLogger = Logger(
+        subsystem: "com.ehacademy.cpr-trainer-pro",
+        category: "VideoCoursePlayback"
+    )
 
     init(videoCourse: VideoCourse, storageService: StorageService) {
         self.videoCourse = videoCourse
@@ -286,6 +293,7 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
         isTornDown = false
         attachPresentationStateObserver()
         attachAudioRouteObservers()
+        refreshAudioOutputGuidance()
 
         if selectedChapterID == nil {
             let savedID = UserDefaults.standard.string(
@@ -467,6 +475,10 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
         player?.replaceCurrentItem(with: nil)
         player = nil
         isExternalPlaybackActive = false
+        audioOutputGuidanceDismissTask?.cancel()
+        audioOutputGuidanceDismissTask = nil
+        audioOutputGuidanceMessage = nil
+        audioOutputGuidanceTracker = AirPlayAudioOutputGuidanceTracker()
         subtitleTask?.cancel()
         subtitleTask = nil
         subtitleCues = []
@@ -532,7 +544,7 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
         let nextPlayer = player ?? AVPlayer()
         nextPlayer.automaticallyWaitsToMinimizeStalling = false
         nextPlayer.defaultRate = playbackRate
-        applyNativeAirPlayPreference(to: nextPlayer)
+        LocalVideoExternalPlaybackPolicy.apply(to: nextPlayer)
         nextPlayer.replaceCurrentItem(with: playerItem)
         player = nextPlayer
         if isNewPlayer {
@@ -648,16 +660,26 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
     private func attachItemStatusObserver(to item: AVPlayerItem) {
         itemStatusObservation = item.observe(\.status, options: [.new]) { [weak self] item, _ in
             Task { @MainActor [weak self] in
+                guard let self, self.player?.currentItem === item else { return }
+
                 switch item.status {
                 case .readyToPlay:
-                    self?.updateScrubberProgress(from: self?.player, time: self?.player?.currentTime().seconds ?? 0)
+                    self.updateScrubberProgress(
+                        from: self.player,
+                        time: self.player?.currentTime().seconds ?? 0
+                    )
                 case .failed:
                     let message = item.error?.localizedDescription ?? "This video chapter could not be played."
-                    self?.resetScrubberState()
-                    self?.setPlaybackStatus(.failed(message))
-                    if let ownerID = self?.ownerID {
-                        PresentationHub.shared.session.failExternalPresentation(ownerID: ownerID, reason: message)
-                    }
+                    self.logLocalPlaybackFailure(
+                        item: item,
+                        filename: self.selectedChapter?.filename ?? "unknown"
+                    )
+                    self.resetScrubberState()
+                    self.setPlaybackStatus(.failed(message))
+                    PresentationHub.shared.session.failExternalPresentation(
+                        ownerID: self.ownerID,
+                        reason: message
+                    )
                 case .unknown:
                     break
                 @unknown default:
@@ -683,13 +705,20 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
     }
 
     private func attachEndObserver(to item: AVPlayerItem) {
+        let itemID = ObjectIdentifier(item)
         endObserver = NotificationCenter.default.addObserver(
             forName: .AVPlayerItemDidPlayToEndTime,
             object: item,
             queue: .main
         ) { [weak self] _ in
             Task { @MainActor [weak self] in
-                self?.handleChapterEnded()
+                guard
+                    let self,
+                    self.player?.currentItem.map(ObjectIdentifier.init) == itemID
+                else {
+                    return
+                }
+                self.handleChapterEnded()
             }
         }
     }
@@ -758,7 +787,8 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
         ) { [weak self] notification in
             Task { @MainActor [weak self] in
                 guard let self else { return }
-                self.applyNativeAirPlayPreference()
+                self.enforceLocalExternalPlaybackPolicy()
+                self.refreshAudioOutputGuidance()
 
                 guard
                     let reasonValue = notification.userInfo?[AVAudioSessionRouteChangeReasonKey] as? UInt,
@@ -779,24 +809,75 @@ final class VideoCoursePlaybackCoordinator: ObservableObject {
             .removeDuplicates()
             .sink { [weak self] _ in
                 Task { @MainActor [weak self] in
-                    self?.applyNativeAirPlayPreference()
+                    guard let self else { return }
+                    self.enforceLocalExternalPlaybackPolicy()
+                    self.refreshAudioOutputGuidance()
                 }
             }
     }
 
-    private func applyNativeAirPlayPreference(to targetPlayer: AVPlayer? = nil) {
-        let outputPorts = AVAudioSession.sharedInstance().currentRoute.outputs.map(\.portType)
-        let shouldPreferNativeAirPlay =
-            VideoCourseExternalPlaybackPolicy.shouldPreferNativeAirPlay(
-                featureEnabled: VideoCourseExternalPlaybackPolicy.featureEnabled,
-                externalSceneConnected:
-                    PresentationHub.shared.session.state.externalSceneConnected,
-                captionsEnabled: captionsEnabled,
-                outputPorts: outputPorts
-            )
+    private func enforceLocalExternalPlaybackPolicy() {
+        guard let player else { return }
+        LocalVideoExternalPlaybackPolicy.apply(to: player)
+    }
 
-        (targetPlayer ?? player)?
-            .usesExternalPlaybackWhileExternalScreenIsActive = shouldPreferNativeAirPlay
+    private func refreshAudioOutputGuidance() {
+        let airPlayPortUIDs = AVAudioSession.sharedInstance().currentRoute.outputs
+            .filter { $0.portType == .airPlay }
+            .map(\.uid)
+        let action = audioOutputGuidanceTracker.update(
+            airPlayPortUIDs: airPlayPortUIDs,
+            externalSceneConnected:
+                PresentationHub.shared.session.state.externalSceneConnected
+        )
+
+        switch action {
+        case .none:
+            break
+        case .show:
+            showAudioOutputGuidance()
+        case .dismiss:
+            dismissAudioOutputGuidance()
+        }
+    }
+
+    private func showAudioOutputGuidance() {
+        audioOutputGuidanceDismissTask?.cancel()
+        audioOutputGuidanceMessage = AirPlayAudioOutputGuidanceBanner.message
+        audioOutputGuidanceDismissTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(8))
+            guard !Task.isCancelled, let self else { return }
+            self.audioOutputGuidanceMessage = nil
+            self.audioOutputGuidanceDismissTask = nil
+        }
+    }
+
+    private func dismissAudioOutputGuidance() {
+        audioOutputGuidanceDismissTask?.cancel()
+        audioOutputGuidanceDismissTask = nil
+        audioOutputGuidanceMessage = nil
+    }
+
+    private func logLocalPlaybackFailure(item: AVPlayerItem, filename: String) {
+        let error = item.error as NSError?
+        let routePortTypes = AVAudioSession.sharedInstance().currentRoute.outputs
+            .map { $0.portType.rawValue }
+            .sorted()
+            .joined(separator: ",")
+        let diagnostic = [
+            "source=localVideoCourse",
+            "filename=\(filename)",
+            "errorDomain=\(error?.domain ?? "none")",
+            "errorCode=\(error?.code ?? 0)",
+            "routePortTypes=\(routePortTypes)",
+            "externalSceneConnected=\(PresentationHub.shared.session.state.externalSceneConnected)",
+            "allowsExternalPlayback=\(player?.allowsExternalPlayback ?? false)",
+            "usesExternalPlaybackWhileExternalScreenIsActive=\(player?.usesExternalPlaybackWhileExternalScreenIsActive ?? false)",
+            "isExternalPlaybackActive=\(player?.isExternalPlaybackActive ?? false)",
+            "itemID=\(ObjectIdentifier(item))"
+        ].joined(separator: " ")
+
+        playbackLogger.error("\(diagnostic, privacy: .public)")
     }
 
     private func updateSubtitle(at time: TimeInterval) {

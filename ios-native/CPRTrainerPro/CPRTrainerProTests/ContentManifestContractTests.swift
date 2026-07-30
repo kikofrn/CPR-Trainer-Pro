@@ -1557,111 +1557,123 @@ final class ContentManifestContractTests: XCTestCase {
         XCTAssertNil(PlaybackStatus.paused.failureReason)
     }
 
-    func testVideoCourseExternalPlaybackPolicyIsConservative() {
-        struct PolicyCase {
-            let name: String
-            let featureEnabled: Bool
-            let externalSceneConnected: Bool
-            let captionsEnabled: Bool
-            let outputPorts: [AVAudioSession.Port]
-            let expected: Bool
-        }
-
-        let cases = [
-            PolicyCase(
-                name: "wireless mirror",
-                featureEnabled: true,
-                externalSceneConnected: true,
-                captionsEnabled: false,
-                outputPorts: [.airPlay],
-                expected: true
-            ),
-            PolicyCase(
-                name: "feature disabled",
-                featureEnabled: false,
-                externalSceneConnected: true,
-                captionsEnabled: false,
-                outputPorts: [.airPlay],
-                expected: false
-            ),
-            PolicyCase(
-                name: "no external scene",
-                featureEnabled: true,
-                externalSceneConnected: false,
-                captionsEnabled: false,
-                outputPorts: [.airPlay],
-                expected: false
-            ),
-            PolicyCase(
-                name: "captions enabled",
-                featureEnabled: true,
-                externalSceneConnected: true,
-                captionsEnabled: true,
-                outputPorts: [.airPlay],
-                expected: false
-            ),
-            PolicyCase(
-                name: "HDMI",
-                featureEnabled: true,
-                externalSceneConnected: true,
-                captionsEnabled: false,
-                outputPorts: [.HDMI],
-                expected: false
-            ),
-            PolicyCase(
-                name: "USB audio",
-                featureEnabled: true,
-                externalSceneConnected: true,
-                captionsEnabled: false,
-                outputPorts: [.usbAudio],
-                expected: false
-            ),
-            PolicyCase(
-                name: "ambiguous AirPlay and HDMI",
-                featureEnabled: true,
-                externalSceneConnected: true,
-                captionsEnabled: false,
-                outputPorts: [.airPlay, .HDMI],
-                expected: false
-            ),
-            PolicyCase(
-                name: "ambiguous AirPlay and USB",
-                featureEnabled: true,
-                externalSceneConnected: true,
-                captionsEnabled: false,
-                outputPorts: [.airPlay, .usbAudio],
-                expected: false
-            ),
-            PolicyCase(
-                name: "built-in speaker",
-                featureEnabled: true,
-                externalSceneConnected: true,
-                captionsEnabled: false,
-                outputPorts: [.builtInSpeaker],
-                expected: false
-            ),
-            PolicyCase(
-                name: "empty route",
-                featureEnabled: true,
-                externalSceneConnected: true,
-                captionsEnabled: false,
-                outputPorts: [],
-                expected: false
+    @MainActor
+    func testLocalVideoExternalPlaybackPolicyKeepsAppRenderedVideoLocal() {
+        XCTAssertEqual(
+            LocalVideoExternalPlaybackPolicy.configuration,
+            LocalVideoExternalPlaybackConfiguration(
+                allowsExternalPlayback: false,
+                usesExternalPlaybackWhileExternalScreenIsActive: false
             )
-        ]
+        )
 
-        for policyCase in cases {
-            XCTAssertEqual(
-                VideoCourseExternalPlaybackPolicy.shouldPreferNativeAirPlay(
-                    featureEnabled: policyCase.featureEnabled,
-                    externalSceneConnected: policyCase.externalSceneConnected,
-                    captionsEnabled: policyCase.captionsEnabled,
-                    outputPorts: policyCase.outputPorts
-                ),
-                policyCase.expected,
-                policyCase.name
-            )
-        }
+        let player = AVPlayer()
+        XCTAssertTrue(player.allowsExternalPlayback)
+
+        LocalVideoExternalPlaybackPolicy.apply(to: player)
+
+        XCTAssertFalse(player.allowsExternalPlayback)
+        XCTAssertFalse(player.usesExternalPlaybackWhileExternalScreenIsActive)
+    }
+
+    func testAirPlayAudioGuidanceShowsOncePerRouteSession() {
+        var tracker = AirPlayAudioOutputGuidanceTracker()
+
+        XCTAssertEqual(
+            tracker.update(
+                airPlayPortUIDs: [],
+                externalSceneConnected: false
+            ),
+            .dismiss
+        )
+        XCTAssertEqual(
+            tracker.update(
+                airPlayPortUIDs: ["living-room", "classroom", "living-room"],
+                externalSceneConnected: false
+            ),
+            .show
+        )
+        XCTAssertEqual(tracker.activeAirPlayPortUIDs, ["classroom", "living-room"])
+        XCTAssertTrue(tracker.hasShownForActiveRoute)
+        XCTAssertEqual(
+            tracker.update(
+                airPlayPortUIDs: ["classroom", "living-room"],
+                externalSceneConnected: false
+            ),
+            .none
+        )
+        XCTAssertEqual(
+            tracker.update(
+                airPlayPortUIDs: ["living-room", "classroom"],
+                externalSceneConnected: true
+            ),
+            .dismiss
+        )
+        XCTAssertEqual(
+            tracker.update(
+                airPlayPortUIDs: ["classroom", "living-room"],
+                externalSceneConnected: false
+            ),
+            .none
+        )
+
+        XCTAssertEqual(
+            tracker.update(
+                airPlayPortUIDs: [],
+                externalSceneConnected: false
+            ),
+            .dismiss
+        )
+        XCTAssertFalse(tracker.hasShownForActiveRoute)
+        XCTAssertEqual(
+            tracker.update(
+                airPlayPortUIDs: ["living-room", "classroom"],
+                externalSceneConnected: false
+            ),
+            .show
+        )
+    }
+
+    func testAirPlayAudioGuidanceWaitsUntilScreenMirroringEnds() {
+        var tracker = AirPlayAudioOutputGuidanceTracker()
+
+        XCTAssertEqual(
+            tracker.update(
+                airPlayPortUIDs: ["classroom"],
+                externalSceneConnected: true
+            ),
+            .dismiss
+        )
+        XCTAssertFalse(tracker.hasShownForActiveRoute)
+        XCTAssertEqual(
+            tracker.update(
+                airPlayPortUIDs: ["classroom"],
+                externalSceneConnected: false
+            ),
+            .show
+        )
+        XCTAssertTrue(tracker.hasShownForActiveRoute)
+    }
+
+    func testAirPlayAudioGuidanceTreatsChangedPortUIDsAsANewSession() {
+        var tracker = AirPlayAudioOutputGuidanceTracker()
+
+        XCTAssertEqual(
+            tracker.update(
+                airPlayPortUIDs: ["classroom"],
+                externalSceneConnected: false
+            ),
+            .show
+        )
+        XCTAssertEqual(
+            tracker.update(
+                airPlayPortUIDs: ["apple-tv"],
+                externalSceneConnected: false
+            ),
+            .show
+        )
+        XCTAssertEqual(tracker.activeAirPlayPortUIDs, ["apple-tv"])
+        XCTAssertTrue(tracker.hasShownForActiveRoute)
     }
 
     @MainActor

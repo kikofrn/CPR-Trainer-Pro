@@ -209,7 +209,7 @@ private enum TrainingGuide: String, CaseIterable, Identifiable {
                     title: "4. Present and Navigate",
                     body: "Slideshows can be moved with arrows or swipes. Virtual Assistant videos use the chapter list and player controls.",
                     bullets: [
-                        "Use the screen icon to cast through AirPlay when an external display is available.",
+                        "Use the AirPlay button to choose where course audio plays. To show course video or slides on a TV, use Screen Mirroring in Control Center.",
                         "Use fullscreen when the phone is rotated or when you need the course material to fill the screen."
                     ]
                 ),

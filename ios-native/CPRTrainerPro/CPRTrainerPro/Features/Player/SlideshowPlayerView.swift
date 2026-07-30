@@ -62,9 +62,28 @@ struct SlideshowPlayerView: View {
                     }
 
                     instructorDeviceOverlay(bottomInset: proxy.safeAreaInsets.bottom)
+
+                    if let message = coordinator.audioOutputGuidanceMessage {
+                        VStack {
+                            AirPlayAudioOutputGuidanceBanner(message: message)
+                                .padding(.horizontal, 18)
+                                .padding(
+                                    .top,
+                                    proxy.safeAreaInsets.top + (isFullScreen ? 58 : 12)
+                                )
+                            Spacer()
+                        }
+                        .allowsHitTesting(false)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                        .zIndex(4)
+                    }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .ignoresSafeArea(isFullScreen ? .all : [], edges: .all)
+                .animation(
+                    .easeInOut(duration: 0.2),
+                    value: coordinator.audioOutputGuidanceMessage
+                )
             }
             .appBackground()
             .navigationTitle(slideshow.title)

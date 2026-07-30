@@ -1,6 +1,8 @@
 import AVFoundation
+import Combine
 import Foundation
 import ImageIO
+import OSLog
 import UIKit
 
 @MainActor
@@ -22,6 +24,7 @@ final class SlideshowPlaybackCoordinator: ObservableObject {
     @Published private(set) var currentImage: UIImage?
     @Published private(set) var currentSubtitleText: String?
     @Published private(set) var playbackStatus: PlaybackStatus = .idle
+    @Published private(set) var audioOutputGuidanceMessage: String?
     @Published var captionsEnabled = true {
         didSet {
             UserDefaults.standard.set(
@@ -52,6 +55,7 @@ final class SlideshowPlaybackCoordinator: ObservableObject {
     private var endObserver: NSObjectProtocol?
     private var routeChangeObserver: NSObjectProtocol?
     private var interruptionObserver: NSObjectProtocol?
+    private var presentationStateObservation: AnyCancellable?
     private var timeControlObservation: NSKeyValueObservation?
     private var itemStatusObservation: NSKeyValueObservation?
     private var imagePreparationTask: Task<Void, Never>?
@@ -62,6 +66,12 @@ final class SlideshowPlaybackCoordinator: ObservableObject {
     private var hasAcquiredAudioSession = false
     private var isTornDown = false
     private var wasPlayingBeforeInterruption = false
+    private var audioOutputGuidanceTracker = AirPlayAudioOutputGuidanceTracker()
+    private var audioOutputGuidanceDismissTask: Task<Void, Never>?
+    private let playbackLogger = Logger(
+        subsystem: "com.ehacademy.cpr-trainer-pro",
+        category: "SlideshowPlayback"
+    )
 
     init(slideshow: Slideshow, storageService: StorageService) {
         self.slideshow = slideshow
@@ -100,6 +110,8 @@ final class SlideshowPlaybackCoordinator: ObservableObject {
     func appear() {
         isTornDown = false
         attachAudioRouteObservers()
+        attachPresentationStateObserver()
+        refreshAudioOutputGuidance()
         ensureIdleTimer()
         ensureAudioSession()
         loadActiveSlide()
@@ -140,12 +152,18 @@ final class SlideshowPlaybackCoordinator: ObservableObject {
         interruptionObserver.map(NotificationCenter.default.removeObserver)
         routeChangeObserver = nil
         interruptionObserver = nil
+        presentationStateObservation?.cancel()
+        presentationStateObservation = nil
         timeControlObservation?.invalidate()
         itemStatusObservation?.invalidate()
         timeControlObservation = nil
         itemStatusObservation = nil
         videoPlayer?.replaceCurrentItem(with: nil)
         videoPlayer = nil
+        audioOutputGuidanceDismissTask?.cancel()
+        audioOutputGuidanceDismissTask = nil
+        audioOutputGuidanceMessage = nil
+        audioOutputGuidanceTracker = AirPlayAudioOutputGuidanceTracker()
         currentImage = nil
         subtitleCues = []
         currentCueIndex = nil
@@ -256,6 +274,7 @@ final class SlideshowPlaybackCoordinator: ObservableObject {
 
         let nextPlayer = videoPlayer ?? AVPlayer()
         nextPlayer.automaticallyWaitsToMinimizeStalling = false
+        LocalVideoExternalPlaybackPolicy.apply(to: nextPlayer)
         nextPlayer.replaceCurrentItem(with: playerItem)
         videoPlayer = nextPlayer
         loadedVideoSlideID = slide.id
@@ -361,12 +380,18 @@ final class SlideshowPlaybackCoordinator: ObservableObject {
     private func attachItemStatusObserver(to item: AVPlayerItem) {
         itemStatusObservation = item.observe(\.status, options: [.new]) { [weak self] item, _ in
             Task { @MainActor [weak self] in
+                guard let self, self.videoPlayer?.currentItem === item else { return }
                 guard item.status == .failed else { return }
                 let message = item.error?.localizedDescription ?? "This video slide could not be played."
-                self?.setPlaybackStatus(.failed(message))
-                if let ownerID = self?.ownerID {
-                    PresentationHub.shared.session.failExternalPresentation(ownerID: ownerID, reason: message)
-                }
+                self.logLocalPlaybackFailure(
+                    item: item,
+                    filename: self.activeSlide?.filename ?? "unknown"
+                )
+                self.setPlaybackStatus(.failed(message))
+                PresentationHub.shared.session.failExternalPresentation(
+                    ownerID: self.ownerID,
+                    reason: message
+                )
             }
         }
     }
@@ -387,17 +412,22 @@ final class SlideshowPlaybackCoordinator: ObservableObject {
     }
 
     private func attachEndObserver(to item: AVPlayerItem) {
+        let itemID = ObjectIdentifier(item)
         endObserver = NotificationCenter.default.addObserver(
             forName: .AVPlayerItemDidPlayToEndTime,
             object: item,
             queue: .main
         ) { [weak self] _ in
             Task { @MainActor [weak self] in
-                self?.currentSubtitleText = nil
-                self?.setPlaybackStatus(.ended)
-                if let ownerID = self?.ownerID {
-                    PresentationHub.shared.session.updateSubtitle(ownerID: ownerID, text: nil)
+                guard
+                    let self,
+                    self.videoPlayer?.currentItem.map(ObjectIdentifier.init) == itemID
+                else {
+                    return
                 }
+                self.currentSubtitleText = nil
+                self.setPlaybackStatus(.ended)
+                PresentationHub.shared.session.updateSubtitle(ownerID: self.ownerID, text: nil)
             }
         }
     }
@@ -421,14 +451,22 @@ final class SlideshowPlaybackCoordinator: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] notification in
-            guard
-                let reasonValue = notification.userInfo?[AVAudioSessionRouteChangeReasonKey] as? UInt,
-                AVAudioSession.RouteChangeReason(rawValue: reasonValue) == .oldDeviceUnavailable
-            else { return }
             Task { @MainActor [weak self] in
-                self?.wasPlayingBeforeInterruption = false
-                self?.videoPlayer?.pause()
-                self?.setPlaybackStatus(.paused)
+                guard let self else { return }
+                self.refreshAudioOutputGuidance()
+
+                guard
+                    let reasonValue =
+                        notification.userInfo?[AVAudioSessionRouteChangeReasonKey] as? UInt,
+                    AVAudioSession.RouteChangeReason(rawValue: reasonValue) ==
+                        .oldDeviceUnavailable
+                else {
+                    return
+                }
+
+                self.wasPlayingBeforeInterruption = false
+                self.videoPlayer?.pause()
+                self.setPlaybackStatus(.paused)
             }
         }
 
@@ -462,6 +500,78 @@ final class SlideshowPlaybackCoordinator: ObservableObject {
                 }
             }
         }
+    }
+
+    private func attachPresentationStateObserver() {
+        guard presentationStateObservation == nil else { return }
+
+        presentationStateObservation = PresentationHub.shared.session.$state
+            .map(\.externalSceneConnected)
+            .removeDuplicates()
+            .sink { [weak self] _ in
+                Task { @MainActor [weak self] in
+                    self?.refreshAudioOutputGuidance()
+                }
+            }
+    }
+
+    private func refreshAudioOutputGuidance() {
+        let airPlayPortUIDs = AVAudioSession.sharedInstance().currentRoute.outputs
+            .filter { $0.portType == .airPlay }
+            .map(\.uid)
+        let action = audioOutputGuidanceTracker.update(
+            airPlayPortUIDs: airPlayPortUIDs,
+            externalSceneConnected:
+                PresentationHub.shared.session.state.externalSceneConnected
+        )
+
+        switch action {
+        case .none:
+            break
+        case .show:
+            showAudioOutputGuidance()
+        case .dismiss:
+            dismissAudioOutputGuidance()
+        }
+    }
+
+    private func showAudioOutputGuidance() {
+        audioOutputGuidanceDismissTask?.cancel()
+        audioOutputGuidanceMessage = AirPlayAudioOutputGuidanceBanner.message
+        audioOutputGuidanceDismissTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(8))
+            guard !Task.isCancelled, let self else { return }
+            self.audioOutputGuidanceMessage = nil
+            self.audioOutputGuidanceDismissTask = nil
+        }
+    }
+
+    private func dismissAudioOutputGuidance() {
+        audioOutputGuidanceDismissTask?.cancel()
+        audioOutputGuidanceDismissTask = nil
+        audioOutputGuidanceMessage = nil
+    }
+
+    private func logLocalPlaybackFailure(item: AVPlayerItem, filename: String) {
+        let error = item.error as NSError?
+        let routePortTypes = AVAudioSession.sharedInstance().currentRoute.outputs
+            .map { $0.portType.rawValue }
+            .sorted()
+            .joined(separator: ",")
+        let diagnostic = [
+            "source=localSlideshowVideo",
+            "filename=\(filename)",
+            "errorDomain=\(error?.domain ?? "none")",
+            "errorCode=\(error?.code ?? 0)",
+            "routePortTypes=\(routePortTypes)",
+            "externalSceneConnected=\(PresentationHub.shared.session.state.externalSceneConnected)",
+            "allowsExternalPlayback=\(videoPlayer?.allowsExternalPlayback ?? false)",
+            "usesExternalPlaybackWhileExternalScreenIsActive=\(videoPlayer?.usesExternalPlaybackWhileExternalScreenIsActive ?? false)",
+            "isExternalPlaybackActive=\(videoPlayer?.isExternalPlaybackActive ?? false)",
+            "itemID=\(ObjectIdentifier(item))"
+        ].joined(separator: " ")
+
+        playbackLogger.error("\(diagnostic, privacy: .public)")
     }
 
     func toggleVideoPlayback() {
