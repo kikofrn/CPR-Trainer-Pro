@@ -138,6 +138,17 @@ material, private runtime state, or credentials.
   Next-chapter preverification and stalled-active recovery are explicitly
   future work.
 
+## App Store packaging
+
+- Both the iPhone and Watch Info.plists declare
+  `ITSAppUsesNonExemptEncryption = false` because the app uses only standard
+  HTTPS/ATS encryption, and the declaration is required for unattended App
+  Store archiving.
+- The Watch app is a dependent companion with
+  `WKRunsIndependentlyOfCompanionApp = false` so instructors can install once
+  at the conference without a second manual Watch installation step. Automatic
+  Watch installation still depends on the user's Automatic App Install setting.
+
 ## Deferred Watch work
 
 - Evaluate the `physical-therapy` background mode in a dedicated Watch change.
