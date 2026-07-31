@@ -30,17 +30,16 @@
   automatic installation of the dependent Watch companion from the TestFlight
   install.
 - **In progress**: Build 14 was archived as version `3.0.0 (14)`, uploaded to
-  App Store Connect, processed successfully, and installed through TestFlight.
-  All release hardware gates are complete, and the App Store listing and review
-  submission remain. One deliberate
+  App Store Connect, processed successfully, installed through TestFlight, and
+  submitted to App Review on July 31, 2026. All release hardware gates are
+  complete. One deliberate
   rapid-toggle stress run between two playing slideshow video slides over HDMI
   caused audio to stop while video continued; reconnecting HDMI restored audio.
   Francisco accepted this as a build 14 known limitation because ordinary HDMI
   use and repeated hot-plug testing passed.
-- **Immediate next task**: Francisco completes the iOS 3.0.0 product-page,
-  privacy, pricing, rights, rating, review, and screenshot metadata in App Store
-  Connect, selects build 14, and submits it for App Store review targeting
-  August 3-4.
+- **Immediate next task**: Monitor App Store Connect for Apple's review status
+  or questions. Do not change the submitted iOS build unless App Review reports
+  a concrete issue and Francisco explicitly authorizes a response round.
 - **Known-broken, untested, or deferred areas**: A post-conference round will
   instrument route-change reasons, audio-session state, media-services resets,
   and player audio state before designing any fix for the accepted rapid-switch

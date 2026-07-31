@@ -183,6 +183,11 @@ material, private runtime state, or credentials.
   `WKRunsIndependentlyOfCompanionApp = false` so instructors can install once
   at the conference without a second manual Watch installation step. Automatic
   Watch installation still depends on the user's Automatic App Install setting.
+- Build `3.0.0 (14)` completed processing in App Store Connect, passed its
+  TestFlight installation and dependent Watch auto-install gate, and was
+  submitted to App Review on July 31, 2026. Any response to App Review is a
+  separate explicitly authorized round; the submitted binary is not changed
+  preemptively while review is pending.
 
 ## Deferred Watch work
 
