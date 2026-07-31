@@ -1,5 +1,8 @@
 name: Build CPR Trainer Pro
 
+permissions:
+  contents: read
+
 on:
   push:
     tags:
@@ -69,6 +72,8 @@ jobs:
 
   release:
     if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
     runs-on: windows-latest
     steps:
       - name: Checkout
@@ -94,6 +99,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
+          releaseDraft: false
           tagName: ${{ github.ref_name }}
           releaseName: 'CPR Trainer Pro v__VERSION__'
           releaseBody: 'See the assets below to download the installer for your platform.'
