@@ -930,19 +930,7 @@ export default function App() {
     }
   }, [activeSlideIndex, activeSlideshowIndex, activeSlide, slideshowIsPlaying]);
 
-  useEffect(() => {
-    const video = slideVideoRef.current;
-    if (!video) return;
 
-    const handleEnded = () => {
-      setSlideshowIsPlaying(false);
-    };
-
-    video.addEventListener('ended', handleEnded);
-    return () => {
-      video.removeEventListener('ended', handleEnded);
-    };
-  }, [activeSlideshowIndex, activeSlideIndex, activeSlide]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -1479,6 +1467,7 @@ export default function App() {
               nextSlide={nextSlide}
               slideshowIsPlaying={slideshowIsPlaying}
               toggleSlideshowPlay={toggleSlideshowPlay}
+              onSlideVideoEnded={() => setSlideshowIsPlaying(false)}
               m={m}
               fileStatuses={dlState.fileStatuses}
             />

@@ -24,6 +24,7 @@ interface SlideshowPlayerProps {
   
   slideshowIsPlaying: boolean;
   toggleSlideshowPlay: () => void;
+  onSlideVideoEnded: () => void;
   
   m: (path: string) => string;
   fileStatuses: Record<string, boolean>;
@@ -50,7 +51,7 @@ export function SlideshowPlayer({
   isUiVisible, slideshowContainerRef, slideVideoRef,
   isMuted, setIsMuted, volume, setVolume,
   prevSlide, nextSlide,
-  slideshowIsPlaying, toggleSlideshowPlay,
+  slideshowIsPlaying, toggleSlideshowPlay, onSlideVideoEnded,
   m, fileStatuses
 }: SlideshowPlayerProps) {
   const [showTips, setShowTips] = useState(false);
@@ -94,10 +95,11 @@ export function SlideshowPlayer({
               />
             ) : (
               <video
-                ref={slideVideoRef}
+                ref={(el) => { if (el) slideVideoRef.current = el; }}
                 src={resolveSlideUrl(activeSlide, m, fileStatuses)}
                 className="w-full h-full object-contain"
                 muted={isMuted}
+                onEnded={onSlideVideoEnded}
               />
             )}
           </motion.div>
