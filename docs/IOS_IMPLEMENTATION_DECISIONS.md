@@ -150,9 +150,13 @@ material, private runtime state, or credentials.
   seeking is a candidate post-conference enhancement that requires separate
   authorization.
 - The text-field and onscreen-keyboard check passed on hardware while an
-  external display was connected. The only remaining Build 14 gate is automatic
-  Watch installation, which is verified from the TestFlight build rather than
-  before release upload.
+  external display was connected.
+- Automatic Watch installation passed its release-path hardware gate. After
+  installing iOS build `3.0.0 (14)` through TestFlight, the dependent Watch
+  companion appeared without a separate manual Watch installation. This
+  verifies the build 14 companion configuration on the distribution path while
+  preserving the requirement that the user's Automatic App Install setting be
+  enabled.
 - Native AirPlay video is deferred to a separately authorized build 15
   split-path implementation using a version-matched HTTPS media item; build 14
   remains a complete release candidate if that later round does not pass.
