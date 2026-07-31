@@ -42,6 +42,7 @@
   },
   "bundle": {
     "active": true,
+    "createUpdaterArtifacts": true,
     "targets": "all",
     "icon": [
       "icons/32x32.png",
@@ -62,9 +63,9 @@
   "plugins": {
     "updater": {
       "endpoints": [
-        "https://github.com/kikofrn/CPR-Trainer-Pro/releases/latest/download/update.json"
+        "https://github.com/kikofrn/CPR-Trainer-Pro/releases/latest/download/latest.json"
       ],
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDZFNkNEMkVBMTE5MzI3QUQKUldTdEo1TVI2dEpzYnVzbmF1UURxM2k0a29KQWNqVTZWT0dGM296WTNhS2Y3RmYvbFFudDU2VHQK"
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEI2QUYzMzhBNjY2NjE0OTYKUldTV0ZHWm1pak92dGxlUWJta3kvL3J1RzBjNjV4azNzUk9OZW5RT2pRNGZTOXYxL2ZqeURpYSsK"
     }
   }
 }

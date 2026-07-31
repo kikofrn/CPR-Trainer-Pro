@@ -12,7 +12,7 @@
 
 ## Current state (session handoff)
 
-- **Completed most recently**: Updated the CI build matrix in `.github/workflows/build.yml` from `macos-13` to `macos-15-intel` because GitHub retired the macOS 13 runner image. Appended the decision to `DECISIONS.md`. Repaired the corrupted `DECISIONS.md` file by completely rewriting it as clean UTF-8 (commit pending).
+- **Completed most recently**: Updated `.github/workflows/build.yml` so the matrix job is a compile check on all triggers and added a dedicated Windows-only release job for tags. Enabled `createUpdaterArtifacts` in `tauri.conf.json`, changed the updater endpoint to `latest.json`, and rotated the pubkey. Appended the decision to `DECISIONS.md`.
 - **In progress**: We are at the final stages of Phase 6 (Windows release gates and final audit).
 - **Immediate next task**: Run the manual CI workflow dispatch with Francisco.
 - **Known-broken or untested areas**: Manual verification/drills (gates 7-12) will be done with Francisco. The macOS and iOS ports are pending future phases.
