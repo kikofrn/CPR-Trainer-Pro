@@ -24,25 +24,35 @@
   an audio-output control with a once-per-route guidance banner, and four unit
   tests cover the new policy and guidance tracking. Commit `4acee8c` declared
   `ITSAppUsesNonExemptEncryption = false` in both Info.plists and made the Watch
-  app a dependent companion with
-  `WKRunsIndependentlyOfCompanionApp = false`.
-- **In progress**: Build 14 hardware gates are partially complete. Passed:
+  app a dependent companion with `WKRunsIndependentlyOfCompanionApp = false`.
+  Commit `eba03d8` added this handoff file and the standing iOS agent rules.
+- **In progress**: Build 14 hardware gates are nearly complete. Passed:
   Virtual Assistant video survived Screen Mirroring connect, disconnect, and
-  reconnect on an iPhone 16 Pro running an iOS 27 beta, and a slideshow video
-  slide worked under Screen Mirroring. Failed: Francisco could not identify or
-  use the in-app AirPlay picker. Remaining: HDMI video and audio plus a
-  text-field interaction check, and automatic Watch installation through
-  TestFlight.
-- **Immediate next task**: Francisco must review the AirPlay picker diagnosis
-  and explicitly authorize any implementation. The minimal candidate is to
-  restore the video-centric picker presentation while keeping local video
-  external playback disabled, then repeat the in-app audio-route hardware gate.
-- **Known-broken, untested, or deferred areas**: The in-app AirPlay picker is a
-  failed hardware gate. Build 15, a split-path native AirPlay implementation
-  using a version-matched HTTPS media item, is deferred and requires separate
-  authorization; build 14 stands as a complete release candidate on its own.
-  Six of nine binding build 15 amendments have not been recovered from their
-  source conversation and must be restated before that round begins.
+  reconnect on an iPhone 16 Pro running an iOS 27 beta; a slideshow video slide
+  worked under Screen Mirroring; the in-app audio-output picker was visible,
+  tappable, and listed the classroom TV; and repeated HDMI hot-plug and unplug
+  transitions during active playback recovered correctly. The picker report
+  was a recognizability mismatch caused by its truthful audio-centric glyph,
+  not a rendering or routing failure. A deliberate rapid-switch stress run
+  between two slideshow video slides caused HDMI audio to stop once while
+  video continued; reconnecting the HDMI cable restored audio. This anomaly is
+  an open diagnosis, not a failure of the normal-operation HDMI gate.
+- **Immediate next task**: Francisco reviews the rapid-switch HDMI audio-loss
+  diagnosis and decides whether build 14 should change or record the behavior
+  as a known limitation.
+- **Known-broken, untested, or deferred areas**: The picker's guidance banner
+  still requires a hardware micro-test by selecting the classroom TV from the
+  in-app route sheet and confirming that audio moves and the banner appears.
+  The text-field and onscreen-keyboard check with an external display is
+  unconfirmed, and automatic Watch installation requires a TestFlight or App
+  Store install. Slideshow video slides have never included a scrubber; adding
+  one is a separately authorized post-conference enhancement. Build 15, a
+  split-path native AirPlay implementation using a version-matched HTTPS media
+  item, is deferred and requires separate authorization; build 14 stands as a
+  complete release candidate on its own. Build 15 should restore the
+  video-centric picker presentation when the picker can genuinely deliver
+  video. Six of nine binding build 15 amendments have not been recovered from
+  their source conversation and must be restated before that round begins.
 - **Gotchas**: Build 14 deliberately overturned two previously locked
   constraints: `allowsExternalPlayback` is no longer left at its default
   `true`, and the slideshow coordinator is no longer out of scope. Do not

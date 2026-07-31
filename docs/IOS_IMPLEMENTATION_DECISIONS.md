@@ -98,6 +98,20 @@ material, private runtime state, or credentials.
   the iPhone while audio uses the selected route. A non-blocking message shown
   once per AirPlay route session directs instructors to Control Center's
   Screen Mirroring control when they want video on the TV.
+- Build 14 hardware screenshots confirmed that the in-app picker is visible
+  and tappable in the windowed toolbar and that its route sheet lists the
+  classroom TV. The earlier failed gate was a recognizability and expectation
+  mismatch caused by the audio-centric glyph, not a rendering, enablement, or
+  route-discovery failure. Build 14 keeps that presentation because it
+  truthfully describes an audio-output control and avoids a code change that
+  would require another hardware regression pass inside the submission
+  window. Build 15 must restore a video-centric picker presentation with
+  `prioritizesVideoDevices = true` when the picker becomes genuinely capable
+  of sending course video.
+- The picker's once-per-route guidance banner remains an open hardware
+  micro-test. Francisco must select the classroom TV from the in-app route
+  sheet and confirm that audio moves to the TV and the banner appears before
+  that behavior is marked passed.
 - Local player-item failures retain the existing user-facing fatal path and
   now emit structured diagnostics containing the real error domain/code, route
   types, external-scene state, external-playback flags, and item identity.
@@ -119,9 +133,24 @@ material, private runtime state, or credentials.
   button continues to control only the authored course captions. This iOS 27
   beta behavior is not an AirPlay failure and does not justify suppressing a
   system accessibility feature.
-- The Build 14 hardware gate remains open for the audio-only in-app AirPlay
-  picker, a slideshow video slide under Screen Mirroring, HDMI, and the
-  projector/keyboard/first-responder regression check.
+- A slideshow video slide passed under Screen Mirroring. The normal-operation
+  HDMI gate also passed: repeated HDMI hot-plug and unplug transitions during
+  active video playback recovered correctly each time.
+- One deliberate rapid-switch stress run between two playing slideshow video
+  slides caused HDMI audio to stop while video continued. Audio recovered only
+  after the HDMI cable was disconnected and reconnected. This anomaly remains
+  an open diagnosis rather than a failure of the normal-operation HDMI gate;
+  no behavior change is authorized until Francisco reviews the diagnosis and
+  decides whether to fix it in build 14 or record it as a known limitation.
+- Slideshow video slides intentionally have no scrubber or trackbar. The
+  `iOS-final-build` implementation used for build 12 has the same behavior;
+  the full scrubber belongs only to `VideoCoursePlayerView`. Adding slideshow
+  seeking is a candidate post-conference enhancement that requires separate
+  authorization.
+- The remaining Build 14 hardware gates are automatic Watch installation
+  through TestFlight or the App Store, the in-app picker guidance-banner
+  micro-test, and the text-field and onscreen-keyboard check while an external
+  display is connected.
 - Native AirPlay video is deferred to a separately authorized build 15
   split-path implementation using a version-matched HTTPS media item; build 14
   remains a complete release candidate if that later round does not pass.
