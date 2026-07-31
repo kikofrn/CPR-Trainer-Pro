@@ -108,10 +108,9 @@ material, private runtime state, or credentials.
   window. Build 15 must restore a video-centric picker presentation with
   `prioritizesVideoDevices = true` when the picker becomes genuinely capable
   of sending course video.
-- The picker's once-per-route guidance banner remains an open hardware
-  micro-test. Francisco must select the classroom TV from the in-app route
-  sheet and confirm that audio moves to the TV and the banner appears before
-  that behavior is marked passed.
+- The picker's once-per-route guidance banner passed its hardware gate:
+  selecting the classroom TV from the in-app route sheet moved audio to the TV
+  and displayed the guidance banner.
 - Local player-item failures retain the existing user-facing fatal path and
   now emit structured diagnostics containing the real error domain/code, route
   types, external-scene state, external-playback flags, and item identity.
@@ -138,19 +137,22 @@ material, private runtime state, or credentials.
   active video playback recovered correctly each time.
 - One deliberate rapid-switch stress run between two playing slideshow video
   slides caused HDMI audio to stop while video continued. Audio recovered only
-  after the HDMI cable was disconnected and reconnected. This anomaly remains
-  an open diagnosis rather than a failure of the normal-operation HDMI gate;
-  no behavior change is authorized until Francisco reviews the diagnosis and
-  decides whether to fix it in build 14 or record it as a known limitation.
+  after the HDMI cable was disconnected and reconnected. This single occurrence
+  is an accepted known limitation for build 14 rather than a failure of the
+  normal-operation HDMI gate, which included repeated successful hot-plug
+  recovery. A post-conference round will add instrumentation for route-change
+  reasons, audio-session state, media-services resets, and player audio state
+  before any fix is designed. This decision must be revisited immediately if
+  the failure ever reproduces during ordinary slide navigation.
 - Slideshow video slides intentionally have no scrubber or trackbar. The
   `iOS-final-build` implementation used for build 12 has the same behavior;
   the full scrubber belongs only to `VideoCoursePlayerView`. Adding slideshow
   seeking is a candidate post-conference enhancement that requires separate
   authorization.
-- The remaining Build 14 hardware gates are automatic Watch installation
-  through TestFlight or the App Store, the in-app picker guidance-banner
-  micro-test, and the text-field and onscreen-keyboard check while an external
-  display is connected.
+- The text-field and onscreen-keyboard check passed on hardware while an
+  external display was connected. The only remaining Build 14 gate is automatic
+  Watch installation, which is verified from the TestFlight build rather than
+  before release upload.
 - Native AirPlay video is deferred to a separately authorized build 15
   split-path implementation using a version-matched HTTPS media item; build 14
   remains a complete release candidate if that later round does not pass.
