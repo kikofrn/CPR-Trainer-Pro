@@ -47,3 +47,10 @@
 
 ## 2026-08-01
 - Added LICENSE (proprietary, all-rights-reserved), a gitleaks CI workflow, and a gitleaks pre-commit config for public-repo hardening (Claude-authored, Francisco-authorized).
+
+## 2026-08-01 (v2.3.4 Round)
+- (a) Authenticode signing implemented inside Tauri bundling using trusted-signing-cli, ensuring the updater .sig covers the signed bytes by construction.
+- (b) F1 fixed: The content-update prompt is deferred while a presentation is active and shown upon exit.
+- (c) F2 fixed: The version snapshot now uses a temp-file + atomic rename write, and self-heals by rebuilding if parsing fails.
+- (d) Constant-name CPRTrainerPro-Setup.exe asset is automated in the release job for the evergreen website link.
+- (e) Cargo.toml version coherence issue closed (F7) by syncing version to 2.3.4.

@@ -12,7 +12,7 @@
 
 ## Current state (session handoff)
 
-- **Completed most recently**: Hardened build.yml with least-privilege permissions and explicit releaseDraft false. Dropped scratch python scripts with personal paths. Removed legacy release.yml that raced the new release job on v* tags. Updated `.github/workflows/build.yml` so the matrix job is a compile check on all triggers and added a dedicated Windows-only release job for tags. Enabled `createUpdaterArtifacts` in `tauri.conf.json`, changed the updater endpoint to `latest.json`, and rotated the pubkey. Appended the decision to `DECISIONS.md`.
-- **In progress**: We are at the final stages of Phase 6 (Windows release gates and final audit).
-- **Immediate next task**: Run the manual CI workflow dispatch with Francisco.
-- **Known-broken or untested areas**: Manual verification/drills (gates 7-12) will be done with Francisco. The macOS and iOS ports are pending future phases.
+- **Completed most recently**: Implemented v2.3.4 Windows release round: Azure Trusted Signing during bundling, F1 foreground gating for update prompt, F2 atomic/self-healing snapshot, constant-name release asset, and version bump.
+- **In progress**: Round 2.3.4 implementation complete, awaiting local verification and release.
+- **Immediate next task**: Report SHA commits and test/build outcomes to Francisco, and wait for his explicit authorization to tag and release v2.3.4.
+- **Known-broken or untested areas**: F8 edge-case cluster, S1-S4 security cherry-picks, and other deferred tasks are out of scope for this round and scheduled for 2.3.5.
