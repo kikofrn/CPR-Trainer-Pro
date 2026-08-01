@@ -1,0 +1,46 @@
+Copyright (c) 2026 Everyday Hero CPR LLC. All Rights Reserved.
+
+This repository and all of its contents — including but not limited to
+source code, build and CI configuration, documentation, and design assets —
+are the proprietary and confidential property of Everyday Hero CPR LLC
+("the Company"). The source is made publicly viewable on GitHub to support
+the Company's own build, release, and auto-update infrastructure (including
+the CPR Trainer Pro auto-updater, which polls this repository's release
+assets). Public visibility does NOT constitute a grant of any license,
+right, or permission to any other person or entity.
+
+NO LICENSE GRANTED
+Except as separately and explicitly agreed to in writing by Everyday Hero
+CPR LLC, no right or license — express, implied, statutory, or otherwise —
+is granted to any person or entity to use, copy, modify, merge, publish,
+distribute, sublicense, sell, rent, or create derivative works from this
+source code, in whole or in part, for any purpose, including commercial
+use, personal use, or incorporation into any other software product or
+service. Forking or cloning this repository does not grant any of the
+above rights; it is permitted only insofar as GitHub's own platform
+mechanics require it for public visibility, not as a grant under this
+license.
+
+THIS LICENSE GOVERNS THE SOURCE CODE ONLY
+Nothing in this license restricts or otherwise governs end users' rights
+to install, use, and receive updates for the compiled CPR Trainer Pro
+application as distributed through Everyday Hero Academy's official
+release channels (including this repository's GitHub Releases). Use of the
+compiled, distributed application is subject to whatever separate
+end-user terms accompany that distribution, not to this file.
+
+NO WARRANTY
+THIS SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL
+EVERYDAY HERO CPR LLC OR ITS CONTRIBUTORS BE LIABLE FOR ANY CLAIM, DAMAGES,
+OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE,
+ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+OTHER DEALINGS IN THE SOFTWARE.
+
+SECURITY DISCLOSURES
+If you believe you have discovered a security vulnerability in this
+repository or in CPR Trainer Pro, please report it responsibly and
+directly to info@ehacademy.com rather than disclosing it publicly.
+
+Licensing inquiries: contact Everyday Hero CPR LLC.
