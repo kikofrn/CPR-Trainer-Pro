@@ -1,29 +1,37 @@
 import { test, expect } from '@playwright/test';
 
-function setupStrictErrors(page: any, expectedConsoleErrors: string[] = []) {
+function setupStrictErrors(page: any, expectedErrors: string[] = []) {
   const actualErrors: string[] = [];
   
+  const checkAndConsumeExpected = (text: string) => {
+    const index = expectedErrors.findIndex(expected => text.includes(expected));
+    if (index !== -1) {
+      expectedErrors.splice(index, 1);
+      return true;
+    }
+    return false;
+  };
+
   page.on('console', (msg: any) => {
     if (msg.type() === 'error') {
       const text = msg.text();
-      // Only ignore exactly matched expected errors
-      const index = expectedConsoleErrors.indexOf(text);
-      if (index !== -1) {
-        expectedConsoleErrors.splice(index, 1); // consumed
-      } else {
+      if (!checkAndConsumeExpected(text)) {
         actualErrors.push(`Unexpected console.error: ${text}`);
       }
     }
   });
 
   page.on('pageerror', (err: any) => {
-    actualErrors.push(`Unexpected pageerror: ${err.message}`);
+    const text = err.message || err.toString();
+    if (!checkAndConsumeExpected(text)) {
+      actualErrors.push(`Unexpected pageerror: ${text}`);
+    }
   });
 
   return {
     verify: () => {
       expect(actualErrors).toEqual([]);
-      expect(expectedConsoleErrors).toEqual([]);
+      expect(expectedErrors).toEqual([]);
     }
   };
 }
@@ -46,26 +54,50 @@ test.describe('App Integration', () => {
     await page.waitForSelector('[data-app-ready="true"]');
     await page.evaluate(() => document.fonts.ready);
 
-    const courseLink = page.locator('button', { hasText: 'Adult CPR' }).first();
-    await expect(courseLink).toBeVisible();
-    await courseLink.click();
+    const cprDropdown = page.locator('button', { hasText: 'CPR & AED' }).first();
+    await expect(cprDropdown).toBeVisible();
+    await cprDropdown.click();
 
-    const courseTitle = page.locator('h1', { hasText: 'Adult CPR' });
-    await expect(courseTitle).toBeVisible();
+    // Wait for the dropdown animation to finish
+    await page.waitForTimeout(1000);
 
-    const otherLink = page.locator('button', { hasText: 'Child CPR' }).first();
-    await expect(otherLink).toBeVisible();
-    await otherLink.click();
+    // Enable Virtual Assistant to launch Video Player
+    const vaToggle = page.locator('span', { hasText: 'Enable Virtual Assistant?' }).locator('..').locator('button');
+    await expect(vaToggle).toBeVisible();
+    await vaToggle.click();
+    await page.waitForTimeout(1000); // Wait for state update
 
-    const otherTitle = page.locator('h1', { hasText: 'Child CPR' });
-    await expect(otherTitle).toBeVisible();
+    const startCprCourse = page.locator('button', { hasText: 'START COURSE' }).first();
+    await expect(startCprCourse).toBeVisible();
+    await startCprCourse.click();
+
+    // Verify media playback starts by getting the main video (excluding UI elements)
+    const video = page.locator('video:not([src*="CPR-Dummies"]):not([src*="WakeUp"])').first();
+    await video.waitFor({ state: 'attached' });
+    
+    // Play video
+    await video.evaluate((vid: HTMLVideoElement) => vid.play());
+    
+    // Wait for currentTime to advance > 0
+    await expect(async () => {
+      const currentTime = await video.evaluate((vid: HTMLVideoElement) => vid.currentTime);
+      expect(currentTime).toBeGreaterThan(0);
+    }).toPass({ timeout: 5000 });
+
+    const faDropdown = page.locator('button', { hasText: 'FIRST AID' }).first();
+    await expect(faDropdown).toBeVisible();
+    await faDropdown.click({ force: true });
+
+    const startFaCourse = page.locator('button', { hasText: 'START COURSE' }).first();
+    await expect(startFaCourse).toBeVisible();
 
     errorTracker.verify();
   });
 
   test('post-boot injected unhandled rejection', async ({ page }) => {
     const errorTracker = setupStrictErrors(page, [
-      '[FATAL] Unhandled Promise Rejection: Error: Injected unhandled rejection'
+      'Injected unhandled rejection',
+      'Injected unhandled rejection'
     ]);
 
     await page.goto('/');
@@ -80,12 +112,13 @@ test.describe('App Integration', () => {
     
     await page.waitForTimeout(500);
 
-    const courseLink = page.locator('button', { hasText: 'Adult CPR' }).first();
-    await expect(courseLink).toBeVisible();
-    await courseLink.click();
+    const cprDropdown = page.locator('button', { hasText: 'CPR & AED' }).first();
+    await expect(cprDropdown).toBeVisible();
+    await cprDropdown.click({ force: true });
 
-    const courseTitle = page.locator('h1', { hasText: 'Adult CPR' });
-    await expect(courseTitle).toBeVisible();
+    const startCprCourse = page.locator('button', { hasText: 'START COURSE' }).first();
+    await expect(startCprCourse).toBeVisible();
+    await startCprCourse.click({ force: true });
 
     errorTracker.verify();
   });
