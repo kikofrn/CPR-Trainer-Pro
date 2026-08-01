@@ -39,6 +39,7 @@ function EHLogo({ className }: { className?: string }) {
 
 export default function App() {
   const [mediaReady, setMediaReady] = useState(false);
+  const [mediaStorageError, setMediaStorageError] = useState<string | null>(null);
   
   const [contentUpdateFiles, setContentUpdateFiles] = useState<ChangedFile[]>([]);
   const [showContentUpdatePrompt, setShowContentUpdatePrompt] = useState(false);
@@ -98,7 +99,12 @@ export default function App() {
           .filter(k => !localExistsMap[k.replace(/^\//, '')])
           .map(k => {
             const m = manifestMap.get(k);
-            return m ? { key: k, version: m.etag, isSilent: true } : null;
+            return m ? {
+              key: k,
+              version: m.etag,
+              size: m.size,
+              isSilent: true,
+            } : null;
           })
           .filter((f): f is ChangedFile => f !== null);
 
@@ -129,7 +135,11 @@ export default function App() {
                 pendingUpdatesRef.current[normalized] = { originalKey: f.key, ...stash };
               }
             });
-            downloadManager.queueSpecificFiles(silentFiles.map(f => ({ filename: f.key, version: f.version })));
+            downloadManager.queueSpecificFiles(silentFiles.map(f => ({
+              filename: f.key,
+              version: f.version,
+              size: f.size,
+            })));
           }
 
           if (promptFiles.length > 0) {
@@ -157,6 +167,7 @@ export default function App() {
       })
       .catch((err) => {
         console.error("Media resolver failed:", err);
+        setMediaStorageError(String(err));
         resolved = true;
         setMediaReady(true);
       });
@@ -177,7 +188,7 @@ export default function App() {
   useEffect(() => {
     if (mediaReady && isTauri) {
       const elapsed = Date.now() - appStartTime.current;
-      const delayToReady = Math.max(0, 3200 - elapsed);
+      const delayToReady = Math.max(0, 1000 - elapsed);
 
       const outerTimer = setTimeout(() => {
         localStorage.setItem('splash_status', 'ready');
@@ -188,7 +199,7 @@ export default function App() {
               console.error('[Tauri] Splashscreen transition failed:', e)
             );
           });
-        }, 300);
+        }, 100);
       }, delayToReady);
 
       let innerTimerRef: ReturnType<typeof setTimeout> | undefined;
@@ -763,7 +774,9 @@ export default function App() {
     // Auto-download course media
     if (isTauri && COURSES[index]) {
       const courseId = COURSES[index].id;
-      const category = courseId === 'cpr-aed' ? 'cpr-aed' : 'first-aid';
+      const category = courseId === 'cpr-aed' || courseId === 'pediatric-cpr-aed'
+        ? 'cpr-aed'
+        : 'first-aid';
       downloadManager.startBulkDownload(category as any);
     }
   };
@@ -1054,6 +1067,19 @@ export default function App() {
 
   return (
     <div className="flex h-screen bg-black text-eh-peach overflow-hidden medical-gradient relative">
+      {mediaStorageError && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 p-6">
+          <div className="w-full max-w-lg border border-eh-red/40 bg-[#151619] p-6 shadow-2xl">
+            <h2 className="text-xl font-bold text-white">Media library unavailable</h2>
+            <p className="mt-3 text-sm leading-6 text-eh-peach/80">
+              CPR Trainer Pro could not open its media library in Application Support. Check available disk space and folder permissions, then reopen the app.
+            </p>
+            <p className="mt-4 break-words font-mono text-xs leading-5 text-eh-red/80">
+              {mediaStorageError}
+            </p>
+          </div>
+        </div>
+      )}
       {showContentUpdatePrompt && (
         <UpdatePrompt
           files={contentUpdateFiles}
@@ -1068,7 +1094,11 @@ export default function App() {
               }
             });
             downloadManager.queueSpecificFiles(
-              contentUpdateFiles.map(f => ({ filename: f.key, version: f.version }))
+              contentUpdateFiles.map(f => ({
+                filename: f.key,
+                version: f.version,
+                size: f.size,
+              }))
             );
           }}
           onDismiss={() => {

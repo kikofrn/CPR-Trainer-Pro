@@ -8,6 +8,26 @@
   "permissions": [
     "core:default",
     "core:window:allow-set-fullscreen",
-    "core:window:allow-is-fullscreen"
+    "core:window:allow-is-fullscreen",
+    {
+      "identifier": "opener:allow-open-url",
+      "allow": [
+        {
+          "url": "https://ehacademy.com"
+        },
+        {
+          "url": "https://ehacademy.com/login"
+        },
+        {
+          "url": "https://ehacademy.hflip.co/InstructorOnboardingCPRAED"
+        },
+        {
+          "url": "https://ehacademy.hflip.co/InstructorOnboardingFirstAid"
+        },
+        {
+          "url": "mailto:info@ehacademy.com"
+        }
+      ]
+    }
   ]
 }

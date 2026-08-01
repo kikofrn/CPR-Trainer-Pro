@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, ChevronDown, CheckCircle2, Download, Play, Pause, Clock, MonitorPlay, Settings, Info, HelpCircle, AlertCircle } from 'lucide-react';
 import { mediaUrl as m } from '../media-resolver';
 import { formatSpeed } from '../download-manager';
-import { invoke } from '@tauri-apps/api/core';
+import { openExternalUrl } from '../utils/browser';
 
 interface SidebarProps {
   showSidebar: boolean;
@@ -517,13 +517,7 @@ export const Sidebar = React.memo(function Sidebar({
                       <div 
                         className="p-4 rounded-xl border border-transparent bg-white/[0.02] hover:bg-white/[0.05] hover:border-eh-peach/20 transition-all cursor-pointer group/card"
                         onClick={() => {
-                          if (isTauri) {
-                            invoke('open_browser', { url: 'https://ehacademy.hflip.co/InstructorOnboardingCPRAED' }).catch(() => {
-                              window.open('https://ehacademy.hflip.co/InstructorOnboardingCPRAED', '_blank');
-                            });
-                          } else {
-                            window.open('https://ehacademy.hflip.co/InstructorOnboardingCPRAED', '_blank');
-                          }
+                          openExternalUrl('https://ehacademy.hflip.co/InstructorOnboardingCPRAED').catch(console.error);
                         }}
                       >
                         <img 
@@ -543,13 +537,7 @@ export const Sidebar = React.memo(function Sidebar({
                       <div 
                         className="p-4 rounded-xl border border-transparent bg-white/[0.02] hover:bg-white/[0.05] hover:border-eh-peach/20 transition-all cursor-pointer group/card"
                         onClick={() => {
-                          if (isTauri) {
-                            invoke('open_browser', { url: 'https://ehacademy.hflip.co/InstructorOnboardingFirstAid' }).catch(() => {
-                              window.open('https://ehacademy.hflip.co/InstructorOnboardingFirstAid', '_blank');
-                            });
-                          } else {
-                            window.open('https://ehacademy.hflip.co/InstructorOnboardingFirstAid', '_blank');
-                          }
+                          openExternalUrl('https://ehacademy.hflip.co/InstructorOnboardingFirstAid').catch(console.error);
                         }}
                       >
                         <img 

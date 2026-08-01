@@ -3,13 +3,14 @@ import { listen, Event } from '@tauri-apps/api/event';
 import { COURSES, MANUALS, SLIDESHOWS } from './chapters';
 import { snapshotStore } from './snapshot-store';
 import { THUMBNAIL_KEYS } from './thumbnails';
+import type { ManifestFile } from './update-checker';
 
 const COMING_SOON_IDS = ['cpr-aed-spanish-course', 'first-aid-spanish-course'];
 
 export interface DownloadState {
   isDownloading: boolean;
   activeCategory: 'everything' | 'cpr-aed' | 'first-aid' | 'manuals' | 'single' | null;
-  queue: { filename: string; version?: string }[];
+  queue: DownloadQueueItem[];
   totalQueueSize: number;
   completedQueueCount: number;
   currentFile: string | null;
@@ -18,7 +19,6 @@ export interface DownloadState {
   currentSpeed: number; // bytes per second
   currentTimeRemaining: number; // seconds
   fileStatuses: Record<string, boolean>; // map of filename -> isDownloaded
-  activeBaseUrl: string; // the download server base URL
   globalDownloadedCount: number;
   globalTotalCount: number;
   fileAttempts: Record<string, number>;
@@ -26,6 +26,13 @@ export interface DownloadState {
   isPausing: boolean;
   failedFiles: string[];
   isMockingFiles: boolean;
+}
+
+interface DownloadQueueItem {
+  filename: string;
+  version?: string;
+  expectedSize: number;
+  expectedEtag: string;
 }
 
 export type DownloadStateListener = (state: DownloadState) => void;
@@ -54,7 +61,6 @@ class DownloadManager {
     currentSpeed: 0,
     currentTimeRemaining: -1,
     fileStatuses: {},
-    activeBaseUrl: localStorage.getItem('eh_download_base_url') || 'https://media.ehacademy.com/',
     globalDownloadedCount: 0,
     globalTotalCount: 0,
     fileAttempts: {},
@@ -70,6 +76,7 @@ class DownloadManager {
   private lastProgressTime = 0;
   private lastBytesWritten = 0;
   private mockMissingFiles = false;
+  private manifestPromise: Promise<Map<string, ManifestFile>> | null = null;
 
   public toggleMockMissingFiles() {
     this.mockMissingFiles = !this.mockMissingFiles;
@@ -120,14 +127,57 @@ class DownloadManager {
     return { ...this.state };
   }
 
-  public setBaseUrl(url: string) {
-    let cleanUrl = url.trim();
-    if (cleanUrl && !cleanUrl.endsWith('/')) {
-      cleanUrl += '/';
+  private async getManifest(): Promise<Map<string, ManifestFile>> {
+    if (!this.manifestPromise) {
+      this.manifestPromise = (async () => {
+        const controller = new AbortController();
+        const timeout = window.setTimeout(() => controller.abort(), 10000);
+        try {
+          const response = await fetch('https://media.ehacademy.com/api/manifest', {
+            signal: controller.signal,
+            cache: 'no-store',
+          });
+          if (!response.ok) {
+            throw new Error(`Media catalog returned HTTP ${response.status}`);
+          }
+          const payload = await response.json() as { files?: ManifestFile[] };
+          if (!Array.isArray(payload.files)) {
+            throw new Error('Media catalog response is invalid');
+          }
+
+          const manifest = new Map<string, ManifestFile>();
+          for (const file of payload.files) {
+            if (!file?.key || !file.etag || !Number.isSafeInteger(file.size) || file.size <= 0) {
+              continue;
+            }
+            manifest.set(this.normalizeFilename(file.key), file);
+          }
+          return manifest;
+        } finally {
+          window.clearTimeout(timeout);
+        }
+      })().catch((error) => {
+        this.manifestPromise = null;
+        throw error;
+      });
     }
-    this.state.activeBaseUrl = cleanUrl;
-    localStorage.setItem('eh_download_base_url', cleanUrl);
-    this.notify();
+    return this.manifestPromise;
+  }
+
+  private async describeFiles(filenames: string[]): Promise<DownloadQueueItem[]> {
+    const manifest = await this.getManifest();
+    return filenames.map((rawFilename) => {
+      const filename = this.normalizeFilename(rawFilename);
+      const file = manifest.get(filename);
+      if (!file) {
+        throw new Error(`The media catalog does not contain ${filename}`);
+      }
+      return {
+        filename,
+        expectedSize: file.size,
+        expectedEtag: file.etag,
+      };
+    });
   }
 
   private async setupListeners() {
@@ -277,9 +327,10 @@ class DownloadManager {
     try {
       console.log(`[DownloadManager] Invoking download for: ${nextFile}`);
       await invoke('download_media_file', {
-        baseUrl: this.state.activeBaseUrl,
         filename: nextFile,
-        version: nextItem.version
+        version: nextItem.version,
+        expectedSize: nextItem.expectedSize,
+        expectedEtag: nextItem.expectedEtag,
       });
       // Guarded fallback: if invoke succeeded but download-complete event was missed,
       // handle completion here to prevent the queue from getting stuck.
@@ -444,9 +495,19 @@ class DownloadManager {
       return;
     }
 
+    let queue: DownloadQueueItem[];
+    try {
+      queue = await this.describeFiles(pendingFiles);
+    } catch (error) {
+      console.error('[DownloadManager] Unable to prepare verified downloads:', error);
+      this.state.failedFiles = pendingFiles;
+      this.notify();
+      return;
+    }
+
     this.state.isDownloading = true;
     this.state.activeCategory = category;
-    this.state.queue = pendingFiles.map(f => ({ filename: f }));
+    this.state.queue = queue;
     this.state.totalQueueSize = pendingFiles.length;
     this.state.completedQueueCount = 0;
     this.notify();
@@ -454,13 +515,20 @@ class DownloadManager {
     this.downloadNext();
   }
 
-  public queueSpecificFiles(files: { filename: string; version: string }[]) {
+  public queueSpecificFiles(files: { filename: string; version: string; size: number }[]) {
     if (files.length === 0) return;
 
+    const queueItems = files.map((file) => ({
+      filename: this.normalizeFilename(file.filename),
+      version: file.version,
+      expectedSize: file.size,
+      expectedEtag: file.version,
+    }));
+
     if (this.state.isDownloading) {
-      files.forEach((f) => {
+      queueItems.forEach((f) => {
         if (!this.state.queue.some(q => q.filename === f.filename) && this.state.currentFile !== f.filename) {
-          this.state.queue.push({ filename: f.filename, version: f.version });
+          this.state.queue.push(f);
           this.state.totalQueueSize += 1;
         }
       });
@@ -468,8 +536,8 @@ class DownloadManager {
     } else {
       this.state.isDownloading = true;
       this.state.activeCategory = 'everything';
-      this.state.queue = [...files];
-      this.state.totalQueueSize = files.length;
+      this.state.queue = queueItems;
+      this.state.totalQueueSize = queueItems.length;
       this.state.completedQueueCount = 0;
       this.state.isPaused = false;
       this.state.isPausing = false;
@@ -483,9 +551,18 @@ class DownloadManager {
     if (this.state.isDownloading) {
       // Add to queue if we're already bulk downloading or single downloading
       if (!this.state.queue.some(q => q.filename === filename) && this.state.currentFile !== filename) {
-        this.state.queue.push({ filename });
-        this.state.totalQueueSize += 1;
-        this.notify();
+        try {
+          const [item] = await this.describeFiles([filename]);
+          this.state.queue.push(item);
+          this.state.totalQueueSize += 1;
+          this.notify();
+        } catch (error) {
+          console.error('[DownloadManager] Unable to prepare verified download:', error);
+          if (!this.state.failedFiles.includes(filename)) {
+            this.state.failedFiles.push(filename);
+          }
+          this.notify();
+        }
       }
       return;
     }
@@ -505,7 +582,11 @@ class DownloadManager {
     if ((import.meta as any).env.DEV && this.mockMissingFiles) {
       this.state.isDownloading = true;
       this.state.activeCategory = 'single';
-      this.state.queue = [{ filename }];
+      this.state.queue = [{
+        filename,
+        expectedSize: 1000000,
+        expectedEtag: 'development-mock',
+      }];
       this.state.totalQueueSize = 1;
       this.state.completedQueueCount = 0;
       this.state.currentFile = filename;
@@ -534,9 +615,21 @@ class DownloadManager {
       return;
     }
 
+    let item: DownloadQueueItem;
+    try {
+      [item] = await this.describeFiles([filename]);
+    } catch (error) {
+      console.error('[DownloadManager] Unable to prepare verified download:', error);
+      if (!this.state.failedFiles.includes(filename)) {
+        this.state.failedFiles.push(filename);
+      }
+      this.notify();
+      return;
+    }
+
     this.state.isDownloading = true;
     this.state.activeCategory = 'single';
-    this.state.queue = [{ filename }];
+    this.state.queue = [item];
     this.state.totalQueueSize = 1;
     this.state.completedQueueCount = 0;
     this.notify();
@@ -545,12 +638,13 @@ class DownloadManager {
   }
 
   /**
-   * Cancels the download queue. The currently active Rust download will finish
-   * in the background (we don't abort HTTP streams), but its completion is
-   * harmless — the file just gets saved to disk and fileStatuses is updated.
-   * From the user's perspective, downloads stop immediately.
+   * Cancels active HTTP streams and leaves verified partial bytes available for
+   * a later resume.
    */
   public cancelDownload() {
+    invoke('cancel_media_downloads').catch((error) => {
+      console.error('[DownloadManager] Failed to cancel backend downloads:', error);
+    });
     this.state.isDownloading = false;
     this.state.activeCategory = null;
     this.state.queue = [];
@@ -703,10 +797,20 @@ class DownloadManager {
       return;
     }
 
+    let queueItems: DownloadQueueItem[];
+    try {
+      queueItems = await this.describeFiles(pending);
+    } catch (error) {
+      console.error('[DownloadManager] Unable to prepare slideshow download:', error);
+      this.state.failedFiles = pending;
+      this.notify();
+      return;
+    }
+
     if (this.state.isDownloading) {
-      pending.forEach((f) => {
-        if (!this.state.queue.some(q => q.filename === f) && this.state.currentFile !== f) {
-          this.state.queue.push({ filename: f });
+      queueItems.forEach((item) => {
+        if (!this.state.queue.some(q => q.filename === item.filename) && this.state.currentFile !== item.filename) {
+          this.state.queue.push(item);
           this.state.totalQueueSize += 1;
         }
       });
@@ -714,8 +818,8 @@ class DownloadManager {
     } else {
       this.state.isDownloading = true;
       this.state.activeCategory = 'single';
-      this.state.queue = pending.map(f => ({ filename: f }));
-      this.state.totalQueueSize = pending.length;
+      this.state.queue = queueItems;
+      this.state.totalQueueSize = queueItems.length;
       this.state.completedQueueCount = 0;
       this.notify();
       this.downloadNext();
@@ -734,10 +838,20 @@ class DownloadManager {
       return;
     }
 
+    let queueItems: DownloadQueueItem[];
+    try {
+      queueItems = await this.describeFiles(pending);
+    } catch (error) {
+      console.error('[DownloadManager] Unable to prepare manual downloads:', error);
+      this.state.failedFiles = pending;
+      this.notify();
+      return;
+    }
+
     if (this.state.isDownloading) {
-      pending.forEach((f) => {
-        if (!this.state.queue.some(q => q.filename === f) && this.state.currentFile !== f) {
-          this.state.queue.push({ filename: f });
+      queueItems.forEach((item) => {
+        if (!this.state.queue.some(q => q.filename === item.filename) && this.state.currentFile !== item.filename) {
+          this.state.queue.push(item);
           this.state.totalQueueSize += 1;
         }
       });
@@ -745,8 +859,8 @@ class DownloadManager {
     } else {
       this.state.isDownloading = true;
       this.state.activeCategory = 'manuals';
-      this.state.queue = pending.map(f => ({ filename: f }));
-      this.state.totalQueueSize = pending.length;
+      this.state.queue = queueItems;
+      this.state.totalQueueSize = queueItems.length;
       this.state.completedQueueCount = 0;
       this.notify();
       this.downloadNext();

@@ -1,34 +1,21 @@
 // Media URL resolver for Tauri desktop + web compatibility
-// 
+//
 // In web mode: files served from /filename (Vite public directory)
 // In Tauri mode: files served via custom "media://" protocol handler
-//   On Windows: http://media.localhost/<filename>
-//   On macOS/Linux: media://localhost/<filename>
+//   On macOS: media://localhost/<filename>
 
 const isTauri = typeof window !== 'undefined' && !!(window as any).__TAURI_INTERNALS__;
 
-// On Windows Tauri, the media protocol base URL is always deterministic.
-// Set it eagerly so mediaUrl() works synchronously from the very first render.
-let mediaBase = isTauri ? 'http://media.localhost/' : '';
-// mediaBase is set eagerly for Tauri since the Windows protocol URL is deterministic
+// The macOS custom-protocol URL is deterministic, so mediaUrl() can remain
+// synchronous from the first render.
+const MEDIA_BASE = 'media://localhost/';
 
 async function init() {
   if (!isTauri) return;
-  
-  try {
-    // Verify the protocol is working
-    try {
-      const testUrl = mediaBase + 'eha-icon.png';
-      const resp = await fetch(testUrl, { method: 'HEAD' });
-      console.log(`[MediaResolver] Protocol test (eha-icon.png): ${resp.status} ${resp.statusText}`);
-    } catch (e) {
-      console.warn('[MediaResolver] Protocol test failed:', e);
-    }
-    
-    console.log('[MediaResolver] ✅ Ready. Base URL:', mediaBase);
-  } catch (e) {
-    console.error('[MediaResolver] ❌ Init failed:', e);
-  }
+
+  const { invoke } = await import('@tauri-apps/api/core');
+  const storagePath = await invoke<string>('get_media_storage_status');
+  console.info('[MediaResolver] Media library ready:', storagePath);
 }
 
 const initPromise = init();
@@ -40,16 +27,16 @@ const initPromise = init();
  *     -> "/01_EHAcademy - CPR AED Course Video-Introduction.mp4"
  * 
  * Tauri: "/01_EHAcademy - CPR AED Course Video-Introduction.mp4"  
- *     -> "http://media.localhost/01_EHAcademy%20-%20CPR%20AED%20Course%20Video-Introduction.mp4"
+ *     -> "media://localhost/01_EHAcademy%20-%20CPR%20AED%20Course%20Video-Introduction.mp4"
  */
 export function mediaUrl(filename: string): string {
-  if (!isTauri || !mediaBase) return filename;
+  if (!isTauri) return filename;
   
   // Strip leading slash if present
   const clean = filename.startsWith('/') ? filename.slice(1) : filename;
   
   // URL-encode the filename to handle spaces and special characters
-  return mediaBase + clean.split('/').map(s => encodeURIComponent(s)).join('/');
+  return MEDIA_BASE + clean.split('/').map(s => encodeURIComponent(s)).join('/');
 }
 
 /**

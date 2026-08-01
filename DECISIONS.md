@@ -46,3 +46,11 @@
 - Desktop content checks run at startup only; no hourly check is added to the Mac release.
 - Mac App Store privacy must be revalidated against Cloudflare logging before reaffirming the shared Data Not Collected declaration.
 - Conference media import is picker-only and copies one shared USB media library into Application Support.
+- Downloaded media lives under the Tauri Application Support app-data directory, never in the app bundle or a user-selected arbitrary path. The media directory, completed files, and version snapshot receive the native macOS backup-exclusion resource value.
+- `media://localhost/` is the only local media URL. The protocol accepts only GET and HEAD, rejects traversal, encoded traversal, symlinks, and unapproved extensions, caps response sizes, and serves bounded byte ranges for video.
+- A live WebKit gate established the video contract: an un-ranged MP4 request receives the first 2 MiB as HTTP 206, while the media element performs ordinary byte-range seeking. This avoids loading full videos into Rust or WebKit memory.
+- Downloads are restricted to catalog-approved paths on `media.ehacademy.com`, verify manifest size and ETag, use connect and chunk-stall timeouts, support real cancellation and partial resume, and publish only after flush, sync, verification, and atomic rename.
+- Content-version snapshots are schema validated, written by atomic replacement, and rebuilt after corrupt JSON rather than blocking launch.
+- External navigation uses the scoped Tauri opener permission for the EH Academy portal, onboarding documents, and support email only. Web fallback remains centralized in the same validated helper.
+- Runtime web-font requests are prohibited. Inter, Playfair Display, and JetBrains Mono are packaged locally with their OFL licenses, and CSP allows media only from the custom protocol and `https://media.ehacademy.com`.
+- The current live catalog contains no multipart ETag values. Opaque multipart preservation is covered by unit test; a live multipart case remains unavailable until the bucket contains one.

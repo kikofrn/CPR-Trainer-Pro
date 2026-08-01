@@ -12,7 +12,7 @@
 
 ## Current state (session handoff)
 
-- **Completed most recently**: Canonical macOS Plan v2.1 Phase 0 in this commit: created the isolated `mac-build` worktree from pinned source `3ced294`, removed Windows/updater surfaces, synchronized version 3.0.0, and passed frontend, Rust ARM/Intel, R2 URL, and catalog gates.
-- **In progress**: Phase 0 is complete; Phase 1 has not started.
-- **Immediate next task**: Implement Phase 1 Mac storage, protocol/download hardening, local fonts, CSP, scoped opener, and atomic snapshots.
-- **Known-broken or untested areas**: The current inherited media path and URL scheme are still Windows-oriented and are intentionally addressed in Phase 1. Presenter, USB import, signing, packaging, and physical hardware gates remain later phases. The dependency audit reports five inherited findings (two low, three high); no automatic audit fix was applied.
+- **Completed most recently**: Canonical macOS Plan v2.1 Phase 1 in this commit: moved media into Application Support, added backup exclusion, hardened the custom protocol and downloader, made snapshots atomic and self-healing, removed hosted fonts, narrowed CSP and external-link permissions, and passed live large-media, cancellation/resume, corruption-recovery, ARM/Intel, frontend, R2 URL, and catalog gates.
+- **In progress**: Phases 0 and 1 are complete; Phase 2 has not started.
+- **Immediate next task**: Implement Phase 2 Presenter on a second display, preserving the independent audience-window contract and validating display attach/detach behavior on physical hardware.
+- **Known-broken or untested areas**: Presenter, USB import, signing, packaging, App Store Connect, and final physical hardware gates remain later phases. A complete course has not yet been downloaded and played fully offline; the Phase 1 gate used a 168 MB video, a 65 MB PDF, thumbnails, repeated seeking, and live recovery tests. The dependency audit reports five inherited findings (two low, three high); no automatic audit fix was applied.

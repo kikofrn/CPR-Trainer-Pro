@@ -158,11 +158,11 @@ export function SendCertsPage({
             <div className="bg-black/40 border border-white/5 rounded-2xl p-6 text-left space-y-4 mb-6 w-full">
               <h3 className="text-sm font-bold uppercase tracking-wider text-eh-blue-light">Instructions for Instructors</h3>
               <p className="text-sm text-eh-peach/70 leading-relaxed">
-                Please connect to the internet, then open a web browser and go to <a href="https://ehacademy.com" target="_blank" rel="noopener noreferrer" className="text-eh-red hover:underline font-bold">ehacademy.com</a> to log into your account and assign certification cards to your students.
+                Please connect to the internet, then open a web browser and go to <button type="button" onClick={() => openExternalUrl('https://ehacademy.com').catch(console.error)} className="text-eh-red hover:underline font-bold">ehacademy.com</button> to log into your account and assign certification cards to your students.
               </p>
               <div className="h-px bg-white/5 w-full" />
               <p className="text-sm text-eh-peach/70 leading-relaxed">
-                If you need any immediate assistance, please feel free to email us at <a href="mailto:info@ehacademy.com" className="text-eh-red hover:underline font-bold">info@ehacademy.com</a>.
+                If you need any immediate assistance, please feel free to email us at <button type="button" onClick={() => openExternalUrl('mailto:info@ehacademy.com').catch(console.error)} className="text-eh-red hover:underline font-bold">info@ehacademy.com</button>.
               </p>
             </div>
             
