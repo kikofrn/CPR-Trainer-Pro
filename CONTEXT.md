@@ -58,3 +58,11 @@ src\components\ManualFlipbook.tsx:259:          const { getCurrentWindow } = awa
 src\utils\boot.tsx:19:    import('@tauri-apps/api/core').then(({ invoke }) => {
 
 Per-hit gating mechanism: Every single occurrence listed above is either strictly inside an if (isTauri) block or uses a isTauri ? import(...) : fallback() pattern to prevent execution on web clients. The step-6 tests in tests/e2e/fatal.spec.ts act as the executable proof that rendering doesn't crash on web mode due to Tauri imports.
+
+## Gate 1 Reference Screenshots Checksums (R7h)
+- boot-1440.png: \`fc1a6497421b6347f81270f896f96fd4f86bd36526032a17844be8ded7e2bd6b\`
+- boot-390.png: \`3b145db4c2d4a717a53d01e6ef8037453fccdc23626ea8cb5f3186ed58a5212c\`
+- course-cpr-1440.png: \`b7edf39e4a5fecd0908dcf38fb32ca0fb1be55ea1eabbf522b10ddf2a893c9c1\`
+
+## Smoke Test Verification (R8)
+- [ ] PENDING HUMAN OBSERVATION of the Windows/Tauri desktop build. Francisco must verify before final promotion.
