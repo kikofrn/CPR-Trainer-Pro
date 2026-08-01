@@ -60,6 +60,9 @@
 
 - Decided to implement the ErrorBoundary production fallback test (Step 6b) using Playwright via a new test fixture (throwing-boundary.html/tsx) instead of Vitest with jsdom, strictly adhering to the 5.6 test-dependency policy (no jsdom without exception).
 
+## 2026-08-01
+- Added LICENSE (proprietary, all-rights-reserved), a gitleaks CI workflow, and a gitleaks pre-commit config for public-repo hardening (Claude-authored, Francisco-authorized).
+
 ## 2026-08-02 Gate-1 recovery
 - Gate-1 matrix execution is isolated in `playwright.gate1.config.ts`: one exact spec, one serial worker, zero retries, a production preview, and a required empty evidence root outside the repository. The orchestrator validates the clean root; Playwright workers may reload the config after reporter folders have been created.
 - Every matrix row writes a viewport screenshot and structured JSON record even when its product assertion fails; console errors, page errors, and unhandled rejections are separate failure channels.
@@ -67,4 +70,3 @@
 - Gate 1 creates the first approved visual reference, so the screenshot harness performs two sequential same-candidate passes and requires byte identity; it does not compare against `b550d6c` or another unapproved historical SHA.
 - The visual reference contains seven surfaces. Surface 7 is the expanded web Settings/Offline panel—not a fabricated modal—and the Info easter-egg control is never activated. Live video and iframe regions are the only declared masks.
 - Web CI installs Playwright Chromium and runs only `playwright.config.ts` (the four-test default suite). Its output stays under the runner's temporary directory and the HTML report is uploaded for 14 days. The slower 16-row Gate-1 matrix is intentionally isolated from routine push/PR CI and remains an explicit audit step.
-
