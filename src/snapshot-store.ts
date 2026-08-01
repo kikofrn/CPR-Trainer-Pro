@@ -59,7 +59,7 @@ class SnapshotStore {
       if (!isTauri) return;
       try {
         const { invoke } = await this.tauriLoader();
-        let raw = await invoke<string>('read_version_snapshot');
+        let raw: string = await invoke('read_version_snapshot');
         let data: SnapshotData;
         if (!raw || raw.trim() === '' || raw === '{}') {
           data = { schema: 1, avgSpeedBps: 0, files: {} };
@@ -86,7 +86,7 @@ class SnapshotStore {
       if (!isTauri) return;
       try {
         const { invoke } = await this.tauriLoader();
-        let raw = await invoke<string>('read_version_snapshot');
+        let raw: string = await invoke('read_version_snapshot');
         let data: SnapshotData;
         if (!raw || raw.trim() === '' || raw === '{}') {
           data = { schema: 1, avgSpeedBps: 0, files: {} };
@@ -109,7 +109,7 @@ class SnapshotStore {
       if (!isTauri) return;
       try {
         const { invoke } = await this.tauriLoader();
-        let raw = await invoke<string>('read_version_snapshot');
+        let raw: string = await invoke('read_version_snapshot');
         let data: SnapshotData;
         if (!raw || raw.trim() === '' || raw === '{}') {
           data = { schema: 1, avgSpeedBps: 0, files: {} };
