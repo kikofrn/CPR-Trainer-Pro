@@ -266,7 +266,7 @@ async fn download_media_file(
         })
         .collect::<Vec<_>>()
         .join("/");
-    
+
     let mut url = format!("{}{}", base_url, encoded_filename);
     if let Some(ref v) = version {
         url = format!("{}?v={}", url, v);
@@ -278,7 +278,10 @@ async fn download_media_file(
     let existing_size = if version.is_some() {
         0
     } else {
-        tokio::fs::metadata(&temp_path).await.map(|m| m.len()).unwrap_or(0)
+        tokio::fs::metadata(&temp_path)
+            .await
+            .map(|m| m.len())
+            .unwrap_or(0)
     };
 
     let client = reqwest::Client::new();
@@ -402,10 +405,12 @@ fn read_version_snapshot(app: tauri::AppHandle) -> Result<String, String> {
 #[tauri::command]
 fn write_version_snapshot(app: tauri::AppHandle, content: String) -> Result<(), String> {
     let media_dir = find_media_dir(&app);
-    std::fs::create_dir_all(&media_dir).map_err(|e| format!("Failed to create media directory: {}", e))?;
+    std::fs::create_dir_all(&media_dir)
+        .map_err(|e| format!("Failed to create media directory: {}", e))?;
     let snapshot_path = media_dir.join(".content-versions.json");
     let temp_path = media_dir.join(".content-versions.json.tmp");
-    std::fs::write(&temp_path, content).map_err(|e| format!("Failed to write snapshot to temp: {}", e))?;
+    std::fs::write(&temp_path, content)
+        .map_err(|e| format!("Failed to write snapshot to temp: {}", e))?;
     std::fs::rename(&temp_path, &snapshot_path).map_err(|e| {
         let _ = std::fs::remove_file(&temp_path);
         format!("Failed to rename snapshot: {}", e)
@@ -478,7 +483,7 @@ fn check_disk_space(app: tauri::AppHandle) -> Result<u64, String> {
     use sysinfo::Disks;
     let media_dir = find_media_dir(&app);
     let disks = Disks::new_with_refreshed_list();
-    
+
     let mut max_prefix_len = 0;
     let mut available_space = 0;
 

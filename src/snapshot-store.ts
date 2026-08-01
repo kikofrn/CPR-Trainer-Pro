@@ -33,7 +33,6 @@ class SnapshotStore {
     return this.enqueue(async () => {
       try {
         const raw = await invoke<string>('read_version_snapshot');
-        const raw = await invoke<string>('read_version_snapshot');
         return this.parseSnapshotRaw(raw);
       } catch (e) {
         console.error('[SnapshotStore] Failed to read snapshot', e);
