@@ -44,3 +44,6 @@
 - RECORD: 2.3.0–2.3.2 installed clients can never auto-update (endpoint renamed update.json→latest.json + key rotated in the same release; nothing materially lost — the old pipeline never published artifacts; auto-update begins working as of 2.3.3→2.3.4)
 - ACCEPTED LIMITATION (2.3.3): the content-update prompt has no foreground gating — a late-completing startup check can surface the modal over an active presentation (startup-seconds race). Fix in 2.3.4: defer prompt while a presentation is active.
 - ACCEPTED LIMITATION (2.3.3): the version snapshot is written non-atomically and a corrupted snapshot never self-heals (silently degrades to date-fallback). Fix in 2.3.4: temp-file+rename write in Rust plus rebuild-on-parse-failure.
+
+## 2026-08-01
+- Added LICENSE (proprietary, all-rights-reserved), a gitleaks CI workflow, and a gitleaks pre-commit config for public-repo hardening (Claude-authored, Francisco-authorized).
