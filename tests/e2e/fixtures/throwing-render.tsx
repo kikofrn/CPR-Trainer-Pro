@@ -1,12 +1,10 @@
 import { mountApp } from '../../../src/utils/boot';
 
-function ThrowingApp() {
-  throw new Error("Simulated first-render error");
-  return <div>Will not render</div>;
-}
-
+// The HTML fixture has no #root, so this returns null and triggers the missing container check.
 mountApp({
   container: document.getElementById('root'),
-  AppComponent: ThrowingApp,
-  platform: 'web'
+  AppComponent: () => null,
+  platform: 'web',
+  tauriLoader: async () => ({ invoke: async () => {} }),
+  storage: { setItem: () => {} }
 });

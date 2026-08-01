@@ -1,22 +1,23 @@
 import React, { StrictMode, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ErrorBoundary } from '../components/ErrorBoundary';
-import { isTauri } from '../media-resolver';
-import { safeStorage } from './safe-storage';
 
 let rootOwned = false;
 let appReady = false;
 
+// We export types for dependency injection
+export type TauriLoader = () => Promise<{ invoke: (cmd: string, args?: any) => Promise<any> }>;
+
 // Force close splash screen — called on any fatal error
-export function forceCloseSplash() {
-  if (!isTauri) return;
+export function forceCloseSplash(platform: 'web' | 'tauri', loader: TauriLoader, storage: any) {
+  if (platform !== 'tauri') return;
   try {
-    safeStorage.setItem('splash_status', 'ready');
+    storage.setItem('splash_status', 'ready');
   } catch (e) {
     console.error('[FATAL] Failed to set splash_status', e);
   }
   try {
-    import('@tauri-apps/api/core').then(({ invoke }) => {
+    loader().then(({ invoke }) => {
       invoke('close_splashscreen').catch(() => {});
     }).catch(() => {});
   } catch (e) {
@@ -62,11 +63,15 @@ function FallbackUI() {
 export function mountApp({ 
   container, 
   AppComponent, 
-  platform 
+  platform,
+  tauriLoader,
+  storage
 }: { 
   container: HTMLElement | null, 
   AppComponent: React.ComponentType, 
-  platform: 'web' | 'tauri' 
+  platform: 'web' | 'tauri',
+  tauriLoader: TauriLoader,
+  storage: any
 }) {
   if (!container) {
     // Missing #root container
@@ -74,13 +79,14 @@ export function mountApp({
     fatal.style.cssText = 'color:#ff4b4b;background:#111;padding:32px;margin:32px;border-radius:12px;font-family:sans-serif';
     fatal.textContent = 'FATAL: Application container (#root) not found.';
     document.body.appendChild(fatal);
+    forceCloseSplash(platform, tauriLoader, storage);
     return;
   }
 
   // Set up global error handlers
   window.addEventListener('error', (event) => {
     console.error('[FATAL] Uncaught Error:', event.error);
-    if (platform === 'tauri') forceCloseSplash();
+    forceCloseSplash(platform, tauriLoader, storage);
     
     if (!rootOwned) {
       container.textContent = '';
@@ -93,7 +99,7 @@ export function mountApp({
 
   window.addEventListener('unhandledrejection', (event) => {
     console.error('[FATAL] Unhandled Promise Rejection:', event.reason);
-    if (platform === 'tauri') forceCloseSplash();
+    forceCloseSplash(platform, tauriLoader, storage);
     
     if (!rootOwned) {
       container.textContent = '';
@@ -108,7 +114,7 @@ export function mountApp({
     const root = createRoot(container, {
       onUncaughtError: (error, errorInfo) => {
         console.error('React Uncaught Error:', error, errorInfo);
-        if (platform === 'tauri') forceCloseSplash();
+        forceCloseSplash(platform, tauriLoader, storage);
       },
       onCaughtError: (error, errorInfo) => {
         console.error('React Caught Error (Boundary):', error, errorInfo);
@@ -131,7 +137,7 @@ export function mountApp({
     rootOwned = true;
   } catch (e) {
     console.error('[FATAL] React Render Crash:', e);
-    if (platform === 'tauri') forceCloseSplash();
+    forceCloseSplash(platform, tauriLoader, storage);
     if (!rootOwned) {
       container.textContent = '';
       const pre = document.createElement('pre');

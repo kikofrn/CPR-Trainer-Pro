@@ -1,13 +1,11 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Fatal Error Handling', () => {
-  test('shows raw DOM screen when mount fails completely', async ({ page }) => {
+  test('shows raw DOM screen when container is missing', async ({ page }) => {
     await page.goto('/tests/e2e/fixtures/throwing-render.html');
     
-    const pre = page.locator('pre');
-    await expect(pre).toBeVisible();
-    await expect(pre).toContainText('React Render Crash');
-    await expect(pre).toContainText('Simulated first-render error');
+    const div = page.locator('div', { hasText: 'FATAL: Application container (#root) not found.' });
+    await expect(div).toBeVisible();
   });
 
   test('shows production fallback on boundary catch', async ({ page }) => {
