@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 function setupStrictErrors(page: any, expectedErrors: string[] = []) {
   const actualErrors: string[] = [];
-  
+
   const checkAndConsumeExpected = (text: string) => {
     const index = expectedErrors.findIndex(expected => text.includes(expected));
     if (index !== -1) {
@@ -41,7 +41,7 @@ test.describe('App Integration', () => {
     // The safeStorage catches the error but we might log a warning or it might be silent.
     // If there are expected console errors, list them here. safeStorage doesn't console.error on poisoned storage, it returns default.
     const errorTracker = setupStrictErrors(page, []);
-    
+
     // Poison storage BEFORE page load
     await page.addInitScript(() => {
       Storage.prototype.getItem = () => { throw new Error('Poisoned storage') };
@@ -74,10 +74,10 @@ test.describe('App Integration', () => {
     // Verify media playback starts by getting the main video (excluding UI elements)
     const video = page.locator('video:not([src*="CPR-Dummies"]):not([src*="WakeUp"])').first();
     await video.waitFor({ state: 'attached' });
-    
+
     // Play video
     await video.evaluate((vid: HTMLVideoElement) => vid.play());
-    
+
     // Wait for currentTime to advance > 0
     await expect(async () => {
       const currentTime = await video.evaluate((vid: HTMLVideoElement) => vid.currentTime);
@@ -102,14 +102,14 @@ test.describe('App Integration', () => {
 
     await page.goto('/');
     await page.waitForSelector('[data-app-ready="true"]');
-    
+
     // Inject unhandled rejection
     await page.evaluate(() => {
       setTimeout(() => {
         Promise.reject(new Error('Injected unhandled rejection'));
       }, 0);
     });
-    
+
     await page.waitForTimeout(500);
 
     const cprDropdown = page.locator('button', { hasText: 'CPR & AED' }).first();

@@ -27,7 +27,7 @@ describe('safeStorage', () => {
   it('failed remove -> subsequent read returns default', () => {
     const key = 'test-remove-fail';
     window.localStorage.setItem(key, 'persisted-value'); // it's in localStorage
-    
+
     vi.spyOn(window.localStorage, 'removeItem').mockImplementation(() => {
       throw new Error('Cannot remove');
     });
@@ -56,7 +56,7 @@ describe('safeStorage', () => {
 
     // Initial read is default
     expect(safeStorage.getItem(key, 'def')).toBe('def');
-    
+
     // Write works in session
     safeStorage.setItem(key, 'session-val');
     expect(safeStorage.getItem(key, 'def')).toBe('session-val');

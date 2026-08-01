@@ -6,7 +6,7 @@ export const safeStorage = {
       const val = memoryFallback.get(key);
       return val === null ? defaultValue : val;
     }
-    
+
     try {
       const value = window.localStorage.getItem(key);
       return value !== null ? value : defaultValue;
