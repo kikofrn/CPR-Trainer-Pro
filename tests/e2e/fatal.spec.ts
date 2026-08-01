@@ -1,6 +1,5 @@
 import { test, expect } from '@playwright/test';
 import { setupStrictErrors } from './helpers/strict-errors';
-import fs from 'fs';
 
 test.describe('Fatal Error Handling', () => {
   test('shows raw DOM screen when container is missing', async ({ page }) => {
@@ -18,33 +17,13 @@ test.describe('Fatal Error Handling', () => {
         channel: 'console',
         pathname: '/src/utils/boot.tsx',
         count: 1,
-        message: `React Caught Error (Boundary): Error: Simulated runtime error inside boundary
-    at ChildThatThrows (http://127.0.0.1:5199/tests/e2e/fixtures/throwing-boundary.tsx:4:9)
-    at Object.react_stack_bottom_frame (http://127.0.0.1:5199/node_modules/.vite/deps/react-dom_client.js?v=4c6e4a4c:18509:20)
-    at renderWithHooks (http://127.0.0.1:5199/node_modules/.vite/deps/react-dom_client.js?v=4c6e4a4c:5654:24)
-    at updateFunctionComponent (http://127.0.0.1:5199/node_modules/.vite/deps/react-dom_client.js?v=4c6e4a4c:7475:21)
-    at beginWork (http://127.0.0.1:5199/node_modules/.vite/deps/react-dom_client.js?v=4c6e4a4c:8525:20)
-    at runWithFiberInDEV (http://127.0.0.1:5199/node_modules/.vite/deps/react-dom_client.js?v=4c6e4a4c:997:72)
-    at performUnitOfWork (http://127.0.0.1:5199/node_modules/.vite/deps/react-dom_client.js?v=4c6e4a4c:12561:98)
-    at workLoopSync (http://127.0.0.1:5199/node_modules/.vite/deps/react-dom_client.js?v=4c6e4a4c:12424:43)
-    at renderRootSync (http://127.0.0.1:5199/node_modules/.vite/deps/react-dom_client.js?v=4c6e4a4c:12408:13)
-    at performWorkOnRoot (http://127.0.0.1:5199/node_modules/.vite/deps/react-dom_client.js?v=4c6e4a4c:11827:37) {componentStack: \n    at ChildThatThrows (http://127.0.0.1:5199/tes….0.0.1:5199/src/components/ErrorBoundary.tsx:5:5), errorBoundary: ErrorBoundary}`
+        message: 'React Caught Error (Boundary): Error: Simulated runtime error inside boundary'
       },
       {
         channel: 'console',
         pathname: '/src/components/ErrorBoundary.tsx',
         count: 1,
-        message: `[ErrorBoundary] Caught error: Error: Simulated runtime error inside boundary
-    at ChildThatThrows (http://127.0.0.1:5199/tests/e2e/fixtures/throwing-boundary.tsx:4:9)
-    at Object.react_stack_bottom_frame (http://127.0.0.1:5199/node_modules/.vite/deps/react-dom_client.js?v=4c6e4a4c:18509:20)
-    at renderWithHooks (http://127.0.0.1:5199/node_modules/.vite/deps/react-dom_client.js?v=4c6e4a4c:5654:24)
-    at updateFunctionComponent (http://127.0.0.1:5199/node_modules/.vite/deps/react-dom_client.js?v=4c6e4a4c:7475:21)
-    at beginWork (http://127.0.0.1:5199/node_modules/.vite/deps/react-dom_client.js?v=4c6e4a4c:8525:20)
-    at runWithFiberInDEV (http://127.0.0.1:5199/node_modules/.vite/deps/react-dom_client.js?v=4c6e4a4c:997:72)
-    at performUnitOfWork (http://127.0.0.1:5199/node_modules/.vite/deps/react-dom_client.js?v=4c6e4a4c:12561:98)
-    at workLoopSync (http://127.0.0.1:5199/node_modules/.vite/deps/react-dom_client.js?v=4c6e4a4c:12424:43)
-    at renderRootSync (http://127.0.0.1:5199/node_modules/.vite/deps/react-dom_client.js?v=4c6e4a4c:12408:13)
-    at performWorkOnRoot (http://127.0.0.1:5199/node_modules/.vite/deps/react-dom_client.js?v=4c6e4a4c:11827:37) {componentStack: \n    at ChildThatThrows (http://127.0.0.1:5199/tes….0.0.1:5199/src/components/ErrorBoundary.tsx:5:5)}`
+        message: '[ErrorBoundary] Caught error: Error: Simulated runtime error inside boundary'
       }
     ]);
 
@@ -70,4 +49,3 @@ test.describe('Fatal Error Handling', () => {
     errorTracker.verify();
   });
 });
-

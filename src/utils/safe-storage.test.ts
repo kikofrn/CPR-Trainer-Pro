@@ -1,20 +1,25 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { safeStorage } from './safe-storage';
+
 
 describe('safeStorage', () => {
+  let mockStorage = new Map<string, string>();
+
   beforeEach(() => {
-    vi.restoreAllMocks();
+    vi.resetModules();
+    mockStorage.clear();
+
     (global as any).window = {
       localStorage: {
-        getItem: vi.fn().mockReturnValue(null),
-        setItem: vi.fn(),
-        removeItem: vi.fn(),
-        clear: vi.fn()
+        getItem: vi.fn((key: string) => mockStorage.has(key) ? mockStorage.get(key) : null),
+        setItem: vi.fn((key: string, value: string) => { mockStorage.set(key, value); }),
+        removeItem: vi.fn((key: string) => { mockStorage.delete(key); }),
+        clear: vi.fn(() => { mockStorage.clear(); })
       }
     };
   });
 
-  it('failed write -> subsequent read returns the new value', () => {
+  it('failed write -> subsequent read returns the new value', async () => {
+    const { safeStorage } = await import('./safe-storage');
     const key = 'test-write-fail';
     vi.spyOn(window.localStorage, 'setItem').mockImplementation(() => {
       throw new Error('Quota exceeded');
@@ -24,44 +29,44 @@ describe('safeStorage', () => {
     expect(safeStorage.getItem(key)).toBe('new-value');
   });
 
-  it('failed remove -> subsequent read returns default', () => {
+  it('failed remove -> subsequent read returns default', async () => {
+    const { safeStorage } = await import('./safe-storage');
     const key = 'test-remove-fail';
-    window.localStorage.setItem(key, 'persisted-value'); // it's in localStorage
+    window.localStorage.setItem(key, 'persisted-value');
 
     vi.spyOn(window.localStorage, 'removeItem').mockImplementation(() => {
       throw new Error('Cannot remove');
     });
 
     safeStorage.removeItem(key);
-    // Even though it failed to remove from localStorage, it's tombstoned in the session
     expect(safeStorage.getItem(key, 'my-default')).toBe('my-default');
   });
 
-  it('empty-string round-trip', () => {
+  it('empty-string round-trip', async () => {
+    const { safeStorage } = await import('./safe-storage');
     const key = 'test-empty-string';
     safeStorage.setItem(key, '');
     expect(safeStorage.getItem(key, 'default')).toBe('');
   });
 
-  it('default handling', () => {
+  it('default handling', async () => {
+    const { safeStorage } = await import('./safe-storage');
     const key = 'test-default';
     expect(safeStorage.getItem(key, 'fallback')).toBe('fallback');
   });
 
-  it('fully-throwing storage end-to-end', () => {
+  it('fully-throwing storage end-to-end', async () => {
+    const { safeStorage } = await import('./safe-storage');
     const key = 'test-throwing-all';
     vi.spyOn(window.localStorage, 'getItem').mockImplementation(() => { throw new Error('Blocked') });
     vi.spyOn(window.localStorage, 'setItem').mockImplementation(() => { throw new Error('Blocked') });
     vi.spyOn(window.localStorage, 'removeItem').mockImplementation(() => { throw new Error('Blocked') });
 
-    // Initial read is default
     expect(safeStorage.getItem(key, 'def')).toBe('def');
 
-    // Write works in session
     safeStorage.setItem(key, 'session-val');
     expect(safeStorage.getItem(key, 'def')).toBe('session-val');
 
-    // Remove works in session
     safeStorage.removeItem(key);
     expect(safeStorage.getItem(key, 'def')).toBe('def');
   });

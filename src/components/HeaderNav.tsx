@@ -255,8 +255,7 @@ export function HeaderNav({
                           handleItemClick('slideshow', 0); 
                         } 
                       }} 
-                      disabled={isCprBothOnComingSoon}
-                      className={`w-full mt-5 py-3 font-black text-sm uppercase tracking-wider rounded-2xl transition-all duration-300 ${isCprBothOnComingSoon ? 'bg-[#333] text-white/40 cursor-not-allowed shadow-none' : 'bg-[#ff4b4b] hover:bg-[#ff3333] text-white cursor-pointer active:scale-[0.98] shadow-[0_0_20px_rgba(255,75,75,0.3)]'}`}>
+                      className={`w-full mt-5 py-3 font-black text-sm uppercase tracking-wider rounded-2xl transition-all duration-300 ${isCprBothOnComingSoon ? 'bg-[#333] text-white/40 hover:bg-[#444] shadow-none' : 'bg-[#ff4b4b] hover:bg-[#ff3333] text-white cursor-pointer active:scale-[0.98] shadow-[0_0_20px_rgba(255,75,75,0.3)]'}`}>
                       {isCprBothOnComingSoon ? 'COMING SOON' : 'START COURSE'}
                     </button>
                   </div>
@@ -388,8 +387,7 @@ export function HeaderNav({
                           handleItemClick('slideshow', 1); 
                         } 
                       }} 
-                      disabled={isFaBothOnComingSoon}
-                      className={`w-full mt-5 py-3 font-black text-sm uppercase tracking-wider rounded-2xl transition-all duration-300 ${isFaBothOnComingSoon ? 'bg-[#333] text-white/40 cursor-not-allowed shadow-none' : 'bg-[#ff4b4b] hover:bg-[#ff3333] text-white cursor-pointer active:scale-[0.98] shadow-[0_0_20px_rgba(255,75,75,0.3)]'}`}>
+                      className={`w-full mt-5 py-3 font-black text-sm uppercase tracking-wider rounded-2xl transition-all duration-300 ${isFaBothOnComingSoon ? 'bg-[#333] text-white/40 hover:bg-[#444] shadow-none' : 'bg-[#ff4b4b] hover:bg-[#ff3333] text-white cursor-pointer active:scale-[0.98] shadow-[0_0_20px_rgba(255,75,75,0.3)]'}`}>
                       {isFaBothOnComingSoon ? 'COMING SOON' : 'START COURSE'}
                     </button>
                   </div>

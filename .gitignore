@@ -19,3 +19,6 @@ git_log_stat*
 audit*_diff.txt
 regenerated_output.txt
 mac_updates_patches/
+
+gate-1-screenshots/
+gate1-screenshots/

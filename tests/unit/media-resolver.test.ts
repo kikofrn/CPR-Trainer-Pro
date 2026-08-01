@@ -1,13 +1,18 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 describe('mediaUrl', () => {
+  let originalFetch: typeof fetch;
+
   beforeEach(() => {
     vi.resetModules();
     (global as any).window = {};
+    originalFetch = global.fetch;
+    global.fetch = vi.fn().mockResolvedValue({ status: 200, statusText: 'OK' });
   });
 
   afterEach(() => {
     delete (global as any).window;
+    global.fetch = originalFetch;
   });
 
   it('web platform -> uses CDN', async () => {

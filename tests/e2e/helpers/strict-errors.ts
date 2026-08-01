@@ -11,10 +11,13 @@ export interface ExpectedError {
  * URL Sourcing Policy:
  * - console events: parsed from msg.location().url
  * - pageerror events: parsed from page.url()
+ * Stack bodies are excluded from comparison entirely because they embed the machine-local
+ * dep-optimizer hash (e.g. ?v=4c6e4a4c), which breaks determinism across different machines.
+ * Instead, we compare deterministic canonical fields using strict equality (===), no regexes.
  */
 export function setupStrictErrors(page: Page, expected: ExpectedError[]) {
   const actualUnconsumed: string[] = [];
-  const expectations = [...expected];
+  const expectations = expected;
 
   const consume = (channel: 'console' | 'pageerror', message: string, pathname: string | null) => {
     for (let i = 0; i < expectations.length; i++) {
@@ -39,20 +42,23 @@ export function setupStrictErrors(page: Page, expected: ExpectedError[]) {
   page.on('console', (msg: ConsoleMessage) => {
     if (msg.type() === 'error') {
       const text = msg.text();
+      // Extract exact first line of msg.text()
+      const firstLine = text.split('\n')[0];
       const pathname = getUrlPathname(msg.location().url);
-      
-      if (!consume('console', text, pathname)) {
-        actualUnconsumed.push(`Unexpected console error: "${text}" at ${pathname}`);
+
+      if (!consume('console', firstLine, pathname)) {
+        actualUnconsumed.push(`Unexpected console error: "${firstLine}" at ${pathname}`);
       }
     }
   });
 
   page.on('pageerror', (err: Error) => {
-    const text = err.message || err.toString();
+    // For pageerror, use exact err.message
+    const message = err.message;
     const pathname = getUrlPathname(page.url());
-    
-    if (!consume('pageerror', text, pathname)) {
-      actualUnconsumed.push(`Unexpected pageerror: "${text}" at ${pathname}`);
+
+    if (!consume('pageerror', message, pathname)) {
+      actualUnconsumed.push(`Unexpected pageerror: "${message}" at ${pathname}`);
     }
   });
 

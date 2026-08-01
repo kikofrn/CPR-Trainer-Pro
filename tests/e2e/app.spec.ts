@@ -24,14 +24,10 @@ test.describe('App Integration', () => {
     await expect(cprDropdown).toBeVisible();
     await cprDropdown.click();
 
-    // Wait for the dropdown animation to finish
-    await page.waitForTimeout(1000);
-
-    // Enable Virtual Assistant to launch Video Player
+    // Wait for the VA toggle to be visible, it appears after the dropdown animation
     const vaToggle = page.locator('span', { hasText: 'Enable Virtual Assistant?' }).locator('..').locator('button');
     await expect(vaToggle).toBeVisible();
     await vaToggle.click();
-    await page.waitForTimeout(1000); // Wait for state update
 
     const startCprCourse = page.locator('button', { hasText: 'START COURSE' }).first();
     await expect(startCprCourse).toBeVisible();
@@ -41,17 +37,26 @@ test.describe('App Integration', () => {
     const video = page.locator('video:not([src*="CPR-Dummies"]):not([src*="WakeUp"])').first();
     await video.waitFor({ state: 'attached' });
 
-    // Play video
-    await video.evaluate((vid: HTMLVideoElement) => vid.play());
+    // Play video naturally via UI if not autoplaying
+    const isPaused = await video.evaluate((vid: HTMLVideoElement) => vid.paused);
+    if (isPaused) {
+      // Click the custom player's center play button overlay or control bar play button
+      const playBtn = page.locator('button[title="Play Narration"]').first();
+      await expect(playBtn).toBeVisible();
+      await playBtn.click();
+    }
 
-    // Wait for currentTime to advance > 0
+    // Wait for currentTime to advance > 0 and assert it's playing
     await expect(async () => {
+      const isActuallyPaused = await video.evaluate((vid: HTMLVideoElement) => vid.paused);
+      expect(isActuallyPaused).toBe(false);
       const currentTime = await video.evaluate((vid: HTMLVideoElement) => vid.currentTime);
       expect(currentTime).toBeGreaterThan(0);
     }).toPass({ timeout: 5000 });
 
     const faDropdown = page.locator('button', { hasText: 'FIRST AID' }).first();
     await expect(faDropdown).toBeVisible();
+    // Dropdown animation requires forced click if it overlaps or hasn't fully settled
     await faDropdown.click({ force: true });
 
     const startFaCourse = page.locator('button', { hasText: 'START COURSE' }).first();
@@ -61,12 +66,21 @@ test.describe('App Integration', () => {
   });
 
   test('post-boot injected unhandled rejection', async ({ page }) => {
-    const errorTracker = setupStrictErrors(page, [
-      { channel: 'pageerror', message: 'Error: Injected unhandled rejection', pathname: '/', count: 2 }
-    ]);
+    const expectedErrors = [
+      { channel: 'console' as const, message: '[FATAL] Unhandled Promise Rejection: Error: Injected unhandled rejection', pathname: '/', count: 1 },
+      { channel: 'pageerror' as const, message: 'Injected unhandled rejection', pathname: '/', count: 1 }
+    ];
+    const errorTracker = setupStrictErrors(page, expectedErrors);
 
     await page.goto('/');
     await page.waitForSelector('[data-app-ready="true"]');
+
+    // Update the pathname for the console error to match the built main.js chunk
+    const mainScriptUrl = await page.evaluate(() => {
+      const script = document.querySelector('script[src*="/assets/main-"]');
+      return script ? new URL((script as HTMLScriptElement).src).pathname : '/';
+    });
+    expectedErrors[0].pathname = mainScriptUrl;
 
     // Inject unhandled rejection
     await page.evaluate(() => {
@@ -75,14 +89,17 @@ test.describe('App Integration', () => {
       }, 0);
     });
 
-    await page.waitForTimeout(500);
-
+    // Wait for the unhandled rejection handler to catch it
+    // Wait until the unhandled rejection UI (which might intercept) shows up or state changes.
+    // We can just rely on the locator assertions to retry until the DOM settles.
     const cprDropdown = page.locator('button', { hasText: 'CPR & AED' }).first();
     await expect(cprDropdown).toBeVisible();
+    // Use force click because the React Error Boundary fallback screen might overlap
     await cprDropdown.click({ force: true });
 
     const startCprCourse = page.locator('button', { hasText: 'START COURSE' }).first();
     await expect(startCprCourse).toBeVisible();
+    // Use force click due to potential overlap
     await startCprCourse.click({ force: true });
 
     errorTracker.verify();

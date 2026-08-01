@@ -20,6 +20,8 @@ export default defineConfig({
     {
       name: 'fixtures',
       testMatch: 'tests/e2e/fatal.spec.ts',
+      // Run fixtures serially to prevent cold dev-server timeout issues on clean installs
+      fullyParallel: false,
       use: {
         ...devices['Desktop Chrome'],
         baseURL: 'http://127.0.0.1:5199',
