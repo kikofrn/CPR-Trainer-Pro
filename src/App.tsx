@@ -25,6 +25,7 @@ import { HeaderNav } from './components/HeaderNav';
 import { Sidebar } from './components/Sidebar';
 import { VideoPlayer } from './components/VideoPlayer';
 import { SlideshowPlayer } from './components/SlideshowPlayer';
+import { isPresentationActive } from './utils/presentation-state';
 
 function EHLogo({ className }: { className?: string }) {
   return (
@@ -65,6 +66,7 @@ export default function App() {
 
   const [contentUpdateFiles, setContentUpdateFiles] = useState<ChangedFile[]>([]);
   const [showContentUpdatePrompt, setShowContentUpdatePrompt] = useState(false);
+  const [pendingContentUpdatePrompt, setPendingContentUpdatePrompt] = useState(false);
   const [contentUpdateAvgSpeed, setContentUpdateAvgSpeed] = useState(0);
   const manifestStashRef = useRef<Record<string, { etag: string; uploaded: string; size: number }>>({});
   const pendingUpdatesRef = useRef<Record<string, { originalKey: string; etag: string; uploaded: string; size: number }>>({});
@@ -157,7 +159,7 @@ export default function App() {
 
           if (promptFiles.length > 0) {
             setContentUpdateFiles(promptFiles);
-            setShowContentUpdatePrompt(true);
+            setPendingContentUpdatePrompt(true);
           }
         }
       } catch (err) {
@@ -282,6 +284,15 @@ export default function App() {
   // Easter egg
   const [clickTimestamps, setClickTimestamps] = useState<number[]>([]);
   const [easterEggLevel, setEasterEggLevel] = useState<0 | 1 | 2>(0);
+
+  const isPresenting = isPresentationActive(activeTab, activeCourseIndex, selectedManual, activeSlideshowIndex);
+
+  useEffect(() => {
+    if (pendingContentUpdatePrompt && !isPresenting) {
+      setShowContentUpdatePrompt(true);
+      setPendingContentUpdatePrompt(false);
+    }
+  }, [pendingContentUpdatePrompt, isPresenting]);
 
   const handleInfoClick = () => {
     const now = Date.now();
