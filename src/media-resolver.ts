@@ -43,7 +43,12 @@ const initPromise = init();
  *     -> "http://media.localhost/01_EHAcademy%20-%20CPR%20AED%20Course%20Video-Introduction.mp4"
  */
 export function mediaUrl(filename: string): string {
-  if (!isTauri || !mediaBase) return filename;
+  if (!isTauri || !mediaBase) {
+    if (filename.startsWith('/subtitles/')) {
+      return filename;
+    }
+    return cdnUrl(filename);
+  }
   
   // Strip leading slash if present
   const clean = filename.startsWith('/') ? filename.slice(1) : filename;

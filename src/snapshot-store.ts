@@ -1,5 +1,5 @@
-import { invoke } from '@tauri-apps/api/core';
 import { SnapshotFile } from './update-checker';
+import { isTauri } from './media-resolver';
 
 export interface SnapshotData {
   schema: number;
@@ -19,7 +19,9 @@ class SnapshotStore {
 
   public async readSnapshot(): Promise<SnapshotData> {
     return this.enqueue(async () => {
+      if (!isTauri) return { schema: 1, avgSpeedBps: 0, files: {} };
       try {
+        const { invoke } = await import('@tauri-apps/api/core');
         const raw = await invoke<string>('read_version_snapshot');
         if (!raw || raw.trim() === '' || raw === '{}') {
           return { schema: 1, avgSpeedBps: 0, files: {} };
@@ -34,7 +36,9 @@ class SnapshotStore {
 
   public async writeSnapshot(data: SnapshotData): Promise<void> {
     return this.enqueue(async () => {
+      if (!isTauri) return;
       try {
+        const { invoke } = await import('@tauri-apps/api/core');
         const content = JSON.stringify(data, null, 2);
         await invoke('write_version_snapshot', { content });
       } catch (e) {
@@ -46,7 +50,9 @@ class SnapshotStore {
   public async updateAvgSpeedBps(speed: number): Promise<void> {
     if (speed <= 0) return;
     return this.enqueue(async () => {
+      if (!isTauri) return;
       try {
+        const { invoke } = await import('@tauri-apps/api/core');
         let raw = await invoke<string>('read_version_snapshot');
         let data: SnapshotData;
         if (!raw || raw.trim() === '' || raw === '{}') {
@@ -71,7 +77,9 @@ class SnapshotStore {
   }
   public async mergeFiles(entries: Record<string, SnapshotFile>): Promise<void> {
     return this.enqueue(async () => {
+      if (!isTauri) return;
       try {
+        const { invoke } = await import('@tauri-apps/api/core');
         let raw = await invoke<string>('read_version_snapshot');
         let data: SnapshotData;
         if (!raw || raw.trim() === '' || raw === '{}') {
@@ -92,7 +100,9 @@ class SnapshotStore {
 
   public async setLastCheck(iso: string): Promise<void> {
     return this.enqueue(async () => {
+      if (!isTauri) return;
       try {
+        const { invoke } = await import('@tauri-apps/api/core');
         let raw = await invoke<string>('read_version_snapshot');
         let data: SnapshotData;
         if (!raw || raw.trim() === '' || raw === '{}') {

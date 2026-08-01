@@ -1,8 +1,8 @@
-import { invoke } from '@tauri-apps/api/core';
-import { listen, Event } from '@tauri-apps/api/event';
 import { COURSES, MANUALS, SLIDESHOWS } from './chapters';
 import { snapshotStore } from './snapshot-store';
 import { THUMBNAIL_KEYS } from './thumbnails';
+import { isTauri } from './media-resolver';
+import { safeStorage } from './utils/safe-storage';
 
 const COMING_SOON_IDS = ['cpr-aed-spanish-course', 'first-aid-spanish-course'];
 
@@ -54,7 +54,7 @@ class DownloadManager {
     currentSpeed: 0,
     currentTimeRemaining: -1,
     fileStatuses: {},
-    activeBaseUrl: localStorage.getItem('eh_download_base_url') || 'https://media.ehacademy.com/',
+    activeBaseUrl: isTauri ? safeStorage.getItem('eh_download_base_url', 'https://media.ehacademy.com/')! : 'https://media.ehacademy.com/',
     globalDownloadedCount: 0,
     globalTotalCount: 0,
     fileAttempts: {},
@@ -126,12 +126,16 @@ class DownloadManager {
       cleanUrl += '/';
     }
     this.state.activeBaseUrl = cleanUrl;
-    localStorage.setItem('eh_download_base_url', cleanUrl);
+    if (isTauri) {
+      safeStorage.setItem('eh_download_base_url', cleanUrl);
+    }
     this.notify();
   }
 
   private async setupListeners() {
+    if (!isTauri) return;
     try {
+      const { listen } = await import('@tauri-apps/api/event');
       // Listen to progress updates from the Rust backend
       await listen<DownloadProgressPayload>('download-progress', (event) => {
         const { filename, bytes_written, total_bytes } = event.payload;
@@ -274,8 +278,14 @@ class DownloadManager {
     this.speedSamples = [];
     this.notify();
 
+    if (!isTauri) {
+      this.cancelDownload();
+      return;
+    }
+
     try {
       console.log(`[DownloadManager] Invoking download for: ${nextFile}`);
+      const { invoke } = await import('@tauri-apps/api/core');
       await invoke('download_media_file', {
         baseUrl: this.state.activeBaseUrl,
         filename: nextFile,
@@ -402,6 +412,8 @@ class DownloadManager {
     }
 
     try {
+      if (!isTauri) return;
+      const { invoke } = await import('@tauri-apps/api/core');
       const spaceBytes = await invoke<number>('check_disk_space');
       const CATEGORY_DISK_REQUIREMENTS: Record<string, number> = {
       'everything': 5 * 1024 * 1024 * 1024,   // ~5 GB
@@ -491,6 +503,8 @@ class DownloadManager {
     }
 
     try {
+      if (!isTauri) return;
+      const { invoke } = await import('@tauri-apps/api/core');
       const spaceBytes = await invoke<number>('check_disk_space');
       const requiredBytes = 500 * 1024 * 1024; // Assume single file is up to 500MB
       if (spaceBytes > 0 && spaceBytes < requiredBytes) {
@@ -527,6 +541,7 @@ class DownloadManager {
     }
     // ------------------
 
+    const { invoke } = await import('@tauri-apps/api/core');
     const exists = await invoke<boolean>('check_media_file_exists', { filename });
     if (exists) {
       this.state.fileStatuses[filename] = true;
@@ -605,7 +620,20 @@ class DownloadManager {
   }
 
   public async checkStatusesForFiles(filenames: string[]): Promise<Record<string, boolean>> {
+    if (!isTauri) {
+      const statusMap: Record<string, boolean> = {};
+      filenames.forEach(f => {
+        const clean = this.normalizeFilename(f);
+        statusMap[clean] = false;
+        this.state.fileStatuses[clean] = false;
+      });
+      this.updateGlobalCounts();
+      this.notify();
+      return statusMap;
+    }
+
     try {
+      const { invoke } = await import('@tauri-apps/api/core');
       const cleanList = filenames.map(f => this.normalizeFilename(f));
       const statusMap = await invoke<Record<string, boolean>>('check_media_files_status', { filenames: cleanList });
       

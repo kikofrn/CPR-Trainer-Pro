@@ -11,9 +11,8 @@ const ManualFlipbook = lazy(() => import('./components/ManualFlipbook'));
 import { mediaUrl as m, waitForMediaResolver, isTauri } from './media-resolver';
 import { CprIcon, FirstAidIcon } from './components/Icons';
 import { downloadManager, DownloadState, formatSpeed } from './download-manager';
-import { check } from '@tauri-apps/plugin-updater';
-import { relaunch } from '@tauri-apps/plugin-process';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { safeStorage } from './utils/safe-storage';
 import { parseVTT, type SubtitleCue } from './utils/vtt-parser';
 import { getRelevantKeys, checkUpdates, ChangedFile, ManifestFile } from './update-checker';
 import { snapshotStore } from './snapshot-store';
@@ -174,6 +173,7 @@ export default function App() {
     async function checkForUpdates() {
       if (!isTauri) return;
       try {
+        const { check } = await import('@tauri-apps/plugin-updater');
         const update = await check();
         if (update) {
           console.log(`Update available: ${update.version}`);
@@ -219,7 +219,7 @@ export default function App() {
       const delayToReady = Math.max(0, 3200 - elapsed);
 
       const outerTimer = setTimeout(() => {
-        localStorage.setItem('splash_status', 'ready');
+        safeStorage.setItem('splash_status', 'ready');
         
         innerTimerRef = setTimeout(() => {
           import('@tauri-apps/api/core').then(({ invoke }) => {
@@ -329,7 +329,7 @@ export default function App() {
   }, [volume, isMuted, activePlayer]);
 
   const [showSubtitles, setShowSubtitles] = useState(() => {
-    const saved = localStorage.getItem('eh_show_subtitles');
+    const saved = safeStorage.getItem('eh_show_subtitles');
     return saved === null ? true : saved === 'true';
   });
   const [isUiVisible, setIsUiVisible] = useState(true);
@@ -460,7 +460,7 @@ export default function App() {
   // First-launch download prompt
   const [showDownloadPrompt, setShowDownloadPrompt] = useState(false);
   useEffect(() => {
-    if (isTauri && !localStorage.getItem('eh_download_prompted')) {
+    if (isTauri && !safeStorage.getItem('eh_download_prompted')) {
       const timer = setTimeout(() => setShowDownloadPrompt(true), 2000);
       return () => clearTimeout(timer);
     }
@@ -756,7 +756,7 @@ export default function App() {
 
   const saveProgress = (courseIndex: number, chapterIndex: number) => {
     if (courseIndex !== null && COURSES[courseIndex]) {
-      localStorage.setItem(`course_progress_${COURSES[courseIndex].id}`, chapterIndex.toString());
+      safeStorage.setItem(`course_progress_${COURSES[courseIndex].id}`, chapterIndex.toString());
     }
   };
 
@@ -790,7 +790,7 @@ export default function App() {
     setActiveCourseIndex(index);
     let savedChapter = 0;
     if (COURSES[index]) {
-      const saved = localStorage.getItem(`course_progress_${COURSES[index].id}`);
+      const saved = safeStorage.getItem(`course_progress_${COURSES[index].id}`);
       if (saved) savedChapter = parseInt(saved, 10) || 0;
     }
     setActiveChapterIndex(savedChapter);
@@ -1142,7 +1142,10 @@ export default function App() {
                 setIsUpdating(true);
                 try {
                   await updateAvailable.downloadAndInstall();
-                  await relaunch();
+                  if (isTauri) {
+                    const { relaunch } = await import('@tauri-apps/plugin-process');
+                    await relaunch();
+                  }
                 } catch (e) {
                   console.error("Failed to update", e);
                   setIsUpdating(false);
@@ -1528,7 +1531,7 @@ export default function App() {
               <div className="flex flex-col gap-3">
                 <button
                   onClick={() => {
-                    localStorage.setItem('eh_download_prompted', 'true');
+                    safeStorage.setItem('eh_download_prompted', 'true');
                     setShowDownloadPrompt(false);
                     downloadManager.startBulkDownload('everything');
                   }}
@@ -1538,7 +1541,7 @@ export default function App() {
                 </button>
                 <button
                   onClick={() => {
-                    localStorage.setItem('eh_download_prompted', 'true');
+                    safeStorage.setItem('eh_download_prompted', 'true');
                     setShowDownloadPrompt(false);
                   }}
                   className="w-full py-3 bg-white/5 hover:bg-white/10 text-eh-peach/60 font-bold rounded-xl text-sm transition-all cursor-pointer border border-white/5"

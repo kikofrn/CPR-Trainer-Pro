@@ -12,7 +12,9 @@
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
-    "tauri:windows:build": "tauri-windows-bundle build"
+    "tauri:windows:build": "tauri-windows-bundle build",
+    "test:e2e": "playwright test",
+    "test:unit": "vitest run"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",
@@ -30,6 +32,7 @@
   },
   "devDependencies": {
     "@choochmeque/tauri-windows-bundle": "^0.1.20",
+    "@playwright/test": "^1.62.1",
     "@tauri-apps/cli": "^2.11.1",
     "@types/node": "^22.14.0",
     "autoprefixer": "^10.4.21",

@@ -7,10 +7,10 @@ export const openExternalUrl = async (url: string) => {
       await invoke('open_browser', { url });
     } catch (e) {
       console.error("Failed to open browser via Tauri", e);
-      window.open(url, '_blank');
+      window.open(url, '_blank', 'noopener,noreferrer');
     }
   } else {
-    window.open(url, '_blank');
+    window.open(url, '_blank', 'noopener,noreferrer');
   }
 };
 

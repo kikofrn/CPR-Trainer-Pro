@@ -44,3 +44,19 @@
 - RECORD: 2.3.0–2.3.2 installed clients can never auto-update (endpoint renamed update.json→latest.json + key rotated in the same release; nothing materially lost — the old pipeline never published artifacts; auto-update begins working as of 2.3.3→2.3.4)
 - ACCEPTED LIMITATION (2.3.3): the content-update prompt has no foreground gating — a late-completing startup check can surface the modal over an active presentation (startup-seconds race). Fix in 2.3.4: defer prompt while a presentation is active.
 - ACCEPTED LIMITATION (2.3.3): the version snapshot is written non-atomically and a corrupted snapshot never self-heals (silently degrades to date-fallback). Fix in 2.3.4: temp-file+rename write in Rust plus rebuild-on-parse-failure.
+
+## Phase 1 (Web App Initial)
+- W1: web-app from v2.3.3/89f7f11; WEB-ONLY; Windows fixes arrive by audited cherry-pick.
+- W2: Web streams everything from media.ehacademy.com via cdnUrl(); no downloads/updater/offline claims.
+- W3: Subtitles from the site bundle; public/404.html ensures missing assets 404 (never SPA-fallback HTML 200).
+- W4: Cloudflare Pages; web-production advances only by gate-approved idempotent fast-forward under 6.4 protection; domain after Gate 5; fully public.
+- W5: Mobile = responsive breakpoints in one codebase; <=1023 px mobile nav, >=1024 px desktop nav (iPad landscape = desktop intentionally); >=1024 px visuals unchanged (<=0.1% same-machine harness diff); 44 px hit-regions under any-pointer: coarse with visuals unchanged; full mobile UI pre-conference.
+- W6: Web media = the 4A committed/pending controller: four outcomes (playing/paused/denied/failed), generation tokens, no speculative loading; desktop Tauri untouched; latency amendment path per 3.6-A.
+- W7: noindex at launch = app shell only (headers + robots.txt + meta); media-domain indexing is an accepted residual.
+- W8: Public, guessable Pages previews accepted.
+- W9: Dependency security: evidence-based non-breaking npm audit fix; remaining advisories recorded post-fix; pinned @playwright/test; 5.6 test-dependency policy (no jsdom without adjudicated exception); dev server never bound to shared networks.
+- W10: Web thumbnails use bundled fallback covers for the conference (web fileStatuses is always empty so the CDN thumbnail path is never taken); CDN-with-onError-fallback recorded as a post-conference option.
+- W11: Cross-platform SAFETY exceptions (3.2): safeStorage, safe fatal rendering + root Error Boundary, external-link opener isolation, pure course-selection extraction - shared on both platforms; normal Tauri behavior verified structurally unchanged. All other web behavior strictly !isTauri/responsive-gated.
+
+- Decided to implement the ErrorBoundary production fallback test (Step 6b) using Playwright via a new test fixture (throwing-boundary.html/tsx) instead of Vitest with jsdom, strictly adhering to the 5.6 test-dependency policy (no jsdom without exception).
+
