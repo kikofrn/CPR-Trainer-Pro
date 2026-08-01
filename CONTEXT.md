@@ -18,7 +18,7 @@
 
 ## Current state (session handoff)
 
-- **Completed most recently**: Finished Phase 1 — Web-mode correctness, resilience, isolation proof, harness. Replaced `main.tsx` with `boot.tsx`, removed `localStorage` usages in favor of `safeStorage`, created `tests/e2e/fatal.spec.ts` for Playwright testing, added `public/_headers` and `public/robots.txt`, replaced `public/404.html`, and removed `jsdom` testing dependencies per rule 5.6. Gated download settings UI. Appended W1-W11 to DECISIONS.md.
+- **Completed most recently**: Finished Phase 1 — Web-mode correctness, resilience, isolation proof, harness. Fixed Playwright E2E test locator timeouts and refined TS typing of the Tauri seam injection for `download-manager.ts` and `snapshot-store.ts`. Passed all Gate 1 tests (`tsc`, `build`, Playwright, and `verify-media-urls`). Performance baseline established: entry chunk is 175.00 kB.
 - **In progress**: Ready for Phase 2 - Pages, production branch, rollback readiness (Francisco, guided).
 - **Immediate next task**: Handoff to Francisco for Gate 1 audit and branch promotion.
 - **Known-broken or untested areas**: None. Phase 1 is complete.
