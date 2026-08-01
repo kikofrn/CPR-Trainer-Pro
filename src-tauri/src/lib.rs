@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::{Component, Path, PathBuf};
-use std::sync::Mutex;
+use std::sync::{Mutex, OnceLock};
 use std::time::Duration;
 use tauri::{Emitter, Manager};
 use tokio_util::sync::CancellationToken;
@@ -38,28 +38,47 @@ const APPROVED_ROOT_ASSETS: &[&str] = &[
 #[derive(Default)]
 struct DownloadRegistry(Mutex<HashMap<String, CancellationToken>>);
 
-fn media_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+#[derive(Default)]
+struct MediaLibrary(OnceLock<Result<PathBuf, String>>);
+
+fn configured_media_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
     app.path()
         .app_data_dir()
         .map(|path| path.join("media"))
         .map_err(|error| format!("Unable to locate Application Support: {error}"))
 }
 
-fn ensure_media_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
-    let path = media_dir(app)?;
+fn initialize_media_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+    let path = configured_media_dir(app)?;
     std::fs::create_dir_all(&path).map_err(|error| {
         format!(
             "CPR Trainer Pro cannot create its media library at {}. Check folder permissions and available disk space, then reopen the app. ({error})",
             path.display()
         )
     })?;
-    exclude_from_backup(&path)?;
-    std::fs::canonicalize(&path).map_err(|error| {
+    let canonical = std::fs::canonicalize(&path).map_err(|error| {
         format!(
             "Unable to resolve media library {}: {error}",
             path.display()
         )
-    })
+    })?;
+    exclude_from_backup_nonfatal(&canonical);
+    Ok(canonical)
+}
+
+fn cached_media_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+    app.try_state::<MediaLibrary>()
+        .ok_or_else(|| "Media library state is unavailable".to_string())?
+        .0
+        .get()
+        .ok_or_else(|| "Media library has not been initialized".to_string())?
+        .clone()
+}
+
+fn exclude_from_backup_nonfatal(path: &Path) {
+    if let Err(error) = exclude_from_backup(path) {
+        log::warn!("{error}");
+    }
 }
 
 #[cfg(target_os = "macos")]
@@ -377,7 +396,7 @@ fn handle_media_request(
 
 #[tauri::command]
 fn get_media_storage_status(app: tauri::AppHandle) -> Result<String, String> {
-    ensure_media_dir(&app).map(|path| path.display().to_string())
+    cached_media_dir(&app).map(|path| path.display().to_string())
 }
 
 #[tauri::command]
@@ -410,7 +429,7 @@ fn list_media_files(app: tauri::AppHandle) -> Result<Vec<String>, String> {
         Ok(())
     }
 
-    let root = ensure_media_dir(&app)?;
+    let root = cached_media_dir(&app)?;
     let mut files = Vec::new();
     collect(&root, &root, &mut files)?;
     files.sort();
@@ -420,7 +439,7 @@ fn list_media_files(app: tauri::AppHandle) -> Result<Vec<String>, String> {
 #[tauri::command]
 fn read_subtitle_file(app: tauri::AppHandle, filename: String) -> Result<String, String> {
     let relative = format!("subtitles/{filename}");
-    let root = ensure_media_dir(&app)?;
+    let root = cached_media_dir(&app)?;
     let path = resolve_existing_media_file(&root, &relative)?;
     let metadata = path.metadata().map_err(|error| error.to_string())?;
     if metadata.len() > MAX_TEXT_BYTES {
@@ -471,7 +490,7 @@ async fn download_media_file_inner(
         return Err("The media manifest did not provide an ETag".to_string());
     }
 
-    let root = ensure_media_dir(app)?;
+    let root = cached_media_dir(app)?;
     let (destination, partial) = prepare_download_destination(&root, filename)?;
     if version.is_some() {
         let _ = tokio::fs::remove_file(&partial).await;
@@ -602,7 +621,7 @@ async fn download_media_file_inner(
     tokio::fs::rename(&partial, &destination)
         .await
         .map_err(|error| format!("Unable to install verified media file: {error}"))?;
-    exclude_from_backup(&destination)?;
+    exclude_from_backup_nonfatal(&destination);
 
     let _ = app.emit(
         "download-complete",
@@ -712,7 +731,7 @@ fn validate_snapshot(content: &str) -> Result<(), String> {
 
 #[tauri::command]
 fn read_version_snapshot(app: tauri::AppHandle) -> Result<String, String> {
-    let root = ensure_media_dir(&app)?;
+    let root = cached_media_dir(&app)?;
     let path = snapshot_path(&root);
     if !path.exists() {
         return Ok("{}".to_string());
@@ -741,7 +760,7 @@ fn write_version_snapshot(app: tauri::AppHandle, content: String) -> Result<(), 
     }
     validate_snapshot(&content)?;
 
-    let root = ensure_media_dir(&app)?;
+    let root = cached_media_dir(&app)?;
     let path = snapshot_path(&root);
     let temp = root.join(".content-versions.json.tmp");
     if path.exists() {
@@ -769,12 +788,13 @@ fn write_version_snapshot(app: tauri::AppHandle, content: String) -> Result<(), 
     drop(output);
     std::fs::rename(&temp, &path)
         .map_err(|error| format!("Unable to install content snapshot atomically: {error}"))?;
-    exclude_from_backup(&path)
+    exclude_from_backup_nonfatal(&path);
+    Ok(())
 }
 
 #[tauri::command]
 fn check_media_file_exists(app: tauri::AppHandle, filename: String) -> Result<bool, String> {
-    let root = ensure_media_dir(&app)?;
+    let root = cached_media_dir(&app)?;
     match resolve_existing_media_file(&root, &filename) {
         Ok(_) => Ok(true),
         Err(_) => Ok(false),
@@ -786,7 +806,7 @@ fn check_media_files_status(
     app: tauri::AppHandle,
     filenames: Vec<String>,
 ) -> Result<HashMap<String, bool>, String> {
-    let root = ensure_media_dir(&app)?;
+    let root = cached_media_dir(&app)?;
     let mut result = HashMap::new();
     for filename in filenames {
         let relative = normalized_relative_path(&filename)?;
@@ -802,7 +822,7 @@ fn get_media_file_mtimes(
     app: tauri::AppHandle,
     filenames: Vec<String>,
 ) -> Result<HashMap<String, u64>, String> {
-    let root = ensure_media_dir(&app)?;
+    let root = cached_media_dir(&app)?;
     let mut result = HashMap::new();
     for filename in filenames {
         if let Ok(path) = resolve_existing_media_file(&root, &filename) {
@@ -828,7 +848,7 @@ async fn close_splashscreen(window: tauri::Window) {
 #[tauri::command]
 fn check_disk_space(app: tauri::AppHandle) -> Result<u64, String> {
     use sysinfo::Disks;
-    let root = ensure_media_dir(&app)?;
+    let root = cached_media_dir(&app)?;
     let disks = Disks::new_with_refreshed_list();
     let mut best_match = (0usize, 0u64);
 
@@ -848,6 +868,7 @@ fn check_disk_space(app: tauri::AppHandle) -> Result<u64, String> {
 pub fn run() {
     tauri::Builder::default()
         .manage(DownloadRegistry::default())
+        .manage(MediaLibrary::default())
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             get_media_storage_status,
@@ -864,7 +885,7 @@ pub fn run() {
             get_media_file_mtimes,
         ])
         .register_asynchronous_uri_scheme_protocol("media", move |app, request, responder| {
-            let response = ensure_media_dir(app.app_handle())
+            let response = cached_media_dir(app.app_handle())
                 .and_then(|root| {
                     handle_media_request(&root, request).map_err(|error| error.to_string())
                 })
@@ -883,7 +904,12 @@ pub fn run() {
                     .level(log::LevelFilter::Info)
                     .build(),
             )?;
-            match ensure_media_dir(app.handle()) {
+            let initialization = initialize_media_dir(app.handle());
+            let library = app.state::<MediaLibrary>();
+            if library.0.set(initialization.clone()).is_err() {
+                log::error!("Media library was initialized more than once");
+            }
+            match initialization {
                 Ok(path) => log::info!("Media library: {}", path.display()),
                 Err(error) => log::error!("{error}"),
             }

@@ -8,11 +8,11 @@
 
 ## Implemented
 
-- Stores media and `.content-versions.json` in Tauri Application Support and applies the native macOS backup-exclusion resource value.
+- Stores media and `.content-versions.json` in Tauri Application Support and attempts the native macOS backup-exclusion resource value as best-effort metadata.
 - Resolves media through `media://localhost/` with strict path, method, type, symlink, range, and response-size policy.
-- Restricts downloads to the manifest-backed course catalog and exact Cloudflare R2 host.
+- Uses JavaScript manifest metadata for expected size and ETag while Rust independently restricts downloads to hardcoded plan-approved path families on the exact Cloudflare R2 host.
 - Verifies manifest size and opaque ETag, supports cancellation and partial resume, and atomically publishes verified files.
-- Recovers automatically from a corrupt version snapshot.
+- Contains a corrupt-snapshot reset path; end-to-end recovery remains a manual gate.
 - Packages all UI fonts locally and records their OFL licenses.
 - Restricts CSP and Tauri opener permissions to the media host and approved EH Academy destinations.
 - Surfaces media-storage failures in an actionable application modal.
@@ -33,9 +33,9 @@
 - A 168,056,932-byte course video downloaded through the production Rust path and matched its source MD5/ETag.
 - A 65,401,384-byte instructor PDF downloaded through the production Rust path and matched its source MD5/ETag.
 - Cancellation left a resumable 13,065,280-byte partial file; the next launch resumed it, verified the full video, and removed the partial.
-- An invalid snapshot was removed and rebuilt as valid schema-1 JSON without blocking launch.
 - WebKit returned a bounded 2 MiB HTTP 206 response for an un-ranged video request, loaded video metadata, and completed more than 540 alternating seeks over ten minutes without playback failure.
-- Rust RSS remained approximately 23-27 MB during the seek test; combined Rust and WebKit RSS remained approximately 33-41 MB with no monotonic growth.
+- During the video seek test, Rust RSS remained approximately 23-27 MB and combined Rust and WebKit RSS remained approximately 33-41 MB with no monotonic growth. This measurement does not characterize PDF loading.
+- Images and PDFs are fully buffered under their protocol caps; the 65 MB PDF was fully buffered in production.
 - `tmutil isexcluded` confirmed backup exclusion for the media directory, downloaded files, and snapshot.
 
 ## Remaining Manual Gates
@@ -45,10 +45,11 @@
 - Repeat media playback in a signed, sandboxed Mac App Store package after entitlements and provisioning are implemented.
 - Exercise timeout messaging against a deliberately stalled endpoint; timeout behavior is implemented but the production CDN was not intentionally disrupted.
 - Recheck multipart ETag behavior live when a relevant R2 object uses a multipart ETag; current catalog objects do not.
+- Exercise corrupt-snapshot removal and reconstruction end to end; the current regression test validates schema rejection only.
 
 ## Dependency Note
 
-`npm audit` reports five inherited findings: two low and three high. No automatic dependency rewrite was applied because it would expand scope and could destabilize the release. These findings require separate review before the release-candidate gate.
+`npm audit` reports five inherited findings: two low and three high. They affect Babel, esbuild, PostCSS, sharp, and Vite build/development tooling; Node packages are not shipped in the Tauri runtime. No automatic dependency rewrite was applied because upgrades require compatibility testing before the release-candidate gate.
 
 ## Temporary Artifacts
 
