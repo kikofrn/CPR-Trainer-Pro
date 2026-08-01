@@ -512,7 +512,7 @@ dependencies = [
 
 [[package]]
 name = "cpr-trainer-pro"
-version = "1.0.0"
+version = "2.3.4"
 dependencies = [
  "futures-util",
  "http",
