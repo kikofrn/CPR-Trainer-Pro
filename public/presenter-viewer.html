@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CPR Trainer Pro - Presenter Display</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; background: #000; overflow: hidden; cursor: none; }
+    #video-el { position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: contain; display: none; background: #000; }
+    #image-el { position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: contain; display: none; background: #000; }
+    .visible { display: block !important; }
+    #subtitle-el { position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%);
+      z-index: 30; max-width: 80%; padding: 8px 16px; text-align: center;
+      color: #fff; font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 28px; font-weight: 700; letter-spacing: .02em; line-height: 1.4;
+      text-shadow: -1.5px -1.5px 0 #000, 1.5px -1.5px 0 #000,
+        -1.5px 1.5px 0 #000, 1.5px 1.5px 0 #000, 0 2px 4px rgba(0,0,0,0.8);
+      pointer-events: none; display: none; }
+    #subtitle-el.visible { display: block; }
+  </style>
+</head>
+<body>
+  <video id="video-el" playsinline></video>
+  <img id="image-el" alt="Presentation Slide" />
+  <div id="subtitle-el"></div>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const tauriEvent = window.__TAURI__?.event;
+      if (!tauriEvent) {
+        console.error('[presenter-viewer] Tauri event API not available');
+        return;
+      }
+
+      const videoEl = document.getElementById('video-el');
+      const imageEl = document.getElementById('image-el');
+      const subtitleEl = document.getElementById('subtitle-el');
+
+      if (!videoEl || !imageEl || !subtitleEl) {
+        console.error('[presenter-viewer] Required DOM elements missing');
+        return;
+      }
+
+      const sessionId = new URLSearchParams(location.search).get('session') || '';
+
+      function emitMain(event, payload) {
+        tauriEvent.emitTo('main', event, payload).catch(function(e) {
+          console.error('[presenter-viewer] Failed to emit ' + event + ':', e);
+        });
+      }
+
+      // --- State ---
+      let shouldAutoPlay = false;
+      let pendingSeekTime = 0;
+      let waitingForSeekBeforePlay = false;
+      let currentType = null;
+      let currentUrl = '';
+      let currentLoadToken = 0;
+
+      function clearPlaybackState() {
+        shouldAutoPlay = false;
+        pendingSeekTime = 0;
+        waitingForSeekBeforePlay = false;
+      }
+
+      function clearCurrentLoadState() {
+        clearPlaybackState();
+        currentType = null;
+        currentUrl = '';
+      }
+
+      function resetVideo() {
+        try { videoEl.pause(); videoEl.currentTime = 0; } catch {}
+        try {
+          videoEl.removeAttribute('src');
+          delete videoEl.dataset.loadToken;
+          videoEl.load();
+        } catch {}
+      }
+
+      function resetImage() {
+        imageEl.removeAttribute('src');
+        delete imageEl.dataset.loadToken;
+      }
+
+      function clearDisplayedContent() {
+        resetVideo();
+        resetImage();
+        videoEl.classList.remove('visible');
+        imageEl.classList.remove('visible');
+        subtitleEl.classList.remove('visible');
+        subtitleEl.textContent = '';
+      }
+
+      function isCurrentVideoLoad() {
+        return currentType === 'video'
+          && Number(videoEl.dataset.loadToken || 0) === currentLoadToken;
+      }
+
+      function isCurrentImageLoad() {
+        return currentType === 'image'
+          && Number(imageEl.dataset.loadToken || 0) === currentLoadToken;
+      }
+
+      function playVideo(opts) {
+        opts = opts || {};
+        if (!isCurrentVideoLoad() || !currentUrl) {
+          if (opts.reportIgnored) {
+            emitMain('viewer:play-error', {
+              message: 'No active presenter video to play'
+            });
+          }
+          return;
+        }
+        videoEl.play().catch(function(e) {
+          emitMain('viewer:play-error', { message: String(e) });
+        });
+      }
+
+      try {
+        await tauriEvent.listen('presentation:load', function(event) {
+          var token = ++currentLoadToken;
+          clearCurrentLoadState();
+
+          var payload = event.payload || {};
+          var type = payload.type;
+          var url = payload.url;
+          var autoPlay = payload.autoPlay;
+          var currentTime = payload.currentTime;
+
+          clearDisplayedContent();
+
+          if (!url || (type !== 'video' && type !== 'image')) {
+            emitMain('viewer:load-error', {
+              type: String(type || 'unknown'),
+              src: String(url || ''),
+              message: 'Invalid presenter load payload'
+            });
+            return;
+          }
+
+          currentType = type;
+          currentUrl = url;
+
+          if (type === 'video') {
+            videoEl.dataset.loadToken = String(token);
+            shouldAutoPlay = Boolean(autoPlay);
+            pendingSeekTime = Number(currentTime || 0);
+            try {
+              videoEl.src = url;
+              videoEl.preload = 'auto';
+              videoEl.classList.add('visible');
+              videoEl.load();
+            } catch (e) {
+              clearCurrentLoadState();
+              videoEl.classList.remove('visible');
+              emitMain('viewer:load-error', {
+                type: 'video', src: String(url), message: String(e)
+              });
+              return;
+            }
+          } else {
+            imageEl.dataset.loadToken = String(token);
+            try {
+              imageEl.src = url;
+              imageEl.classList.add('visible');
+            } catch (e) {
+              clearCurrentLoadState();
+              imageEl.classList.remove('visible');
+              emitMain('viewer:load-error', {
+                type: 'image', src: String(url), message: String(e)
+              });
+              return;
+            }
+          }
+        });
+
+        videoEl.addEventListener('loadedmetadata', function() {
+          if (!isCurrentVideoLoad()) return;
+          if (Number.isFinite(pendingSeekTime) && pendingSeekTime > 0) {
+            var duration = Number.isFinite(videoEl.duration) ? videoEl.duration : pendingSeekTime;
+            try {
+              videoEl.currentTime = Math.max(0, Math.min(pendingSeekTime, duration));
+              waitingForSeekBeforePlay = shouldAutoPlay;
+            } catch (e) {
+              waitingForSeekBeforePlay = false;
+            }
+          }
+        });
+
+        videoEl.addEventListener('seeked', function() {
+          if (!isCurrentVideoLoad()) return;
+          if (!waitingForSeekBeforePlay) return;
+          waitingForSeekBeforePlay = false;
+          shouldAutoPlay = false;
+          playVideo();
+        });
+
+        videoEl.addEventListener('canplay', function() {
+          if (!isCurrentVideoLoad()) return;
+          if (waitingForSeekBeforePlay) return;
+          if (!shouldAutoPlay) return;
+          shouldAutoPlay = false;
+          playVideo();
+        });
+
+        await tauriEvent.listen('presentation:play', function() {
+          playVideo({ reportIgnored: true });
+        });
+
+        await tauriEvent.listen('presentation:pause', function() {
+          if (!isCurrentVideoLoad()) return;
+          videoEl.pause();
+        });
+
+        await tauriEvent.listen('presentation:seek', function(event) {
+          if (!isCurrentVideoLoad()) return;
+          clearPlaybackState();
+          var rawTime = Number(event.payload?.time);
+          if (!Number.isFinite(rawTime)) return;
+          var duration = Number.isFinite(videoEl.duration) ? videoEl.duration : rawTime;
+          videoEl.currentTime = Math.max(0, Math.min(rawTime, duration));
+        });
+
+        await tauriEvent.listen('presentation:volume', function(event) {
+          if (!event.payload) return;
+          var rawVolume = Number(event.payload.volume ?? 1);
+          videoEl.volume = Number.isFinite(rawVolume)
+            ? Math.max(0, Math.min(1, rawVolume)) : 1;
+          videoEl.muted = Boolean(event.payload.muted);
+        });
+
+        await tauriEvent.listen('presentation:rate', function(event) {
+          var rawRate = Number(event.payload?.rate ?? 1);
+          if (!Number.isFinite(rawRate)) return;
+          videoEl.playbackRate = Math.max(0.25, Math.min(2, rawRate));
+        });
+
+        await tauriEvent.listen('presentation:subtitle', function(event) {
+          var text = event.payload?.text || '';
+          subtitleEl.textContent = text;
+          subtitleEl.classList.toggle('visible', !!text);
+        });
+
+        var lastEmit = 0;
+        videoEl.addEventListener('timeupdate', function() {
+          if (!isCurrentVideoLoad()) return;
+          var now = Date.now();
+          if (now - lastEmit > 250) {
+            emitMain('viewer:timeupdate', {
+              currentTime: Number.isFinite(videoEl.currentTime) ? videoEl.currentTime : 0,
+              duration: Number.isFinite(videoEl.duration) ? videoEl.duration : 0
+            });
+            lastEmit = now;
+          }
+        });
+
+        videoEl.addEventListener('ended', function() {
+          if (!isCurrentVideoLoad()) return;
+          emitMain('viewer:ended');
+        });
+
+        videoEl.addEventListener('error', function() {
+          if (!isCurrentVideoLoad()) return;
+          emitMain('viewer:load-error', {
+            type: 'video', src: videoEl.currentSrc || currentUrl,
+            code: videoEl.error?.code || 0,
+            message: videoEl.error?.message || 'Video failed to load'
+          });
+        });
+
+        imageEl.addEventListener('error', function() {
+          if (!isCurrentImageLoad()) return;
+          emitMain('viewer:load-error', {
+            type: 'image', src: imageEl.currentSrc || currentUrl,
+            message: 'Image failed to load'
+          });
+        });
+
+        emitMain('viewer:ready', { sessionId: sessionId });
+      } catch (e) {
+        console.error('[presenter-viewer] Failed to initialize listeners:', e);
+      }
+    });
+  </script>
+</body>
+</html>

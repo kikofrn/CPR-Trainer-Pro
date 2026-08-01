@@ -22,3 +22,11 @@ mac_updates_patches/
 
 # Generated Apple project files
 src-tauri/gen/apple/**
+
+# Local Apple signing material and build products
+*.cer
+*.p12
+*.provisionprofile
+*.xcarchive
+*.pkg
+DerivedData/

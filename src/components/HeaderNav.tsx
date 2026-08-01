@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, ChevronDown, CheckCircle2, HelpCircle, BookOpen, ChevronRight, GraduationCap, Baby, Book, Award } from 'lucide-react';
+import { Menu, ChevronDown, CheckCircle2, HelpCircle, BookOpen, ChevronRight, GraduationCap, Baby, Book, Award, MonitorPlay, MonitorX, Maximize2, Minimize2, AlertCircle, FolderInput } from 'lucide-react';
 import { COURSES } from '../chapters';
 import { THUMBNAILS } from '../thumbnails';
 import { mediaUrl } from '../media-resolver';
@@ -52,6 +52,16 @@ interface HeaderNavProps {
   EHLogo: any;
   CprIcon: any;
   FirstAidIcon: any;
+  isFullScreen: boolean;
+  isPresentingExternally: boolean;
+  hasExternalMonitor: boolean;
+  isPresenterStarting: boolean;
+  presenterError: string | null;
+  handleStartPresenting: () => void;
+  handleStopPresenting: () => void;
+  handleFullscreenToggle: () => void;
+  handleOpenUsbImport: () => void;
+  isUsbImportActive: boolean;
 }
 
 export function HeaderNav({
@@ -64,7 +74,10 @@ export function HeaderNav({
   activeTab, previewManualIndex, setPreviewManualIndex,
   easterEggLevel, activeCourse, activeChapterIndex,
   handleItemClick, MANUALS,
-  EHLogo, CprIcon, FirstAidIcon
+  EHLogo, CprIcon, FirstAidIcon,
+  isFullScreen, isPresentingExternally, hasExternalMonitor, isPresenterStarting, presenterError,
+  handleStartPresenting, handleStopPresenting, handleFullscreenToggle,
+  handleOpenUsbImport, isUsbImportActive
 }: HeaderNavProps) {
   const pediCprCourse = COURSES.find(c => c.id === 'pediatric-cpr-aed');
   const isCprBothOnComingSoon = cprPediatric && cprVaEnabled && pediCprCourse?.isComingSoon;
@@ -547,6 +560,33 @@ export function HeaderNav({
             <span className="font-mono text-xs text-eh-peach/80">{Math.round(((activeChapterIndex + 1) / activeCourse.chapters.length) * 100)}% Complete</span>
           </div>
         )}
+
+        <div className="flex items-center gap-2">
+          {presenterError && <AlertCircle size={20} className="text-eh-red" aria-label="Presenter error" />}
+          <button
+            onClick={handleOpenUsbImport}
+            disabled={isPresentingExternally || isUsbImportActive}
+            className="p-2 bg-eh-peach/10 text-eh-peach hover:bg-eh-peach/20 transition-colors disabled:cursor-not-allowed disabled:opacity-30"
+            title="Import Media from Folder"
+          >
+            <FolderInput size={20} />
+          </button>
+          <button
+            onClick={isPresentingExternally ? handleStopPresenting : handleStartPresenting}
+            disabled={!hasExternalMonitor || isPresenterStarting}
+            className={`p-2 transition-colors ${isPresentingExternally ? 'bg-teal-500/20 text-teal-400' : hasExternalMonitor ? 'bg-eh-peach/10 text-eh-peach hover:bg-eh-peach/20' : 'bg-white/5 text-white/20 cursor-not-allowed'}`}
+            title={isPresentingExternally ? 'Stop Presenting' : hasExternalMonitor ? 'Present on External Display' : 'No External Display Detected'}
+          >
+            {isPresentingExternally ? <MonitorX size={20} /> : <MonitorPlay size={20} />}
+          </button>
+          <button
+            onClick={handleFullscreenToggle}
+            className="p-2 bg-eh-peach/10 text-eh-peach hover:bg-eh-peach/20 transition-colors"
+            title={isFullScreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+          >
+            {isFullScreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
+          </button>
+        </div>
 
       </div>
     </header>

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, lazy, Suspense } from 'react';
+import { useState, useRef, useEffect, lazy, Suspense, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Download,
@@ -22,6 +22,21 @@ import { HeaderNav } from './components/HeaderNav';
 import { Sidebar } from './components/Sidebar';
 import { VideoPlayer } from './components/VideoPlayer';
 import { SlideshowPlayer } from './components/SlideshowPlayer';
+import { UsbImportModal, type UsbImportProgress, type UsbImportSummary } from './components/UsbImportModal';
+import { toggleFullscreen, exitFullscreen, checkFullscreen } from './utils/fullscreen';
+import { canPresent, startPresenting, stopPresenting, sendToViewer } from './utils/presenter';
+import { findActiveCue } from './utils/subtitle-lookup';
+import { resolveSlideUrl } from './utils/slide-url';
+
+async function setDisplaySleepPrevention(active: boolean): Promise<void> {
+  if (!isTauri) return;
+  try {
+    const { invoke } = await import('@tauri-apps/api/core');
+    await invoke('set_display_sleep_prevention', { active });
+  } catch (error) {
+    console.warn('[presenter] Display sleep assertion could not be updated:', error);
+  }
+}
 
 function EHLogo({ className }: { className?: string }) {
   return (
@@ -40,6 +55,23 @@ function EHLogo({ className }: { className?: string }) {
 export default function App() {
   const [mediaReady, setMediaReady] = useState(false);
   const [mediaStorageError, setMediaStorageError] = useState<string | null>(null);
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  const [isPresentingExternally, setIsPresentingExternally] = useState(false);
+  const [hasExternalMonitor, setHasExternalMonitor] = useState(false);
+  const [isPresenterStarting, setIsPresenterStarting] = useState(false);
+  const [presenterError, setPresenterError] = useState<string | null>(null);
+  const [presenterDuration, setPresenterDuration] = useState(0);
+  const [viewerListenersReady, setViewerListenersReady] = useState(false);
+  const presenterStartingRef = useRef(false);
+  const usbImportActiveRef = useRef(false);
+  const [isUsbImportActive, setIsUsbImportActive] = useState(false);
+  const usbCancelRequestedRef = useRef(false);
+  const shouldPreventSleepRef = useRef(false);
+  const [usbFolder, setUsbFolder] = useState<string | null>(null);
+  const [usbSummary, setUsbSummary] = useState<UsbImportSummary | null>(null);
+  const [usbProgress, setUsbProgress] = useState<UsbImportProgress | null>(null);
+  const [usbStatus, setUsbStatus] = useState<'ready' | 'importing' | 'cancelling' | 'complete' | 'error'>('ready');
+  const [usbError, setUsbError] = useState<string | null>(null);
   
   const [contentUpdateFiles, setContentUpdateFiles] = useState<ChangedFile[]>([]);
   const [showContentUpdatePrompt, setShowContentUpdatePrompt] = useState(false);
@@ -48,7 +80,7 @@ export default function App() {
   const pendingUpdatesRef = useRef<Record<string, { originalKey: string; etag: string; uploaded: string; size: number }>>({});
 
   useEffect(() => {
-    if (!isTauri || !navigator.onLine) return;
+    if (!isTauri || !navigator.onLine || isPresentingExternally) return;
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 4000);
@@ -60,6 +92,7 @@ export default function App() {
         if (!res.ok) return;
         const data = await res.json();
         const manifestFiles: ManifestFile[] = data.files;
+        downloadManager.refreshManifest(manifestFiles);
 
         const relevantKeys = getRelevantKeys(SLIDESHOWS, COURSES, MANUALS, THUMBNAIL_KEYS);
         
@@ -153,7 +186,11 @@ export default function App() {
     }
     
     checkContentUpdates();
-  }, [isTauri]);
+    return () => {
+      controller.abort();
+      clearTimeout(timeoutId);
+    };
+  }, [isPresentingExternally]);
 
 
 
@@ -307,6 +344,36 @@ export default function App() {
   const [isUiVisible, setIsUiVisible] = useState(true);
   const [subtitleCues, setSubtitleCues] = useState<SubtitleCue[]>([]);
   const [activeCue, setActiveCue] = useState<SubtitleCue | null>(null);
+  const presentingModeRef = useRef<'video' | 'slideshow' | null>(null);
+  const isPresentingExternallyRef = useRef(false);
+  const presenterDurationRef = useRef(0);
+  const subtitleCuesRef = useRef(subtitleCues);
+  const activeCueRef = useRef<SubtitleCue | null>(null);
+  const handleEndedCoreRef = useRef<() => void>(() => {});
+
+  useEffect(() => {
+    isPresentingExternallyRef.current = isPresentingExternally;
+  }, [isPresentingExternally]);
+
+  useEffect(() => {
+    subtitleCuesRef.current = subtitleCues;
+  }, [subtitleCues]);
+
+  const updatePresenterDuration = (duration: number) => {
+    const safe = Number.isFinite(duration) && duration > 0 ? duration : 0;
+    if (Math.abs(presenterDurationRef.current - safe) < 0.01) return;
+    presenterDurationRef.current = safe;
+    setPresenterDuration(safe);
+  };
+
+  const setActiveCueIfChanged = (cue: SubtitleCue | null) => {
+    const current = activeCueRef.current;
+    if (current?.start === cue?.start && current?.end === cue?.end && current?.text === cue?.text) {
+      return;
+    }
+    activeCueRef.current = cue;
+    setActiveCue(cue);
+  };
   const [lastCprView, setLastCprView] = useState<'video' | 'slideshow' | null>(null);
   const [lastFaView, setLastFaView] = useState<'video' | 'slideshow' | null>(null);
   
@@ -659,6 +726,8 @@ export default function App() {
 
     videoRef.current = active;
 
+    if (isPresentingExternallyRef.current) return;
+
     let activeInterval: any = null;
     let inactiveInterval: any = null;
     let isCancelled = false;
@@ -752,6 +821,13 @@ export default function App() {
       if (activeCourseIndex !== null) saveProgress(activeCourseIndex, index);
     }
     setShowNextOverlay(false);
+    if (isPresentingExternallyRef.current && chapter.filename) {
+      setIsPlaying(true);
+      setActiveTab('video');
+      if (window.innerWidth < 1024) setShowSidebar(false);
+      void loadPresentedVideo(chapter.filename, true);
+      return;
+    }
     setIsPlaying(true);
     setActiveTab('video'); // Switch view tab to show the playing video
     if (window.innerWidth < 1024) setShowSidebar(false);
@@ -781,36 +857,475 @@ export default function App() {
     }
   };
 
-  const handleEnded = () => {
-    setIsPlaying(false);
-    if (isContinuousPlay && activeCourse && activeChapterIndex < activeCourse.chapters.length - 1) {
-      handleNext();
+  const getActiveCourseVideo = (): HTMLVideoElement | null => {
+    if (videoRef.current) return videoRef.current;
+    if (videoRefA.current && !videoRefA.current.paused) return videoRefA.current;
+    if (videoRefB.current && !videoRefB.current.paused) return videoRefB.current;
+    return activePlayer === 'A'
+      ? videoRefA.current
+      : videoRefB.current;
+  };
+
+  const restoreLocalMediaRef = useRef<null | (() => void)>(null);
+
+  const silenceLocalMedia = () => {
+    restoreLocalMediaRef.current?.();
+
+    const videos = [videoRefA.current, videoRefB.current, slideVideoRef.current]
+      .filter(Boolean) as HTMLVideoElement[];
+    const previous = videos.map((el) => ({ el, muted: el.muted }));
+    videos.forEach((el) => {
+      try { el.pause(); el.muted = true; } catch {}
+    });
+    restoreLocalMediaRef.current = () => {
+      previous.forEach(({ el, muted }) => {
+        try { el.muted = muted; } catch {}
+      });
+    };
+  };
+
+  const restoreLocalMedia = () => {
+    restoreLocalMediaRef.current?.();
+    restoreLocalMediaRef.current = null;
+  };
+
+  const resetPresenterState = () => {
+    void downloadManager.setSuppressed(false);
+    presentingModeRef.current = null;
+    isPresentingExternallyRef.current = false;
+    presenterDurationRef.current = 0;
+    setPresenterDuration(0);
+    setIsPresentingExternally(false);
+    setPresenterError(null);
+    setIsPresenterStarting(false);
+    restoreLocalMedia();
+    setActiveCueIfChanged(null);
+  };
+
+  const loadViewerVideo = async (
+    filename: string, autoPlay: boolean, currentTime = 0
+  ): Promise<boolean> => {
+    const clean = filename.trim().replace(/^\//, '');
+    if (!clean) return false;
+
+    const loaded = await sendToViewer('presentation:load', {
+      type: 'video', url: m(`/${clean}`), autoPlay, currentTime,
+    });
+    if (!loaded) return false;
+    setPresenterError(null);
+    await sendToViewer('presentation:volume', { volume, muted: isMuted });
+    await sendToViewer('presentation:rate', { rate: playbackRate });
+    return true;
+  };
+
+  const loadSlideToViewer = async (
+    slide: any, autoPlay: boolean, currentTime = 0
+  ): Promise<boolean> => {
+    if (slide.type !== 'video' && slide.type !== 'image') {
+      console.warn('[presenter] Unsupported slide type:', slide.type);
+      return false;
+    }
+    const url = resolveSlideUrl(slide, m, dlState.fileStatuses);
+    if (!url) return false;
+
+    const loaded = await sendToViewer('presentation:load', {
+      type: slide.type, url,
+      autoPlay: slide.type === 'video' && autoPlay,
+      currentTime: slide.type === 'video' ? currentTime : 0,
+    });
+    if (!loaded) return false;
+    setPresenterError(null);
+    if (slide.type === 'video') {
+      await sendToViewer('presentation:volume', { volume, muted: isMuted });
+      await sendToViewer('presentation:rate', { rate: playbackRate });
+    }
+    return true;
+  };
+
+  const loadPresentedVideo = async (
+    filename: string, autoPlay: boolean, currentTime = 0
+  ): Promise<boolean> => {
+    const previousMode = presentingModeRef.current;
+    const ok = await loadViewerVideo(filename, autoPlay, currentTime);
+    if (ok) {
+      presentingModeRef.current = 'video';
     } else {
-      setShowNextOverlay(true);
+      presentingModeRef.current = previousMode;
+      setPresenterError('Could not load chapter on presenter display');
+    }
+    return ok;
+  };
+
+  const loadPresentedSlide = async (
+    slide: any, autoPlay: boolean, currentTime = 0
+  ): Promise<boolean> => {
+    const previousMode = presentingModeRef.current;
+    const ok = await loadSlideToViewer(slide, autoPlay, currentTime);
+    if (ok) {
+      presentingModeRef.current = 'slideshow';
+    } else {
+      presentingModeRef.current = previousMode;
+      setPresenterError('Could not load slide on presenter display');
+    }
+    return ok;
+  };
+
+  useEffect(() => {
+    if (!isTauri) {
+      setViewerListenersReady(true);
+      return;
+    }
+    let cancelled = false;
+    const unlisteners: Array<() => void> = [];
+
+    import('@tauri-apps/api/event').then(async ({ listen }) => {
+      const add = async (event: string, cb: (e: any) => void) => {
+        const unlisten = await listen(event, cb);
+        if (cancelled) unlisten();
+        else unlisteners.push(unlisten);
+      };
+
+      await add('viewer:timeupdate', (event: any) => {
+        if (!isPresentingExternallyRef.current) return;
+        const rawTime = Number(event.payload?.currentTime);
+        const rawDuration = Number(event.payload?.duration);
+        const currentTime = Number.isFinite(rawTime) && rawTime >= 0 ? rawTime : 0;
+        const duration = Number.isFinite(rawDuration) && rawDuration > 0 ? rawDuration : 0;
+
+        if (duration > 0) updatePresenterDuration(duration);
+
+        const raw = duration > 0 ? (currentTime / duration) * 100 : 0;
+        const p = Number.isFinite(raw) ? Math.max(0, Math.min(100, raw)) : 0;
+        setProgress(p);
+        setActiveCueIfChanged(findActiveCue(subtitleCuesRef.current, currentTime));
+      });
+
+      await add('viewer:ended', () => {
+        if (!isPresentingExternallyRef.current) return;
+        if (presentingModeRef.current === 'slideshow') {
+          setSlideshowIsPlaying(false);
+          return;
+        }
+        handleEndedCoreRef.current();
+      });
+
+      await add('viewer:play-error', (event: any) => {
+        if (!isPresentingExternallyRef.current) return;
+        const message = event.payload?.message || 'Presenter video could not start';
+        console.error('[presenter] Viewer play failed:', message);
+        setPresenterError(message);
+        if (presentingModeRef.current === 'slideshow') setSlideshowIsPlaying(false);
+        else setIsPlaying(false);
+      });
+
+      await add('viewer:load-error', (event: any) => {
+        if (!isPresentingExternallyRef.current) return;
+        const message = event.payload?.message || 'Presenter media failed to load';
+        console.error('[presenter] Viewer media failed:', event.payload);
+        setPresenterError(message);
+        if (presentingModeRef.current === 'slideshow') setSlideshowIsPlaying(false);
+        else setIsPlaying(false);
+      });
+
+      await add('system:sleep', () => {
+        void setDisplaySleepPrevention(false);
+      });
+
+      await add('system:wake', () => {
+        if (shouldPreventSleepRef.current) {
+          void setDisplaySleepPrevention(true);
+        }
+      });
+
+      if (!cancelled) setViewerListenersReady(true);
+    }).catch((e) => {
+      console.error('[presenter] Viewer listener setup failed:', e);
+      setPresenterError('Presenter controls could not initialize');
+      setViewerListenersReady(false);
+    });
+
+    return () => { cancelled = true; unlisteners.forEach((fn) => fn()); };
+  }, []);
+
+  useEffect(() => () => {
+    void setDisplaySleepPrevention(false);
+    void stopPresenting();
+  }, []);
+
+  useEffect(() => {
+    const shouldPrevent = isPresentingExternally
+      || isFullScreen
+      || (activeTab === 'slideshow' && slideshowIsPlaying && Boolean(activeSlideshow));
+    shouldPreventSleepRef.current = shouldPrevent;
+    void setDisplaySleepPrevention(shouldPrevent);
+  }, [isPresentingExternally, isFullScreen, activeTab, slideshowIsPlaying, activeSlideshow]);
+
+  useEffect(() => { checkFullscreen().then(setIsFullScreen); }, []);
+
+  useEffect(() => {
+    if (!isTauri) return;
+    let cancelled = false;
+    const unlisteners: Array<() => void> = [];
+
+    import('@tauri-apps/api/window').then(async ({ getCurrentWindow }) => {
+      const win = getCurrentWindow();
+      const sync = async () => { setIsFullScreen(await win.isFullscreen()); };
+      const u1 = await win.onFocusChanged(sync);
+      const u2 = await win.onResized(sync);
+      if (cancelled) { u1(); u2(); }
+      else { unlisteners.push(u1, u2); }
+    }).catch(console.error);
+
+    return () => { cancelled = true; unlisteners.forEach((fn) => fn()); };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    let inFlight = false;
+
+    const check = async () => {
+      if (inFlight) return;
+      inFlight = true;
+      try {
+        const can = await canPresent();
+        if (cancelled) return;
+        setHasExternalMonitor(can);
+        if (!can && isPresentingExternallyRef.current) {
+          await stopPresenting();
+          resetPresenterState();
+        }
+      } finally {
+        inFlight = false;
+      }
+    };
+
+    check();
+    const interval = setInterval(check, 3000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [isPresentingExternally]);
+
+  const handleFullscreenToggle = async () => {
+    setIsFullScreen(await toggleFullscreen());
+  };
+
+  const handleFullscreenExit = async () => {
+    await exitFullscreen();
+    setIsFullScreen(await checkFullscreen());
+  };
+
+  const handleStartPresenting = async () => {
+    if (presenterStartingRef.current || usbImportActiveRef.current) return;
+    const hasPresentableContent = (activeTab === 'video'
+      && Boolean(activeCourse?.chapters[activeChapterIndex]?.filename))
+      || (activeTab === 'slideshow' && Boolean(activeSlideshow && activeSlide));
+    if (!hasPresentableContent) {
+      setPresenterError('Open a course video or slideshow before starting Presenter');
+      return;
+    }
+    presenterStartingRef.current = true;
+    setIsPresenterStarting(true);
+    setPresenterError(null);
+
+    try {
+      await downloadManager.setSuppressed(true);
+      const shouldAutoPlay = activeTab === 'video' ? isPlaying : slideshowIsPlaying;
+      const startTime = activeTab === 'video'
+        ? (getActiveCourseVideo()?.currentTime ?? 0)
+        : (activeSlide?.type === 'video' ? (slideVideoRef.current?.currentTime ?? 0) : 0);
+      const success = await startPresenting(() => {
+        resetPresenterState();
+      });
+      if (!success) {
+        resetPresenterState();
+        setPresenterError('No external display was available or the presenter window could not open');
+        return;
+      }
+
+      isPresentingExternallyRef.current = true;
+      setIsPresentingExternally(true);
+      silenceLocalMedia();
+
+      let loaded = false;
+
+      if (activeTab === 'video' && activeCourse) {
+        const chapter = activeCourse.chapters[activeChapterIndex];
+        if (chapter?.filename) {
+          presentingModeRef.current = 'video';
+          loaded = await loadViewerVideo(chapter.filename, shouldAutoPlay, startTime);
+        }
+      } else if (activeTab === 'slideshow' && activeSlideshow && activeSlide) {
+        presentingModeRef.current = 'slideshow';
+        loaded = await loadSlideToViewer(activeSlide, shouldAutoPlay, startTime);
+      }
+
+      if (!loaded) {
+        await stopPresenting();
+        resetPresenterState();
+        setPresenterError('Could not load content on the presenter display');
+      }
+    } catch (e) {
+      console.error('[presenter] Start failed:', e);
+      await stopPresenting();
+      resetPresenterState();
+      setPresenterError('Could not start presenter display');
+    } finally {
+      presenterStartingRef.current = false;
+      setIsPresenterStarting(false);
     }
   };
 
+  const handleStopPresenting = async () => {
+    await stopPresenting();
+    resetPresenterState();
+  };
+
+  useEffect(() => {
+    if (!isTauri) return;
+    let unlisten: (() => void) | undefined;
+    import('@tauri-apps/api/event').then(({ listen }) =>
+      listen<UsbImportProgress>('usb-import-progress', (event) => {
+        setUsbProgress(event.payload);
+      })
+    ).then((cleanup) => { unlisten = cleanup; }).catch(console.error);
+    return () => unlisten?.();
+  }, []);
+
+  const handleOpenUsbImport = async () => {
+    if (isPresentingExternallyRef.current || usbImportActiveRef.current) return;
+    setUsbError(null);
+    try {
+      const { open } = await import('@tauri-apps/plugin-dialog');
+      const selected = await open({
+        title: 'Choose Conference Media Library',
+        directory: true,
+        multiple: false,
+        recursive: true,
+        canCreateDirectories: false,
+        fileAccessMode: 'scoped',
+      });
+      if (!selected || Array.isArray(selected)) return;
+      const { invoke } = await import('@tauri-apps/api/core');
+      const summary = await invoke<UsbImportSummary>('inspect_usb_media_folder', { selectedFolder: selected });
+      setUsbFolder(selected);
+      setUsbSummary(summary);
+      setUsbProgress(null);
+      setUsbStatus('ready');
+    } catch (error) {
+      setUsbFolder(null);
+      setUsbSummary({ appVersion: 'Unknown', generatedAt: '', fileCount: 0, totalBytes: 0 });
+      setUsbStatus('error');
+      setUsbError(String(error));
+    }
+  };
+
+  const handleStartUsbImport = async () => {
+    if (!usbFolder || !usbSummary || isPresentingExternallyRef.current || usbImportActiveRef.current) return;
+    usbImportActiveRef.current = true;
+    setIsUsbImportActive(true);
+    usbCancelRequestedRef.current = false;
+    setUsbStatus('importing');
+    setUsbError(null);
+    await downloadManager.setSuppressed(true);
+    try {
+      const { invoke } = await import('@tauri-apps/api/core');
+      await invoke<UsbImportSummary>('import_usb_media_folder', { selectedFolder: usbFolder });
+      setUsbStatus('complete');
+      await downloadManager.checkAllStatuses();
+    } catch (error) {
+      if (usbCancelRequestedRef.current) {
+        setUsbStatus('ready');
+      } else {
+        setUsbStatus('error');
+        setUsbError(String(error));
+      }
+    } finally {
+      usbImportActiveRef.current = false;
+      setIsUsbImportActive(false);
+      await downloadManager.setSuppressed(false);
+    }
+  };
+
+  const handleCancelUsbImport = async () => {
+    if (!usbImportActiveRef.current) return;
+    usbCancelRequestedRef.current = true;
+    setUsbStatus('cancelling');
+    try {
+      const { invoke } = await import('@tauri-apps/api/core');
+      await invoke('cancel_usb_media_import');
+      setUsbStatus('ready');
+    } catch (error) {
+      setUsbStatus('error');
+      setUsbError(String(error));
+    }
+  };
+
+  useEffect(() => {
+    if (!isPresentingExternally) return;
+    sendToViewer('presentation:subtitle', { text: activeCue?.text || '' });
+  }, [activeCue, isPresentingExternally]);
+
+  useEffect(() => {
+    if (isPresentingExternally)
+      sendToViewer('presentation:volume', { volume, muted: isMuted });
+  }, [volume, isMuted, isPresentingExternally]);
+
+  useEffect(() => {
+    if (isPresentingExternally)
+      sendToViewer('presentation:rate', { rate: playbackRate });
+  }, [playbackRate, isPresentingExternally]);
+
+  useEffect(() => {
+    if (!isFullScreen) setIsUiVisible(true);
+  }, [isFullScreen]);
+
+  const handleVideoSeek = (time: number, duration: number) => {
+    const safeDuration = Number.isFinite(duration) && duration > 0 ? duration : 0;
+    if (!safeDuration) return;
+
+    const safeTime = Number.isFinite(time)
+      ? Math.max(0, Math.min(time, safeDuration))
+      : 0;
+
+    const p = (safeTime / safeDuration) * 100;
+    setProgress(Math.max(0, Math.min(100, p)));
+
+    if (isPresentingExternallyRef.current) {
+      void sendToViewer('presentation:seek', { time: safeTime }).then((sent) => {
+        if (!sent) setPresenterError('Could not seek presenter video');
+      });
+      setActiveCueIfChanged(findActiveCue(subtitleCuesRef.current, safeTime));
+      return;
+    }
+    const video = getActiveCourseVideo();
+    if (video) video.currentTime = safeTime;
+  };
+
+
+
+  const handleEnded = () => {
+    if (isPresentingExternallyRef.current) return;
+    handleEndedCoreRef.current();
+  };
+
   const handleTimeUpdate = (video: HTMLVideoElement) => {
+    if (isPresentingExternallyRef.current) return;
     const currentTime = video.currentTime;
     const p = (currentTime / (video.duration || 1)) * 100;
     setProgress(isNaN(p) ? 0 : p);
 
-    // Only display subtitles if the video has actually started playing (currentTime > 0.01)
-    if (subtitleCues.length > 0 && currentTime > 0.01) {
-      const matchingCue = subtitleCues.find(
-        cue => {
-          // Delay any early cue (starting under 1.2s) until 1.2s to prevent showing during the initial cross-fade transition
-          const effectiveStart = cue.start < 1.2 ? 1.2 : cue.start;
-          return currentTime >= effectiveStart && currentTime <= cue.end;
-        }
-      );
-      setActiveCue(matchingCue || null);
-    } else {
-      setActiveCue(null);
-    }
+    setActiveCueIfChanged(findActiveCue(subtitleCues, currentTime));
   };
 
   const togglePlay = () => {
+    if (isPresentingExternallyRef.current) {
+      const currentlyPlaying = isPlaying;
+      setIsPlaying(!currentlyPlaying);
+      setActiveTab('video');
+      void sendToViewer(currentlyPlaying ? 'presentation:pause' : 'presentation:play').then((sent) => {
+        if (!sent) setPresenterError('Could not control presenter video');
+      });
+      return;
+    }
     if (videoRef.current) {
       if (isPlaying) {
         videoRef.current.pause();
@@ -831,6 +1346,19 @@ export default function App() {
       selectChapter(activeChapterIndex + 1);
     }
   };
+
+  const handleEndedCore = useCallback(() => {
+    setIsPlaying(false);
+    if (isContinuousPlay && activeCourse && activeChapterIndex < activeCourse.chapters.length - 1) {
+      selectChapter(activeChapterIndex + 1);
+    } else {
+      setShowNextOverlay(true);
+    }
+  }, [isContinuousPlay, activeCourse, activeChapterIndex]);
+
+  useEffect(() => {
+    handleEndedCoreRef.current = handleEndedCore;
+  }, [handleEndedCore]);
 
   const handlePrev = () => {
     if (activeChapterIndex > 0) {
@@ -866,6 +1394,15 @@ export default function App() {
       }
     }
 
+    if (isPresentingExternallyRef.current) {
+      slideVideoRef.current?.pause();
+      setActiveSlideIndex(index);
+      setSlideshowIsPlaying(slide.type === 'video');
+      setActiveTab('slideshow');
+      void loadPresentedSlide(slide, slide.type === 'video');
+      return;
+    }
+
     // For IMAGE slides (or already-downloaded videos): navigate immediately
     // Images load from CDN online or from local cache if already downloaded
     // Use the sidebar download button to explicitly download individual slides
@@ -888,6 +1425,14 @@ export default function App() {
   };
   
   const toggleSlideshowPlay = () => {
+    if (isPresentingExternallyRef.current && activeSlide?.type === 'video') {
+      const currentlyPlaying = slideshowIsPlaying;
+      setSlideshowIsPlaying(!currentlyPlaying);
+      void sendToViewer(currentlyPlaying ? 'presentation:pause' : 'presentation:play').then((sent) => {
+        if (!sent) setPresenterError('Could not control presenter slide');
+      });
+      return;
+    }
     if (slideVideoRef.current && activeSlide?.type === 'video') {
       if (slideshowIsPlaying) {
         slideVideoRef.current.pause();
@@ -899,6 +1444,7 @@ export default function App() {
   };
 
   useEffect(() => {
+    if (isPresentingExternallyRef.current) return;
     if (slideshowIsPlaying && slideVideoRef.current && activeSlide?.type === 'video') {
       slideVideoRef.current.play().catch(e => console.error("Play failed", e));
     }
@@ -1080,7 +1626,7 @@ export default function App() {
           </div>
         </div>
       )}
-      {showContentUpdatePrompt && (
+      {showContentUpdatePrompt && !isPresentingExternally && !isUsbImportActive && (
         <UpdatePrompt
           files={contentUpdateFiles}
           avgSpeedBps={contentUpdateAvgSpeed}
@@ -1106,9 +1652,26 @@ export default function App() {
           }}
         />
       )}
+      {usbSummary && (
+        <UsbImportModal
+          summary={usbSummary}
+          progress={usbProgress}
+          status={usbStatus}
+          error={usbError}
+          onStart={() => void handleStartUsbImport()}
+          onCancel={() => void handleCancelUsbImport()}
+          onClose={() => {
+            if (usbImportActiveRef.current) return;
+            setUsbSummary(null);
+            setUsbFolder(null);
+            setUsbProgress(null);
+            setUsbError(null);
+          }}
+        />
+      )}
       {/* Sidebar Navigation */}
-      <AnimatePresence>
-        {showSidebar && (
+      <AnimatePresence mode="wait">
+        {showSidebar && !isFullScreen && (
           <Sidebar
             showSidebar={showSidebar}
             setShowSidebar={setShowSidebar}
@@ -1158,8 +1721,14 @@ export default function App() {
       </AnimatePresence>
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col relative min-w-0 h-full">
+        {presenterError && (
+          <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-3 bg-red-900/95 px-5 py-3 text-sm font-medium text-white shadow-lg">
+            <span>{presenterError}</span>
+            <button onClick={() => setPresenterError(null)} className="text-white/60 hover:text-white" title="Dismiss">&times;</button>
+          </div>
+        )}
         {/* Top Header */}
-        <HeaderNav
+        {!isFullScreen && <HeaderNav
           dlState={dlState}
           showSidebar={showSidebar}
           setShowSidebar={setShowSidebar}
@@ -1199,7 +1768,17 @@ export default function App() {
           EHLogo={EHLogo}
           CprIcon={CprIcon}
           FirstAidIcon={FirstAidIcon}
-        />
+          isFullScreen={isFullScreen}
+          isPresentingExternally={isPresentingExternally}
+          hasExternalMonitor={hasExternalMonitor && viewerListenersReady}
+          isPresenterStarting={isPresenterStarting}
+          presenterError={presenterError}
+          handleStartPresenting={handleStartPresenting}
+          handleStopPresenting={handleStopPresenting}
+          handleFullscreenToggle={handleFullscreenToggle}
+          handleOpenUsbImport={handleOpenUsbImport}
+          isUsbImportActive={isUsbImportActive}
+        />}
         {/* Player Section */}
         <div className="flex-1 relative bg-black overflow-hidden h-full flex items-center justify-center">
           
@@ -1390,6 +1969,16 @@ export default function App() {
               togglePlay={togglePlay}
               playbackRate={playbackRate}
               setPlaybackRate={setPlaybackRate}
+              handleVideoSeek={handleVideoSeek}
+              isFullScreen={isFullScreen}
+              onFullscreenToggle={handleFullscreenToggle}
+              onFullscreenExit={handleFullscreenExit}
+              hasExternalMonitor={hasExternalMonitor && viewerListenersReady}
+              isPresentingExternally={isPresentingExternally}
+              onStartPresenting={handleStartPresenting}
+              onStopPresenting={handleStopPresenting}
+              isPresenterStarting={isPresenterStarting}
+              presenterDuration={presenterDuration}
             />
           </div>
           {/* Slideshow Tab Container */}
@@ -1413,6 +2002,14 @@ export default function App() {
               onSlideVideoEnded={() => setSlideshowIsPlaying(false)}
               m={m}
               fileStatuses={dlState.fileStatuses}
+              isFullScreen={isFullScreen}
+              onFullscreenToggle={handleFullscreenToggle}
+              onFullscreenExit={handleFullscreenExit}
+              hasExternalMonitor={hasExternalMonitor && viewerListenersReady}
+              isPresentingExternally={isPresentingExternally}
+              onStartPresenting={handleStartPresenting}
+              onStopPresenting={handleStopPresenting}
+              isPresenterStarting={isPresenterStarting}
             />
           </div>
         </div>
@@ -1431,7 +2028,7 @@ export default function App() {
 
       {/* First-Launch Download All Prompt */}
       <AnimatePresence>
-        {showDownloadPrompt && (
+        {showDownloadPrompt && !isPresentingExternally && !isUsbImportActive && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

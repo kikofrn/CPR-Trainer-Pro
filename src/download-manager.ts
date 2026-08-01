@@ -6,6 +6,7 @@ import { THUMBNAIL_KEYS } from './thumbnails';
 import type { ManifestFile } from './update-checker';
 
 const COMING_SOON_IDS = ['cpr-aed-spanish-course', 'first-aid-spanish-course'];
+const MANIFEST_CACHE_TTL_MS = 60_000;
 
 export interface DownloadState {
   isDownloading: boolean;
@@ -77,6 +78,10 @@ class DownloadManager {
   private lastBytesWritten = 0;
   private mockMissingFiles = false;
   private manifestPromise: Promise<Map<string, ManifestFile>> | null = null;
+  private manifestExpiresAt = 0;
+  private downloadEpoch = 0;
+  private isSuppressed = false;
+  private suspendedDownload: Pick<DownloadState, 'activeCategory' | 'queue' | 'totalQueueSize' | 'completedQueueCount'> | null = null;
 
   public toggleMockMissingFiles() {
     this.mockMissingFiles = !this.mockMissingFiles;
@@ -128,6 +133,9 @@ class DownloadManager {
   }
 
   private async getManifest(): Promise<Map<string, ManifestFile>> {
+    if (this.manifestPromise && Date.now() >= this.manifestExpiresAt) {
+      this.manifestPromise = null;
+    }
     if (!this.manifestPromise) {
       this.manifestPromise = (async () => {
         const controller = new AbortController();
@@ -152,6 +160,7 @@ class DownloadManager {
             }
             manifest.set(this.normalizeFilename(file.key), file);
           }
+          this.manifestExpiresAt = Date.now() + MANIFEST_CACHE_TTL_MS;
           return manifest;
         } finally {
           window.clearTimeout(timeout);
@@ -162,6 +171,50 @@ class DownloadManager {
       });
     }
     return this.manifestPromise;
+  }
+
+  public refreshManifest(files: ManifestFile[]): void {
+    const manifest = new Map<string, ManifestFile>();
+    for (const file of files) {
+      if (file?.key && file.etag && Number.isSafeInteger(file.size) && file.size > 0) {
+        manifest.set(this.normalizeFilename(file.key), file);
+      }
+    }
+    this.manifestPromise = Promise.resolve(manifest);
+    this.manifestExpiresAt = Date.now() + MANIFEST_CACHE_TTL_MS;
+  }
+
+  public invalidateManifest(): void {
+    this.manifestPromise = null;
+    this.manifestExpiresAt = 0;
+  }
+
+  public async setSuppressed(suppressed: boolean): Promise<void> {
+    if (this.isSuppressed === suppressed) return;
+    this.isSuppressed = suppressed;
+
+    if (suppressed && this.state.isDownloading) {
+      this.suspendedDownload = {
+        activeCategory: this.state.activeCategory,
+        queue: [...this.state.queue],
+        totalQueueSize: this.state.totalQueueSize,
+        completedQueueCount: this.state.completedQueueCount,
+      };
+      await this.cancelDownload();
+      return;
+    }
+
+    if (!suppressed && this.suspendedDownload) {
+      const suspended = this.suspendedDownload;
+      this.suspendedDownload = null;
+      this.state.isDownloading = suspended.queue.length > 0;
+      this.state.activeCategory = suspended.activeCategory;
+      this.state.queue = suspended.queue;
+      this.state.totalQueueSize = suspended.totalQueueSize;
+      this.state.completedQueueCount = suspended.completedQueueCount;
+      this.notify();
+      if (this.state.isDownloading) this.downloadNext();
+    }
   }
 
   private async describeFiles(filenames: string[]): Promise<DownloadQueueItem[]> {
@@ -313,11 +366,13 @@ class DownloadManager {
   }
 
   private async downloadNext() {
+    if (!this.state.isDownloading || this.isSuppressed) return;
     if (this.state.queue.length === 0) return;
     if (this.state.isPaused || this.state.isPausing) return; // Don't start new downloads while pausing/paused
 
     const nextItem = this.state.queue[0];
     const nextFile = this.normalizeFilename(nextItem.filename);
+    const epoch = this.downloadEpoch;
     this.state.currentFile = nextFile;
     this.lastProgressTime = Date.now();
     this.lastBytesWritten = 0;
@@ -340,6 +395,10 @@ class DownloadManager {
         this.handleFileComplete(nextFile);
       }
     } catch (e) {
+      if (epoch !== this.downloadEpoch) {
+        console.info(`[DownloadManager] Cancelled without consuming a retry: ${nextFile}`);
+        return;
+      }
       console.error(`[DownloadManager] ❌ Download failed for ${nextFile}:`, e);
       
       const attempts = this.state.fileAttempts[nextFile] || 0;
@@ -354,7 +413,9 @@ class DownloadManager {
         this.notify();
         
         setTimeout(() => {
-          this.downloadNext();
+          if (epoch === this.downloadEpoch && this.state.isDownloading && !this.isSuppressed) {
+            this.downloadNext();
+          }
         }, delay);
       } else {
         // Give up after 5 attempts
@@ -447,6 +508,7 @@ class DownloadManager {
   }
 
   public async startBulkDownload(category: 'everything' | 'cpr-aed' | 'first-aid' | 'manuals') {
+    if (this.isSuppressed) return;
     if (this.state.isDownloading) {
       console.warn('[DownloadManager] Already downloading. Pause or cancel first.');
       return;
@@ -516,6 +578,7 @@ class DownloadManager {
   }
 
   public queueSpecificFiles(files: { filename: string; version: string; size: number }[]) {
+    if (this.isSuppressed) return;
     if (files.length === 0) return;
 
     const queueItems = files.map((file) => ({
@@ -547,6 +610,7 @@ class DownloadManager {
   }
 
   public async startSingleDownload(rawFilename: string) {
+    if (this.isSuppressed) return;
     const filename = this.normalizeFilename(rawFilename);
     if (this.state.isDownloading) {
       // Add to queue if we're already bulk downloading or single downloading
@@ -641,10 +705,16 @@ class DownloadManager {
    * Cancels active HTTP streams and leaves verified partial bytes available for
    * a later resume.
    */
-  public cancelDownload() {
-    invoke('cancel_media_downloads').catch((error) => {
-      console.error('[DownloadManager] Failed to cancel backend downloads:', error);
-    });
+  public async cancelDownload(filename = this.state.currentFile): Promise<void> {
+    const epoch = ++this.downloadEpoch;
+    this.state.isPausing = true;
+    this.notify();
+    try {
+      await invoke('cancel_media_downloads', { filename });
+    } catch (error) {
+      console.error('[DownloadManager] Failed to coordinate backend cancellation:', error);
+    }
+    if (epoch !== this.downloadEpoch) return;
     this.state.isDownloading = false;
     this.state.activeCategory = null;
     this.state.queue = [];
@@ -677,6 +747,7 @@ class DownloadManager {
   }
 
   public resumeDownload() {
+    if (this.isSuppressed) return;
     if (!this.state.isPaused) return;
     
     this.state.isPaused = false;
@@ -780,6 +851,7 @@ class DownloadManager {
 
   // Helper to trigger download for a specific slideshow
   public async startSlideshowDownload(slideshowId: string) {
+    if (this.isSuppressed) return;
     const slideshow = SLIDESHOWS.find(s => s.id === slideshowId);
     if (!slideshow) return;
 
@@ -828,6 +900,7 @@ class DownloadManager {
 
   // Helper to trigger download for all training manuals at once
   public async startManualsDownload() {
+    if (this.isSuppressed) return;
     const files = MANUALS.map((m) => m.filename).filter(Boolean);
     const statusMap = await this.checkStatusesForFiles(files);
     const pending = files.filter((f) => !statusMap[f]);

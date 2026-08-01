@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Clock, CheckCircle2, SkipForward, SkipBack, Play, Pause, VolumeX, Volume2, Maximize2 } from 'lucide-react';
+import { X, Clock, CheckCircle2, SkipForward, SkipBack, Play, Pause, VolumeX, Volume2, Maximize2, Minimize2, Monitor, StopCircle } from 'lucide-react';
 
 interface VideoPlayerProps {
   activeCourse: any;
@@ -41,6 +41,16 @@ interface VideoPlayerProps {
   
   playbackRate: number;
   setPlaybackRate: (v: number) => void;
+  handleVideoSeek: (time: number, duration: number) => void;
+  isFullScreen: boolean;
+  onFullscreenToggle: () => Promise<void>;
+  onFullscreenExit: () => Promise<void>;
+  hasExternalMonitor: boolean;
+  isPresentingExternally: boolean;
+  onStartPresenting: () => Promise<void>;
+  onStopPresenting: () => Promise<void>;
+  isPresenterStarting: boolean;
+  presenterDuration?: number;
 }
 
 export const VideoPlayer = React.memo(function VideoPlayer({
@@ -51,7 +61,9 @@ export const VideoPlayer = React.memo(function VideoPlayer({
   showSubtitles, setShowSubtitles, activeCue,
   showNextOverlay, handleNext, handlePrev,
   progress, setProgress, isPlaying, togglePlay,
-  playbackRate, setPlaybackRate
+  playbackRate, setPlaybackRate, handleVideoSeek,
+  isFullScreen, onFullscreenToggle, onFullscreenExit, hasExternalMonitor,
+  isPresentingExternally, onStartPresenting, onStopPresenting, isPresenterStarting, presenterDuration
 }: VideoPlayerProps) {
   if (!activeCourse) return null;
 
@@ -86,13 +98,11 @@ export const VideoPlayer = React.memo(function VideoPlayer({
       {/* Close Video Button */}
       <div className={`absolute top-6 right-6 z-50 flex items-center gap-4 transition-opacity duration-500 ${!isUiVisible ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
         <button 
-          onClick={(e) => {
+          onClick={async (e) => {
             e.stopPropagation();
-            if (document.fullscreenElement) {
-              document.exitFullscreen().catch(console.error);
-            } else {
-              setActiveCourseIndex(null);
-            }
+            if (isFullScreen) { await onFullscreenExit(); return; }
+            if (isPresentingExternally) await onStopPresenting();
+            setActiveCourseIndex(null);
           }}
           className="p-3 bg-eh-red/20 hover:bg-eh-red/30 rounded-full transition-colors text-eh-red shadow-lg backdrop-blur-md cursor-pointer"
         >
@@ -222,11 +232,13 @@ export const VideoPlayer = React.memo(function VideoPlayer({
           <div 
             className="group relative w-full h-1.5 bg-eh-peach/10 rounded-full mb-8 cursor-pointer overflow-hidden backdrop-blur-sm"
             onClick={(e) => {
-              if (videoRef.current) {
+              if (videoRef.current || isPresentingExternally) {
                 const rect = e.currentTarget.getBoundingClientRect();
                 const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-                videoRef.current.currentTime = pos * (videoRef.current.duration || 1);
-                setProgress(pos * 100);
+                const duration = isPresentingExternally
+                  ? (presenterDuration || 0)
+                  : (videoRef.current?.duration || 0);
+                if (duration > 0) handleVideoSeek(pos * duration, duration);
               }
             }}
             title="Click to seek playback position"
@@ -335,19 +347,34 @@ export const VideoPlayer = React.memo(function VideoPlayer({
                   CC
                 </span>
               </button>
-              <button 
-                onClick={() => {
-                  if (!document.fullscreenElement && videoContainerRef.current) {
-                    videoContainerRef.current.requestFullscreen()
-                      .catch((err: any) => console.error(err));
-                  } else if (document.fullscreenElement) {
-                    document.exitFullscreen().catch(console.error);
-                  }
-                }}
+              {hasExternalMonitor && !isPresentingExternally && (
+                <button
+                  type="button"
+                  onClick={() => void onStartPresenting()}
+                  disabled={isPresenterStarting}
+                  className="p-3 hover:bg-eh-peach/10 rounded-full text-eh-peach/80 disabled:opacity-40 transition-all cursor-pointer disabled:cursor-wait"
+                  title="Present on External Display"
+                >
+                  <Monitor size={24} />
+                </button>
+              )}
+              {isPresentingExternally && (
+                <button
+                  type="button"
+                  onClick={() => void onStopPresenting()}
+                  className="p-3 hover:bg-red-500/20 rounded-full text-red-400 transition-all cursor-pointer"
+                  title="Stop Presenting"
+                >
+                  <StopCircle size={24} />
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => void onFullscreenToggle()}
                 className="p-3 hover:bg-eh-peach/10 rounded-full text-eh-peach/80 transition-all cursor-pointer"
-                title="Toggle Fullscreen View"
+                title={isFullScreen ? "Exit Fullscreen" : "Enter Fullscreen"}
               >
-                <Maximize2 size={24} />
+                {isFullScreen ? <Minimize2 size={24} /> : <Maximize2 size={24} />}
               </button>
             </div>
           </div>

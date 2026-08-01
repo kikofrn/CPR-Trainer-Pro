@@ -1,8 +1,9 @@
 use futures_util::StreamExt;
 use http::{header::*, response::Builder as ResponseBuilder, status::StatusCode};
 use http_range::HttpRange;
-use serde::Deserialize;
-use std::collections::HashMap;
+use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
+use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::{Component, Path, PathBuf};
@@ -17,6 +18,10 @@ const MAX_IMAGE_BYTES: u64 = 32 * 1024 * 1024;
 const MAX_PDF_BYTES: u64 = 128 * 1024 * 1024;
 const MAX_TEXT_BYTES: u64 = 4 * 1024 * 1024;
 const DOWNLOAD_STALL_TIMEOUT: Duration = Duration::from_secs(30);
+const MAX_DOWNLOAD_FILE_BYTES: u64 = 2 * 1024 * 1024 * 1024;
+const MAX_USB_FILES: usize = 10_000;
+const MAX_USB_FILE_BYTES: u64 = 2 * 1024 * 1024 * 1024;
+const MAX_USB_TOTAL_BYTES: u64 = 12 * 1024 * 1024 * 1024;
 
 const MEDIA_EXTENSIONS: &[&str] = &["mp4", "png", "jpg", "jpeg", "webp", "pdf", "vtt"];
 const APPROVED_FOLDER_PREFIXES: &[&str] = &[
@@ -39,7 +44,153 @@ const APPROVED_ROOT_ASSETS: &[&str] = &[
 struct DownloadRegistry(Mutex<HashMap<String, CancellationToken>>);
 
 #[derive(Default)]
+struct UsbImportRegistry(Mutex<Option<CancellationToken>>);
+
+#[derive(Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct UsbMediaManifest {
+    schema_version: u64,
+    #[serde(alias = "generationDate", alias = "generated")]
+    generated_at: String,
+    app_version: String,
+    files: Vec<UsbMediaFile>,
+}
+
+#[derive(Clone, Deserialize)]
+struct UsbMediaFile {
+    key: String,
+    size: u64,
+    etag: String,
+    sha256: String,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct UsbImportSummary {
+    app_version: String,
+    generated_at: String,
+    file_count: usize,
+    total_bytes: u64,
+}
+
+#[derive(Default)]
 struct MediaLibrary(OnceLock<Result<PathBuf, String>>);
+
+#[derive(Default)]
+struct DisplaySleepAssertion(Mutex<Option<u32>>);
+
+#[cfg(target_os = "macos")]
+#[link(name = "IOKit", kind = "framework")]
+extern "C" {
+    fn IOPMAssertionCreateWithName(
+        assertion_type: *const std::ffi::c_void,
+        assertion_level: u32,
+        reason: *const std::ffi::c_void,
+        assertion_id: *mut u32,
+    ) -> i32;
+    fn IOPMAssertionRelease(assertion_id: u32) -> i32;
+}
+
+impl DisplaySleepAssertion {
+    fn set_active(&self, active: bool) -> Result<(), String> {
+        let mut assertion = self
+            .0
+            .lock()
+            .map_err(|_| "Display sleep assertion is unavailable".to_string())?;
+        if active == assertion.is_some() {
+            return Ok(());
+        }
+
+        #[cfg(target_os = "macos")]
+        unsafe {
+            if active {
+                use objc2_foundation::NSString;
+                let assertion_type = NSString::from_str("PreventUserIdleDisplaySleep");
+                let reason = NSString::from_str("CPR Trainer Pro is presenting course media");
+                let mut assertion_id = 0;
+                let status = IOPMAssertionCreateWithName(
+                    (&*assertion_type as *const NSString).cast(),
+                    255,
+                    (&*reason as *const NSString).cast(),
+                    &mut assertion_id,
+                );
+                if status != 0 {
+                    return Err(format!(
+                        "macOS rejected the display sleep assertion ({status})"
+                    ));
+                }
+                *assertion = Some(assertion_id);
+            } else if let Some(assertion_id) = assertion.take() {
+                let status = IOPMAssertionRelease(assertion_id);
+                if status != 0 {
+                    return Err(format!(
+                        "macOS could not release the display sleep assertion ({status})"
+                    ));
+                }
+            }
+        }
+
+        #[cfg(not(target_os = "macos"))]
+        {
+            *assertion = active.then_some(1);
+        }
+        Ok(())
+    }
+
+    fn release_nonfatal(&self) {
+        if let Err(error) = self.set_active(false) {
+            log::warn!("{error}");
+        }
+    }
+}
+
+impl Drop for DisplaySleepAssertion {
+    fn drop(&mut self) {
+        self.release_nonfatal();
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn register_power_notifications(app: tauri::AppHandle) {
+    use block2::RcBlock;
+    use objc2_app_kit::{
+        NSWorkspace, NSWorkspaceDidWakeNotification, NSWorkspaceWillSleepNotification,
+    };
+    use objc2_foundation::NSNotification;
+    use std::ptr::NonNull;
+
+    let center = NSWorkspace::sharedWorkspace().notificationCenter();
+    let sleep_app = app.clone();
+    let sleep_block = RcBlock::new(move |_notification: NonNull<NSNotification>| {
+        if let Some(assertion) = sleep_app.try_state::<DisplaySleepAssertion>() {
+            assertion.release_nonfatal();
+        }
+        let _ = sleep_app.emit("system:sleep", ());
+    });
+    let wake_block = RcBlock::new(move |_notification: NonNull<NSNotification>| {
+        let _ = app.emit("system:wake", ());
+    });
+
+    unsafe {
+        let sleep_observer = center.addObserverForName_object_queue_usingBlock(
+            Some(NSWorkspaceWillSleepNotification),
+            None,
+            None,
+            &sleep_block,
+        );
+        let wake_observer = center.addObserverForName_object_queue_usingBlock(
+            Some(NSWorkspaceDidWakeNotification),
+            None,
+            None,
+            &wake_block,
+        );
+        std::mem::forget(sleep_observer);
+        std::mem::forget(wake_observer);
+    }
+}
+
+#[cfg(not(target_os = "macos"))]
+fn register_power_notifications(_app: tauri::AppHandle) {}
 
 fn configured_media_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
     app.path()
@@ -145,26 +296,10 @@ fn is_approved_download_path(relative: &Path) -> bool {
         .collect::<Vec<_>>();
 
     match components.as_slice() {
-        [filename] => {
-            APPROVED_ROOT_ASSETS.contains(filename) || is_approved_spanish_root_asset(filename)
-        }
+        [filename] => APPROVED_ROOT_ASSETS.contains(filename),
         [prefix, ..] => APPROVED_FOLDER_PREFIXES.contains(prefix),
         _ => false,
     }
-}
-
-fn is_approved_spanish_root_asset(filename: &str) -> bool {
-    let bytes = filename.as_bytes();
-    let numbered = bytes.len() > 3
-        && bytes[0].is_ascii_digit()
-        && bytes[1].is_ascii_digit()
-        && bytes[2] == b'_';
-    if !numbered {
-        return false;
-    }
-    let name = &filename[3..];
-    name.starts_with("EHAcademy - CPR AED Spanish Pres-")
-        || name.starts_with("EHAcademy - First Aid Spanish Pres-")
 }
 
 fn verify_no_symlinks(
@@ -338,7 +473,10 @@ fn handle_media_request(
                 .header(CONTENT_RANGE, format!("bytes */{len}"))
                 .body(Vec::new())
         };
-        let ranges = match HttpRange::parse(range_header.to_str()?, len) {
+        let Ok(range_value) = range_header.to_str() else {
+            return Ok(not_satisfiable()?);
+        };
+        let ranges = match HttpRange::parse(range_value, len) {
             Ok(ranges) => ranges,
             Err(_) => return Ok(not_satisfiable()?),
         };
@@ -400,43 +538,6 @@ fn get_media_storage_status(app: tauri::AppHandle) -> Result<String, String> {
 }
 
 #[tauri::command]
-fn list_media_files(app: tauri::AppHandle) -> Result<Vec<String>, String> {
-    fn collect(root: &Path, current: &Path, files: &mut Vec<String>) -> Result<(), String> {
-        for entry in std::fs::read_dir(current)
-            .map_err(|error| format!("Unable to read {}: {error}", current.display()))?
-        {
-            let entry = entry.map_err(|error| error.to_string())?;
-            let metadata = entry
-                .file_type()
-                .map_err(|error| format!("Unable to inspect media entry: {error}"))?;
-            if metadata.is_symlink() {
-                continue;
-            }
-            if metadata.is_dir() {
-                collect(root, &entry.path(), files)?;
-            } else if metadata.is_file() {
-                let relative = entry
-                    .path()
-                    .strip_prefix(root)
-                    .map_err(|_| "Media entry escaped the app library".to_string())?
-                    .to_string_lossy()
-                    .to_string();
-                if normalized_relative_path(&relative).is_ok() {
-                    files.push(relative);
-                }
-            }
-        }
-        Ok(())
-    }
-
-    let root = cached_media_dir(&app)?;
-    let mut files = Vec::new();
-    collect(&root, &root, &mut files)?;
-    files.sort();
-    Ok(files)
-}
-
-#[tauri::command]
 fn read_subtitle_file(app: tauri::AppHandle, filename: String) -> Result<String, String> {
     let relative = format!("subtitles/{filename}");
     let root = cached_media_dir(&app)?;
@@ -454,6 +555,27 @@ fn normalized_etag(value: &str) -> &str {
         .strip_prefix("W/")
         .unwrap_or(value.trim())
         .trim_matches('"')
+}
+
+fn if_range_etag(value: &str) -> String {
+    let trimmed = value.trim();
+    if trimmed.starts_with('"') || trimmed.starts_with("W/\"") {
+        trimmed.to_string()
+    } else {
+        format!("\"{trimmed}\"")
+    }
+}
+
+fn download_client() -> Result<reqwest::Client, String> {
+    static CLIENT: OnceLock<Result<reqwest::Client, String>> = OnceLock::new();
+    CLIENT
+        .get_or_init(|| {
+            reqwest::Client::builder()
+                .connect_timeout(Duration::from_secs(10))
+                .build()
+                .map_err(|error| format!("Unable to initialize secure download client: {error}"))
+        })
+        .clone()
 }
 
 fn encoded_media_url(filename: &str, version: Option<&str>) -> String {
@@ -486,6 +608,9 @@ async fn download_media_file_inner(
     if expected_size == 0 {
         return Err("The media manifest reported an invalid zero-byte file".to_string());
     }
+    if expected_size > MAX_DOWNLOAD_FILE_BYTES {
+        return Err("The media manifest file exceeds the 2 GiB transfer ceiling".to_string());
+    }
     if expected_etag.trim().is_empty() {
         return Err("The media manifest did not provide an ETag".to_string());
     }
@@ -507,14 +632,13 @@ async fn download_media_file_inner(
         existing_size = 0;
     }
 
-    let client = reqwest::Client::builder()
-        .connect_timeout(Duration::from_secs(10))
-        .build()
-        .map_err(|error| format!("Unable to initialize secure download client: {error}"))?;
+    let client = download_client()?;
     let url = encoded_media_url(filename, version);
     let mut request = client.get(&url);
     if existing_size > 0 {
-        request = request.header(reqwest::header::RANGE, format!("bytes={existing_size}-"));
+        request = request
+            .header(reqwest::header::RANGE, format!("bytes={existing_size}-"))
+            .header(reqwest::header::IF_RANGE, if_range_etag(expected_etag));
     }
 
     let response = tokio::select! {
@@ -675,19 +799,548 @@ async fn download_media_file(
 }
 
 #[tauri::command]
-fn cancel_media_downloads(registry: tauri::State<'_, DownloadRegistry>) -> Result<(), String> {
-    let downloads = registry
-        .0
-        .lock()
-        .map_err(|_| "Download registry is unavailable".to_string())?;
-    for cancellation in downloads.values() {
-        cancellation.cancel();
+async fn cancel_media_downloads(
+    registry: tauri::State<'_, DownloadRegistry>,
+    filename: Option<String>,
+) -> Result<(), String> {
+    {
+        let downloads = registry
+            .0
+            .lock()
+            .map_err(|_| "Download registry is unavailable".to_string())?;
+        match filename.as_deref() {
+            Some(filename) => {
+                if let Some(cancellation) = downloads.get(filename) {
+                    cancellation.cancel();
+                }
+            }
+            None => {
+                for cancellation in downloads.values() {
+                    cancellation.cancel();
+                }
+            }
+        }
+    }
+
+    let wait_for_unwind = async {
+        loop {
+            let is_active = {
+                let downloads = registry
+                    .0
+                    .lock()
+                    .map_err(|_| "Download registry is unavailable".to_string())?;
+                match filename.as_deref() {
+                    Some(filename) => downloads.contains_key(filename),
+                    None => !downloads.is_empty(),
+                }
+            };
+            if !is_active {
+                return Ok(());
+            }
+            tokio::time::sleep(Duration::from_millis(20)).await;
+        }
+    };
+
+    tokio::time::timeout(Duration::from_secs(3), wait_for_unwind)
+        .await
+        .map_err(|_| "Timed out waiting for the cancelled download to stop".to_string())?
+}
+
+fn read_usb_manifest(selected_folder: &str) -> Result<(PathBuf, UsbMediaManifest), String> {
+    let selected = PathBuf::from(selected_folder);
+    let selected_metadata = std::fs::symlink_metadata(&selected)
+        .map_err(|error| format!("Unable to inspect the selected USB folder: {error}"))?;
+    if selected_metadata.file_type().is_symlink() || !selected_metadata.is_dir() {
+        return Err(
+            "Select a real folder on the conference drive, not a symbolic link".to_string(),
+        );
+    }
+    let selected = std::fs::canonicalize(&selected)
+        .map_err(|error| format!("Unable to open the selected USB folder: {error}"))?;
+
+    let root_manifest = selected.join("eha-usb-manifest.json");
+    let nested_media = selected.join("media");
+    let (media_root, manifest_path) = if root_manifest.is_file() && nested_media.is_dir() {
+        (nested_media, root_manifest)
+    } else {
+        let local_manifest = selected.join("eha-usb-manifest.json");
+        let sibling_manifest = selected
+            .parent()
+            .map(|parent| parent.join("eha-usb-manifest.json"));
+        let manifest_path = if local_manifest.is_file() {
+            local_manifest
+        } else if sibling_manifest.as_ref().is_some_and(|path| path.is_file()) {
+            sibling_manifest.expect("sibling manifest was checked")
+        } else {
+            return Err(
+                "The USB manifest was not accessible. Select the conference drive root containing both eha-usb-manifest.json and media/."
+                    .to_string(),
+            );
+        };
+        (selected, manifest_path)
+    };
+
+    let media_root = std::fs::canonicalize(&media_root)
+        .map_err(|error| format!("Unable to open the USB media folder: {error}"))?;
+    let metadata = std::fs::metadata(&manifest_path)
+        .map_err(|error| format!("Unable to inspect the USB manifest: {error}"))?;
+    if metadata.len() > MAX_TEXT_BYTES {
+        return Err("The USB manifest exceeds the 4 MiB safety limit".to_string());
+    }
+    let content = std::fs::read_to_string(&manifest_path)
+        .map_err(|error| format!("Unable to read the USB manifest: {error}"))?;
+    let manifest: UsbMediaManifest = serde_json::from_str(&content)
+        .map_err(|error| format!("The USB manifest is invalid: {error}"))?;
+    validate_usb_manifest(&media_root, &manifest)?;
+    Ok((media_root, manifest))
+}
+
+fn validate_usb_manifest(root: &Path, manifest: &UsbMediaManifest) -> Result<(), String> {
+    if manifest.schema_version != 1 {
+        return Err(format!(
+            "The USB manifest uses unsupported schema {}",
+            manifest.schema_version
+        ));
+    }
+    if manifest.generated_at.trim().is_empty() || manifest.app_version.trim().is_empty() {
+        return Err("The USB manifest is missing generation or app-version metadata".to_string());
+    }
+    if manifest.files.is_empty() || manifest.files.len() > MAX_USB_FILES {
+        return Err("The USB manifest contains an invalid number of files".to_string());
+    }
+
+    let mut keys = HashSet::new();
+    let mut total = 0u64;
+    for file in &manifest.files {
+        let relative = normalized_relative_path(&file.key)?;
+        if !is_approved_download_path(&relative) {
+            return Err(format!(
+                "USB media is outside the approved catalog: {}",
+                file.key
+            ));
+        }
+        if !keys.insert(relative.clone()) {
+            return Err(format!("The USB manifest repeats {}", file.key));
+        }
+        if file.size == 0 || file.size > MAX_USB_FILE_BYTES {
+            return Err(format!(
+                "The USB manifest reports an invalid size for {}",
+                file.key
+            ));
+        }
+        total = total
+            .checked_add(file.size)
+            .ok_or_else(|| "The USB manifest size overflowed".to_string())?;
+        if total > MAX_USB_TOTAL_BYTES {
+            return Err("The USB import exceeds the 12 GiB transfer ceiling".to_string());
+        }
+        if file.etag.trim().is_empty()
+            || file.sha256.len() != 64
+            || !file.sha256.bytes().all(|byte| byte.is_ascii_hexdigit())
+        {
+            return Err(format!(
+                "The USB manifest has invalid verification data for {}",
+                file.key
+            ));
+        }
+        verify_no_symlinks(root, &relative, false)?;
+        let source = std::fs::canonicalize(root.join(&relative))
+            .map_err(|error| format!("USB media is missing: {} ({error})", file.key))?;
+        if !source.starts_with(root) || !source.is_file() {
+            return Err(format!(
+                "USB media escaped the selected library: {}",
+                file.key
+            ));
+        }
+        let source_size = source
+            .metadata()
+            .map_err(|error| format!("Unable to inspect USB media {}: {error}", file.key))?
+            .len();
+        if source_size != file.size {
+            return Err(format!(
+                "USB media size does not match the manifest: {}",
+                file.key
+            ));
+        }
     }
     Ok(())
 }
 
+fn usb_import_summary(manifest: &UsbMediaManifest) -> UsbImportSummary {
+    UsbImportSummary {
+        app_version: manifest.app_version.clone(),
+        generated_at: manifest.generated_at.clone(),
+        file_count: manifest.files.len(),
+        total_bytes: manifest.files.iter().map(|file| file.size).sum(),
+    }
+}
+
+#[tauri::command]
+fn inspect_usb_media_folder(selected_folder: String) -> Result<UsbImportSummary, String> {
+    let (_, manifest) = read_usb_manifest(&selected_folder)?;
+    Ok(usb_import_summary(&manifest))
+}
+
+fn available_space_for(path: &Path) -> u64 {
+    use sysinfo::Disks;
+    let disks = Disks::new_with_refreshed_list();
+    disks
+        .list()
+        .iter()
+        .filter(|disk| path.starts_with(disk.mount_point()))
+        .max_by_key(|disk| disk.mount_point().as_os_str().len())
+        .map(|disk| disk.available_space())
+        .unwrap_or(0)
+}
+
+fn snapshot_matches(root: &Path, file: &UsbMediaFile) -> bool {
+    let Ok(content) = std::fs::read_to_string(snapshot_path(root)) else {
+        return false;
+    };
+    let Ok(value) = serde_json::from_str::<serde_json::Value>(&content) else {
+        return false;
+    };
+    value
+        .get("files")
+        .and_then(|files| files.get(&file.key))
+        .is_some_and(|entry| {
+            entry.get("etag").and_then(|value| value.as_str()) == Some(file.etag.as_str())
+                && entry.get("size").and_then(|value| value.as_u64()) == Some(file.size)
+        })
+        && root
+            .join(&file.key)
+            .metadata()
+            .is_ok_and(|metadata| metadata.len() == file.size)
+}
+
+async fn import_usb_file(
+    app: &tauri::AppHandle,
+    source_root: &Path,
+    destination_root: &Path,
+    file: &UsbMediaFile,
+    generated_at: &str,
+    completed_bytes: u64,
+    total_bytes: u64,
+    cancellation: &CancellationToken,
+) -> Result<(), String> {
+    let relative = normalized_relative_path(&file.key)?;
+    let source = std::fs::canonicalize(source_root.join(&relative))
+        .map_err(|error| format!("Unable to open USB media {}: {error}", file.key))?;
+    if !source.starts_with(source_root) {
+        return Err(format!(
+            "USB media escaped the selected library: {}",
+            file.key
+        ));
+    }
+    let (destination, _) = prepare_download_destination(destination_root, &file.key)?;
+    let partial = destination.with_file_name(format!(
+        "{}.usb-import.part",
+        destination
+            .file_name()
+            .and_then(|name| name.to_str())
+            .ok_or_else(|| "USB media filename is not valid UTF-8".to_string())?
+    ));
+    if partial.exists() {
+        let metadata = std::fs::symlink_metadata(&partial)
+            .map_err(|error| format!("Unable to inspect USB partial file: {error}"))?;
+        if metadata.file_type().is_symlink() {
+            return Err("USB partial file cannot be a symbolic link".to_string());
+        }
+        if metadata.len() > file.size {
+            tokio::fs::remove_file(&partial)
+                .await
+                .map_err(|error| format!("Unable to reset USB partial file: {error}"))?;
+        }
+    }
+
+    let existing_size = tokio::fs::metadata(&partial)
+        .await
+        .map(|metadata| metadata.len())
+        .unwrap_or(0);
+    let mut hasher = Sha256::new();
+    if existing_size > 0 {
+        let mut existing = tokio::fs::File::open(&partial)
+            .await
+            .map_err(|error| format!("Unable to resume USB partial file: {error}"))?;
+        let mut buffer = vec![0u8; 1024 * 1024];
+        loop {
+            let read = tokio::io::AsyncReadExt::read(&mut existing, &mut buffer)
+                .await
+                .map_err(|error| format!("Unable to verify USB partial file: {error}"))?;
+            if read == 0 {
+                break;
+            }
+            hasher.update(&buffer[..read]);
+        }
+    }
+
+    let mut input = tokio::fs::File::open(&source)
+        .await
+        .map_err(|error| format!("Unable to read USB media {}: {error}", file.key))?;
+    tokio::io::AsyncSeekExt::seek(&mut input, std::io::SeekFrom::Start(existing_size))
+        .await
+        .map_err(|error| format!("Unable to resume USB media {}: {error}", file.key))?;
+    let mut output = tokio::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&partial)
+        .await
+        .map_err(|error| format!("Unable to write imported media {}: {error}", file.key))?;
+    let mut file_bytes = existing_size;
+    let mut buffer = vec![0u8; 1024 * 1024];
+    let mut last_emit = std::time::Instant::now();
+    loop {
+        let read = tokio::select! {
+            _ = cancellation.cancelled() => return Err("USB import cancelled".to_string()),
+            result = tokio::io::AsyncReadExt::read(&mut input, &mut buffer) => {
+                result.map_err(|error| format!("Unable to read USB media {}: {error}", file.key))?
+            }
+        };
+        if read == 0 {
+            break;
+        }
+        tokio::io::AsyncWriteExt::write_all(&mut output, &buffer[..read])
+            .await
+            .map_err(|error| format!("Unable to write imported media {}: {error}", file.key))?;
+        hasher.update(&buffer[..read]);
+        file_bytes += read as u64;
+        if file_bytes > file.size {
+            drop(output);
+            let _ = tokio::fs::remove_file(&partial).await;
+            return Err(format!(
+                "USB media exceeded its manifest size: {}",
+                file.key
+            ));
+        }
+        if last_emit.elapsed() >= Duration::from_millis(100) {
+            let _ = app.emit(
+                "usb-import-progress",
+                serde_json::json!({
+                    "filename": file.key,
+                    "fileBytes": file_bytes,
+                    "fileTotal": file.size,
+                    "completedBytes": completed_bytes + file_bytes,
+                    "totalBytes": total_bytes,
+                }),
+            );
+            last_emit = std::time::Instant::now();
+        }
+    }
+    tokio::io::AsyncWriteExt::flush(&mut output)
+        .await
+        .map_err(|error| format!("Unable to synchronize imported media {}: {error}", file.key))?;
+    output
+        .sync_all()
+        .await
+        .map_err(|error| format!("Unable to synchronize imported media {}: {error}", file.key))?;
+    drop(output);
+
+    let digest = format!("{:x}", hasher.finalize());
+    if file_bytes != file.size || !digest.eq_ignore_ascii_case(&file.sha256) {
+        let _ = tokio::fs::remove_file(&partial).await;
+        return Err(format!(
+            "USB media failed SHA-256 or size verification: {}",
+            file.key
+        ));
+    }
+    tokio::fs::rename(&partial, &destination)
+        .await
+        .map_err(|error| format!("Unable to install imported media {}: {error}", file.key))?;
+    exclude_from_backup_nonfatal(&destination);
+    update_snapshot_entry(destination_root, file, generated_at)?;
+    let _ = app.emit(
+        "usb-import-file-complete",
+        serde_json::json!({ "filename": file.key }),
+    );
+    Ok(())
+}
+
+async fn import_usb_media_folder_inner(
+    app: &tauri::AppHandle,
+    selected_folder: &str,
+    cancellation: &CancellationToken,
+) -> Result<UsbImportSummary, String> {
+    let (source_root, manifest) = read_usb_manifest(selected_folder)?;
+    let destination_root = cached_media_dir(app)?;
+    let total_bytes: u64 = manifest.files.iter().map(|file| file.size).sum();
+    let pending_bytes: u64 = manifest
+        .files
+        .iter()
+        .filter(|file| !snapshot_matches(&destination_root, file))
+        .map(|file| file.size)
+        .sum();
+    let available = available_space_for(&destination_root);
+    let reserve = 256 * 1024 * 1024u64;
+    if available > 0 && available < pending_bytes.saturating_add(reserve) {
+        return Err(format!(
+            "Not enough disk space for the USB import. {} MiB is required plus a 256 MiB reserve, but only {} MiB is available.",
+            pending_bytes / 1024 / 1024,
+            available / 1024 / 1024,
+        ));
+    }
+
+    let summary = usb_import_summary(&manifest);
+    let _ = app.emit("usb-import-started", &summary);
+    let mut completed_bytes = 0u64;
+    for file in &manifest.files {
+        if cancellation.is_cancelled() {
+            return Err("USB import cancelled".to_string());
+        }
+        if snapshot_matches(&destination_root, file) {
+            completed_bytes += file.size;
+            let _ = app.emit(
+                "usb-import-progress",
+                serde_json::json!({
+                    "filename": file.key,
+                    "fileBytes": file.size,
+                    "fileTotal": file.size,
+                    "completedBytes": completed_bytes,
+                    "totalBytes": total_bytes,
+                }),
+            );
+            continue;
+        }
+        import_usb_file(
+            app,
+            &source_root,
+            &destination_root,
+            file,
+            &manifest.generated_at,
+            completed_bytes,
+            total_bytes,
+            cancellation,
+        )
+        .await?;
+        completed_bytes += file.size;
+    }
+    let _ = app.emit("usb-import-complete", &summary);
+    Ok(summary)
+}
+
+#[tauri::command]
+async fn import_usb_media_folder(
+    app: tauri::AppHandle,
+    registry: tauri::State<'_, UsbImportRegistry>,
+    selected_folder: String,
+) -> Result<UsbImportSummary, String> {
+    let cancellation = CancellationToken::new();
+    {
+        let mut active = registry
+            .0
+            .lock()
+            .map_err(|_| "USB import registry is unavailable".to_string())?;
+        if active.is_some() {
+            return Err("A USB media import is already active".to_string());
+        }
+        *active = Some(cancellation.clone());
+    }
+    let result = import_usb_media_folder_inner(&app, &selected_folder, &cancellation).await;
+    if let Ok(mut active) = registry.0.lock() {
+        *active = None;
+    }
+    if let Err(error) = &result {
+        log::warn!("USB media import stopped: {error}");
+    }
+    result
+}
+
+#[tauri::command]
+async fn cancel_usb_media_import(
+    registry: tauri::State<'_, UsbImportRegistry>,
+) -> Result<(), String> {
+    {
+        let active = registry
+            .0
+            .lock()
+            .map_err(|_| "USB import registry is unavailable".to_string())?;
+        if let Some(cancellation) = active.as_ref() {
+            cancellation.cancel();
+        } else {
+            return Ok(());
+        }
+    }
+    tokio::time::timeout(Duration::from_secs(3), async {
+        loop {
+            let is_active = registry
+                .0
+                .lock()
+                .map_err(|_| "USB import registry is unavailable".to_string())?
+                .is_some();
+            if !is_active {
+                return Ok(());
+            }
+            tokio::time::sleep(Duration::from_millis(20)).await;
+        }
+    })
+    .await
+    .map_err(|_| "Timed out waiting for the USB import to stop".to_string())?
+}
+
 fn snapshot_path(root: &Path) -> PathBuf {
     root.join(".content-versions.json")
+}
+
+fn write_snapshot_content(root: &Path, content: &str) -> Result<(), String> {
+    if content.len() as u64 > MAX_TEXT_BYTES {
+        return Err("Content snapshot exceeds the 4 MiB safety limit".to_string());
+    }
+    validate_snapshot(content)?;
+    let path = snapshot_path(root);
+    let temp = root.join(".content-versions.json.tmp");
+    for candidate in [&path, &temp] {
+        if candidate.exists() {
+            let metadata = std::fs::symlink_metadata(candidate)
+                .map_err(|error| format!("Unable to inspect content snapshot: {error}"))?;
+            if metadata.file_type().is_symlink() {
+                return Err("Content snapshot cannot be a symbolic link".to_string());
+            }
+        }
+    }
+    let mut output = File::create(&temp)
+        .map_err(|error| format!("Unable to create temporary content snapshot: {error}"))?;
+    output
+        .write_all(content.as_bytes())
+        .and_then(|_| output.flush())
+        .and_then(|_| output.sync_all())
+        .map_err(|error| format!("Unable to save content snapshot: {error}"))?;
+    drop(output);
+    std::fs::rename(&temp, &path)
+        .map_err(|error| format!("Unable to install content snapshot atomically: {error}"))?;
+    exclude_from_backup_nonfatal(&path);
+    Ok(())
+}
+
+fn update_snapshot_entry(
+    root: &Path,
+    file: &UsbMediaFile,
+    generated_at: &str,
+) -> Result<(), String> {
+    let path = snapshot_path(root);
+    let mut snapshot = std::fs::read_to_string(&path)
+        .ok()
+        .and_then(|content| serde_json::from_str::<serde_json::Value>(&content).ok())
+        .filter(|value| value.get("schema").and_then(|value| value.as_u64()) == Some(1))
+        .unwrap_or_else(|| {
+            serde_json::json!({
+                "schema": 1,
+                "avgSpeedBps": 0,
+                "files": {}
+            })
+        });
+    if !snapshot
+        .get("files")
+        .is_some_and(serde_json::Value::is_object)
+    {
+        snapshot["files"] = serde_json::json!({});
+    }
+    snapshot["files"][&file.key] = serde_json::json!({
+        "etag": file.etag,
+        "uploaded": generated_at,
+        "size": file.size,
+    });
+    let content = serde_json::to_string_pretty(&snapshot)
+        .map_err(|error| format!("Unable to serialize content snapshot: {error}"))?;
+    write_snapshot_content(root, &content)
 }
 
 #[derive(Deserialize)]
@@ -729,9 +1382,7 @@ fn validate_snapshot(content: &str) -> Result<(), String> {
     Ok(())
 }
 
-#[tauri::command]
-fn read_version_snapshot(app: tauri::AppHandle) -> Result<String, String> {
-    let root = cached_media_dir(&app)?;
+fn read_snapshot_content(root: &Path) -> Result<String, String> {
     let path = snapshot_path(&root);
     if !path.exists() {
         return Ok("{}".to_string());
@@ -754,42 +1405,15 @@ fn read_version_snapshot(app: tauri::AppHandle) -> Result<String, String> {
 }
 
 #[tauri::command]
-fn write_version_snapshot(app: tauri::AppHandle, content: String) -> Result<(), String> {
-    if content.len() as u64 > MAX_TEXT_BYTES {
-        return Err("Content snapshot exceeds the 4 MiB safety limit".to_string());
-    }
-    validate_snapshot(&content)?;
-
+fn read_version_snapshot(app: tauri::AppHandle) -> Result<String, String> {
     let root = cached_media_dir(&app)?;
-    let path = snapshot_path(&root);
-    let temp = root.join(".content-versions.json.tmp");
-    if path.exists() {
-        let metadata = std::fs::symlink_metadata(&path)
-            .map_err(|error| format!("Unable to inspect content snapshot: {error}"))?;
-        if metadata.file_type().is_symlink() {
-            return Err("Content snapshot cannot be a symbolic link".to_string());
-        }
-    }
-    if temp.exists() {
-        let metadata = std::fs::symlink_metadata(&temp)
-            .map_err(|error| format!("Unable to inspect temporary snapshot: {error}"))?;
-        if metadata.file_type().is_symlink() {
-            return Err("Temporary content snapshot cannot be a symbolic link".to_string());
-        }
-    }
+    read_snapshot_content(&root)
+}
 
-    let mut output = File::create(&temp)
-        .map_err(|error| format!("Unable to create temporary content snapshot: {error}"))?;
-    output
-        .write_all(content.as_bytes())
-        .and_then(|_| output.flush())
-        .and_then(|_| output.sync_all())
-        .map_err(|error| format!("Unable to save content snapshot: {error}"))?;
-    drop(output);
-    std::fs::rename(&temp, &path)
-        .map_err(|error| format!("Unable to install content snapshot atomically: {error}"))?;
-    exclude_from_backup_nonfatal(&path);
-    Ok(())
+#[tauri::command]
+fn write_version_snapshot(app: tauri::AppHandle, content: String) -> Result<(), String> {
+    let root = cached_media_dir(&app)?;
+    write_snapshot_content(&root, &content)
 }
 
 #[tauri::command]
@@ -809,10 +1433,17 @@ fn check_media_files_status(
     let root = cached_media_dir(&app)?;
     let mut result = HashMap::new();
     for filename in filenames {
-        let relative = normalized_relative_path(&filename)?;
-        let clean = relative.to_string_lossy().to_string();
-        let exists = resolve_existing_media_file(&root, &clean).is_ok();
-        result.insert(clean, exists);
+        match normalized_relative_path(&filename) {
+            Ok(relative) => {
+                let clean = relative.to_string_lossy().to_string();
+                let exists = resolve_existing_media_file(&root, &clean).is_ok();
+                result.insert(clean, exists);
+            }
+            Err(error) => {
+                log::warn!("Ignoring invalid media status path {filename}: {error}");
+                result.insert(filename, false);
+            }
+        }
     }
     Ok(result)
 }
@@ -864,18 +1495,31 @@ fn check_disk_space(app: tauri::AppHandle) -> Result<u64, String> {
     Ok(best_match.1)
 }
 
+#[tauri::command]
+fn set_display_sleep_prevention(
+    assertion: tauri::State<'_, DisplaySleepAssertion>,
+    active: bool,
+) -> Result<(), String> {
+    assertion.set_active(active)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .manage(DownloadRegistry::default())
+        .manage(UsbImportRegistry::default())
         .manage(MediaLibrary::default())
+        .manage(DisplaySleepAssertion::default())
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             get_media_storage_status,
-            list_media_files,
             read_subtitle_file,
             download_media_file,
             cancel_media_downloads,
+            inspect_usb_media_folder,
+            import_usb_media_folder,
+            cancel_usb_media_import,
             check_media_file_exists,
             check_media_files_status,
             close_splashscreen,
@@ -883,6 +1527,7 @@ pub fn run() {
             read_version_snapshot,
             write_version_snapshot,
             get_media_file_mtimes,
+            set_display_sleep_prevention,
         ])
         .register_asynchronous_uri_scheme_protocol("media", move |app, request, responder| {
             let response = cached_media_dir(app.app_handle())
@@ -913,6 +1558,7 @@ pub fn run() {
                 Ok(path) => log::info!("Media library: {}", path.display()),
                 Err(error) => log::error!("{error}"),
             }
+            register_power_notifications(app.handle().clone());
             Ok(())
         })
         .run(tauri::generate_context!())
@@ -958,7 +1604,7 @@ mod tests {
         assert!(is_approved_download_path(
             &normalized_relative_path("instructor_manual.pdf").unwrap()
         ));
-        assert!(is_approved_download_path(
+        assert!(!is_approved_download_path(
             &normalized_relative_path("01_EHAcademy - CPR AED Spanish Pres-Introduccion.png")
                 .unwrap()
         ));
@@ -997,6 +1643,8 @@ mod tests {
     fn normalizes_http_etags_without_changing_multipart_values() {
         assert_eq!(normalized_etag("\"abc-2\""), "abc-2");
         assert_eq!(normalized_etag("W/\"abc\""), "abc");
+        assert_eq!(if_range_etag("abc-2"), "\"abc-2\"");
+        assert_eq!(if_range_etag("\"abc-2\""), "\"abc-2\"");
     }
 
     #[test]
@@ -1016,6 +1664,39 @@ mod tests {
         assert!(validate_snapshot("[]").is_err());
         assert!(validate_snapshot(r#"{"schema":2,"avgSpeedBps":0,"files":{}}"#).is_err());
         assert!(validate_snapshot(r#"{"schema":1,"avgSpeedBps":0,"files":{"video.mp4":{"etag":"","uploaded":"now","size":1}}}"#).is_err());
+    }
+
+    #[test]
+    fn corrupt_snapshot_is_removed_and_recovers_empty() {
+        let root = test_root("snapshot-recovery");
+        std::fs::create_dir_all(&root).unwrap();
+        std::fs::write(snapshot_path(&root), b"not-json").unwrap();
+        assert_eq!(read_snapshot_content(&root).unwrap(), "{}");
+        assert!(!snapshot_path(&root).exists());
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn validates_usb_catalog_shape_and_source_files() {
+        let root = test_root("usb-manifest");
+        let folder = root.join("CPR AED Presentation Slides");
+        std::fs::create_dir_all(&folder).unwrap();
+        std::fs::write(folder.join("slide.png"), b"usb").unwrap();
+        let root = std::fs::canonicalize(root).unwrap();
+        let manifest = UsbMediaManifest {
+            schema_version: 1,
+            generated_at: "2026-08-01T00:00:00Z".to_string(),
+            app_version: "3.0.0".to_string(),
+            files: vec![UsbMediaFile {
+                key: "CPR AED Presentation Slides/slide.png".to_string(),
+                size: 3,
+                etag: "etag".to_string(),
+                sha256: "0".repeat(64),
+            }],
+        };
+        let result = validate_usb_manifest(&root, &manifest);
+        assert!(result.is_ok(), "{result:?}");
+        std::fs::remove_dir_all(root).unwrap();
     }
 
     #[test]
@@ -1067,6 +1748,29 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
         assert!(response.body().is_empty());
         assert_eq!(response.headers().get(CONTENT_LENGTH).unwrap(), "3");
+
+        let response = handle_media_request(
+            &root,
+            http::Request::builder()
+                .method(http::Method::POST)
+                .uri("media://localhost/image.png")
+                .body(Vec::new())
+                .unwrap(),
+        )
+        .unwrap();
+        assert_eq!(response.status(), StatusCode::METHOD_NOT_ALLOWED);
+
+        let response = handle_media_request(
+            &root,
+            http::Request::builder()
+                .method(http::Method::GET)
+                .uri("media://localhost/video.mp4")
+                .header(RANGE, "bytes=999999999-")
+                .body(Vec::new())
+                .unwrap(),
+        )
+        .unwrap();
+        assert_eq!(response.status(), StatusCode::RANGE_NOT_SATISFIABLE);
 
         std::fs::remove_dir_all(root).unwrap();
     }
