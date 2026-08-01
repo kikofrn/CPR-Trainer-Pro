@@ -54,7 +54,7 @@
 - W6: Web media = the 4A committed/pending controller: four outcomes (playing/paused/denied/failed), generation tokens, no speculative loading; desktop Tauri untouched; latency amendment path per 3.6-A.
 - W7: noindex at launch = app shell only (headers + robots.txt + meta); media-domain indexing is an accepted residual.
 - W8: Public, guessable Pages previews accepted.
-- W9: Dependency security: evidence-based non-breaking npm audit fix; remaining advisories recorded post-fix; pinned @playwright/test; 5.6 test-dependency policy (no jsdom without adjudicated exception); dev server never bound to shared networks.
+- W9: Dependency security: evidence-based non-breaking npm audit fix; remaining advisories recorded post-fix (Full audit: 1 high in build-time `sharp`, accepted because fix is semver-major and it has build-only reachability; Runtime audit: 0 vulnerabilities). Process deviation: the pre-fix snapshot was not captured in the original Phase 1 run. Pinned @playwright/test; 5.6 test-dependency policy (no jsdom without adjudicated exception); dev server never bound to shared networks.
 - W10: Web thumbnails use bundled fallback covers for the conference (web fileStatuses is always empty so the CDN thumbnail path is never taken); CDN-with-onError-fallback recorded as a post-conference option.
 - W11: Cross-platform SAFETY exceptions (3.2): safeStorage, safe fatal rendering + root Error Boundary, external-link opener isolation, pure course-selection extraction - shared on both platforms; normal Tauri behavior verified structurally unchanged. All other web behavior strictly !isTauri/responsive-gated.
 
