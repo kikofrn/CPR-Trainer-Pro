@@ -12,7 +12,7 @@
 
 ## Current state (session handoff)
 
-- **Completed most recently**: Hardened build.yml with least-privilege permissions and explicit releaseDraft false. Dropped scratch python scripts with personal paths. Removed legacy release.yml that raced the new release job on v* tags. Updated `.github/workflows/build.yml` so the matrix job is a compile check on all triggers and added a dedicated Windows-only release job for tags. Enabled `createUpdaterArtifacts` in `tauri.conf.json`, changed the updater endpoint to `latest.json`, and rotated the pubkey. Appended the decision to `DECISIONS.md`.
-- **In progress**: We are at the final stages of Phase 6 (Windows release gates and final audit).
-- **Immediate next task**: Run the manual CI workflow dispatch with Francisco.
-- **Known-broken or untested areas**: Manual verification/drills (gates 7-12) will be done with Francisco. The macOS and iOS ports are pending future phases.
+- **Completed most recently**: Branch `web-app` created from tag `v2.3.3`. Baseline build (`npm ci && npm run build`) completed successfully on 2026-08-01.
+- **In progress**: Phase 1 — Web-mode correctness, resilience, isolation proof, harness.
+- **Immediate next task**: Implement Phase 1 steps 1–12.
+- **Known-broken or untested areas**: Web-mode is not yet fully implemented or tested.
