@@ -55,6 +55,7 @@
       "../public/*": "media/"
     },
     "windows": {
+      "signCommand": "trusted-signing-cli -e https://ncus.codesigning.azure.net -a EHA-Artifact-Signing -c eha-public-trust-certificate %1",
       "nsis": {
         "installerIcon": "installer-icon.ico"
       }

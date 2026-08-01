@@ -92,15 +92,28 @@ jobs:
       - name: Install Node dependencies
         run: npm ci
 
+      - name: Install trusted-signing-cli
+        run: cargo install trusted-signing-cli --locked --version 0.11.0
+
       - name: Build and release Tauri app
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
         with:
           releaseDraft: false
           tagName: ${{ github.ref_name }}
           releaseName: 'CPR Trainer Pro v__VERSION__'
           releaseBody: 'See the assets below to download the installer for your platform.'
           args: --target x86_64-pc-windows-msvc
+
+      - name: Upload evergreen release asset
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          Copy-Item "src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/CPRTrainerPro_2.3.4_x64-setup.exe" -Destination "CPRTrainerPro-Setup.exe"
+          gh release upload "${{ github.ref_name }}" CPRTrainerPro-Setup.exe --clobber
