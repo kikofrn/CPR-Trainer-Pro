@@ -1,40 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-function setupStrictErrors(page: any, expectedErrors: string[] = []) {
-  const actualErrors: string[] = [];
-
-  const checkAndConsumeExpected = (text: string) => {
-    const index = expectedErrors.findIndex(expected => text.includes(expected));
-    if (index !== -1) {
-      expectedErrors.splice(index, 1);
-      return true;
-    }
-    return false;
-  };
-
-  page.on('console', (msg: any) => {
-    if (msg.type() === 'error') {
-      const text = msg.text();
-      if (!checkAndConsumeExpected(text)) {
-        actualErrors.push(`Unexpected console.error: ${text}`);
-      }
-    }
-  });
-
-  page.on('pageerror', (err: any) => {
-    const text = err.message || err.toString();
-    if (!checkAndConsumeExpected(text)) {
-      actualErrors.push(`Unexpected pageerror: ${text}`);
-    }
-  });
-
-  return {
-    verify: () => {
-      expect(actualErrors).toEqual([]);
-      expect(expectedErrors).toEqual([]);
-    }
-  };
-}
+import { setupStrictErrors } from './helpers/strict-errors';
 
 test.describe('App Integration', () => {
   test('boot with poisoned storage', async ({ page }) => {
@@ -96,8 +62,7 @@ test.describe('App Integration', () => {
 
   test('post-boot injected unhandled rejection', async ({ page }) => {
     const errorTracker = setupStrictErrors(page, [
-      'Injected unhandled rejection',
-      'Injected unhandled rejection'
+      { channel: 'pageerror', message: 'Error: Injected unhandled rejection', pathname: '/', count: 2 }
     ]);
 
     await page.goto('/');
