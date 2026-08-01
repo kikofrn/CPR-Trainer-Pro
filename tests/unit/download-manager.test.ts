@@ -1,15 +1,21 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
+let coreRequested = false;
 vi.mock('@tauri-apps/api/core', () => {
-  throw new Error('Tauri core loader should not be called');
+  coreRequested = true;
+  return { invoke: vi.fn() };
 });
 
+let eventRequested = false;
 vi.mock('@tauri-apps/api/event', () => {
-  throw new Error('Tauri event loader should not be called');
+  eventRequested = true;
+  return { listen: vi.fn() };
 });
 
 describe('download-manager fake platform', () => {
   beforeEach(() => {
+    coreRequested = false;
+    eventRequested = false;
     vi.resetModules();
     vi.useFakeTimers();
     (global as any).window = { alert: vi.fn(), localStorage: { getItem: vi.fn(), setItem: vi.fn(), removeItem: vi.fn() } };
@@ -38,7 +44,7 @@ describe('download-manager fake platform', () => {
     await downloadManager.startSlideshowDownload('course1');
     await downloadManager.startManualsDownload();
 
-    // No exception should be thrown
-    expect(true).toBe(true);
+    expect(coreRequested).toBe(false);
+    expect(eventRequested).toBe(false);
   });
 });
