@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, X, BookOpen, Award, HelpCircle, Projector, Info } from 'lucide-react';
+import { getVersion } from '@tauri-apps/api/app';
 
 interface HowToGuideModalProps {
   showHowTo: boolean;
@@ -19,6 +20,13 @@ export function HowToGuideModal({
   portalStep,
   setPortalStep
 }: HowToGuideModalProps) {
+  const [appVersion, setAppVersion] = React.useState('');
+
+  React.useEffect(() => {
+    if (!showHowTo || appVersion) return;
+    getVersion().then(setAppVersion).catch(() => setAppVersion(''));
+  }, [showHowTo, appVersion]);
+
   return (
     <AnimatePresence>
       {showHowTo && (
@@ -555,7 +563,7 @@ export function HowToGuideModal({
                         <div className="lg:col-span-3 space-y-2">
                           <div className="bg-black/50 border border-white/10 rounded-2xl p-2 relative shadow-2xl overflow-hidden group">
                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none duration-300 flex items-end p-4">
-                              <span className="text-[10px] text-eh-peach/60 uppercase tracking-widest font-mono">Clean screenshot with Claude overlays neutralized</span>
+                              <span className="text-[10px] text-eh-peach/60 uppercase tracking-widest font-mono">Instructor portal walkthrough</span>
                             </div>
                             <img
                               src={s.image}
@@ -577,7 +585,9 @@ export function HowToGuideModal({
             {/* Footer */}
             <div className="p-6 bg-black/40 border-t border-white/5 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
-                <span className="text-[10px] text-eh-peach/30 uppercase tracking-widest font-bold">CPR Trainer Pro v1.0.0</span>
+                <span className="text-[10px] text-eh-peach/30 uppercase tracking-widest font-bold">
+                  CPR Trainer Pro{appVersion ? ` v${appVersion}` : ''}
+                </span>
                 {activeGuidePath !== 'menu' && (
                   <button
                     onClick={() => setActiveGuidePath('menu')}

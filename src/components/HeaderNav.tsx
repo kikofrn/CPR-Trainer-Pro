@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, ChevronDown, CheckCircle2, HelpCircle, BookOpen, ChevronRight, GraduationCap, Baby, Book, Award, Heart } from 'lucide-react';
+import { Menu, ChevronDown, CheckCircle2, HelpCircle, BookOpen, ChevronRight, GraduationCap, Baby, Book, Award } from 'lucide-react';
 import { COURSES } from '../chapters';
 import { THUMBNAILS } from '../thumbnails';
 import { mediaUrl } from '../media-resolver';
@@ -46,10 +46,6 @@ interface HeaderNavProps {
   activeCourse: any;
   activeChapterIndex: number;
   
-  updateAvailable: boolean;
-  isUpdateMinimized: boolean;
-  setIsUpdateMinimized: (v: boolean) => void;
-  
   handleItemClick: (type: 'video'|'slideshow', courseIndex: number) => void;
   MANUALS: any[];
   
@@ -67,7 +63,6 @@ export function HeaderNav({
   setShowManualSelector, showManualSelector, selectedManual,
   activeTab, previewManualIndex, setPreviewManualIndex,
   easterEggLevel, activeCourse, activeChapterIndex,
-  updateAvailable, isUpdateMinimized, setIsUpdateMinimized,
   handleItemClick, MANUALS,
   EHLogo, CprIcon, FirstAidIcon
 }: HeaderNavProps) {
@@ -553,33 +548,6 @@ export function HeaderNav({
           </div>
         )}
 
-        <AnimatePresence>
-          {updateAvailable && isUpdateMinimized && (
-            <motion.button
-              key="minimized-updater"
-              initial={{ opacity: 0, scale: 0.5 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.5 }}
-              onClick={() => setIsUpdateMinimized(false)}
-              className="p-2.5 rounded-full bg-red-500/10 border border-red-500/30 text-red-500 hover:bg-red-500/20 hover:border-red-500/50 transition-colors duration-300 shadow-[0_0_15px_rgba(239,68,68,0.2)] flex items-center justify-center cursor-pointer group shrink-0 animate-pulse"
-              title="Update Available! Click to view details."
-            >
-              <motion.div
-                animate={{
-                  scale: [1, 1.25, 1.05, 1.25, 1, 1],
-                }}
-                transition={{
-                  duration: 1.4,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                  times: [0, 0.15, 0.3, 0.45, 0.6, 1]
-                }}
-              >
-                <Heart size={20} className="fill-red-500 text-red-500" />
-              </motion.div>
-            </motion.button>
-          )}
-        </AnimatePresence>
       </div>
     </header>
   );

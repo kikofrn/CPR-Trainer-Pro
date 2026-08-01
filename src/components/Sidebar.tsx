@@ -56,9 +56,6 @@ interface SidebarProps {
   setActiveGuidePath: (path: 'menu' | 'app' | 'teaching' | 'portal') => void;
   setPortalStep: (step: number) => void;
   
-  updateAvailable: any;
-  setUpdateAvailable: (v: any) => void;
-  
   EHLogo: any;
 }
 
@@ -71,7 +68,6 @@ export const Sidebar = React.memo(function Sidebar({
   isSettingsExpanded, setIsSettingsExpanded, isContinuousPlay, setIsContinuousPlay,
   handleInfoClick, handleInfoPointerDown, handleInfoPointerUp,
   showHowTo, setShowHowTo, setActiveGuidePath, setPortalStep,
-  updateAvailable, setUpdateAvailable,
   EHLogo
 }: SidebarProps) {
   return (
@@ -740,35 +736,6 @@ export const Sidebar = React.memo(function Sidebar({
                     {(import.meta as any).env.DEV && (
                       <div className="border-t border-eh-peach/10 pt-4 flex flex-col gap-3">
                         <span className="text-[10px] font-bold uppercase tracking-wider text-eh-peach/40">Developer tools</span>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <div className={`w-2 h-2 rounded-full ${updateAvailable ? 'bg-red-500 animate-pulse' : 'bg-white/20'}`} />
-                            <span className="text-xs font-bold uppercase tracking-widest text-eh-peach/80">Mock Updater UI</span>
-                          </div>
-                          <button 
-                            onClick={() => {
-                              if (updateAvailable) {
-                                setUpdateAvailable(null);
-                              } else {
-                                setUpdateAvailable({
-                                  version: '2.0.0-mock',
-                                  downloadAndInstall: async () => {
-                                    await new Promise(resolve => setTimeout(resolve, 3000));
-                                    window.alert("Mock update complete! The app would now restart.");
-                                    setUpdateAvailable(null);
-                                  }
-                                });
-                              }
-                            }}
-                            className={`px-3 py-1 rounded border text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                              updateAvailable 
-                                ? 'bg-red-500/20 border-red-500 text-red-400 hover:bg-red-500/30' 
-                                : 'bg-white/5 border-white/20 text-white/70 hover:bg-white/10 hover:text-white'
-                            }`}
-                          >
-                            {updateAvailable ? 'Mocking ON' : 'Toggle'}
-                          </button>
-                        </div>
                         <div className="flex items-center justify-between mt-2">
                           <div className="flex items-center gap-2">
                             <div className={`w-2 h-2 rounded-full ${dlState.isMockingFiles ? 'bg-red-500 animate-pulse' : 'bg-white/20'}`} />

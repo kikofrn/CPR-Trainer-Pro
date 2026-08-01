@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "CPRTrainerPro",
-  "version": "2.3.3",
+  "productName": "CPR Trainer Pro",
+  "version": "3.0.0",
   "identifier": "com.ehacademy.cpr-trainer-pro",
   "build": {
     "frontendDist": "../dist",
@@ -42,7 +42,6 @@
   },
   "bundle": {
     "active": true,
-    "createUpdaterArtifacts": true,
     "targets": "all",
     "icon": [
       "icons/32x32.png",
@@ -50,22 +49,6 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ],
-    "resources": {
-      "../public/*": "media/"
-    },
-    "windows": {
-      "nsis": {
-        "installerIcon": "installer-icon.ico"
-      }
-    }
-  },
-  "plugins": {
-    "updater": {
-      "endpoints": [
-        "https://github.com/kikofrn/CPR-Trainer-Pro/releases/latest/download/latest.json"
-      ],
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEI2QUYzMzhBNjY2NjE0OTYKUldTV0ZHWm1pak92dGxlUWJta3kvL3J1RzBjNjV4azNzUk9OZW5RT2pRNGZTOXYxL2ZqeURpYSsK"
-    }
+    ]
   }
 }

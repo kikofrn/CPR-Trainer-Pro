@@ -38,3 +38,11 @@
 ## 2026-07-31
 - the slideshow video ref uses a null-discarding callback ref because AnimatePresence popLayout overlaps outgoing and incoming slides during video-to-video transitions, and the outgoing unmount must not clobber the shared ref; slide-video ended handling moved to the element's onEnded prop for the same reason.
 - updater signing key rotated (the original private key was lost; no shipped build ever received a signed update, so rotation costs nothing); releases are produced by a dedicated Windows-only release job on v* tag pushes while the matrix job is a compile check on all triggers; the updater endpoint is releases/latest/download/latest.json with createUpdaterArtifacts enabled.
+
+## 2026-08-01
+- `mac-build` starts from exact commit `3ced294` in a sibling worktree; the Windows, historical Mac, and iOS branches remain untouched.
+- macOS version 3.0.0 targets a universal Intel/Apple Silicon binary with macOS 12 as the minimum supported release.
+- Mac binary updates are channel-specific: the DMG links to a health-checked EH Academy download page, while the Mac App Store build relies only on App Store updates.
+- Desktop content checks run at startup only; no hourly check is added to the Mac release.
+- Mac App Store privacy must be revalidated against Cloudflare logging before reaffirming the shared Data Not Collected declaration.
+- Conference media import is picker-only and copies one shared USB media library into Application Support.

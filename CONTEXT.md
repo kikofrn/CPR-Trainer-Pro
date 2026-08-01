@@ -1,7 +1,7 @@
 # Context
 
 - Stack: Tauri 2, Rust backend, React 19, Vite.
-- Release Target: This branch targets the Windows release. macOS lives on separate branches and is ported later. A separate native iOS app exists on other branches.
+- Release Target: This branch is the macOS 3.0 release line. Windows remains on `experiment-3.1`; the native iOS release remains isolated on its own branches.
 - Source of Truth: The Cloudflare R2 bucket served at media.ehacademy.com is the single source of truth for all media content.
 - `src/chapters.ts` must always match the single source of truth, enforced at build time by the reconciliation tooling.
 - Folder path conventions in `src/chapters.ts` must be adhered to.
@@ -12,7 +12,7 @@
 
 ## Current state (session handoff)
 
-- **Completed most recently**: Updated `.github/workflows/build.yml` so the matrix job is a compile check on all triggers and added a dedicated Windows-only release job for tags. Enabled `createUpdaterArtifacts` in `tauri.conf.json`, changed the updater endpoint to `latest.json`, and rotated the pubkey. Appended the decision to `DECISIONS.md`.
-- **In progress**: We are at the final stages of Phase 6 (Windows release gates and final audit).
-- **Immediate next task**: Run the manual CI workflow dispatch with Francisco.
-- **Known-broken or untested areas**: Manual verification/drills (gates 7-12) will be done with Francisco. The macOS and iOS ports are pending future phases.
+- **Completed most recently**: Canonical macOS Plan v2.1 Phase 0 in this commit: created the isolated `mac-build` worktree from pinned source `3ced294`, removed Windows/updater surfaces, synchronized version 3.0.0, and passed frontend, Rust ARM/Intel, R2 URL, and catalog gates.
+- **In progress**: Phase 0 is complete; Phase 1 has not started.
+- **Immediate next task**: Implement Phase 1 Mac storage, protocol/download hardening, local fonts, CSP, scoped opener, and atomic snapshots.
+- **Known-broken or untested areas**: The current inherited media path and URL scheme are still Windows-oriented and are intentionally addressed in Phase 1. Presenter, USB import, signing, packaging, and physical hardware gates remain later phases. The dependency audit reports five inherited findings (two low, three high); no automatic audit fix was applied.

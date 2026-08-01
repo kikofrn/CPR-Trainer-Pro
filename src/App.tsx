@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  X, 
+import {
   Download,
   Loader2
 } from 'lucide-react';
@@ -11,8 +10,6 @@ const ManualFlipbook = lazy(() => import('./components/ManualFlipbook'));
 import { mediaUrl as m, waitForMediaResolver, isTauri } from './media-resolver';
 import { CprIcon, FirstAidIcon } from './components/Icons';
 import { downloadManager, DownloadState, formatSpeed } from './download-manager';
-import { check } from '@tauri-apps/plugin-updater';
-import { relaunch } from '@tauri-apps/plugin-process';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { parseVTT, type SubtitleCue } from './utils/vtt-parser';
 import { getRelevantKeys, checkUpdates, ChangedFile, ManifestFile } from './update-checker';
@@ -43,26 +40,6 @@ function EHLogo({ className }: { className?: string }) {
 export default function App() {
   const [mediaReady, setMediaReady] = useState(false);
   
-  // Updater State
-  const [updateAvailable, setUpdateAvailable] = useState<any>(null);
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [isUpdateMinimized, setIsUpdateMinimized] = useState(false);
-
-  // Un-minimize timer: 20 minutes for real update, 15 seconds for mock testing update
-  useEffect(() => {
-    if (isUpdateMinimized && updateAvailable) {
-      const isMock = updateAvailable.version === '2.0.0-mock';
-      const delay = isMock ? 15000 : 20 * 60 * 1000; // 15 seconds for mock testing, 20 mins for production
-      
-      console.log(`[Updater] Notification minimized. Will auto-restore in ${delay / 1000}s`);
-      const timer = setTimeout(() => {
-        setIsUpdateMinimized(false);
-      }, delay);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [isUpdateMinimized, updateAvailable]);
-
   const [contentUpdateFiles, setContentUpdateFiles] = useState<ChangedFile[]>([]);
   const [showContentUpdatePrompt, setShowContentUpdatePrompt] = useState(false);
   const [contentUpdateAvgSpeed, setContentUpdateAvgSpeed] = useState(0);
@@ -169,22 +146,6 @@ export default function App() {
   }, [isTauri]);
 
 
-
-  useEffect(() => {
-    async function checkForUpdates() {
-      if (!isTauri) return;
-      try {
-        const update = await check();
-        if (update) {
-          console.log(`Update available: ${update.version}`);
-          setUpdateAvailable(update);
-        }
-      } catch (e) {
-        console.error("Failed to check for updates:", e);
-      }
-    }
-    checkForUpdates();
-  }, []);
 
   // Initialize media resolver for Tauri desktop support
   useEffect(() => {
@@ -1115,49 +1076,6 @@ export default function App() {
           }}
         />
       )}
-      {/* Auto-Updater Banner */}
-      <AnimatePresence>
-        {updateAvailable && !isUpdateMinimized && (
-          <motion.div
-            initial={{ opacity: 0, y: -50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -50 }}
-            className="absolute top-4 right-4 z-[9999] bg-[#ff4b4b] text-white pl-12 pr-6 py-4 rounded-2xl shadow-[0_10px_40px_rgba(255,75,75,0.4)] flex items-center gap-6 border border-white/20"
-          >
-            {/* Close / Minimize Button */}
-            <button
-              onClick={() => setIsUpdateMinimized(true)}
-              className="absolute top-3 left-3 text-white/70 hover:text-white hover:bg-white/10 p-1.5 rounded-full transition-all cursor-pointer flex items-center justify-center"
-              title="Minimize Update Notification"
-            >
-              <X size={16} />
-            </button>
-
-            <div>
-              <h3 className="font-bold text-lg leading-tight uppercase tracking-wide">Update Available!</h3>
-              <p className="text-sm opacity-90">Version {updateAvailable.version} is ready to install.</p>
-            </div>
-            <button 
-              onClick={async () => {
-                setIsUpdating(true);
-                try {
-                  await updateAvailable.downloadAndInstall();
-                  await relaunch();
-                } catch (e) {
-                  console.error("Failed to update", e);
-                  setIsUpdating(false);
-                }
-              }}
-              disabled={isUpdating}
-              className="bg-white text-[#ff4b4b] px-4 py-2 rounded-lg font-bold uppercase tracking-wider text-sm hover:scale-105 transition-transform flex items-center gap-2"
-            >
-              {isUpdating ? <Loader2 className="animate-spin" size={16} /> : <Download size={16} />}
-              {isUpdating ? 'Updating...' : 'Restart & Update'}
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Sidebar Navigation */}
       <AnimatePresence>
         {showSidebar && (
@@ -1204,8 +1122,6 @@ export default function App() {
             setShowHowTo={setShowHowTo}
             setActiveGuidePath={setActiveGuidePath}
             setPortalStep={setPortalStep}
-            updateAvailable={updateAvailable}
-            setUpdateAvailable={setUpdateAvailable}
             EHLogo={EHLogo}
           />
         )}
@@ -1248,9 +1164,6 @@ export default function App() {
           easterEggLevel={easterEggLevel}
           activeCourse={activeCourse}
           activeChapterIndex={activeChapterIndex}
-          updateAvailable={updateAvailable}
-          isUpdateMinimized={isUpdateMinimized}
-          setIsUpdateMinimized={setIsUpdateMinimized}
           handleItemClick={handleItemClick}
           MANUALS={MANUALS}
           EHLogo={EHLogo}
