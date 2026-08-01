@@ -1,13 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('@tauri-apps/api/core', () => {
-  throw new Error('Should not import @tauri-apps/api/core');
-});
-
-vi.mock('@tauri-apps/api/event', () => {
-  throw new Error('Should not import @tauri-apps/api/event');
-});
-
 describe('download-manager fake platform', () => {
   beforeEach(() => {
     vi.resetModules();
@@ -17,6 +9,12 @@ describe('download-manager fake platform', () => {
 
   it('resolves download queue logic on web without importing tauri', async () => {
     const { downloadManager } = await import('../../src/download-manager');
+    
+    // Explicitly set loaders that throw if called
+    downloadManager.setTauriLoaders(
+      async () => { throw new Error('Tauri core loader should not be called'); },
+      async () => { throw new Error('Tauri event loader should not be called'); }
+    );
     
     // Status via subscribe
     let state: any;

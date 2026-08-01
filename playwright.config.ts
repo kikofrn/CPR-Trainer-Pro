@@ -11,7 +11,7 @@ export default defineConfig({
   projects: [
     {
       name: 'app',
-      testIgnore: 'tests/e2e/fatal.spec.ts',
+      testMatch: 'tests/e2e/app.spec.ts',
       use: {
         ...devices['Desktop Chrome'],
         baseURL: 'http://127.0.0.1:4173',
@@ -29,12 +29,12 @@ export default defineConfig({
 
   webServer: [
     {
-      command: 'npm run build && npx vite preview --host 127.0.0.1 --port 4173',
+      command: 'npm run build && npx vite preview --host 127.0.0.1 --port 4173 --strictPort',
       url: 'http://127.0.0.1:4173',
       reuseExistingServer: !process.env.CI,
     },
     {
-      command: 'npx vite --host 127.0.0.1 --port 5199',
+      command: 'npx vite --host 127.0.0.1 --port 5199 --strictPort',
       url: 'http://127.0.0.1:5199',
       reuseExistingServer: !process.env.CI,
     },

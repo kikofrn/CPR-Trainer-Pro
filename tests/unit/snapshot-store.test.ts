@@ -14,6 +14,9 @@ describe('snapshot-store fake platform', () => {
   it('resolves snapshot-store read/write on web without importing tauri', async () => {
     const { snapshotStore } = await import('../../src/snapshot-store');
     
+    // Explicitly set loader that throws if called
+    snapshotStore.setTauriLoader(async () => { throw new Error('Tauri loader should not be called'); });
+    
     // read snapshot
     const snap = await snapshotStore.readSnapshot();
     expect(snap.schema).toBe(1); // Web should return empty schema
