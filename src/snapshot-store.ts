@@ -17,14 +17,24 @@ class SnapshotStore {
     return next;
   }
 
+  private parseSnapshotRaw(raw: string | null): SnapshotData {
+    if (!raw || raw.trim() === '' || raw === '{}') {
+      return { schema: 1, avgSpeedBps: 0, files: {} };
+    }
+    try {
+      return JSON.parse(raw) as SnapshotData;
+    } catch (parseError) {
+      console.warn('[SnapshotStore] Snapshot JSON parse failed, self-healing to empty', parseError);
+      return { schema: 1, avgSpeedBps: 0, files: {} };
+    }
+  }
+
   public async readSnapshot(): Promise<SnapshotData> {
     return this.enqueue(async () => {
       try {
         const raw = await invoke<string>('read_version_snapshot');
-        if (!raw || raw.trim() === '' || raw === '{}') {
-          return { schema: 1, avgSpeedBps: 0, files: {} };
-        }
-        return JSON.parse(raw) as SnapshotData;
+        const raw = await invoke<string>('read_version_snapshot');
+        return this.parseSnapshotRaw(raw);
       } catch (e) {
         console.error('[SnapshotStore] Failed to read snapshot', e);
         return { schema: 1, avgSpeedBps: 0, files: {} };
@@ -48,12 +58,7 @@ class SnapshotStore {
     return this.enqueue(async () => {
       try {
         let raw = await invoke<string>('read_version_snapshot');
-        let data: SnapshotData;
-        if (!raw || raw.trim() === '' || raw === '{}') {
-          data = { schema: 1, avgSpeedBps: 0, files: {} };
-        } else {
-          data = JSON.parse(raw) as SnapshotData;
-        }
+        let data: SnapshotData = this.parseSnapshotRaw(raw);
 
         if (!data.avgSpeedBps || data.avgSpeedBps === 0) {
           data.avgSpeedBps = speed;
@@ -73,12 +78,7 @@ class SnapshotStore {
     return this.enqueue(async () => {
       try {
         let raw = await invoke<string>('read_version_snapshot');
-        let data: SnapshotData;
-        if (!raw || raw.trim() === '' || raw === '{}') {
-          data = { schema: 1, avgSpeedBps: 0, files: {} };
-        } else {
-          data = JSON.parse(raw) as SnapshotData;
-        }
+        let data: SnapshotData = this.parseSnapshotRaw(raw);
 
         data.files = { ...data.files, ...entries };
 
@@ -94,12 +94,7 @@ class SnapshotStore {
     return this.enqueue(async () => {
       try {
         let raw = await invoke<string>('read_version_snapshot');
-        let data: SnapshotData;
-        if (!raw || raw.trim() === '' || raw === '{}') {
-          data = { schema: 1, avgSpeedBps: 0, files: {} };
-        } else {
-          data = JSON.parse(raw) as SnapshotData;
-        }
+        let data: SnapshotData = this.parseSnapshotRaw(raw);
 
         data.lastCheck = iso;
 

@@ -404,7 +404,12 @@ fn write_version_snapshot(app: tauri::AppHandle, content: String) -> Result<(), 
     let media_dir = find_media_dir(&app);
     std::fs::create_dir_all(&media_dir).map_err(|e| format!("Failed to create media directory: {}", e))?;
     let snapshot_path = media_dir.join(".content-versions.json");
-    std::fs::write(&snapshot_path, content).map_err(|e| format!("Failed to write snapshot: {}", e))
+    let temp_path = media_dir.join(".content-versions.json.tmp");
+    std::fs::write(&temp_path, content).map_err(|e| format!("Failed to write snapshot to temp: {}", e))?;
+    std::fs::rename(&temp_path, &snapshot_path).map_err(|e| {
+        let _ = std::fs::remove_file(&temp_path);
+        format!("Failed to rename snapshot: {}", e)
+    })
 }
 
 #[tauri::command]
