@@ -17,12 +17,18 @@ class SnapshotStore {
     return next;
   }
 
+  private tauriLoader: () => Promise<any> = () => import('@tauri-apps/api/core');
+
+  public setTauriLoader(loader: () => Promise<any>) {
+    this.tauriLoader = loader;
+  }
+
   public async readSnapshot(): Promise<SnapshotData> {
     return this.enqueue(async () => {
       if (!isTauri) return { schema: 1, avgSpeedBps: 0, files: {} };
       try {
-        const { invoke } = await import('@tauri-apps/api/core');
-        const raw = await invoke<string>('read_version_snapshot');
+        const { invoke } = await this.tauriLoader();
+        const raw: string = await invoke('read_version_snapshot');
         if (!raw || raw.trim() === '' || raw === '{}') {
           return { schema: 1, avgSpeedBps: 0, files: {} };
         }
@@ -38,7 +44,7 @@ class SnapshotStore {
     return this.enqueue(async () => {
       if (!isTauri) return;
       try {
-        const { invoke } = await import('@tauri-apps/api/core');
+        const { invoke } = await this.tauriLoader();
         const content = JSON.stringify(data, null, 2);
         await invoke('write_version_snapshot', { content });
       } catch (e) {
