@@ -58,7 +58,7 @@ class SnapshotStore {
     return this.enqueue(async () => {
       if (!isTauri) return;
       try {
-        const { invoke } = await import('@tauri-apps/api/core');
+        const { invoke } = await this.tauriLoader();
         let raw = await invoke<string>('read_version_snapshot');
         let data: SnapshotData;
         if (!raw || raw.trim() === '' || raw === '{}') {
@@ -85,7 +85,7 @@ class SnapshotStore {
     return this.enqueue(async () => {
       if (!isTauri) return;
       try {
-        const { invoke } = await import('@tauri-apps/api/core');
+        const { invoke } = await this.tauriLoader();
         let raw = await invoke<string>('read_version_snapshot');
         let data: SnapshotData;
         if (!raw || raw.trim() === '' || raw === '{}') {
@@ -108,7 +108,7 @@ class SnapshotStore {
     return this.enqueue(async () => {
       if (!isTauri) return;
       try {
-        const { invoke } = await import('@tauri-apps/api/core');
+        const { invoke } = await this.tauriLoader();
         let raw = await invoke<string>('read_version_snapshot');
         let data: SnapshotData;
         if (!raw || raw.trim() === '' || raw === '{}') {

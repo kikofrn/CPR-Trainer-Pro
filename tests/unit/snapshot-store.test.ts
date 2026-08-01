@@ -24,6 +24,13 @@ describe('snapshot-store fake platform', () => {
     // write snapshot
     await snapshotStore.writeSnapshot(snap);
 
-    // all done
+    // updateAvgSpeedBps
+    await snapshotStore.updateAvgSpeedBps(100);
+
+    // mergeFiles
+    await snapshotStore.mergeFiles({ 'test': { size: 1, csum: '1', mtime: '1' } });
+
+    // setLastCheck
+    await snapshotStore.setLastCheck('2026-08-01');
   });
 });
