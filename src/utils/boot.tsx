@@ -1,15 +1,18 @@
 import React, { StrictMode, useEffect } from 'react';
-import { createRoot } from 'react-dom/client';
+import { createRoot as defaultCreateRoot } from 'react-dom/client';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 
 let rootOwned = false;
 let appReady = false;
 
-// We export types for dependency injection
+export function getRootOwned() {
+  return rootOwned;
+}
+
 export type TauriLoader = () => Promise<{ invoke: (cmd: string, args?: any) => Promise<any> }>;
 
-// Force close splash screen — called on any fatal error
-export function forceCloseSplash(platform: 'web' | 'tauri', loader: TauriLoader, storage: any) {
+// Awaitable splash-close contract
+export async function forceCloseSplash(platform: 'web' | 'tauri', loader: TauriLoader, storage: any): Promise<void> {
   if (platform !== 'tauri') return;
   try {
     storage.setItem('splash_status', 'ready');
@@ -17,9 +20,8 @@ export function forceCloseSplash(platform: 'web' | 'tauri', loader: TauriLoader,
     console.error('[FATAL] Failed to set splash_status', e);
   }
   try {
-    loader().then(({ invoke }) => {
-      invoke('close_splashscreen').catch(() => {});
-    }).catch(() => {});
+    const { invoke } = await loader();
+    await invoke('close_splashscreen');
   } catch (e) {
     console.error('[FATAL] Failed to invoke close_splashscreen', e);
   }
@@ -49,7 +51,7 @@ function FallbackUI() {
         <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', marginBottom: '32px', lineHeight: '1.5' }}>
           The Everyday Hero Academy app encountered an unexpected error.
         </p>
-        <button 
+        <button
           onClick={() => window.location.reload()}
           style={{ padding: '14px 32px', backgroundColor: '#ff4b4b', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '13px', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', width: '100%', boxShadow: '0 4px 14px rgba(255, 75, 75, 0.4)' }}
         >
@@ -60,63 +62,143 @@ function FallbackUI() {
   );
 }
 
-export function mountApp({ 
-  container, 
-  AppComponent, 
+export type FatalVariant = 'missing-container' | 'Uncaught Error' | 'Unhandled Promise Rejection' | 'React Render Crash';
+
+export interface RawFatalAdapter {
+  renderFatal(variant: FatalVariant, message: string, container?: HTMLElement | null): void;
+}
+
+export const defaultRawFatalAdapter: RawFatalAdapter = {
+  renderFatal: (variant, message, container) => {
+    if (variant === 'missing-container') {
+      const fatal = document.createElement('div');
+      fatal.style.cssText = 'color:#ff4b4b;background:#111;padding:32px;margin:32px;border-radius:12px;font-family:sans-serif';
+      fatal.textContent = message;
+      document.body.appendChild(fatal);
+    } else {
+      if (container) {
+        container.textContent = '';
+        const pre = document.createElement('pre');
+        pre.style.cssText = 'color:#ff4b4b;background:#111;padding:32px;margin:32px;border-radius:12px;font-size:13px;white-space:pre-wrap;word-break:break-word;max-height:90vh;overflow:auto';
+        pre.textContent = `${variant}\n\n${message}`;
+        container.appendChild(pre);
+      }
+    }
+  }
+};
+
+export type GlobalHandlerInstaller = (
+  type: 'error' | 'unhandledrejection',
+  handler: (event: any) => void
+) => void;
+
+export const defaultGlobalHandlerInstaller: GlobalHandlerInstaller = (type, handler) => {
+  window.addEventListener(type, handler);
+};
+
+export type RootFactory = (container: HTMLElement | DocumentFragment, options?: any) => any;
+
+export async function handleFatalError({
+  variant,
+  message,
+  originalError,
+  isRootOwned,
   platform,
   tauriLoader,
-  storage
-}: { 
-  container: HTMLElement | null, 
-  AppComponent: React.ComponentType, 
+  storage,
+  rawFatalAdapter,
+  container
+}: {
+  variant: FatalVariant;
+  message: string;
+  originalError: any;
+  isRootOwned: boolean;
+  platform: 'web' | 'tauri';
+  tauriLoader: TauriLoader;
+  storage: any;
+  rawFatalAdapter: RawFatalAdapter;
+  container?: HTMLElement | null;
+}) {
+  console.error(`[FATAL] ${variant}:`, originalError);
+
+  const splashPromise = forceCloseSplash(platform, tauriLoader, storage);
+
+  if (!isRootOwned) {
+    rawFatalAdapter.renderFatal(variant, message, container);
+  }
+
+  await splashPromise;
+}
+
+export async function mountApp({
+  container,
+  AppComponent,
+  platform,
+  tauriLoader,
+  storage,
+  globalHandlerInstaller = defaultGlobalHandlerInstaller,
+  rootFactory = defaultCreateRoot,
+  rawFatalAdapter = defaultRawFatalAdapter
+}: {
+  container: HTMLElement | null,
+  AppComponent: React.ComponentType,
   platform: 'web' | 'tauri',
   tauriLoader: TauriLoader,
-  storage: any
+  storage: any,
+  globalHandlerInstaller?: GlobalHandlerInstaller,
+  rootFactory?: RootFactory,
+  rawFatalAdapter?: RawFatalAdapter
 }) {
   if (!container) {
-    // Missing #root container
-    const fatal = document.createElement('div');
-    fatal.style.cssText = 'color:#ff4b4b;background:#111;padding:32px;margin:32px;border-radius:12px;font-family:sans-serif';
-    fatal.textContent = 'FATAL: Application container (#root) not found.';
-    document.body.appendChild(fatal);
-    forceCloseSplash(platform, tauriLoader, storage);
+    await handleFatalError({
+      variant: 'missing-container',
+      message: 'FATAL: Application container (#root) not found.',
+      originalError: new Error('Container not found'),
+      isRootOwned: false,
+      platform,
+      tauriLoader,
+      storage,
+      rawFatalAdapter,
+      container
+    });
     return;
   }
 
-  // Set up global error handlers
-  window.addEventListener('error', (event) => {
-    console.error('[FATAL] Uncaught Error:', event.error);
-    forceCloseSplash(platform, tauriLoader, storage);
-    
-    if (!rootOwned) {
-      container.textContent = '';
-      const pre = document.createElement('pre');
-      pre.style.cssText = 'color:#ff4b4b;background:#111;padding:32px;margin:32px;border-radius:12px;font-size:13px;white-space:pre-wrap;word-break:break-word;max-height:90vh;overflow:auto';
-      pre.textContent = `Uncaught Error\n\n${event.error?.stack || event.error?.message || String(event.error)}`;
-      container.appendChild(pre);
-    }
+  globalHandlerInstaller('error', (event: any) => {
+    void handleFatalError({
+      variant: 'Uncaught Error',
+      message: event.error?.stack || event.error?.message || String(event.error),
+      originalError: event.error,
+      isRootOwned: rootOwned,
+      platform,
+      tauriLoader,
+      storage,
+      rawFatalAdapter,
+      container
+    });
   });
 
-  window.addEventListener('unhandledrejection', (event) => {
-    console.error('[FATAL] Unhandled Promise Rejection:', event.reason);
-    forceCloseSplash(platform, tauriLoader, storage);
-    
-    if (!rootOwned) {
-      container.textContent = '';
-      const pre = document.createElement('pre');
-      pre.style.cssText = 'color:#ff4b4b;background:#111;padding:32px;margin:32px;border-radius:12px;font-size:13px;white-space:pre-wrap;word-break:break-word;max-height:90vh;overflow:auto';
-      pre.textContent = `Unhandled Promise Rejection\n\n${event.reason?.stack || event.reason?.message || String(event.reason)}`;
-      container.appendChild(pre);
-    }
+  globalHandlerInstaller('unhandledrejection', (event: any) => {
+    void handleFatalError({
+      variant: 'Unhandled Promise Rejection',
+      message: event.reason?.stack || event.reason?.message || String(event.reason),
+      originalError: event.reason,
+      isRootOwned: rootOwned,
+      platform,
+      tauriLoader,
+      storage,
+      rawFatalAdapter,
+      container
+    });
   });
 
   try {
-    const root = createRoot(container, {
-      onUncaughtError: (error, errorInfo) => {
+    const root = rootFactory(container, {
+      onUncaughtError: (error: any, errorInfo: any) => {
         console.error('React Uncaught Error:', error, errorInfo);
-        forceCloseSplash(platform, tauriLoader, storage);
+        void forceCloseSplash(platform, tauriLoader, storage);
       },
-      onCaughtError: (error, errorInfo) => {
+      onCaughtError: (error: any, errorInfo: any) => {
         console.error('React Caught Error (Boundary):', error, errorInfo);
       }
     });
@@ -133,17 +215,18 @@ export function mountApp({
       </StrictMode>
     );
 
-    // If render didn't throw synchronously, we own the root
     rootOwned = true;
-  } catch (e) {
-    console.error('[FATAL] React Render Crash:', e);
-    forceCloseSplash(platform, tauriLoader, storage);
-    if (!rootOwned) {
-      container.textContent = '';
-      const pre = document.createElement('pre');
-      pre.style.cssText = 'color:#ff4b4b;background:#111;padding:32px;margin:32px;border-radius:12px;font-size:13px;white-space:pre-wrap;word-break:break-word;max-height:90vh;overflow:auto';
-      pre.textContent = `React Render Crash\n\n${(e as Error)?.stack || (e as Error)?.message || String(e)}`;
-      container.appendChild(pre);
-    }
+  } catch (e: any) {
+    await handleFatalError({
+      variant: 'React Render Crash',
+      message: e?.stack || e?.message || String(e),
+      originalError: e,
+      isRootOwned: false,
+      platform,
+      tauriLoader,
+      storage,
+      rawFatalAdapter,
+      container
+    });
   }
 }
