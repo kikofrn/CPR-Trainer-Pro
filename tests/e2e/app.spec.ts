@@ -15,7 +15,7 @@ test.describe('App Integration', () => {
       Storage.prototype.removeItem = () => { throw new Error('Poisoned storage') };
     });
 
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
 
     await page.waitForSelector('[data-app-ready="true"]');
     await page.evaluate(() => document.fonts.ready);
@@ -56,8 +56,8 @@ test.describe('App Integration', () => {
 
     const faDropdown = page.locator('button', { hasText: 'FIRST AID' }).first();
     await expect(faDropdown).toBeVisible();
-    // Dropdown animation requires forced click if it overlaps or hasn't fully settled
-    await faDropdown.click({ force: true });
+    await expect(faDropdown).toBeEnabled();
+    await faDropdown.click();
 
     const startFaCourse = page.locator('button', { hasText: 'START COURSE' }).first();
     await expect(startFaCourse).toBeVisible();
@@ -72,7 +72,7 @@ test.describe('App Integration', () => {
     ];
     const errorTracker = setupStrictErrors(page, expectedErrors);
 
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('[data-app-ready="true"]');
 
     // Update the pathname for the console error to match the built main.js chunk
@@ -90,17 +90,21 @@ test.describe('App Integration', () => {
     });
 
     // Wait for the unhandled rejection handler to catch it
-    // Wait until the unhandled rejection UI (which might intercept) shows up or state changes.
-    // We can just rely on the locator assertions to retry until the DOM settles.
+    // Wait for the unhandled rejection handler to catch it.
+    // Assert that neither fatal fallback is present.
+    await expect(page.locator('h2', { hasText: 'App Stopped' })).toHaveCount(0);
+    await expect(page.locator('text=FATAL:')).toHaveCount(0);
+    await expect(page.locator('text=Unhandled Promise Rejection')).toHaveCount(0);
+
     const cprDropdown = page.locator('button', { hasText: 'CPR & AED' }).first();
     await expect(cprDropdown).toBeVisible();
-    // Use force click because the React Error Boundary fallback screen might overlap
-    await cprDropdown.click({ force: true });
+    await expect(cprDropdown).toBeEnabled();
+    await cprDropdown.click();
 
     const startCprCourse = page.locator('button', { hasText: 'START COURSE' }).first();
     await expect(startCprCourse).toBeVisible();
-    // Use force click due to potential overlap
-    await startCprCourse.click({ force: true });
+    await expect(startCprCourse).toBeEnabled();
+    await startCprCourse.click();
 
     errorTracker.verify();
   });
