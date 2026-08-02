@@ -45,8 +45,8 @@ R8 desktop smoke: PENDING — requires human observation (Francisco).
 
 ## Current state (session handoff)
 
-- Completed most recently: C1 source repair in progress—zero-byte Playwright files restored, fatal E2E expectation returned to historical behavior, and boot logging parity pinned in unit tests.
-- In progress: Gate-1 recovery implementation on top of `3d0e99a`.
-- Immediate next task: verify and commit C1, then stabilize the default Playwright suite in C2.
-- Untested or known-broken: C1 changes have not yet passed verification; deep matrix, screenshot reference, clean verification, archives, push, CI, audit, and R8 are pending.
+- Completed most recently: C1 committed as `c2991ae`; TypeScript passed and the boot suite passed 17/17 with historical fatal logging parity restored.
+- In progress: C2 default Playwright stabilization—artifacts redirected outside Git and the injected-rejection test now awaits both exact browser events.
+- Immediate next task: verify and commit C2, then add the isolated Gate-1 matrix.
+- Untested or known-broken: the default suite has not yet completed under the C2 config; deep matrix, screenshot reference, clean verification, archives, push, CI, audit, and R8 are pending.
 - Gotcha: no evidence from the prior Round-4 `CONTEXT.md` is trustworthy; only newly captured raw logs and checksums may be recorded.
