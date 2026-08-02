@@ -74,7 +74,7 @@ Cloudflare Pages, git-connected; production branch `web-production`; build `npm 
 ### 3.6 Standing adjudication nuances (restated in full; agreed with Codex)
 - **A — No speculative next-chapter loading at launch.** The inactive player carries no `src` except during an in-flight, user-initiated switch (§4A). "Late-chapter metadata prefetch" is deliberately excluded; if Gate 3's latency measurements (§5.7) fail the absolute targets, the documented amendment path is to revisit this policy — never to silently accept slower switches.
 - **B — Domain timing.** `app.ehacademy.com` attaches only after Gate 5 (mobile complete). Until then production runs on `<project>.pages.dev`, unannounced and noindexed. QR/booth signage may print any time — the URL string is predetermined. Francisco may attach earlier only by explicit recorded decision as an intentionally incomplete, unannounced launch.
-- **C — Harness at gates, not CI.** CI (Phase 1.9) runs typecheck+vitest+build only; the Playwright suite is run by the implementer at phase end and by auditors at gates, per §5.4. Revisit post-conference.
+- **C — Fast browser smoke in CI; deep harness at gates.** CI (Phase 1.9) runs typecheck, Vitest, build, and only the four-test default Playwright config; its HTML report is redirected outside the worktree and uploaded. The isolated 16-row content matrix and deterministic reference capture remain explicit implementer/auditor gate steps under §5.4, not routine CI. Revisit the split post-conference.
 - **D — Media-domain indexing out of scope.** The app-shell noindex (headers/robots/meta) does not govern `media.ehacademy.com` responses; changing worker/R2 headers during freeze week is its own risk. Recorded residual (§7.8), revisit post-conference.
 
 ## 4. The phases

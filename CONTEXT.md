@@ -51,7 +51,8 @@ R8 desktop smoke: PENDING — requires human observation (Francisco).
 - Completed: C3 `4d0ba41` added the isolated matrix; discovery is exactly 16 tests in one file and the complete serial pre-candidate run passed 16/16 in 1.9 minutes.
 - Completed: C4 `b870683` made the seven-surface screenshot harness deterministic; both pre-candidate passes were byte-identical with all strict runtime-error channels empty.
 - Completed: C5 `44bcbd2` added the four-test default E2E suite to web CI and marked only the now-complete Phase 1 harness checkbox; lint, 34/34 unit tests, production build, and 4/4 default E2E tests passed.
-- Completed most recently: C6 added the accepted F4 CI artifact-upload requirement so the redirected HTML report remains retrievable without touching the worktree.
-- In progress: verify and commit C6, then freeze the immutable candidate and regenerate all official evidence from that exact SHA.
+- Completed: C6 `7c7c51d` added the accepted F4 CI artifact-upload requirement so the redirected HTML report remains retrievable without touching the worktree.
+- Completed most recently: C7 reconciled canonical-plan §3.6-C with Francisco's approved fast-default-E2E CI governance while retaining the isolated matrix as an audit-only command.
+- In progress: verify and commit C7, then freeze the immutable candidate and regenerate all official evidence from that exact SHA.
 - Untested or known-broken: official candidate evidence, clean verification, archives, push, independent audit, and R8 are pending.
 - Gotcha: no evidence from the prior Round-4 `CONTEXT.md` is trustworthy; only newly captured raw logs and checksums may be recorded.
