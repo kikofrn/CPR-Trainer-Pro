@@ -131,15 +131,15 @@ Verified current shape: ONE video element per video slide; hidden adjacent-media
 
 ### Phase −1 — Workspace preflight (Antigravity, ~10 min) — BLOCKING
 The previous Antigravity workspace is known-bad (empty git history, v2.3.2-era contents, nested `experiment-2.6` clone). It must not be used.
-1. [ ] In a NEW empty directory (sibling to, never inside, any existing checkout): `git clone https://github.com/kikofrn/cpr-trainer-pro.git cpr-web && cd cpr-web`
-2. [ ] Verify ALL: `git remote -v` shows exactly that URL; `git status --porcelain` is empty; `git rev-parse --show-toplevel` is the new folder.
-3. [ ] `git fetch --tags && git rev-parse 'v2.3.3^{commit}'` prints `89f7f1142d3d86e09f31de6ee8bfe0adeebfee5b`. ANY mismatch → STOP and report; do not improvise.
+1. [x] In a NEW empty directory (sibling to, never inside, any existing checkout): `git clone https://github.com/kikofrn/cpr-trainer-pro.git cpr-web && cd cpr-web`
+2. [x] Verify ALL: `git remote -v` shows exactly that URL; `git status --porcelain` is empty; `git rev-parse --show-toplevel` is the new folder.
+3. [x] `git fetch --tags && git rev-parse 'v2.3.3^{commit}'` prints `89f7f1142d3d86e09f31de6ee8bfe0adeebfee5b`. ANY mismatch → STOP and report; do not improvise.
 
 ### Phase 0 — Branch + plan commit (Antigravity, ~20 min; exactly two commits)
-1. [ ] `git checkout -b web-app v2.3.3`; verify HEAD = the locked SHA.
-2. [ ] Commit 1: this doc, verbatim, at `docs/plans/CPR_Trainer_Pro_Web_App_Plan_v5.1_canonical.md` — `web(phase-0): commit governing web plan v5.1`.
-3. [ ] Commit 2: append to `CONTEXT.md`: branch created from v2.3.3; `npm ci && npm run build` result (both must succeed); date — `web(phase-0): record baseline build`.
-4. [ ] Push: `git push -u origin web-app`.
+1. [x] `git checkout -b web-app v2.3.3`; verify HEAD = the locked SHA.
+2. [x] Commit 1: this doc, verbatim, at `docs/plans/CPR_Trainer_Pro_Web_App_Plan_v5.1_canonical.md` — `web(phase-0): commit governing web plan v5.1`.
+3. [x] Commit 2: append to `CONTEXT.md`: branch created from v2.3.3; `npm ci && npm run build` result (both must succeed); date — `web(phase-0): record baseline build`.
+4. [x] Push: `git push -u origin web-app`.
 **Gate 0 (Claude):** correct SHA ancestry; exactly two commits; plan verbatim; nothing else touched.
 
 ### Phase 1 — Web-mode correctness, resilience, isolation proof, harness (Antigravity, ~1.5 days)
@@ -162,11 +162,11 @@ The previous Antigravity workspace is known-bad (empty git history, v2.3.2-era c
      X-Robots-Tag: noindex
    ```
    + `public/robots.txt` (`User-agent: *` / `Disallow: /`) + `<meta name="robots" content="noindex">` in `index.html`. No CSP yet (Phase 3, staged).
-9. [ ] `public/404.html` — minimal branded "Page not found", self-contained, no JS (kills Pages' serve-index-for-everything default). NEW `.github/workflows/web-ci.yml` — push/PR on `web-app` only: Node 22 → `npm ci` → `npm run lint` → `npx vitest run` → `npm run build`. Desktop release workflow untouched.
+9. [x] `public/404.html` — minimal branded "Page not found", self-contained, no JS (kills Pages' serve-index-for-everything default). NEW `.github/workflows/web-ci.yml` — push/PR on `web-app` only: Node 22 → `npm ci` → `npm run lint` → `npx vitest run` → `npm run build`. Desktop release workflow untouched.
 10. [ ] **Harness:** pinned `@playwright/test` devDependency + `npx playwright install chromium` in setup docs + checked-in `tests/e2e/` implementing §5.4 (readiness via `data-app-ready` + `document.fonts.ready` + locator assertions — NEVER `networkidle`; exact-match expected-error allowlists; screenshot determinism). Record Playwright version + Chromium build in `CONTEXT.md`. No screenshot images committed.
-11. [ ] `vite.config.ts` — delete the `GEMINI_API_KEY` define block AND its now-unused scaffolding: the `loadEnv` import, the `env` variable, the `mode` destructured parameter, and the unused `isTauri` variable (nothing else in the config changes). Download-UI sweep — every download surface hidden when `!isTauri`, listed with file:line in `CONTEXT.md`.
-11b. [ ] `src/utils/browser.ts` — `window.open(url, '_blank', 'noopener,noreferrer')` in BOTH call sites; verify every external-opening surface routes through `openExternalUrl()` (Sidebar's direct `window.open` fallbacks get the same flags via the helper).
-12. [ ] Append decisions W1–W11 (§8) to `DECISIONS.md`. **Isolation acceptance:** `rg -n "@tauri-apps" src` inventory pasted into `CONTEXT.md`; per-hit gating mechanism stated in the handoff note; the step-6 tests are the executable proof.
+11. [x] `vite.config.ts` — delete the `GEMINI_API_KEY` define block AND its now-unused scaffolding: the `loadEnv` import, the `env` variable, the `mode` destructured parameter, and the unused `isTauri` variable (nothing else in the config changes). Download-UI sweep — every download surface hidden when `!isTauri`, listed with file:line in `CONTEXT.md`.
+11b. [x] `src/utils/browser.ts` — `window.open(url, '_blank', 'noopener,noreferrer')` in BOTH call sites; verify every external-opening surface routes through `openExternalUrl()` (Sidebar's direct `window.open` fallbacks get the same flags via the helper).
+12. [x] Append decisions W1–W11 (§8) to `DECISIONS.md`. **Isolation acceptance:** `rg -n "@tauri-apps" src` inventory pasted into `CONTEXT.md`; per-hit gating mechanism stated in the handoff note; the step-6 tests are the executable proof.
 **Forbidden:** `src-tauri/`, `chapters.ts` content, dependencies beyond 1.7/1.10, visual/layout changes, file deletions, desktop release workflow.
 **Gate 1 (Claude + Codex):** line-by-line diff vs this list; independent build; harness run per §5.4 against a local `vite preview` target — **full §5.5 Layer-1 content matrix at 1440 px + 390 px boot/overflow smoke only** (mobile UI does not exist yet); all unit + Playwright tests; **confirm the throwing-render fixture is ABSENT from the production `dist` output and that no public crash query/test hook exists; confirm the POSITIVE Tauri platform-fake assertion (the splash loader executes in Tauri mode) alongside the negative one (never in web mode);** media scripts (`node scripts/verify-media-urls.mjs`; `node scripts/sync-chapters-from-bucket.mjs` check mode); isolation review; audit JSONs sanity-checked; **baseline recorded: measured total initial JS gzip (the 175 KB figure is only the pre-project reference — the measured value is the budget anchor).**
 

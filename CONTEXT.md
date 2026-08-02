@@ -4,133 +4,40 @@
 - Release Target: This branch targets the Windows release. macOS lives on separate branches and is ported later. A separate native iOS app exists on other branches.
 - Source of Truth: The Cloudflare R2 bucket served at media.ehacademy.com is the single source of truth for all media content.
 - `src/chapters.ts` must always match the single source of truth, enforced at build time by the reconciliation tooling.
-# Context
-
-- Stack: Tauri 2, Rust backend, React 19, Vite.
-- Release Target: This branch targets the Windows release. macOS lives on separate branches and is ported later. A separate native iOS app exists on other branches.
-- Source of Truth: The Cloudflare R2 bucket served at media.ehacademy.com is the single source of truth for all media content.
-- `src/chapters.ts` must always match the single source of truth, enforced at build time by the reconciliation tooling.
 - Folder path conventions in `src/chapters.ts` must be adhered to.
 - Course identity is by id string, never by array index, in all new code.
 - Verification commands: `npx tsc --noEmit`, `npm run build`, `node scripts/verify-media-urls.mjs`.
 - Rule: Diffs stay minimal and unrelated code is never touched.
 - Plan documents live at docs/plans/.
+- Branch Rule: `web-app` is the integration branch; `web-production` is the only PRODUCTION branch.
 
 ## Current state (session handoff)
 
-- **Completed most recently**: Finished Phase 1 — Web-mode correctness, resilience, isolation proof, harness. Fixed Playwright E2E test locator timeouts and refined TS typing of the Tauri seam injection for `download-manager.ts` and `snapshot-store.ts`. Passed all Gate 1 tests (`tsc`, `build`, Playwright, and `verify-media-urls`). Performance baseline established: entry chunk is 175.00 kB.
-- **In progress**: Ready for Phase 2 - Pages, production branch, rollback readiness (Francisco, guided).
-- **Immediate next task**: Handoff to Francisco for Gate 1 audit and branch promotion.
-- **Known-broken or untested areas**: None. Phase 1 is complete.
+- **Completed most recently**: Gate 1 Fix Round 4 - P4 completed. Fixed Playwright E2E test locator timeouts, removed forced clicks, added visibility assertions.
+- **In progress**: Gate 1 Fix Round 4 - Currently completing P5a evidence groundwork.
+- **Immediate next task**: P6a (deterministic screenshot harness) and P5b (record Gate-1 evidence).
+- **Known-broken or untested areas**: Gate 1 verification baseline and screenshot evidence is pending collection.
 
-## Download Surfaces Gated by isTauri
-- src/components/Sidebar.tsx:276 (Manual items)
-- src/components/Sidebar.tsx:376 (Slideshow slides)
-- src/components/Sidebar.tsx:474 (Video chapters)
-- src/components/Sidebar.tsx:639 (Settings Download All)
-- src/App.tsx:73 (Content update sync)
-- src/App.tsx:458 (First launch prompt)
+## Build/Bundle Measurements
+PENDING
 
-## Tauri Isolation Inventory
-All Tauri API calls have been gated behind isTauri and converted to dynamic imports to prevent breaking web environments.
+## Browser/Chromium/Codec Evidence
+PENDING
 
-Inventory of dynamic @tauri-apps imports:
-src\download-manager.ts:138:      const { listen } = await import('@tauri-apps/api/event');
-src\download-manager.ts:288:      const { invoke } = await import('@tauri-apps/api/core');
-src\download-manager.ts:416:      const { invoke } = await import('@tauri-apps/api/core');
-src\download-manager.ts:507:      const { invoke } = await import('@tauri-apps/api/core');
-src\download-manager.ts:635:      const { invoke } = await import('@tauri-apps/api/core');
-src\snapshot-store.ts:24:        const { invoke } = await import('@tauri-apps/api/core');
-src\snapshot-store.ts:41:        const { invoke } = await import('@tauri-apps/api/core');
-src\snapshot-store.ts:55:        const { invoke } = await import('@tauri-apps/api/core');
-src\snapshot-store.ts:82:        const { invoke } = await import('@tauri-apps/api/core');
-src\snapshot-store.ts:105:        const { invoke } = await import('@tauri-apps/api/core');
-src\App.tsx:91:        const { invoke } = await import('@tauri-apps/api/core');
-src\App.tsx:176:        const { check } = await import('@tauri-apps/plugin-updater');
-src\App.tsx:225:          import('@tauri-apps/api/core').then(({ invoke }) => {
-src\App.tsx:566:          const { invoke } = await import('@tauri-apps/api/core');
-src\App.tsx:989:          import('@tauri-apps/api/window').then(({ getCurrentWindow }) => {
-src\App.tsx:996:          import('@tauri-apps/api/window').then(async ({ getCurrentWindow }) => {
-src\App.tsx:1146:                    const { relaunch } = await import('@tauri-apps/plugin-process');
-src\utils\browser.ts:6:      const { invoke } = await import('@tauri-apps/api/core');
-src\components\ManualFlipbook.tsx:233:      const { getCurrentWindow } = await import('@tauri-apps/api/window');
-src\components\ManualFlipbook.tsx:259:          const { getCurrentWindow } = await import('@tauri-apps/api/window');
-src\utils\boot.tsx:19:    import('@tauri-apps/api/core').then(({ invoke }) => {
+## Layer-1 Content Matrix
+PENDING
 
-Per-hit gating mechanism: Every single occurrence listed above is either strictly inside an if (isTauri) block or uses a isTauri ? import(...) : fallback() pattern to prevent execution on web clients. The step-6 tests in tests/e2e/fatal.spec.ts act as the executable proof that rendering doesn't crash on web mode due to Tauri imports.
-
-## Gate 1 verification baseline
-- **Playwright version:** 1.62.1 (Chromium)
-- **Reference Screenshots Checksums (R7h):**
-  - home-course-list.png: ef338b480c4fc515bf55e7325ac8526fa47adf1521c8c87c0f58916256de668e
-  - chapter-player.png: 47c29aaba45251f3f5e19bb70b09b33a482c81a30b27310c2b82b53bc921170a
-  - slideshow-slide.png: 40158842facad579f270a3371bcce21a674b994d5d16974de21496f95c2dcd51
-# Context
-
-- Stack: Tauri 2, Rust backend, React 19, Vite.
-- Release Target: This branch targets the Windows release. macOS lives on separate branches and is ported later. A separate native iOS app exists on other branches.
-- Source of Truth: The Cloudflare R2 bucket served at media.ehacademy.com is the single source of truth for all media content.
-- `src/chapters.ts` must always match the single source of truth, enforced at build time by the reconciliation tooling.
-- Folder path conventions in `src/chapters.ts` must be adhered to.
-- Course identity is by id string, never by array index, in all new code.
-- Verification commands: `npx tsc --noEmit`, `npm run build`, `node scripts/verify-media-urls.mjs`.
-- Rule: Diffs stay minimal and unrelated code is never touched.
-- Plan documents live at docs/plans/.
-
-## Current state (session handoff)
-
-- **Completed most recently**: Finished Phase 1 — Web-mode correctness, resilience, isolation proof, harness. Fixed Playwright E2E test locator timeouts and refined TS typing of the Tauri seam injection for `download-manager.ts` and `snapshot-store.ts`. Passed all Gate 1 tests (`tsc`, `build`, Playwright, and `verify-media-urls`). Performance baseline established: entry chunk is 175.00 kB.
-- **In progress**: Ready for Phase 2 - Pages, production branch, rollback readiness (Francisco, guided).
-- **Immediate next task**: Handoff to Francisco for Gate 1 audit and branch promotion.
-- **Known-broken or untested areas**: None. Phase 1 is complete.
-
-## Download Surfaces Gated by isTauri
-- src/components/Sidebar.tsx:276 (Manual items)
-- src/components/Sidebar.tsx:376 (Slideshow slides)
-- src/components/Sidebar.tsx:474 (Video chapters)
-- src/components/Sidebar.tsx:639 (Settings Download All)
-- src/App.tsx:73 (Content update sync)
-- src/App.tsx:458 (First launch prompt)
+## 390 px Smoke
+PENDING
 
 ## Tauri Isolation Inventory
-All Tauri API calls have been gated behind isTauri and converted to dynamic imports to prevent breaking web environments.
+PENDING
 
-Inventory of dynamic @tauri-apps imports:
-src\download-manager.ts:138:      const { listen } = await import('@tauri-apps/api/event');
-src\download-manager.ts:288:      const { invoke } = await import('@tauri-apps/api/core');
-src\download-manager.ts:416:      const { invoke } = await import('@tauri-apps/api/core');
-src\download-manager.ts:507:      const { invoke } = await import('@tauri-apps/api/core');
-src\download-manager.ts:635:      const { invoke } = await import('@tauri-apps/api/core');
-src\snapshot-store.ts:24:        const { invoke } = await import('@tauri-apps/api/core');
-src\snapshot-store.ts:41:        const { invoke } = await import('@tauri-apps/api/core');
-src\snapshot-store.ts:55:        const { invoke } = await import('@tauri-apps/api/core');
-src\snapshot-store.ts:82:        const { invoke } = await import('@tauri-apps/api/core');
-src\snapshot-store.ts:105:        const { invoke } = await import('@tauri-apps/api/core');
-src\App.tsx:91:        const { invoke } = await import('@tauri-apps/api/core');
-src\App.tsx:176:        const { check } = await import('@tauri-apps/plugin-updater');
-src\App.tsx:225:          import('@tauri-apps/api/core').then(({ invoke }) => {
-src\App.tsx:566:          const { invoke } = await import('@tauri-apps/api/core');
-src\App.tsx:989:          import('@tauri-apps/api/window').then(({ getCurrentWindow }) => {
-src\App.tsx:996:          import('@tauri-apps/api/window').then(async ({ getCurrentWindow }) => {
-src\App.tsx:1146:                    const { relaunch } = await import('@tauri-apps/plugin-process');
-src\utils\browser.ts:6:      const { invoke } = await import('@tauri-apps/api/core');
-src\components\ManualFlipbook.tsx:233:      const { getCurrentWindow } = await import('@tauri-apps/api/window');
-src\components\ManualFlipbook.tsx:259:          const { getCurrentWindow } = await import('@tauri-apps/api/window');
-src\utils\boot.tsx:19:    import('@tauri-apps/api/core').then(({ invoke }) => {
+## Screenshot Determinism
+PENDING
 
-Per-hit gating mechanism: Every single occurrence listed above is either strictly inside an if (isTauri) block or uses a isTauri ? import(...) : fallback() pattern to prevent execution on web clients. The step-6 tests in tests/e2e/fatal.spec.ts act as the executable proof that rendering doesn't crash on web mode due to Tauri imports.
-
-## Gate 1 verification baseline
-- **Playwright version:** 1.62.1 (Chromium)
-- **Reference Screenshots Checksums (R7h):**
-  - home-course-list.png: ef338b480c4fc515bf55e7325ac8526fa47adf1521c8c87c0f58916256de668e
-  - chapter-player.png: 47c29aaba45251f3f5e19bb70b09b33a482c81a30b27310c2b82b53bc921170a
-  - slideshow-slide.png: 40158842facad579f270a3371bcce21a674b994d5d16974de21496f95c2dcd51
-  - manual-page.png: ab1f4a2997474283637c27e3a9906780711f5e605acd72112740f5cf8449b9a4
-  - send-certs.png: affaa6570cf3ebb14fd7d823e8fb79f38a0e10fa99b1a440d8fea12bb1a901df
-  - how-to.png: a0f5b0a62e25145a572868cc8dd49f70eb97d136cb561e324e63f3e67bd540e8
-  - offline-modal.png: 2635eac5106966a5dac9cd3bd45ea00574d0ac3b2b6e1939534331ed6fe08483
-  - coming-soon.png: fa7023f2bc24097d4a9b75a38971bada758b48a281d3780ee187a5552a5ed025
+## R9/Full Verification
+PENDING
 
 ## Smoke Test Verification (R8)
 R8 desktop smoke: PENDING — requires human observation (Francisco).
