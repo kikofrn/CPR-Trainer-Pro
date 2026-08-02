@@ -64,4 +64,6 @@
 - Gate-1 matrix execution is isolated in `playwright.gate1.config.ts`: one exact spec, one serial worker, zero retries, a production preview, and a required empty evidence root outside the repository. The orchestrator validates the clean root; Playwright workers may reload the config after reporter folders have been created.
 - Every matrix row writes a viewport screenshot and structured JSON record even when its product assertion fails; console errors, page errors, and unhandled rejections are separate failure channels.
 - Spanish remains guarded at interactive controls and routes only. Static explanatory prose in the How-To guide may mention future Spanish modules without making an edition reachable.
+- Gate 1 creates the first approved visual reference, so the screenshot harness performs two sequential same-candidate passes and requires byte identity; it does not compare against `b550d6c` or another unapproved historical SHA.
+- The visual reference contains seven surfaces. Surface 7 is the expanded web Settings/Offline panel—not a fabricated modal—and the Info easter-egg control is never activated. Live video and iframe regions are the only declared masks.
 

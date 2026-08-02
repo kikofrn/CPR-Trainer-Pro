@@ -29,7 +29,7 @@ Implementation complete and pre-candidate verification passed 16/16 in one seria
 
 ## Screenshot reference determinism
 
-PENDING. The old Round-4 hashes are invalid because they were produced by an unproven harness and wrong candidate record.
+Harness implementation complete. A seven-surface pre-candidate run produced two byte-identical passes with zero console errors, page errors, or unhandled rejections. Official first-reference evidence remains PENDING regeneration at the immutable final candidate SHA. The old Round-4 hashes remain invalid.
 
 ## Tauri isolation inventory
 
@@ -46,7 +46,8 @@ R8 desktop smoke: PENDING — requires human observation (Francisco).
 ## Current state (session handoff)
 
 - Completed: C1 `c2991ae` restored boot parity and passed 17/17 focused unit tests; C2 `8081611` stabilized the default Playwright suite and passed 4/4.
-- Completed most recently: C3 isolated matrix implementation; discovery is exactly 16 tests in one file and the complete serial pre-candidate run passed 16/16 in 1.9 minutes.
-- In progress: commit C3, then implement the deterministic seven-surface screenshot harness.
-- Untested or known-broken: official candidate evidence, screenshot reference, CI/governance, clean verification, archives, push, independent audit, and R8 are pending.
+- Completed: C3 `4d0ba41` added the isolated matrix; discovery is exactly 16 tests in one file and the complete serial pre-candidate run passed 16/16 in 1.9 minutes.
+- Completed most recently: C4 deterministic screenshot harness; seven surfaces completed two byte-identical passes with all strict runtime-error channels empty.
+- In progress: commit C4, then implement CI and governance updates.
+- Untested or known-broken: official candidate evidence, CI/governance, clean verification, archives, push, independent audit, and R8 are pending.
 - Gotcha: no evidence from the prior Round-4 `CONTEXT.md` is trustworthy; only newly captured raw logs and checksums may be recorded.
