@@ -25,7 +25,7 @@ PENDING at the immutable recovery candidate SHA.
 
 ## Gate-1 content matrix
 
-PENDING. Required evidence is 15 content rows plus one interactive Spanish-route guard.
+Implementation complete and pre-candidate verification passed 16/16 in one serial worker. Official evidence remains PENDING until it is regenerated from the immutable final candidate SHA.
 
 ## Screenshot reference determinism
 
@@ -45,8 +45,8 @@ R8 desktop smoke: PENDING — requires human observation (Francisco).
 
 ## Current state (session handoff)
 
-- Completed most recently: C1 committed as `c2991ae`; TypeScript passed and the boot suite passed 17/17 with historical fatal logging parity restored.
-- In progress: C2 default Playwright stabilization—artifacts redirected outside Git and the injected-rejection test now awaits both exact browser events.
-- Immediate next task: verify and commit C2, then add the isolated Gate-1 matrix.
-- Untested or known-broken: the default suite has not yet completed under the C2 config; deep matrix, screenshot reference, clean verification, archives, push, CI, audit, and R8 are pending.
+- Completed: C1 `c2991ae` restored boot parity and passed 17/17 focused unit tests; C2 `8081611` stabilized the default Playwright suite and passed 4/4.
+- Completed most recently: C3 isolated matrix implementation; discovery is exactly 16 tests in one file and the complete serial pre-candidate run passed 16/16 in 1.9 minutes.
+- In progress: commit C3, then implement the deterministic seven-surface screenshot harness.
+- Untested or known-broken: official candidate evidence, screenshot reference, CI/governance, clean verification, archives, push, independent audit, and R8 are pending.
 - Gotcha: no evidence from the prior Round-4 `CONTEXT.md` is trustworthy; only newly captured raw logs and checksums may be recorded.

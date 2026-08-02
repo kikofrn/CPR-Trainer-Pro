@@ -60,3 +60,8 @@
 
 - Decided to implement the ErrorBoundary production fallback test (Step 6b) using Playwright via a new test fixture (throwing-boundary.html/tsx) instead of Vitest with jsdom, strictly adhering to the 5.6 test-dependency policy (no jsdom without exception).
 
+## 2026-08-02 Gate-1 recovery
+- Gate-1 matrix execution is isolated in `playwright.gate1.config.ts`: one exact spec, one serial worker, zero retries, a production preview, and a required empty evidence root outside the repository. The orchestrator validates the clean root; Playwright workers may reload the config after reporter folders have been created.
+- Every matrix row writes a viewport screenshot and structured JSON record even when its product assertion fails; console errors, page errors, and unhandled rejections are separate failure channels.
+- Spanish remains guarded at interactive controls and routes only. Static explanatory prose in the How-To guide may mention future Spanish modules without making an edition reachable.
+
