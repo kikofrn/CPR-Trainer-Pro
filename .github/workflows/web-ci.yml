@@ -33,6 +33,17 @@ jobs:
 
       - name: Test (E2E, default suite)
         run: npx playwright test --config=playwright.config.ts
+        env:
+          PLAYWRIGHT_ARTIFACT_DIR: ${{ runner.temp }}/playwright-default
+
+      - name: Upload Playwright HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-default-playwright-report
+          path: ${{ runner.temp }}/playwright-default/html-report
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Build
         run: npm run build
