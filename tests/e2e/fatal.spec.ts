@@ -3,14 +3,7 @@ import { setupStrictErrors } from './helpers/strict-errors';
 
 test.describe('Fatal Error Handling', () => {
   test('shows raw DOM screen when container is missing', async ({ page }) => {
-    const errorTracker = setupStrictErrors(page, [
-      {
-        channel: 'console',
-        pathname: '/src/utils/boot.tsx',
-        count: 1,
-        message: '[FATAL] missing-container: Error: Container not found'
-      }
-    ]);
+    const errorTracker = setupStrictErrors(page, []);
     await page.goto('/tests/e2e/fixtures/throwing-render.html');
 
     const div = page.locator('div', { hasText: 'FATAL: Application container (#root) not found.' });

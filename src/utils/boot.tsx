@@ -19,11 +19,26 @@ export async function forceCloseSplash(platform: 'web' | 'tauri', loader: TauriL
   } catch (e) {
     console.error('[FATAL] Failed to set splash_status', e);
   }
+
+  let loadPromise: ReturnType<TauriLoader>;
   try {
-    const { invoke } = await loader();
-    await invoke('close_splashscreen');
+    loadPromise = loader();
   } catch (e) {
     console.error('[FATAL] Failed to invoke close_splashscreen', e);
+    return;
+  }
+
+  let tauriModule: Awaited<ReturnType<TauriLoader>>;
+  try {
+    tauriModule = await loadPromise;
+  } catch {
+    return;
+  }
+
+  try {
+    await tauriModule.invoke('close_splashscreen');
+  } catch {
+    // Historical behavior: asynchronous loader/invoke failures settle silently.
   }
 }
 
@@ -119,7 +134,9 @@ export async function handleFatalError({
   rawFatalAdapter: RawFatalAdapter;
   container?: HTMLElement | null;
 }) {
-  console.error(`[FATAL] ${variant}:`, originalError);
+  if (variant !== 'missing-container') {
+    console.error(`[FATAL] ${variant}:`, originalError);
+  }
 
   const splashPromise = forceCloseSplash(platform, tauriLoader, storage);
 

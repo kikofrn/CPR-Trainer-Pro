@@ -1,105 +1,52 @@
 # Context
 
-- Stack: Tauri 2, Rust backend, React 19, Vite.
-- Release Target: This branch targets the Windows release. macOS lives on separate branches and is ported later. A separate native iOS app exists on other branches.
-- Source of Truth: The Cloudflare R2 bucket served at media.ehacademy.com is the single source of truth for all media content.
-- `src/chapters.ts` must always match the single source of truth, enforced at build time by the reconciliation tooling.
-- Folder path conventions in `src/chapters.ts` must be adhered to.
-- Course identity is by id string, never by array index, in all new code.
-- Verification commands: `npx tsc --noEmit`, `npm run build`, `node scripts/verify-media-urls.mjs`.
-- Rule: Diffs stay minimal and unrelated code is never touched.
-- Plan documents live at docs/plans/.
-- Branch Rule: `web-app` is the integration branch; `web-production` is the only PRODUCTION branch.
+- Stack: React 19, Vite, Tauri 2, TypeScript.
+- Web integration branch: `web-app`; `web-production` remains prohibited until Gate 1 passes and Francisco promotes an approved SHA.
+- Governing plan: `docs/plans/CPR_Trainer_Pro_Web_App_Plan_v5.1_canonical.md` plus the authorized Gate-1 recovery corrections.
+- Cloudflare R2 at `media.ehacademy.com` is the media source of truth; `src/chapters.ts` remains frozen and must reconcile with it.
+- Course identity is by string ID, never array position, in new code.
+- Public-repository rules: no secrets, machine paths, evidence binaries, or blanket staging.
 
-## Current state (session handoff)
+## Gate-1 recovery controls
 
-- **Completed most recently**: Gate 1 Fix Round 4 - P4 completed. Fixed Playwright E2E test locator timeouts, removed forced clicks, added visibility assertions.
-- **In progress**: Gate 1 Fix Round 4 - Currently completing P5a evidence groundwork.
-- **Immediate next task**: P6a (deterministic screenshot harness) and P5b (record Gate-1 evidence).
-- **Known-broken or untested areas**: Gate 1 verification baseline and screenshot evidence is pending collection.
+- Recovery start SHA: `3d0e99a7ea2cd56642265210ab95d9706d4fdebf`.
+- Round anchors retained for audit: `b550d6c`, `51c8cca`, `f188af9`, and HeaderNav parity anchor `898e28d`.
+- Gate 1 is not passed. Claude is the sole independent auditor for this recovery; Francisco owns P9/R8 desktop smoke.
+- Gate 1 creates the first approved visual reference. Historical unapproved SHAs are not visual baselines.
+- Spanish editions remain data-dormant and have no interactive route; accepted static guide prose may mention future Spanish modules.
 
-## Build/Bundle Measurements
-PENDING
+## Build and bundle evidence
 
-## Browser/Chromium/Codec Evidence
-PENDING
+PENDING at the immutable recovery candidate SHA.
 
-## Layer-1 Content Matrix
-PENDING
+## Browser, Chromium, and codec evidence
 
-## 390 px Smoke
-PENDING
+PENDING at the immutable recovery candidate SHA.
 
-## Tauri Isolation Inventory
-PENDING
+## Gate-1 content matrix
 
-## Screenshot Determinism
-PENDING
+PENDING. Required evidence is 15 content rows plus one interactive Spanish-route guard.
 
-## R9/Full Verification
-PENDING
+## Screenshot reference determinism
+
+PENDING. The old Round-4 hashes are invalid because they were produced by an unproven harness and wrong candidate record.
+
+## Tauri isolation inventory
+
+PENDING regeneration from the final candidate.
+
+## R9 full verification
+
+PENDING final clean-install verification.
 
 ## Smoke Test Verification (R8)
+
 R8 desktop smoke: PENDING — requires human observation (Francisco).
-## Gate-1 E2E Proof
-<details><summary>Playwright Output</summary>
-
-`	ext
-Running 2 test files using 1 worker
-
-  ?  1 [app] > tests/e2e/app.spec.ts:5:7 > App Integration > boot with poisoned storage (3.1s)
-  ?  2 [app] > tests/e2e/app.spec.ts:44:7 > App Integration > post-boot injected unhandled rejection (2.2s)
-  ?  3 [fixtures] > tests/e2e/fatal.spec.ts:6:7 > Fatal Error Fallbacks > React error boundary fallback (1.1s)
-  ?  4 [fixtures] > tests/e2e/fatal.spec.ts:16:7 > Fatal Error Fallbacks > Unhandled rejection handler (1.0s)
-  ?  5 [fixtures] > tests/e2e/fatal.spec.ts:25:7 > Fatal Error Fallbacks > Raw fallback when container is missing (0.9s)
-  ?  6 [fixtures] > tests/e2e/fatal.spec.ts:44:7 > Fatal Error Fallbacks > Raw fallback unhandled rejection when container is missing (0.8s)
-
-  6 passed (9.1s)
-`
-</details>
-
-## Gate-1 Screenshot Hashes
-`json
-{
-  "candidateCodeSha": "e5fb89a3c80409080b85f4a2d21bc64880f4bf15",
-  "environment": {
-    "os": "win32",
-    "playwrightVersion": "Version 1.62.1",
-    "chromiumBuild": "bundled",
-    "viewport": "1440x900",
-    "dpr": 1,
-    "locale": "en-US",
-    "timezoneId": "America/New_York",
-    "colorScheme": "light",
-    "videoPolicy": "forced poster state (currentTime=0, paused)"
-  },
-  "hashes": {
-    "passA": {
-      "home-course-list": "fc1a6497421b6347f81270f896f96fd4f86bd36526032a17844be8ded7e2bd6b",
-      "chapter-player": "ef84642e4a0493716fe54c3c03af6c9fcbccf53c155ae6bc93f059aa965b7f4a",
-      "slideshow-slide": "c3e27b8e03128b01b9c2b424226c05463fc6054a881d263c4afc465a3200dc84",
-      "manual-page": "c999d12f03b7f635f6cf257748d43248e30341f82e8a612086cd974abc0dd63b",
-      "send-certs": "affaa6570cf3ebb14fd7d823e8fb79f38a0e10fa99b1a440d8fea12bb1a901df",
-      "how-to": "a7cade0f4826a024b7c2de4c153ccb801eed584eac8210f89180b6d2e5568585",
-      "offline-modal": "5f9f9aac91e44983c48e951a1da60e8ccda5bbe99aa6cfe4e3237a1053388ca7",
-      "coming-soon": "b6da7976646408217a32b4d68ef0f4ca95348fd6251262494d7a79b81f110ad5"
-    },
-    "passB": {
-      "home-course-list": "fc1a6497421b6347f81270f896f96fd4f86bd36526032a17844be8ded7e2bd6b",
-      "chapter-player": "ef84642e4a0493716fe54c3c03af6c9fcbccf53c155ae6bc93f059aa965b7f4a",
-      "slideshow-slide": "c3e27b8e03128b01b9c2b424226c05463fc6054a881d263c4afc465a3200dc84",
-      "manual-page": "c999d12f03b7f635f6cf257748d43248e30341f82e8a612086cd974abc0dd63b",
-      "send-certs": "affaa6570cf3ebb14fd7d823e8fb79f38a0e10fa99b1a440d8fea12bb1a901df",
-      "how-to": "a7cade0f4826a024b7c2de4c153ccb801eed584eac8210f89180b6d2e5568585",
-      "offline-modal": "5f9f9aac91e44983c48e951a1da60e8ccda5bbe99aa6cfe4e3237a1053388ca7",
-      "coming-soon": "b6da7976646408217a32b4d68ef0f4ca95348fd6251262494d7a79b81f110ad5"
-    }
-  },
-  "unexpectedErrors": 0
-}
-`
 
 ## Current state (session handoff)
-- **Completed:** P6a (deterministic screenshot harness rewrite), P3 (cold E2E run stabilization), P5b/P6b (evidence collection).
-- **In progress:** Gate 1 fix round 4 (v1.3 final).
-- **Next steps:** Final verification and commit push (P8).
+
+- Completed most recently: C1 source repair in progress—zero-byte Playwright files restored, fatal E2E expectation returned to historical behavior, and boot logging parity pinned in unit tests.
+- In progress: Gate-1 recovery implementation on top of `3d0e99a`.
+- Immediate next task: verify and commit C1, then stabilize the default Playwright suite in C2.
+- Untested or known-broken: C1 changes have not yet passed verification; deep matrix, screenshot reference, clean verification, archives, push, CI, audit, and R8 are pending.
+- Gotcha: no evidence from the prior Round-4 `CONTEXT.md` is trustworthy; only newly captured raw logs and checksums may be recorded.
