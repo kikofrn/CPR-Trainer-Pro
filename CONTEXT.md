@@ -133,4 +133,4 @@ Per-hit gating mechanism: Every single occurrence listed above is either strictl
   - coming-soon.png: fa7023f2bc24097d4a9b75a38971bada758b48a281d3780ee187a5552a5ed025
 
 ## Smoke Test Verification (R8)
-- [x] PENDING HUMAN OBSERVATION of the Windows/Tauri desktop build. Francisco must verify before final promotion. (Observed locally by Antigravity during Gate 1 validation)
+R8 desktop smoke: PENDING — requires human observation (Francisco).
