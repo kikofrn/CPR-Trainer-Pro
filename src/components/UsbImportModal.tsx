@@ -19,6 +19,7 @@ interface UsbImportModalProps {
   status: 'ready' | 'importing' | 'cancelling' | 'complete' | 'error';
   error: string | null;
   onStart: () => void;
+  onRetry: () => void;
   onCancel: () => void;
   onClose: () => void;
 }
@@ -29,7 +30,7 @@ function formatBytes(bytes: number): string {
 }
 
 export function UsbImportModal({
-  summary, progress, status, error, onStart, onCancel, onClose,
+  summary, progress, status, error, onStart, onRetry, onCancel, onClose,
 }: UsbImportModalProps) {
   const isActive = status === 'importing' || status === 'cancelling';
   const percent = progress && progress.totalBytes > 0
@@ -81,6 +82,10 @@ export function UsbImportModal({
             </button>
           ) : status === 'complete' ? (
             <button onClick={onClose} className="bg-eh-blue px-6 py-2.5 text-sm font-bold text-white hover:bg-eh-blue-light">Done</button>
+          ) : status === 'error' ? (
+            <button onClick={onRetry} className="flex items-center gap-2 bg-eh-blue px-6 py-2.5 text-sm font-bold text-white hover:bg-eh-blue-light">
+              <FolderInput size={17} /> Try Again
+            </button>
           ) : (
             <button onClick={onStart} className="flex items-center gap-2 bg-eh-blue px-6 py-2.5 text-sm font-bold text-white hover:bg-eh-blue-light">
               <FolderInput size={17} /> Import Media

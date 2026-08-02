@@ -596,6 +596,10 @@ fn encoded_media_url(filename: &str, version: Option<&str>) -> String {
     }
 }
 
+fn should_reset_partial_download(existing_size: u64, expected_size: u64) -> bool {
+    existing_size >= expected_size
+}
+
 #[allow(clippy::too_many_arguments)]
 async fn download_media_file_inner(
     app: &tauri::AppHandle,
@@ -625,7 +629,7 @@ async fn download_media_file_inner(
         .await
         .map(|metadata| metadata.len())
         .unwrap_or(0);
-    if existing_size > expected_size {
+    if should_reset_partial_download(existing_size, expected_size) {
         tokio::fs::remove_file(&partial)
             .await
             .map_err(|error| format!("Unable to reset invalid partial download: {error}"))?;
@@ -645,6 +649,12 @@ async fn download_media_file_inner(
         _ = cancellation.cancelled() => return Err("Download cancelled".to_string()),
         result = request.send() => result.map_err(|error| format!("Download request failed: {error}"))?,
     };
+    if response.status() == reqwest::StatusCode::RANGE_NOT_SATISFIABLE {
+        tokio::fs::remove_file(&partial)
+            .await
+            .map_err(|error| format!("Unable to reset rejected partial download: {error}"))?;
+        return Err("Download server rejected the resume range with HTTP 416".to_string());
+    }
     if !response.status().is_success() {
         return Err(format!(
             "Download server returned HTTP {}",
@@ -1561,6 +1571,13 @@ pub fn run() {
             register_power_notifications(app.handle().clone());
             Ok(())
         })
+        .on_window_event(|window, event| {
+            if window.label() == "main" && matches!(event, tauri::WindowEvent::Destroyed) {
+                if let Some(assertion) = window.app_handle().try_state::<DisplaySleepAssertion>() {
+                    assertion.release_nonfatal();
+                }
+            }
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
@@ -1645,6 +1662,13 @@ mod tests {
         assert_eq!(normalized_etag("W/\"abc\""), "abc");
         assert_eq!(if_range_etag("abc-2"), "\"abc-2\"");
         assert_eq!(if_range_etag("\"abc-2\""), "\"abc-2\"");
+    }
+
+    #[test]
+    fn partial_download_resets_at_or_above_expected_size() {
+        assert!(!should_reset_partial_download(99, 100));
+        assert!(should_reset_partial_download(100, 100));
+        assert!(should_reset_partial_download(101, 100));
     }
 
     #[test]

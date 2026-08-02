@@ -408,6 +408,7 @@ export default function App() {
       if (chapter && chapter.filename) {
         const clean = chapter.filename.trim().replace(/^\//, '');
         if (dlState.fileStatuses[clean]) {
+          if (isPresentingExternallyRef.current) return;
           const targetIndex = downloadingChapterIndex;
           setDownloadingChapterIndex(null);
           
@@ -431,6 +432,7 @@ export default function App() {
       if (manual && manual.filename) {
         const clean = manual.filename.trim().replace(/^\//, '');
         if (dlState.fileStatuses[clean]) {
+          if (isPresentingExternallyRef.current) return;
           setSelectedManual(manual);
           setShowSidebar(true);
           setDownloadingManualId(null);
@@ -448,6 +450,7 @@ export default function App() {
       if (slide && slide.filename) {
         const clean = slide.filename.trim().replace(/^\//, '');
         if (dlState.fileStatuses[clean]) {
+          if (isPresentingExternallyRef.current) return;
           const targetIndex = downloadingSlideIndex;
           setDownloadingSlideIndex(null);
           
@@ -513,6 +516,11 @@ export default function App() {
   const activeSlide = activeSlideshow ? activeSlideshow.slides[activeSlideIndex] : null;
 
   const handleItemClick = (type: string, index: number) => {
+    if (isPresentingExternallyRef.current) {
+      setPresenterError('Stop presenting to switch courses');
+      return;
+    }
+
     let isCpr = false;
     if (type === 'video') {
       const id = COURSES[index]?.id;
@@ -1245,6 +1253,17 @@ export default function App() {
     }
   };
 
+  const handleRetryUsbImport = () => {
+    if (usbFolder) {
+      void handleStartUsbImport();
+      return;
+    }
+    setUsbSummary(null);
+    setUsbProgress(null);
+    setUsbError(null);
+    void handleOpenUsbImport();
+  };
+
   const handleCancelUsbImport = async () => {
     if (!usbImportActiveRef.current) return;
     usbCancelRequestedRef.current = true;
@@ -1659,6 +1678,7 @@ export default function App() {
           status={usbStatus}
           error={usbError}
           onStart={() => void handleStartUsbImport()}
+          onRetry={handleRetryUsbImport}
           onCancel={() => void handleCancelUsbImport()}
           onClose={() => {
             if (usbImportActiveRef.current) return;

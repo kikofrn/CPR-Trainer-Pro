@@ -87,7 +87,7 @@ export function SlideshowPlayer({
               />
             ) : (
               <video
-                ref={(el) => { slideVideoRef.current = el; }}
+                ref={(el) => { if (el) slideVideoRef.current = el; }}
                 src={resolveSlideUrl(activeSlide, m, fileStatuses)}
                 className="w-full h-full object-contain"
                 muted={isMuted}

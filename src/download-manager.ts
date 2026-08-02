@@ -137,6 +137,7 @@ class DownloadManager {
       this.manifestPromise = null;
     }
     if (!this.manifestPromise) {
+      this.manifestExpiresAt = Date.now() + MANIFEST_CACHE_TTL_MS;
       this.manifestPromise = (async () => {
         const controller = new AbortController();
         const timeout = window.setTimeout(() => controller.abort(), 10000);
@@ -182,11 +183,6 @@ class DownloadManager {
     }
     this.manifestPromise = Promise.resolve(manifest);
     this.manifestExpiresAt = Date.now() + MANIFEST_CACHE_TTL_MS;
-  }
-
-  public invalidateManifest(): void {
-    this.manifestPromise = null;
-    this.manifestExpiresAt = 0;
   }
 
   public async setSuppressed(suppressed: boolean): Promise<void> {
