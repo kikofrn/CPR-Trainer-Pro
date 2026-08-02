@@ -28,5 +28,11 @@ jobs:
       - name: Test (Unit)
         run: npx vitest run
 
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Test (E2E, default suite)
+        run: npx playwright test --config=playwright.config.ts
+
       - name: Build
         run: npm run build

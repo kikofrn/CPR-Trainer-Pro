@@ -21,7 +21,9 @@ PENDING at the immutable recovery candidate SHA.
 
 ## Browser, Chromium, and codec evidence
 
-PENDING at the immutable recovery candidate SHA.
+- Harness toolchain: Playwright `1.62.1`; bundled Chromium `151.0.7922.34` on the implementation machine.
+- CI installs bundled Chromium with `npx playwright install --with-deps chromium` and runs only the four-test default config. The 16-row Gate-1 matrix remains an explicit, separate audit command.
+- Official browser and codec evidence remains PENDING at the immutable recovery candidate SHA.
 
 ## Gate-1 content matrix
 
@@ -47,7 +49,8 @@ R8 desktop smoke: PENDING — requires human observation (Francisco).
 
 - Completed: C1 `c2991ae` restored boot parity and passed 17/17 focused unit tests; C2 `8081611` stabilized the default Playwright suite and passed 4/4.
 - Completed: C3 `4d0ba41` added the isolated matrix; discovery is exactly 16 tests in one file and the complete serial pre-candidate run passed 16/16 in 1.9 minutes.
-- Completed most recently: C4 deterministic screenshot harness; seven surfaces completed two byte-identical passes with all strict runtime-error channels empty.
-- In progress: commit C4, then implement CI and governance updates.
-- Untested or known-broken: official candidate evidence, CI/governance, clean verification, archives, push, independent audit, and R8 are pending.
+- Completed: C4 `b870683` made the seven-surface screenshot harness deterministic; both pre-candidate passes were byte-identical with all strict runtime-error channels empty.
+- Completed most recently: C5 added the four-test default E2E suite to web CI and marked only the now-complete Phase 1 harness checkbox; lint, 34/34 unit tests, production build, and 4/4 default E2E tests passed.
+- In progress: commit C5, then freeze the immutable candidate and regenerate all official evidence from that exact SHA.
+- Untested or known-broken: official candidate evidence, clean verification, archives, push, independent audit, and R8 are pending.
 - Gotcha: no evidence from the prior Round-4 `CONTEXT.md` is trustworthy; only newly captured raw logs and checksums may be recorded.
