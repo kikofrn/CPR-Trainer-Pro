@@ -1,4 +1,4 @@
-# CPR Trainer Pro - Web Phase 3 Implementation Plan, Revision 2.1
+# CPR Trainer Pro - Web Phase 3 Implementation Plan, Revision 2.1-B
 
 Status: Francisco-authorized implementation plan
 
@@ -8,7 +8,7 @@ Implementer: Codex
 
 Independent Gate-3 auditor: Claude
 
-This document combines Codex Revision 2 with Claude's Revision 2.1 amendment sheet. It is the complete governing plan for this implementation round. Where an amendment changes an earlier rule, the amended rule below is controlling. The canonical product plan remains `docs/plans/CPR_Trainer_Pro_Web_App_Plan_v5.1_canonical.md`; this document is the executable round plan and records adjudicated clarifications that must also be mirrored into the canonical records.
+This document combines Codex Revision 2 with Claude's Revision 2.1 Amendment Sheet A and Francisco-authorized Amendment Sheet B. It is the complete governing plan for this implementation round. Precedence on overlap is Sheet B, then Sheet A, then Revision 2. The canonical product plan remains `docs/plans/CPR_Trainer_Pro_Web_App_Plan_v5.1_canonical.md`; this document is the executable round plan and records adjudicated clarifications that must also be mirrored into the canonical records.
 
 ## 0. Non-negotiable preflight and round sequencing
 
@@ -32,7 +32,7 @@ Authorized product files and surfaces:
 - `src/components/Sidebar.tsx`
 - `src/components/ManualFlipbook.tsx`
 - Conditional copy-only edits in `src/components/SendCertsPage.tsx` and `src/components/HowToGuideModal.tsx`, after Francisco approves exact business/legal wording
-- Focused new pure modules under `src/`, `src/utils/`, and focused test helpers/specs
+- Focused new pure modules under `src/`, `src/utils/`, and focused test helpers/specs, including `src/config/downloads.ts`, `src/utils/platform-detect.ts`, and `src/components/DownloadAppModal.tsx`
 - `src/index.css`, `index.html`, `public/_headers`, and only the specifically justified package/lockfile changes
 - Playwright/Vitest configuration and focused tests
 - `scripts/capture-reference-screenshots.mjs` and focused audit-tooling helpers
@@ -47,7 +47,7 @@ Forbidden unless a new written authorization is obtained:
 - media assets, screenshot evidence, generated diffs, archives, or machine paths
 - `.gitignore` churn or deletion/weakening of existing tests
 - new runtime dependencies
-- dependencies other than the three exact `@fontsource` packages approved below
+- dependencies other than the four exact `@fontsource` packages approved below
 - a second permanent slideshow video element
 - wiring the local visual comparator into routine web CI
 - any push beyond the two authorized pushes, except a third CSP-corrective push explicitly authorized by Francisco
@@ -87,7 +87,7 @@ Harness-engine changes are a separate logical commit or commits and may not be m
 - [ ] Enhance the local capture tooling with the already-installed `sharp`; add no dependency.
 - [ ] Validate image dimensions and compute exact hashes, changed-pixel counts, ratios, diff bounding boxes, and useful geometry diagnostics.
 - [ ] The comparator must understand the eight named surfaces and explicit masks only; it must never silently mask a difference.
-- [ ] Font-change acceptance is stricter than a generic rasterization exception: page geometry must remain unchanged, changed pixels must be confined to measured text-node rectangles, and non-text changed pixels must remain under 0.1%.
+- [ ] Sheet B supersedes the prior text-bounds-only font rule for this round: the Futura-to-Jost metric change on non-Apple systems requires a declared full deliberate re-baseline of all eight surfaces. Geometry and text-rectangle capture remain required to prove container-level layout is sane and that the reflow sweep found every clipping or overflow defect.
 - [ ] Store screenshots, masks, generated diffs, and reports outside the repository. Never serialize machine-specific paths into committed output.
 - [ ] Keep the comparator as audit tooling only; never wire it into `web-ci.yml`.
 
@@ -196,12 +196,17 @@ Explicit visual acceptance on web: image-to-video and video-to-image transitions
 
 ### 8.2 Fonts
 
-- [ ] Replace the network Google Fonts stylesheet with exactly pinned package fonts matching the audited mac-build implementation:
-  - `@fontsource/dm-sans@5.3.0`
-  - `@fontsource/playfair-display@5.3.0`
+- [ ] Replace the network Google Fonts stylesheet with exactly pinned local packages:
   - `@fontsource/inter@5.3.0`
-- [ ] Preserve weight/style coverage and verify fallback-free local loading.
-- [ ] These are the only project dependency additions authorized in this round.
+  - `@fontsource/playfair-display@5.3.0`
+  - `@fontsource/jetbrains-mono@5.3.0`
+  - `@fontsource/jost@5.3.0`
+- [ ] Self-host the same Inter, Playfair Display, and JetBrains Mono weights/styles as the audited mac-build implementation.
+- [ ] Self-host Jost latin normal weights 400, 500, 600, 700, 800, and 900 with `font-display: swap`; verify every referenced WOFF2 exists and re-run the source weight inventory before finalizing coverage.
+- [ ] Use the authorized default stacks: `"Futura", "Jost", "Inter", ui-sans-serif, system-ui, sans-serif` and `"Futura", "Jost", "Playfair Display", serif`. Remove Calibri; leave the mono stack unchanged.
+- [ ] Run the full 1440 px eight-surface matrix plus header, both selectors, sidebar, Settings, Send Certs, and How-To reflow sweep. Fix clipping, truncation, overflow, and undersized fixed-width controls; do not classify those defects as re-baseline candidates.
+- [ ] Record measured local-font/LCP deltas. `index.css` is shared: Apple keeps real Futura first; future Windows-desktop adoption is a separate decision and is not part of this web round.
+- [ ] These four font packages are the only project dependency additions authorized in this round.
 
 ### 8.3 LCP asset
 
@@ -214,6 +219,16 @@ Explicit visual acceptance on web: image-to-video and video-to-image transitions
 The suggested title `CPR Trainer Pro | Everyday Hero Academy`, description, `og:site_name`, and image alt text are proposals, not approved copy. Implement metadata only with exact wording Francisco explicitly approves; approval of a quoted proposed set verbatim counts. The current shipped strings differ: `index.html` uses `EH Academy - Instructor App` (typographic dash in the source), while Tauri window chrome is configured separately as `EH Academy - CPR Trainer Pro` (typographic dash in the source).
 
 Any `index.html` title/meta edit is a shared-document change, like font loading: it also changes the Tauri WebView document title. The visible desktop window title remains governed by untouched `src-tauri/tauri.conf.json`. Record this distinction in `CONTEXT.md` and verify unchanged visible desktop chrome during cross-platform QA. Do not change business/legal wording in Send Certs or How-To without exact approval.
+
+### 8.5 Web-only offline-download affordance
+
+- [ ] Add typed download configuration for Windows, macOS, and iOS. Use the verified evergreen Windows URL `https://github.com/kikofrn/CPR-Trainer-Pro/releases/latest/download/CPRTrainerPro-Setup.exe`; the vanity hostname is not the installer redirect as of authorization. Keep macOS and iOS URLs null and show disabled `Coming soon` rows.
+- [ ] Add a pure, unit-tested platform detector that prefers `navigator.userAgentData.platform`, falls back to the user-agent string, distinguishes touch-capable iPadOS from macOS, and treats detection as presentation-only.
+- [ ] Add a web-only header icon button titled and labelled `Download app for offline use`. App computes its visibility; hide it whenever a course, slideshow, manual, or Send Certs content surface is open.
+- [ ] Add one shared download modal with backdrop, X, and Escape close, initial focus, focus restoration, a highlighted detected-platform action, secondary available-platform actions, and disabled `Coming soon` rows. Windows uses ordinary anchor navigation; a future iOS URL uses `openExternalUrl()`.
+- [ ] On web only, replace the Settings label with a separate `Offline Training?` button that opens the same modal. Preserve the adjacent easter-egg Info button byte-identical and preserve the current desktop `Offline Training Mode` label/behavior.
+- [ ] Add unit coverage for the detector and config, plus default Playwright coverage for header visibility, both modal entry points, close behavior, the configured Windows href, desktop isolation, and console cleanliness.
+- [ ] Declare the header icon and Settings label as intended re-baseline diffs. Record the configuration-driven, presentation-only decision and the optional future iOS Smart App Banner.
 
 ## 9. CSP staging, deployment evidence, and pushes
 
@@ -260,7 +275,7 @@ A third push exists only to correct CSP after Push 2 and requires Francisco's ex
 - [ ] Append dated `DECISIONS.md` entries for canonical W12-W17 and the adjudicated section 4A/4C semantic amendments implemented here: `playbackIntent`; `failedRequest`; Replay as an explicit restart command; the 15-second readiness watchdog plus separate 10-second stall timer; `MediaError`-based failure classification with no HTTP-status claims; reconnect to ready-paused with explicit Resume; and one permanent web slideshow element.
 - [ ] Mirror these section 4A/4C amendments into the canonical plan, following the Gate-1 records-commit precedent.
 - [ ] Record in `CONTEXT.md` all shared-document effects, every authorized cross-platform safety/shared change, any Tauri structural divergence with file/line, verification evidence, remaining limitations, and the exact next action.
-- [ ] Record that `npx --yes wrangler@4.118.0` is a pinned tool download, not a project dependency; the dependency whitelist remains exactly the three font packages.
+- [ ] Record that `npx --yes wrangler@4.118.0` is a pinned tool download, not a project dependency; the dependency whitelist remains exactly the four font packages.
 - [ ] Keep this plan's checkboxes current after each meaningful step.
 
 ### 10.3 Copy and Gate-3 sequencing
@@ -282,11 +297,14 @@ The implementation should use the smallest coherent version of this map; split a
 7. `web(phase-3): make slideshow media lifecycle persistent`
 8. `web(phase-3): add manual loading failure recovery`
 9. `web(phase-3): optimize web shell and local fonts`
-10. `web(phase-3): record verification and report-only CSP`
-11. Push 1 and hosted verification
-12. `web(phase-3): enforce verified content security policy`
-13. Push 2 and hosted enforcing-CSP smoke
+10. `web(phase-3): add offline app download affordance`
+11. `web(phase-3): record verification and report-only CSP`
+12. Push 1 and hosted verification
+13. `web(phase-3): enforce verified content security policy`
+14. Push 2 and hosted enforcing-CSP smoke
 
 ## 12. Amendment audit result
 
 Codex independently checked all eight Revision 2.1 amendments against the approved Git state, current source, Gate-1 evidence inventory, package registry pin, and canonical governance. All eight are accurate and worthwhile. Amendment 2 is accepted specifically as an approval boundary: it does not itself approve replacement metadata or business/legal copy.
+
+Codex independently checked Sheet B against the authorized branch and current external endpoints. Its architecture and sequencing are accepted with the governing clarifications recorded above: Sheet B corrects the prior `dm-sans` transcription to the mac-build's actual JetBrains Mono package; the GitHub evergreen installer is the selected default because the vanity hostname is not currently an installer redirect; Send Certs is included in the hidden-content rule; and desktop retains its existing Settings label while the repurposed button/modal remains strictly web-only.
