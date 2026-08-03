@@ -160,7 +160,8 @@ const surfaces = [
       await expand.waitFor({ state: 'visible' });
       await expand.click();
       await page.getByRole('button', { name: 'Settings', exact: true }).click();
-      await page.getByText('Offline Training Mode', { exact: true }).waitFor();
+      await page.getByRole('button', { name: 'Offline Training?', exact: true }).waitFor();
+      await page.getByTitle('Download app for offline use').waitFor();
       await page.getByRole('button', { name: 'Guide', exact: true }).waitFor();
       for (const desktopOnlyControl of [
         'All Offline Media Downloaded',
