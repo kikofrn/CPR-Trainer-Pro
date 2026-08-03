@@ -246,3 +246,24 @@ test.describe('Phase 3 persistent slideshow media', () => {
     errors.verify();
   });
 });
+
+test.describe('Phase 3 manual failure recovery', () => {
+  test('document failure offers Retry and Close, then recovers without a blank reader', async ({ page }) => {
+    const failedManual = (url: URL) => url.href.endsWith('/student_manual.pdf');
+    await page.route(failedManual, route => route.abort('failed'));
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await page.locator('[data-app-ready="true"]').waitFor();
+    await page.getByTitle('Browse Student and Instructor Handbooks').click();
+    await page.getByRole('button', { name: /Student Manual/i }).first().click();
+    await page.getByRole('button', { name: 'OPEN STUDENT MANUAL', exact: true }).click();
+
+    const alert = page.getByRole('alert').filter({ hasText: 'Manual unavailable' });
+    await expect(alert).toBeVisible({ timeout: 15_000 });
+    await expect(alert.getByRole('button', { name: /Retry/ })).toBeVisible();
+    await expect(alert.getByRole('button', { name: 'Close', exact: true })).toBeVisible();
+    await page.unroute(failedManual);
+    await alert.getByRole('button', { name: /Retry/ }).click();
+    await expect(page.locator('canvas').filter({ visible: true }).first()).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText('Manual Flipbook Reader', { exact: true })).toBeVisible();
+  });
+});

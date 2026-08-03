@@ -1493,6 +1493,7 @@ export default function App() {
                   }}
                   onOutlineLoaded={(outline) => setManualOutline(outline.filter((item: any) => item.title !== 'Untitled'))}
                   showEasterEgg={easterEggLevel > 0}
+                  isOnline={isOnline}
                 />
               </ErrorBoundary>
             )}

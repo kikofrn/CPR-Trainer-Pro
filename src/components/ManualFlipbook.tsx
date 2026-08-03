@@ -10,7 +10,10 @@ import {
   ZoomOut, 
   Maximize2, 
   Search,
-  Loader2
+  Loader2,
+  AlertTriangle,
+  WifiOff,
+  RotateCcw
 } from 'lucide-react';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
@@ -34,9 +37,19 @@ interface ManualFlipbookProps {
   title: string;
   onOutlineLoaded?: (outline: any[]) => void;
   showEasterEgg?: boolean;
+  isOnline?: boolean;
 }
 
-const PageContent = React.forwardRef<HTMLDivElement, { pageNumber: number; width: number; height: number; scale: number; showEasterEgg?: boolean; renderPDF?: boolean }>((props, ref) => {
+const PageContent = React.forwardRef<HTMLDivElement, {
+  pageNumber: number;
+  width: number;
+  height: number;
+  scale: number;
+  showEasterEgg?: boolean;
+  renderPDF?: boolean;
+  onPageError: (pageNumber: number, error: unknown) => void;
+  onRetryPage: () => void;
+}>((props, ref) => {
   return (
     <div className="bg-white shadow-2xl relative overflow-hidden w-full h-full flex items-center justify-center" ref={ref} data-density="hard">
       {props.renderPDF !== false ? (
@@ -47,6 +60,21 @@ const PageContent = React.forwardRef<HTMLDivElement, { pageNumber: number; width
           className="w-full h-full flex items-center justify-center [&>.react-pdf__Page__canvas]:!w-full [&>.react-pdf__Page__canvas]:!h-full [&>.react-pdf__Page__canvas]:!object-fill"
           renderTextLayer={false}
           renderAnnotationLayer={false}
+          onLoadError={(error) => props.onPageError(props.pageNumber, error)}
+          onRenderError={(error) => props.onPageError(props.pageNumber, error)}
+          error={
+            <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center" role="alert">
+              <AlertTriangle className="text-eh-red" size={24} />
+              <p className="text-xs font-bold text-gray-700">Page {props.pageNumber} could not be rendered.</p>
+              <button
+                type="button"
+                onClick={props.onRetryPage}
+                className="rounded-full bg-eh-red px-4 py-2 text-[10px] font-black uppercase tracking-wider text-white"
+              >
+                Retry Page
+              </button>
+            </div>
+          }
           loading={
             <div className="flex items-center justify-center h-full">
               <Loader2 className="animate-spin text-eh-red/30" />
@@ -67,7 +95,7 @@ const PageContent = React.forwardRef<HTMLDivElement, { pageNumber: number; width
 
 PageContent.displayName = 'PageContent';
 
-const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(({ pdfUrl, onClose, title, onOutlineLoaded, showEasterEgg }, ref) => {
+const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(({ pdfUrl, onClose, title, onOutlineLoaded, showEasterEgg, isOnline = navigator.onLine }, ref) => {
   const [numPages, setNumPages] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState(0);
   const [zoomScale, setZoomScale] = useState(1);
@@ -81,6 +109,10 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
   const pdfRef = useRef<any>(null);
   const [searchResults, setSearchResults] = useState<{page: number, text: string}[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [documentError, setDocumentError] = useState<string | null>(null);
+  const [documentRetryToken, setDocumentRetryToken] = useState(0);
+  const [pageRetryToken, setPageRetryToken] = useState(0);
+  const [failedPage, setFailedPage] = useState<number | null>(null);
   
   const flipbookRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -122,6 +154,7 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
   }));
 
   async function onDocumentLoadSuccess(pdf: any) {
+    setDocumentError(null);
     setNumPages(pdf.numPages);
     pdfRef.current = pdf;
     try {
@@ -132,6 +165,26 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
       console.error("Error loading outline:", err);
     }
   }
+
+  const onDocumentLoadError = () => {
+    setDocumentError(isOnline
+      ? 'The training manual could not be loaded. Your previous view has been kept where the browser allows it.'
+      : 'You are offline. Reconnect, then retry the training manual.');
+  };
+
+  const retryDocument = () => {
+    setDocumentError(null);
+    setDocumentRetryToken(token => token + 1);
+  };
+
+  const onPageError = (pageNumber: number) => {
+    setFailedPage(pageNumber);
+  };
+
+  const retryPage = () => {
+    setFailedPage(null);
+    setPageRetryToken(token => token + 1);
+  };
 
   const resolveDestination = async (dest: any) => {
     if (!pdfRef.current || !dest) return;
@@ -403,8 +456,11 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
             }}
           >
           <Document
+          key={`${pdfUrl}-${documentRetryToken}`}
           file={pdfUrl}
           onLoadSuccess={onDocumentLoadSuccess}
+          onLoadError={onDocumentLoadError}
+          error={null}
           loading={
             <div className="flex flex-col items-center gap-4">
               <video src="/CPR-Dummies.mp4" autoPlay loop muted playsInline className="w-32 h-32 object-cover rounded-2xl shadow-2xl" />
@@ -446,13 +502,15 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
                 const isClose = Math.abs(index - currentPage) <= 4;
                 return (
                   <PageContent 
-                    key={`page_${index + 1}`} 
+                    key={`page_${index + 1}_${pageRetryToken}`}
                     pageNumber={index + 1} 
                     width={pageWidth}
                     height={pageHeight}
                     scale={1}
                     showEasterEgg={showEasterEgg}
                     renderPDF={isClose}
+                    onPageError={onPageError}
+                    onRetryPage={retryPage}
                   />
                 );
               })}
@@ -460,6 +518,42 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
           )}
         </Document>
           </div>
+
+          {documentError && (
+            <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/80 p-8 backdrop-blur-sm" role="alert">
+              <div className="max-w-md rounded-2xl border border-eh-red/30 bg-black/95 p-7 text-center shadow-2xl">
+                {isOnline ? (
+                  <AlertTriangle className="mx-auto text-eh-red" size={32} />
+                ) : (
+                  <WifiOff className="mx-auto text-eh-blue" size={32} />
+                )}
+                <h3 className="mt-4 text-lg font-bold text-eh-peach">Manual unavailable</h3>
+                <p className="mt-2 text-sm leading-relaxed text-eh-peach/60">{documentError}</p>
+                <div className="mt-6 flex justify-center gap-3">
+                  <button
+                    type="button"
+                    onClick={retryDocument}
+                    className="flex items-center gap-2 rounded-full bg-eh-red px-5 py-2 text-xs font-black uppercase tracking-wider text-white cursor-pointer"
+                  >
+                    <RotateCcw size={14} /> Retry
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="rounded-full border border-eh-peach/20 px-5 py-2 text-xs font-black uppercase tracking-wider text-eh-peach cursor-pointer"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {failedPage !== null && !documentError && (
+            <div className="absolute left-6 top-6 z-30 rounded-xl border border-eh-red/30 bg-black/90 px-4 py-3 shadow-xl" role="status">
+              <p className="text-xs font-bold text-eh-peach">Page {failedPage} needs to be retried.</p>
+            </div>
+          )}
         </div>
       </div>
 
