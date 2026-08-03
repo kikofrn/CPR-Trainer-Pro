@@ -257,7 +257,7 @@ export default function App() {
   const [activeCourseIndex, setActiveCourseIndex] = useState<number | null>(null);
   const [activeChapterIndex, setActiveChapterIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [showSidebar, setShowSidebar] = useState(true);
+  const [showSidebar, setShowSidebar] = useState(isTauri);
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(1);
   const volumeRef = useRef(volume);
@@ -1446,7 +1446,14 @@ export default function App() {
           <div className={`absolute inset-0 flex flex-col items-center justify-center p-8 transition-opacity duration-1000 pointer-events-none ${
             (((!activeCourse && activeTab === 'video') || (!selectedManual && activeTab === 'manual') || (!activeSlideshow && activeTab === 'slideshow')) && activeTab !== 'send-certs') ? 'opacity-100' : 'opacity-0'
           }`}>
-             <img src="/eha-idle-screen.png" alt="EH Academy" className="w-full max-w-3xl object-contain mb-auto mt-auto" />
+             <img
+               src="/eha-idle-screen.png"
+               alt="EH Academy"
+               width={1024}
+               height={691}
+               fetchPriority="high"
+               className="w-full max-w-3xl object-contain mb-auto mt-auto"
+             />
              
              {/* Copyright Banner on Idle Screen */}
              <div className="mt-auto pt-8 w-full max-w-4xl text-center">

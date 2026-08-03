@@ -546,7 +546,7 @@ export const Sidebar = React.memo(function Sidebar({
               ) : (
                 activeTab !== 'send-certs' ? (
                   <div className="px-5 py-8 flex flex-col gap-4">
-                    <h3 className="text-xl font-black uppercase tracking-[0.15em] text-eh-red text-center leading-snug whitespace-nowrap">
+                    <h3 className="text-lg font-black uppercase tracking-[0.1em] text-eh-red text-center leading-snug whitespace-nowrap">
                       Instructor Courses
                     </h3>
                     
