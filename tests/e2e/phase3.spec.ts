@@ -267,3 +267,50 @@ test.describe('Phase 3 manual failure recovery', () => {
     await expect(page.getByText('Manual Flipbook Reader', { exact: true })).toBeVisible();
   });
 });
+
+test.describe('Phase 3 offline app download affordance', () => {
+  test('opens from the header and Settings while remaining hidden during course content', async ({ page }) => {
+    const errors = setupStrictErrors(page, []);
+    const downloadButton = page.getByTitle('Download app for offline use');
+    const expectedWindowsUrl = 'https://github.com/kikofrn/CPR-Trainer-Pro/releases/latest/download/CPRTrainerPro-Setup.exe';
+
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await page.locator('[data-app-ready="true"]').waitFor();
+    await expect(downloadButton).toBeVisible();
+
+    await downloadButton.click();
+    const headerDialog = page.getByRole('dialog', { name: 'Download the app for offline use' });
+    await expect(headerDialog).toBeVisible();
+    await expect(headerDialog.getByRole('link', { name: 'Download for Windows' })).toHaveAttribute('href', expectedWindowsUrl);
+    await expect(headerDialog.getByRole('button', { name: 'Coming soon' })).toHaveCount(2);
+    await page.getByTestId('download-app-backdrop').click({ position: { x: 5, y: 5 } });
+    await expect(headerDialog).toBeHidden();
+    await expect(downloadButton).toBeFocused();
+
+    await downloadButton.click();
+    await expect(headerDialog).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(headerDialog).toBeHidden();
+    await expect(downloadButton).toBeFocused();
+
+    await page.getByTitle('Select CPR & AED Course Edition').click();
+    await page.getByRole('button', { name: 'START COURSE', exact: true }).click();
+    await expect(downloadButton).toHaveCount(0);
+    const sidebarCollapse = page.getByTitle('Collapse Sidebar Menu');
+    if (await sidebarCollapse.count()) await sidebarCollapse.click();
+    await page.locator('main').getByTitle('Return to Main Menu').click();
+    await expect(downloadButton).toBeVisible();
+
+    await page.getByTitle('Expand Sidebar Menu').click();
+    await page.getByRole('button', { name: 'Settings', exact: true }).click();
+    const settingsEntry = page.getByRole('button', { name: 'Offline Training?', exact: true });
+    await expect(settingsEntry).toBeVisible();
+    await settingsEntry.click();
+    const settingsDialog = page.getByRole('dialog', { name: 'Download the app for offline use' });
+    await expect(settingsDialog).toBeVisible();
+    await settingsDialog.getByRole('button', { name: 'Close download dialog' }).click();
+    await expect(settingsDialog).toBeHidden();
+    await expect(settingsEntry).toBeFocused();
+    errors.verify();
+  });
+});

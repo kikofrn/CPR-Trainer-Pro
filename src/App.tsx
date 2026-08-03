@@ -25,6 +25,7 @@ import { Sidebar } from './components/Sidebar';
 import { VideoPlayer } from './components/VideoPlayer';
 import { SlideshowPlayer } from './components/SlideshowPlayer';
 import type { WebSlideshowControls } from './components/WebSlideshowMedia';
+import { DownloadAppModal } from './components/DownloadAppModal';
 import {
   MediaSelectionController,
   type MediaControllerState,
@@ -293,6 +294,7 @@ export default function App() {
   const [expandedManualSections, setExpandedManualSections] = useState<Record<number, boolean>>({});
   const [manualOutline, setManualOutline] = useState<any[]>([]);
   const [showHowTo, setShowHowTo] = useState(false);
+  const [showDownloadApp, setShowDownloadApp] = useState(false);
   const [activeGuidePath, setActiveGuidePath] = useState<'menu' | 'app' | 'teaching' | 'portal'>('menu');
   const [portalStep, setPortalStep] = useState(1);
   
@@ -521,6 +523,12 @@ export default function App() {
   
   
   const activeSlideshow = activeSlideshowIndex !== null ? SLIDESHOWS[activeSlideshowIndex] : null;
+  const showDownloadAffordance = !isTauri
+    && videoDisplayCourse === null
+    && activeSlideshow === null
+    && selectedManual === null
+    && activeTab !== 'send-certs'
+    && !showHowTo;
   const activeSlide = activeSlideshow ? activeSlideshow.slides[activeSlideIndex] : null;
 
   const handleItemClick = (type: string, index: number) => {
@@ -1269,6 +1277,11 @@ export default function App() {
 
   return (
     <div className="flex h-screen bg-black text-eh-peach overflow-hidden medical-gradient relative">
+      <AnimatePresence>
+        {!isTauri && showDownloadApp && (
+          <DownloadAppModal onClose={() => setShowDownloadApp(false)} />
+        )}
+      </AnimatePresence>
       {showContentUpdatePrompt && (
         <UpdatePrompt
           files={contentUpdateFiles}
@@ -1388,6 +1401,7 @@ export default function App() {
             setPortalStep={setPortalStep}
             updateAvailable={updateAvailable}
             setUpdateAvailable={setUpdateAvailable}
+            onOpenDownloadApp={() => setShowDownloadApp(true)}
             EHLogo={EHLogo}
           />
         )}
@@ -1433,6 +1447,8 @@ export default function App() {
           updateAvailable={updateAvailable}
           isUpdateMinimized={isUpdateMinimized}
           setIsUpdateMinimized={setIsUpdateMinimized}
+          showDownloadAffordance={showDownloadAffordance}
+          onOpenDownloadApp={() => setShowDownloadApp(true)}
           handleItemClick={handleItemClick}
           MANUALS={MANUALS}
           EHLogo={EHLogo}

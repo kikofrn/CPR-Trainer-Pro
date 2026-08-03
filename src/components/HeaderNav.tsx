@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, ChevronDown, CheckCircle2, HelpCircle, BookOpen, ChevronRight, GraduationCap, Baby, Book, Award, Heart } from 'lucide-react';
+import { Menu, ChevronDown, CheckCircle2, HelpCircle, BookOpen, ChevronRight, GraduationCap, Baby, Book, Award, Heart, Download } from 'lucide-react';
 import { COURSES } from '../chapters';
 import { THUMBNAILS } from '../thumbnails';
 import { mediaUrl } from '../media-resolver';
@@ -49,6 +49,8 @@ interface HeaderNavProps {
   updateAvailable: boolean;
   isUpdateMinimized: boolean;
   setIsUpdateMinimized: (v: boolean) => void;
+  showDownloadAffordance: boolean;
+  onOpenDownloadApp: () => void;
   
   handleItemClick: (type: 'video'|'slideshow', courseIndex: number) => void;
   MANUALS: any[];
@@ -68,6 +70,7 @@ export function HeaderNav({
   activeTab, previewManualIndex, setPreviewManualIndex,
   easterEggLevel, activeCourse, activeChapterIndex,
   updateAvailable, isUpdateMinimized, setIsUpdateMinimized,
+  showDownloadAffordance, onOpenDownloadApp,
   handleItemClick, MANUALS,
   EHLogo, CprIcon, FirstAidIcon
 }: HeaderNavProps) {
@@ -580,6 +583,18 @@ export function HeaderNav({
             </motion.button>
           )}
         </AnimatePresence>
+
+        {showDownloadAffordance && (
+          <button
+            type="button"
+            onClick={onOpenDownloadApp}
+            className="flex shrink-0 items-center justify-center rounded-full border border-eh-peach/15 bg-white/5 p-2.5 text-eh-peach/70 transition-colors hover:border-eh-red/35 hover:bg-eh-red/10 hover:text-eh-red cursor-pointer"
+            title="Download app for offline use"
+            aria-label="Download app for offline use"
+          >
+            <Download size={20} />
+          </button>
+        )}
       </div>
     </header>
   );

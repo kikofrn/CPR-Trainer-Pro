@@ -60,6 +60,7 @@ interface SidebarProps {
   
   updateAvailable: any;
   setUpdateAvailable: (v: any) => void;
+  onOpenDownloadApp: () => void;
   
   EHLogo: any;
 }
@@ -75,6 +76,7 @@ export const Sidebar = React.memo(function Sidebar({
   handleInfoClick, handleInfoPointerDown, handleInfoPointerUp,
   showHowTo, setShowHowTo, setActiveGuidePath, setPortalStep,
   updateAvailable, setUpdateAvailable,
+  onOpenDownloadApp,
   EHLogo
 }: SidebarProps) {
   return (
@@ -663,7 +665,17 @@ export const Sidebar = React.memo(function Sidebar({
                         >
                           <Info size={18} />
                         </button>
-                        <span className="text-sm font-bold">Offline Training Mode</span>
+                        {isTauri ? (
+                          <span className="text-sm font-bold">Offline Training Mode</span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={onOpenDownloadApp}
+                            className="text-sm font-bold transition-colors hover:text-eh-red cursor-pointer"
+                          >
+                            Offline Training?
+                          </button>
+                        )}
                       </div>
                       <button
                         onClick={() => {
