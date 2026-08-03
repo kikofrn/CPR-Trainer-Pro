@@ -11,6 +11,11 @@ const repositoryRoot = process.cwd();
 const configuredOutputDir = process.env.GATE1_SCREENSHOT_DIR;
 const candidateSha = process.env.GATE1_CANDIDATE_SHA;
 const baseUrl = process.env.GATE1_BASE_URL ?? 'http://127.0.0.1:4173';
+const captureType = process.env.GATE_SCREENSHOT_CAPTURE_TYPE ?? 'candidate';
+
+if (!['candidate', 'reference-revalidation'].includes(captureType)) {
+  throw new Error('GATE_SCREENSHOT_CAPTURE_TYPE must be candidate or reference-revalidation.');
+}
 
 if (!configuredOutputDir || !path.isAbsolute(configuredOutputDir)) {
   throw new Error('GATE1_SCREENSHOT_DIR must be an absolute path.');
@@ -41,10 +46,20 @@ const screenshotOptions = {
   maskColor: '#111111',
 };
 
+async function ensureSidebarOpen(page) {
+  const expand = page.getByTitle('Expand Sidebar Menu');
+  if (!(await page.getByTitle('Collapse Sidebar Menu').count())) {
+    await expand.waitFor({ state: 'visible' });
+    await expand.click();
+  }
+  await page.getByTitle('Collapse Sidebar Menu').waitFor();
+}
+
 const surfaces = [
   {
     name: 'home-course-list',
     ready: async page => {
+      await ensureSidebarOpen(page);
       await page.getByTitle('Select CPR & AED Course Edition').waitFor();
       await page.getByTitle('Select First Aid Course Edition').waitFor();
     },
@@ -95,6 +110,7 @@ const surfaces = [
   {
     name: 'send-certs',
     ready: async page => {
+      await ensureSidebarOpen(page);
       await page.getByRole('heading', { name: 'SEND CERTS', exact: true }).click();
       await page.getByText('Secure Login', { exact: true }).waitFor();
     },
@@ -102,14 +118,47 @@ const surfaces = [
   {
     name: 'how-to',
     ready: async page => {
+      await ensureSidebarOpen(page);
       await page.getByRole('heading', { name: 'SEND CERTS', exact: true }).click();
       await page.getByRole('button', { name: 'View Step-by-Step Roster Guide', exact: true }).click();
       await page.getByText('EH Academy Training Guides', { exact: true }).waitFor();
     },
   },
   {
+    name: 'coming-soon',
+    ready: async page => {
+      await ensureSidebarOpen(page);
+      await page.getByTitle('Select CPR & AED Course Edition').click();
+      for (const label of ['Pediatric Focused?', 'Enable Virtual Assistant?']) {
+        const toggle = page.getByText(label, { exact: true }).locator('..').getByRole('button');
+        const knob = toggle.locator('div').first();
+        if (!((await knob.getAttribute('class')) ?? '').includes('translate-x-5')) await toggle.click();
+      }
+      await page.getByRole('button', { name: 'COMING SOON', exact: true }).waitFor();
+      await page.getByText('To launch the Pediatric course, disable the Virtual Assistant.', { exact: true }).waitFor();
+    },
+    finalize: async page => {
+      for (const label of ['Pediatric Focused?', 'Enable Virtual Assistant?']) {
+        const knob = page.getByText(label, { exact: true }).locator('..').getByRole('button').locator('div').first();
+        await knob.evaluate(element => {
+          element.style.transform = 'none';
+          element.style.left = '22px';
+          element.style.willChange = 'auto';
+        });
+      }
+    },
+  },
+  {
     name: 'settings-offline-panel',
     ready: async page => {
+      const collapse = page.getByTitle('Collapse Sidebar Menu');
+      if (await collapse.count()) {
+        await collapse.click();
+        await collapse.waitFor({ state: 'detached' });
+      }
+      const expand = page.getByTitle('Expand Sidebar Menu');
+      await expand.waitFor({ state: 'visible' });
+      await expand.click();
       await page.getByRole('button', { name: 'Settings', exact: true }).click();
       await page.getByText('Offline Training Mode', { exact: true }).waitFor();
       await page.getByRole('button', { name: 'Guide', exact: true }).waitFor();
@@ -220,10 +269,6 @@ async function captureSurface(browser, passName, surface) {
         reason instanceof Error ? `${reason.name}: ${reason.message}` : String(reason),
       );
     });
-    const style = document.createElement('style');
-    style.textContent = '*, *::before, *::after { animation: none !important; transition: none !important; }';
-    document.addEventListener('DOMContentLoaded', () => document.head.appendChild(style), { once: true });
-    window.MotionGlobalConfig = { skipAnimations: true };
   });
 
   const passDir = path.join(outputDir, passName);
@@ -232,6 +277,7 @@ async function captureSurface(browser, passName, surface) {
   let primaryError;
   let screenshotError;
   let buffer;
+  let layout;
   let unhandledRejections = [];
 
   try {
@@ -240,6 +286,34 @@ async function captureSurface(browser, passName, surface) {
     await surface.ready(page);
     await stabilize(page);
     if (surface.finalize) await surface.finalize(page);
+    await stabilize(page);
+    layout = await page.evaluate(() => {
+      const round = value => Math.round(value * 10) / 10;
+      const rect = element => {
+        const box = element.getBoundingClientRect();
+        return { x: round(box.x), y: round(box.y), width: round(box.width), height: round(box.height) };
+      };
+      const selectors = ['[data-app-ready="true"]', 'header', 'aside', 'main', 'video', 'iframe', 'canvas', 'img'];
+      const geometry = selectors.flatMap(selector =>
+        Array.from(document.querySelectorAll(selector))
+          .filter(element => element.getClientRects().length > 0)
+          .map((element, index) => ({ selector, index, ...rect(element) })),
+      );
+      const textRects = [];
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      while (walker.nextNode()) {
+        const node = walker.currentNode;
+        if (!(node.textContent ?? '').trim()) continue;
+        const range = document.createRange();
+        range.selectNodeContents(node);
+        for (const box of range.getClientRects()) {
+          if (box.width > 0 && box.height > 0) {
+            textRects.push({ x: round(box.x), y: round(box.y), width: round(box.width), height: round(box.height) });
+          }
+        }
+      }
+      return { geometry, textRects };
+    });
     unhandledRejections = await page.evaluate(() => window.__gate1ScreenshotUnhandled ?? []);
     if (consoleErrors.length || pageErrors.length || unhandledRejections.length) {
       throw new Error(JSON.stringify({ consoleErrors, pageErrors, unhandledRejections }, null, 2));
@@ -265,6 +339,7 @@ async function captureSurface(browser, passName, surface) {
   return {
     sha256: sha256(buffer),
     bytes: buffer.length,
+    layout,
     runtime: { consoleErrors, pageErrors, unhandledRejections },
   };
 }
@@ -293,8 +368,11 @@ try {
   if (endingSha !== candidateSha) throw new Error(`Repository HEAD changed during capture: ${endingSha}.`);
 
   const manifest = {
-    schemaVersion: 1,
-    referenceType: 'first-approved-gate1-candidate',
+    schemaVersion: 2,
+    captureType,
+    referenceType: captureType === 'reference-revalidation'
+      ? 'same-machine-gate1-reference-revalidation'
+      : 'phase3-candidate',
     candidateCodeSha: candidateSha,
     historicalVisualBaseline: null,
     comparison: 'same-machine sequential byte identity',
