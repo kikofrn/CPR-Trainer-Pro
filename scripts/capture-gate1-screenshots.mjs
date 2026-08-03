@@ -74,7 +74,12 @@ const surfaces = [
       const knob = vaToggle.locator('div').first();
       if (!((await knob.getAttribute('class')) ?? '').includes('translate-x-5')) await vaToggle.click();
       await page.getByRole('button', { name: 'START COURSE', exact: true }).click();
-      const video = page.locator('video.pointer-events-auto').first();
+      await page.waitForFunction(() => {
+        const active = document.querySelector('video[data-media-active="true"]');
+        return active instanceof HTMLVideoElement && Boolean(active.currentSrc) && active.readyState >= 2;
+      }, undefined, { timeout: 60000 });
+      await page.getByText('LOADING', { exact: true }).waitFor({ state: 'hidden' });
+      const video = page.locator('video[data-media-active="true"]');
       await video.waitFor({ state: 'attached' });
       await video.evaluate(element => {
         element.pause();
@@ -300,6 +305,13 @@ async function captureSurface(browser, passName, surface) {
   const page = await context.newPage();
   const consoleErrors = [];
   const pageErrors = [];
+  if (surface.name === 'chapter-player') {
+    const deterministicVideo = path.join(repositoryRoot, 'public', 'CPR-Dummies.mp4');
+    await page.route('https://media.ehacademy.com/**/*.mp4', route => route.fulfill({
+      path: deterministicVideo,
+      contentType: 'video/mp4',
+    }));
+  }
   page.on('console', message => {
     if (message.type() === 'error') consoleErrors.push(message.text());
   });
