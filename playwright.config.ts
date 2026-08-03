@@ -34,12 +34,17 @@ export default defineConfig({
   use: {
     actionTimeout: 15000,
     navigationTimeout: 60000,
+    trace: 'on-first-retry',
+    screenshot: 'only-on-failure',
   },
 
   projects: [
     {
       name: 'app',
-      testMatch: 'tests/e2e/app.spec.ts',
+      testMatch: [
+        'tests/e2e/app.spec.ts',
+        'tests/e2e/phase3.spec.ts',
+      ],
       use: {
         ...devices['Desktop Chrome'],
         baseURL: 'http://127.0.0.1:4173',

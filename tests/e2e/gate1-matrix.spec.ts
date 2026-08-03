@@ -408,7 +408,15 @@ test.describe('Gate-1 product matrix', () => {
   test('16 Spanish editions remain interactively unreachable', async ({ page }) => {
     await runEvidenceRow(page, '16-spanish-interactive-guard', 'Spanish editions remain interactively unreachable', contentViewport, async record => {
       await boot(page);
-      const exposures = await page.locator('button, a, [role="button"], [role="link"], input, select, option').evaluateAll(elements =>
+      const closeSidebar = async () => {
+        const collapse = page.getByTitle('Collapse Sidebar Menu');
+        if (await collapse.count()) {
+          await collapse.click();
+          await collapse.waitFor({ state: 'detached' });
+        }
+        await expect(page.getByTitle('Expand Sidebar Menu')).toBeVisible();
+      };
+      const findExposures = () => page.locator('button, a, [role="button"], [role="link"], input, select, option').evaluateAll(elements =>
         elements.map(element => ({
           text: (element.textContent ?? '').trim(),
           title: element.getAttribute('title') ?? '',
@@ -417,10 +425,18 @@ test.describe('Gate-1 product matrix', () => {
           value: element.getAttribute('value') ?? '',
         })).filter(item => /spanish|espa(?:ñ|n)ol|(^|\/)es(?:\/|$)/i.test(Object.values(item).join(' '))),
       );
-      expect(exposures).toEqual([]);
+      const exposuresByView: Record<string, unknown[]> = {};
+      await closeSidebar();
+      exposuresByView.home = await findExposures();
+      await openCourseSelector(page, 'cpr');
+      exposuresByView.cpr = await findExposures();
+      await openCourseSelector(page, 'fa');
+      exposuresByView.firstAid = await findExposures();
+      expect(exposuresByView).toEqual({ home: [], cpr: [], firstAid: [] });
       record.observations = {
-        interactiveSpanishControlsOrRoutes: exposures,
-        staticHowToProseAllowed: true,
+        interactiveSpanishControlsOrRoutes: exposuresByView,
+        staticHowToProseAndComingSoonDataAllowed: true,
+        sidebar: 'closed for home, CPR selector, and First Aid selector checks',
       };
     });
   });
