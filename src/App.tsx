@@ -504,11 +504,12 @@ export default function App() {
   const videoDisplayCourse = activeCourse ?? webDisplayCourse;
   const videoDisplayChapter = activeChapter ?? webDisplayChapter;
   const videoDisplayChapterIndex = activeCourse ? activeChapterIndex : (webDisplaySelection?.chapterIndex ?? 0);
-  const webPendingChapter = webMediaState.pendingSelection
+  const webPendingSelection = webMediaState.pendingSelection ?? webMediaRequest?.selection ?? null;
+  const webPendingChapter = webPendingSelection
     ? {
-        courseId: webMediaState.pendingSelection.courseId,
-        chapterId: webMediaState.pendingSelection.chapterId,
-        title: COURSES[webMediaState.pendingSelection.courseIndex]?.chapters[webMediaState.pendingSelection.chapterIndex]?.title ?? 'Requested chapter',
+        courseId: webPendingSelection.courseId,
+        chapterId: webPendingSelection.chapterId,
+        title: COURSES[webPendingSelection.courseIndex]?.chapters[webPendingSelection.chapterIndex]?.title ?? 'Requested chapter',
       }
     : null;
   const webFailedChapter = webMediaState.failedRequest
@@ -836,28 +837,54 @@ export default function App() {
     setActiveCourseIndex(index);
   };
 
+  const getWebChapterSelection = (courseIndex: number, chapterIndex: number): MediaSelection | null => {
+    const course = COURSES[courseIndex];
+    const chapter = course?.chapters[chapterIndex];
+    if (!course || !chapter?.filename) return null;
+    return {
+      key: `${course.id}:${chapter.id}`,
+      url: m(chapter.filename),
+      courseId: course.id,
+      chapterId: chapter.id,
+      courseIndex,
+      chapterIndex,
+    };
+  };
+
+  useEffect(() => {
+    if (isTauri || !videoDisplayCourse) return;
+    const selector = 'link[rel="preconnect"][href="https://media.ehacademy.com"]';
+    const existing = document.head.querySelector<HTMLLinkElement>(selector);
+    const link = existing ?? document.createElement('link');
+    link.rel = 'preconnect';
+    link.href = 'https://media.ehacademy.com';
+    if (existing) existing.remove();
+    document.head.appendChild(link);
+    return () => {
+      if (!existing) link.remove();
+    };
+  }, [videoDisplayCourse?.id]);
+
   const requestWebChapter = (
     courseIndex: number,
     chapterIndex: number,
     options: { playbackIntent?: boolean; replay?: boolean } = {},
   ) => {
-    const course = COURSES[courseIndex];
-    const chapter = course?.chapters[chapterIndex];
-    if (!course || !chapter?.filename) return;
+    const selection = getWebChapterSelection(courseIndex, chapterIndex);
+    if (!selection) return;
     const requestId = ++webMediaRequestIdRef.current;
     setWebMediaRequest({
       requestId,
-      selection: {
-        key: `${course.id}:${chapter.id}`,
-        url: m(chapter.filename),
-        courseId: course.id,
-        chapterId: chapter.id,
-        courseIndex,
-        chapterIndex,
-      },
+      selection,
       playbackIntent: options.playbackIntent ?? isPlaying,
       replay: options.replay ?? false,
     });
+  };
+
+  const prefetchWebChapter = (chapterIndex: number) => {
+    if (isTauri || activeCourseIndex === null) return;
+    const selection = getWebChapterSelection(activeCourseIndex, chapterIndex);
+    if (selection) webMediaControllerRef.current?.prefetch(selection);
   };
 
   useEffect(() => {
@@ -1379,6 +1406,7 @@ export default function App() {
             toggleSlideshowPlay={toggleSlideshowPlay}
             activeChapterIndex={activeCourse ? activeChapterIndex : -1}
             selectChapter={selectChapter}
+            prefetchChapter={prefetchWebChapter}
             isPlaying={isPlaying}
             togglePlay={togglePlay}
             pendingChapter={webPendingChapter}

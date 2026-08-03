@@ -60,6 +60,76 @@ test.describe('Phase 3 transactional chapter playback', () => {
     errors.verify();
   });
 
+  test('cancels an older row-intent prefetch and commits the newly selected chapter', async ({ page }) => {
+    test.setTimeout(45_000);
+    const errors = setupStrictErrors(page, []);
+    await launchNarratedCpr(page);
+    const prefetchedFragment = '02_EHAcademy%20-%20CPR%20AED%20Course%20Video-Why%20are%20we%20here.mp4';
+    const selectedFragment = '03_EHAcademy%20-%20CPR%20AED%20Course%20Video-Life%20and%20Death%20Drama.mp4';
+    let releasePrefetch!: () => void;
+    const holdPrefetch = new Promise<void>(resolve => { releasePrefetch = resolve; });
+    let markPrefetchStarted!: () => void;
+    const prefetchStarted = new Promise<void>(resolve => { markPrefetchStarted = resolve; });
+    await page.route(url => url.href.includes(prefetchedFragment), async route => {
+      markPrefetchStarted();
+      await holdPrefetch;
+      await route.continue().catch(() => undefined);
+    });
+
+    const prefetchedRow = page.locator('aside h3').filter({ hasText: 'Why are we here' }).first();
+    await prefetchedRow.hover();
+    await prefetchStarted;
+    const inactiveVideo = page.locator('video[data-media-active="false"]');
+    await expect(inactiveVideo).toHaveAttribute('src', new RegExp(prefetchedFragment));
+    await expect(inactiveVideo).toHaveAttribute('preload', 'metadata');
+    const prefetchedVideo = await inactiveVideo.elementHandle();
+    if (!prefetchedVideo) throw new Error('Prefetched media element was not attached.');
+
+    await selectChapter(page, 'Life and Death Drama');
+    releasePrefetch();
+    await expect.poll(async () => page.locator('video[data-media-active="true"]').getAttribute('src'), { timeout: 20_000 })
+      .toContain(selectedFragment);
+    await prefetchedVideo.evaluate(video => video.dispatchEvent(new Event('abort')));
+    await expect(page.locator('video[data-media-active="true"]')).toHaveAttribute('src', new RegExp(selectedFragment));
+    errors.verify();
+  });
+
+  test('shows branded heavy-chapter loading feedback within 200 ms of the click', async ({ page }) => {
+    const errors = setupStrictErrors(page, []);
+    await launchNarratedCpr(page);
+    const heavyRow = page.locator('aside h3').filter({ hasText: 'Why are we here' }).first();
+    await heavyRow.hover();
+    await page.waitForFunction(() => {
+      const video = document.querySelector('video[data-media-active="false"]');
+      return video instanceof HTMLVideoElement && video.preload === 'metadata' && video.src.includes('Why%20are%20we%20here.mp4');
+    });
+    await page.evaluate(() => {
+      const timingWindow = window as typeof window & { __phase3LoadingFeedbackMs: number | null };
+      timingWindow.__phase3LoadingFeedbackMs = null;
+      let clickedAt = 0;
+      const check = () => {
+        if (!clickedAt || !document.body.textContent?.includes('Loading chapter')) return;
+        timingWindow.__phase3LoadingFeedbackMs = performance.now() - clickedAt;
+        observer.disconnect();
+      };
+      const observer = new MutationObserver(check);
+      observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+      document.addEventListener('click', event => {
+        const isHeavyRow = event.composedPath().some(node => node instanceof HTMLElement && node.tagName === 'H3' && node.textContent?.trim() === 'Why are we here');
+        if (!isHeavyRow) return;
+        clickedAt = performance.now();
+        queueMicrotask(check);
+      }, { capture: true, once: true });
+    });
+
+    await heavyRow.click();
+    await page.waitForFunction(() => (window as typeof window & { __phase3LoadingFeedbackMs: number | null }).__phase3LoadingFeedbackMs !== null);
+    const feedbackMs = await page.evaluate(() => (window as typeof window & { __phase3LoadingFeedbackMs: number | null }).__phase3LoadingFeedbackMs);
+    expect(feedbackMs).not.toBeNull();
+    expect(feedbackMs ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(200);
+    errors.verify();
+  });
+
   test('preserves the committed chapter through retry exhaustion, then retries explicitly', async ({ page }) => {
     test.setTimeout(50_000);
     const errors = setupStrictErrors(page, []);

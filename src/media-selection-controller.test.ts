@@ -11,6 +11,7 @@ import {
 class FakeMedia implements MediaElementPort {
   private source = '';
   private listeners = new Map<string, Set<() => void>>();
+  preload = 'auto';
   readyState = 0;
   paused = true;
   muted = false;
@@ -139,6 +140,64 @@ describe('MediaSelectionController', () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
 
+  it('keeps prefetch outside committed and pending state', () => {
+    const { controller, B } = createHarness();
+    const before = controller.getState();
+
+    expect(controller.prefetch(selection('b'))).toBe('started');
+
+    expect(controller.getState()).toEqual(before);
+    expect(B.src).toBe('https://media.example/b.mp4');
+    expect(B.preload).toBe('metadata');
+    expect(B.playCalls).toBe(0);
+  });
+
+  it('lets the newest row intent replace an older prefetch without stale cleanup', () => {
+    const { controller, B } = createHarness();
+    controller.prefetch(selection('b'));
+    const staleError = B.snapshot('error');
+
+    expect(controller.prefetch(selection('c'))).toBe('started');
+    for (const listener of staleError) listener();
+
+    expect(B.src).toBe('https://media.example/c.mp4');
+    expect(B.preload).toBe('metadata');
+    expect(controller.getState().pendingSelection).toBeNull();
+  });
+
+  it('cancels a different prefetched row before starting the selected request', () => {
+    const { controller, B } = createHarness();
+    controller.prefetch(selection('b'));
+    const staleError = B.snapshot('error');
+
+    expect(controller.request(selection('c'), { playbackIntent: false })).toBe('started');
+    for (const listener of staleError) listener();
+
+    expect(controller.getState()).toMatchObject({
+      committedSelection: null,
+      pendingSelection: { key: 'c' },
+      playbackState: 'loading',
+    });
+    expect(B.src).toBe('https://media.example/c.mp4');
+    expect(B.preload).toBe('auto');
+  });
+
+  it('promotes a matching prefetched element without assigning or loading its source again', async () => {
+    const { controller, B, commits } = createHarness();
+    controller.prefetch(selection('b'));
+    const assignments = B.assignments.length;
+    const loads = B.loadCalls;
+
+    expect(controller.request(selection('b'), { playbackIntent: true })).toBe('started');
+
+    expect(B.assignments).toHaveLength(assignments);
+    expect(B.loadCalls).toBe(loads);
+    expect(B.preload).toBe('auto');
+    expect(controller.getState().pendingSelection?.key).toBe('b');
+    await ready(B, true);
+    expect(commits).toEqual(['b']);
+  });
+
   it('t1 commits A to B only after readiness and successful playback', async () => {
     const { controller, B, commits } = createHarness();
     controller.request(selection('b'), { playbackIntent: true });
@@ -258,12 +317,12 @@ describe('MediaSelectionController', () => {
   it('t10 keeps one listener set and one retry timer through repeated failure and retry', async () => {
     const { controller, B } = createHarness();
     controller.request(selection('a'), { playbackIntent: false });
-    expect(B.listenerCount()).toBe(5);
+    expect(B.listenerCount()).toBe(4);
     B.emit('error');
     expect(B.listenerCount()).toBe(0);
     expect(vi.getTimerCount()).toBe(1);
     await vi.advanceTimersByTimeAsync(2_000);
-    expect(B.listenerCount()).toBe(5);
+    expect(B.listenerCount()).toBe(4);
     expect(vi.getTimerCount()).toBe(1);
     B.emit('error');
     expect(B.listenerCount()).toBe(0);

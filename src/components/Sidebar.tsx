@@ -33,6 +33,7 @@ interface SidebarProps {
   
   activeChapterIndex: number;
   selectChapter: (i: number) => void;
+  prefetchChapter: (i: number) => void;
   isPlaying: boolean;
   togglePlay: () => void;
   pendingChapter: { courseId: string; chapterId: string; title: string } | null;
@@ -69,7 +70,7 @@ export const Sidebar = React.memo(function Sidebar({
   showSidebar, setShowSidebar, setActiveCourseIndex, setActiveSlideshowIndex, setSelectedManual, setActiveTab,
   activeTab, activeCourse, activeSlideshow, selectedManual, manualOutline, expandedManualSections, setExpandedManualSections, flipbookRef, MANUALS,
   activeSlideIndex, expandedSections, setExpandedSections, setActiveSlideIndex, selectSlide, slideshowIsPlaying, setSlideshowIsPlaying, toggleSlideshowPlay,
-  activeChapterIndex, selectChapter, isPlaying, togglePlay,
+  activeChapterIndex, selectChapter, prefetchChapter, isPlaying, togglePlay,
   pendingChapter, failedChapter, retryFailedChapter,
   isTauri, dlState, easterEggLevel, downloadManager,
   isSettingsExpanded, setIsSettingsExpanded, isContinuousPlay, setIsContinuousPlay,
@@ -437,6 +438,15 @@ export const Sidebar = React.memo(function Sidebar({
                   return (
                     <div key={chapter.id} className={`${chapter.parentSectionId ? 'pl-4 pr-0' : ''}`}>
                       <div
+                        onPointerEnter={() => {
+                          if (!isTauri) prefetchChapter(index);
+                        }}
+                        onTouchStart={() => {
+                          if (!isTauri) prefetchChapter(index);
+                        }}
+                        onFocusCapture={() => {
+                          if (!isTauri) prefetchChapter(index);
+                        }}
                         className={`w-full text-left p-3 rounded-lg group transition-all duration-300 flex items-center gap-4 ${
                           isPendingChapter
                             ? 'bg-eh-blue/10 border border-eh-blue/30 shadow-inner'

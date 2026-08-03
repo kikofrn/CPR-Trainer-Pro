@@ -46,6 +46,7 @@ export interface MediaControllerState {
 
 export interface MediaElementPort {
   src: string;
+  preload: string;
   readyState: number;
   paused: boolean;
   muted: boolean;
@@ -101,6 +102,14 @@ type PendingRequest = {
   retryTimer: ReturnType<typeof setTimeout> | null;
 };
 
+type PrefetchRequest = {
+  epoch: number;
+  selection: MediaSelection;
+  slot: MediaSlot;
+  owner: Ownership;
+  listeners: ListenerRecord[];
+};
+
 const HAVE_FUTURE_DATA = 3;
 
 function copySelection(selection: MediaSelection | null): MediaSelection | null {
@@ -151,7 +160,9 @@ export class MediaSelectionController {
   private muted: boolean;
   private playbackRate: number;
   private ownershipEpoch = 0;
+  private prefetchEpoch = 0;
   private pending: PendingRequest | null = null;
+  private prefetchRequest: PrefetchRequest | null = null;
   private owners: Partial<Record<MediaSlot, Ownership>> = {};
   private cleanupTimers = new Set<ReturnType<typeof setTimeout>>();
   private activeListeners: ListenerRecord[] = [];
@@ -188,6 +199,48 @@ export class MediaSelectionController {
     return copyState(this.state);
   }
 
+  prefetch(selection: MediaSelection): 'started' | 'prefetch-noop' | 'committed-noop' | 'pending-busy' {
+    if (this.disposed) throw new Error('MediaSelectionController is disposed.');
+    if (this.pending) return 'pending-busy';
+    if (this.state.committedSelection?.key === selection.key) {
+      this.cancelPrefetch();
+      return 'committed-noop';
+    }
+    if (
+      this.prefetchRequest?.selection.key === selection.key
+      && this.prefetchRequest.selection.url === selection.url
+    ) {
+      return 'prefetch-noop';
+    }
+
+    this.cancelPrefetch();
+    const slot: MediaSlot = this.state.activeSlot === 'A' ? 'B' : 'A';
+    const epoch = ++this.prefetchEpoch;
+    const owner = this.createOwner(this.state.generation, slot, selection.url);
+    const request: PrefetchRequest = {
+      epoch,
+      selection: { ...selection },
+      slot,
+      owner,
+      listeners: [],
+    };
+    const element = this.elements[slot];
+    this.prefetchRequest = request;
+    this.owners[slot] = owner;
+    this.prepareElement(element);
+    element.preload = 'metadata';
+
+    const abandon = () => {
+      if (!this.ownsPrefetch(request)) return;
+      this.cancelPrefetch();
+    };
+    element.addEventListener('error', abandon);
+    request.listeners.push({ type: 'error', listener: abandon });
+    element.src = selection.url;
+    element.load();
+    return 'started';
+  }
+
   updatePlaybackSettings(settings: { volume?: number; muted?: boolean; playbackRate?: number }): void {
     if (settings.volume !== undefined) this.targetVolume = settings.volume;
     if (settings.muted !== undefined) this.muted = settings.muted;
@@ -205,16 +258,22 @@ export class MediaSelectionController {
   ): 'started' | 'committed-noop' | 'pending-noop' {
     if (this.disposed) throw new Error('MediaSelectionController is disposed.');
     if (!options.replay && this.pending?.selection.key === selection.key) return 'pending-noop';
+    const matchingPrefetch = !options.replay
+      && this.prefetchRequest?.selection.key === selection.key
+      && this.prefetchRequest.selection.url === selection.url
+      ? this.takePrefetch()
+      : null;
+    if (!matchingPrefetch) this.cancelPrefetch();
     if (!options.replay && this.state.committedSelection?.key === selection.key) return 'committed-noop';
 
     this.cancelPending(false);
     const generation = this.state.generation + 1;
-    const slot: MediaSlot = this.state.activeSlot === 'A' ? 'B' : 'A';
+    const slot: MediaSlot = matchingPrefetch?.slot ?? (this.state.activeSlot === 'A' ? 'B' : 'A');
     const pending: PendingRequest = {
       generation,
       selection: { ...selection },
       slot,
-      owner: this.createOwner(generation, slot, selection.url),
+      owner: matchingPrefetch?.owner ?? this.createOwner(generation, slot, selection.url),
       playbackIntent: options.playbackIntent,
       forceResume: options.forceResume ?? false,
       automaticRetries: 0,
@@ -234,7 +293,7 @@ export class MediaSelectionController {
       playbackState: 'loading',
       resumeRequired: false,
     });
-    this.startAttempt(pending);
+    this.startAttempt(pending, matchingPrefetch !== null);
     return 'started';
   }
 
@@ -303,6 +362,7 @@ export class MediaSelectionController {
 
   cancel(): void {
     this.cancelPending(true);
+    this.cancelPrefetch();
     this.removeActiveMonitoring();
     this.elements.A.pause();
     this.elements.B.pause();
@@ -318,16 +378,19 @@ export class MediaSelectionController {
     this.disposed = true;
   }
 
-  private startAttempt(request: PendingRequest): void {
+  private startAttempt(request: PendingRequest, promotePrefetch = false): void {
     if (!this.isCurrent(request)) return;
     const element = this.elements[request.slot];
-    request.owner = this.createOwner(request.generation, request.slot, request.selection.url);
+    if (!promotePrefetch) {
+      request.owner = this.createOwner(request.generation, request.slot, request.selection.url);
+    }
     request.ready = false;
     request.playResolved = false;
     request.playDenied = false;
     request.listeners = [];
     this.owners[request.slot] = request.owner;
     this.prepareElement(element);
+    element.preload = 'auto';
 
     const onReady = () => {
       if (!this.owns(request)) return;
@@ -353,10 +416,13 @@ export class MediaSelectionController {
     this.listen(request, 'loadeddata', onReady);
     this.listen(request, 'playing', onPlaying);
     this.listen(request, 'error', onError);
-    this.listen(request, 'abort', onError);
 
-    element.src = request.selection.url;
-    element.load();
+    if (!promotePrefetch || element.src !== request.selection.url) {
+      element.src = request.selection.url;
+      element.load();
+    } else if (!request.playbackIntent && element.readyState < HAVE_FUTURE_DATA) {
+      element.load();
+    }
     request.readinessTimer = this.setTimer(() => {
       if (this.owns(request)) {
         this.handleAttemptFailure(request, { kind: 'timeout', message: 'Media readiness timed out.' });
@@ -532,6 +598,23 @@ export class MediaSelectionController {
     }
   }
 
+  private takePrefetch(): PrefetchRequest | null {
+    const request = this.prefetchRequest;
+    if (!request) return null;
+    const element = this.elements[request.slot];
+    for (const { type, listener } of request.listeners) element.removeEventListener(type, listener);
+    request.listeners = [];
+    this.prefetchRequest = null;
+    return request;
+  }
+
+  private cancelPrefetch(): void {
+    const request = this.takePrefetch();
+    if (!request) return;
+    this.prefetchEpoch += 1;
+    this.resetSlot(request.slot, request.owner);
+  }
+
   private clearAttemptResources(request: PendingRequest, resetElement: boolean): void {
     if (request.readinessTimer !== null) this.clearTimer(request.readinessTimer);
     if (request.retryTimer !== null) this.clearTimer(request.retryTimer);
@@ -551,6 +634,7 @@ export class MediaSelectionController {
     if (expectedOwner && this.owners[slot] !== expectedOwner) return;
     const element = this.elements[slot];
     element.pause();
+    element.preload = 'auto';
     element.src = '';
     element.load();
     delete this.owners[slot];
@@ -569,6 +653,15 @@ export class MediaSelectionController {
   private owns(request: PendingRequest): boolean {
     const element = this.elements[request.slot];
     return this.isCurrent(request) && this.owners[request.slot] === request.owner && element.src === request.owner.source;
+  }
+
+  private ownsPrefetch(request: PrefetchRequest): boolean {
+    const element = this.elements[request.slot];
+    return !this.disposed
+      && this.prefetchRequest === request
+      && this.prefetchEpoch === request.epoch
+      && this.owners[request.slot] === request.owner
+      && element.src === request.owner.source;
   }
 
   private isCurrent(request: PendingRequest): boolean {
