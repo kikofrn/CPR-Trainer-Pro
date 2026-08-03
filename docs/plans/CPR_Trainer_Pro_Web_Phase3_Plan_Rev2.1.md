@@ -243,14 +243,14 @@ After all non-CSP-enforcement product work and the full clean battery:
 - [x] Stage named files only and make all product/harness logical commits.
 - [x] Use a report-only CSP on the preview path first; do not claim enforcement from local-only evidence.
 - [x] Use `npx --yes wrangler@4.118.0` as a pinned tool download, not a project dependency.
-- [ ] Push the complete round once as Push 1.
-- [ ] Require both web CI and gitleaks to pass on Push 1.
-- [ ] Capture hosted preview behavior and CSP reports/console evidence for the exact pushed SHA.
+- [x] Push the complete round once as Push 1.
+- [x] Require both web CI and gitleaks to pass on Push 1.
+- [x] Capture hosted preview behavior and CSP reports/console evidence for the exact pushed SHA.
 
 ### 9.2 Push 2
 
-- [ ] Derive the narrow enforcing policy from hosted evidence. It must retain the canonical directives including `form-action 'self'` and `frame-src 'none'`, and only the required media/font/image/connect/script/style sources.
-- [ ] Flip from report-only to enforcing CSP, add the hosted evidence record, rerun the complete relevant local smoke, and commit.
+- [x] Derive the narrow enforcing policy from hosted evidence. It must retain the canonical directives including `form-action 'self'` and `frame-src 'none'`, and only the required media/font/image/connect/script/style sources.
+- [x] Flip from report-only to enforcing CSP, add the hosted evidence record, rerun the complete relevant local smoke, and commit.
 - [ ] Push exactly once as Push 2.
 - [ ] Require both web CI and gitleaks to pass and perform an enforcing-CSP hosted smoke.
 
@@ -272,7 +272,7 @@ A third push exists only to correct CSP after Push 2 and requires Francisco's ex
 - [x] dependency audits split into full tree and production runtime
 - [x] Tauri isolation review, normal-path desktop smoke, visible window-title check, and structural divergence inventory
 - [x] source searches for direct storage, forbidden preload behavior, missing `playsInline`, forbidden machine paths, changed media/binary assets, and unexpected scope
-- [ ] clean named-file diff and clean worktree after each final commit
+- [x] clean named-file diff and clean worktree after each final commit
 
 ### 10.2 Records duties
 
