@@ -12,14 +12,14 @@ This document combines Codex Revision 2 with Claude's Revision 2.1 Amendment She
 
 ## 0. Non-negotiable preflight and round sequencing
 
-- [ ] Work only from a clean `web-app` checkout.
-- [ ] Normalize `origin` to its GitHub `owner/repo` pair and compare `kikofrn/cpr-trainer-pro` case-insensitively. Accept SSH or HTTPS forms and an optional `.git` suffix; reject any other owner or repository.
-- [ ] Require all three SHAs to equal `3a5fd0ae272c75e73da3dd766a0fddc73981ebe6` before product work: `HEAD`, `origin/web-app`, and `origin/web-production`.
-- [ ] Require empty `git status --porcelain`.
-- [ ] Require the Gate-1 reference archive candidate to be `39b4bb1b881119c054feb9c576b16fd663d0f2f8`, with the externally archived reference material available for same-machine revalidation.
-- [ ] Commit this complete plan as the first commit of the round. Do not include machine-specific paths in the committed plan.
-- [ ] Then cherry-pick main commit `78ff12a` for `LICENSE`, gitleaks CI, and the pre-commit configuration. Resolve the `DECISIONS.md` add/add conflict by preserving all web-branch history and adding the relevant incoming decision. Do not claim the pre-commit hook is active merely because its configuration is present.
-- [ ] Stop rather than improvise if any preflight invariant fails or a needed change falls outside this plan.
+- [x] Work only from a clean `web-app` checkout.
+- [x] Normalize `origin` to its GitHub `owner/repo` pair and compare `kikofrn/cpr-trainer-pro` case-insensitively. Accept SSH or HTTPS forms and an optional `.git` suffix; reject any other owner or repository.
+- [x] Require all three SHAs to equal `3a5fd0ae272c75e73da3dd766a0fddc73981ebe6` before product work: `HEAD`, `origin/web-app`, and `origin/web-production`.
+- [x] Require empty `git status --porcelain`.
+- [x] Require the Gate-1 reference archive candidate to be `39b4bb1b881119c054feb9c576b16fd663d0f2f8`, with the externally archived reference material available for same-machine revalidation.
+- [x] Commit this complete plan as the first commit of the round. Do not include machine-specific paths in the committed plan.
+- [x] Then cherry-pick main commit `78ff12a` for `LICENSE`, gitleaks CI, and the pre-commit configuration. Resolve the `DECISIONS.md` add/add conflict by preserving all web-branch history and adding the relevant incoming decision. Do not claim the pre-commit hook is active merely because its configuration is present.
+- [x] Stop rather than improvise if any preflight invariant fails or a needed change falls outside this plan.
 
 ## 1. Scope and change controls
 
@@ -56,10 +56,10 @@ Every logical step uses an exact commit subject of the form `web(phase-3): <step
 
 ## 2. Approved upstream governance addition
 
-- [ ] Cherry-pick `78ff12a` after the plan commit.
-- [ ] Preserve the web branch's complete `DECISIONS.md` content while integrating the upstream public-repository decision.
-- [ ] Verify the license and both leak-scanning files are exactly the intended upstream versions.
-- [ ] Confirm gitleaks CI is syntactically valid. Record that `pre-commit install` is still a developer-local action and is not implied by committing `.pre-commit-config.yaml`.
+- [x] Cherry-pick `78ff12a` after the plan commit.
+- [x] Preserve the web branch's complete `DECISIONS.md` content while integrating the upstream public-repository decision.
+- [x] Verify the license and both leak-scanning files are exactly the intended upstream versions.
+- [x] Confirm gitleaks CI is syntactically valid. Record that `pre-commit install` is still a developer-local action and is not implied by committing `.pre-commit-config.yaml`.
 
 ## 3. Harness and CI hardening - separate from product code
 
@@ -67,29 +67,29 @@ Harness-engine changes are a separate logical commit or commits and may not be m
 
 ### 3.1 Default Playwright contract
 
-- [ ] Remove global animation suppression (`MotionGlobalConfig`) from product-facing tests. Tests must observe shipped motion rather than changing it globally.
-- [ ] Preserve the existing four default E2E tests and add the focused Phase-3 specifications to the default configuration.
-- [ ] Make fixture discovery/reporting deterministic and non-fatal when unrelated fixture files are absent.
-- [ ] Retain CI retries only where configured; capture `trace: on-first-retry` and upload trace-bearing Playwright artifacts on failure.
-- [ ] Add explicit least-privilege workflow permissions and a job timeout.
-- [ ] Keep the isolated Gate-1 matrix separate from routine CI.
-- [ ] Point hosted checks at the intended preview/build configuration without weakening local production-preview coverage.
+- [x] Remove global animation suppression (`MotionGlobalConfig`) from product-facing tests. Tests must observe shipped motion rather than changing it globally.
+- [x] Preserve the existing four default E2E tests and add the focused Phase-3 specifications to the default configuration.
+- [x] Make fixture discovery/reporting deterministic and non-fatal when unrelated fixture files are absent.
+- [x] Retain CI retries only where configured; capture `trace: on-first-retry` and upload trace-bearing Playwright artifacts on failure.
+- [x] Add explicit least-privilege workflow permissions and a job timeout.
+- [x] Keep the isolated Gate-1 matrix separate from routine CI.
+- [x] Point hosted checks at the intended preview/build configuration without weakening local production-preview coverage.
 
 ### 3.2 Gate matrix corrections
 
-- [ ] Add the eighth required visual surface: a normalized coming-soon state.
-- [ ] Capture Settings with the sidebar closed and the actual panel expanded.
-- [ ] Check Spanish dormancy with the sidebar closed for the home, CPR, and First Aid routes, while allowing the already-adjudicated static `isComingSoon` guide prose.
-- [ ] Continue collecting console errors, page errors, and unhandled rejections as independent failure channels.
+- [x] Add the eighth required visual surface: a normalized coming-soon state.
+- [x] Capture Settings with the sidebar closed and the actual panel expanded.
+- [x] Check Spanish dormancy with the sidebar closed for the home, CPR, and First Aid routes, while allowing the already-adjudicated static `isComingSoon` guide prose.
+- [x] Continue collecting console errors, page errors, and unhandled rejections as independent failure channels.
 
 ### 3.3 Deterministic screenshot comparator
 
-- [ ] Enhance the local capture tooling with the already-installed `sharp`; add no dependency.
-- [ ] Validate image dimensions and compute exact hashes, changed-pixel counts, ratios, diff bounding boxes, and useful geometry diagnostics.
-- [ ] The comparator must understand the eight named surfaces and explicit masks only; it must never silently mask a difference.
-- [ ] Sheet B supersedes the prior text-bounds-only font rule for this round: the Futura-to-Jost metric change on non-Apple systems requires a declared full deliberate re-baseline of all eight surfaces. Geometry and text-rectangle capture remain required to prove container-level layout is sane and that the reflow sweep found every clipping or overflow defect.
-- [ ] Store screenshots, masks, generated diffs, and reports outside the repository. Never serialize machine-specific paths into committed output.
-- [ ] Keep the comparator as audit tooling only; never wire it into `web-ci.yml`.
+- [x] Enhance the local capture tooling with the already-installed `sharp`; add no dependency.
+- [x] Validate image dimensions and compute exact hashes, changed-pixel counts, ratios, diff bounding boxes, and useful geometry diagnostics.
+- [x] The comparator must understand the eight named surfaces and explicit masks only; it must never silently mask a difference.
+- [x] Sheet B supersedes the prior text-bounds-only font rule for this round: the Futura-to-Jost metric change on non-Apple systems requires a declared full deliberate re-baseline of all eight surfaces. Geometry and text-rectangle capture remain required to prove container-level layout is sane and that the reflow sweep found every clipping or overflow defect.
+- [x] Store screenshots, masks, generated diffs, and reports outside the repository. Never serialize machine-specific paths into committed output.
+- [x] Keep the comparator as audit tooling only; never wire it into `web-ci.yml`.
 
 Hard precondition: before computing or reporting any candidate comparison, recapture candidate `39b4bb1b881119c054feb9c576b16fd663d0f2f8` on the same machine and prove the archived reference hashes reproduce. If revalidation fails, stop visual work and report the invalid environment. Do not calculate a candidate verdict against an unvalidated reference.
 
@@ -155,25 +155,25 @@ Supplemental tests must cover same-selection no-op versus Replay, pause during p
 
 ## 5. Chapter-player integration
 
-- [ ] Enable the new transactional controller only for `!isTauri`.
-- [ ] Retain the current Tauri chapter playback path and normal behavior. Do not leak CDN retry policy into desktop local playback.
-- [ ] Gate off the current 800 ms adjacent/next-source speculative preload effect on web.
-- [ ] Render committed, pending, retry, failure, offline, Resume, and Replay states truthfully and accessibly.
-- [ ] Preserve route/course identity while a request is pending or failed; only a successful commit updates the active destination.
-- [ ] Route all `VideoPlayer.tsx` persistence through `safeStorage`; after migration, the broad production-source search for `localStorage` must find only `src/utils/safe-storage.ts`.
-- [ ] Verify listener cleanup, no audible overlap, no black frame, and no stale request mutation in Playwright against actual DOM media fakes/controlled routes.
-- [ ] Measure chapter-switch latency deterministically on at least three cold-cache chapters: one small file, one large file, and one special-character URL. Metric is gesture to first rendered/playing destination frame. Target median is at most 2.5 seconds and worst is at most 5.0 seconds on the named Gate-3 profile. Failure invokes the canonical stop/amend path; it never silently becomes a baseline.
+- [x] Enable the new transactional controller only for `!isTauri`.
+- [x] Retain the current Tauri chapter playback path and normal behavior. Do not leak CDN retry policy into desktop local playback.
+- [x] Gate off the current 800 ms adjacent/next-source speculative preload effect on web.
+- [x] Render committed, pending, retry, failure, offline, Resume, and Replay states truthfully and accessibly.
+- [x] Preserve route/course identity while a request is pending or failed; only a successful commit updates the active destination.
+- [x] Route all `VideoPlayer.tsx` persistence through `safeStorage`; after migration, the broad production-source search for `localStorage` must find only `src/utils/safe-storage.ts`.
+- [x] Verify listener cleanup, no audible overlap, no black frame, and no stale request mutation in Playwright against actual DOM media fakes/controlled routes.
+- [x] Measure chapter-switch latency deterministically on the Sheet-C set with five cold-cache trials each under the named profile. The amended median, healthy-file worst, heavy-file worst, and <=200 ms feedback gates all pass; evidence is recorded in `CONTEXT.md`.
 
 ## 6. Web slideshow lifecycle
 
 Implement the web slideshow with one persistent video element across video slides. This is the single permanent player permitted by canonical section 4C, not a second player.
 
-- [ ] On web, drive the persistent element imperatively and disable adjacent video speculative preload.
-- [ ] Apply generation and ownership protection, readiness watchdog, retry/failure/offline states, truthful play state, cleanup on close/swipe/switch, Skip, and explicit retry.
-- [ ] Image slides remain image elements and receive equivalent load/error handling so a failed image is actionable and skippable.
-- [ ] Do not let late video events navigate back from a newer video or image slide.
-- [ ] Keep the existing keyed `AnimatePresence` Tauri structure byte-identical where practical. If shared JSX makes exact preservation impossible, list every structural divergence with file and line in `CONTEXT.md` and the handoff.
-- [ ] Stop and ask before adding any second permanent slideshow player.
+- [x] On web, drive the persistent element imperatively and disable adjacent video speculative preload.
+- [x] Apply generation and ownership protection, readiness watchdog, retry/failure/offline states, truthful play state, cleanup on close/swipe/switch, Skip, and explicit retry.
+- [x] Image slides remain image elements and receive equivalent load/error handling so a failed image is actionable and skippable.
+- [x] Do not let late video events navigate back from a newer video or image slide.
+- [x] Keep the existing keyed `AnimatePresence` Tauri structure byte-identical where practical. If shared JSX makes exact preservation impossible, list every structural divergence with file and line in `CONTEXT.md` and the handoff.
+- [x] Stop and ask before adding any second permanent slideshow player.
 
 Playwright acceptance must cover successful video playback, autoplay denial with a Play control, video failure with working Skip, rapid video-to-image navigation with stale events ignored, and `slideshowIsPlaying` matching the real media state. Add focused image-load failure coverage.
 
@@ -181,54 +181,58 @@ Explicit visual acceptance on web: image-to-video and video-to-image transitions
 
 ## 7. PDF/manual failure UX and offline behavior
 
-- [ ] Use `react-pdf` load/error callbacks to represent loading, document failure, and page failure explicitly.
-- [ ] Preserve the last usable manual view where possible; do not replace useful content with a blank pane.
-- [ ] Provide Retry and a safe recovery/close path with accessible status messaging.
-- [ ] Distinguish offline guidance from a generic load failure without making offline-availability claims.
-- [ ] Test document failure, page failure, retry, and offline recovery behavior in the browser harness.
+- [x] Use `react-pdf` load/error callbacks to represent loading, document failure, and page failure explicitly.
+- [x] Preserve the last usable manual view where possible; do not replace useful content with a blank pane.
+- [x] Provide Retry and a safe recovery/close path with accessible status messaging.
+- [x] Distinguish offline guidance from a generic load failure without making offline-availability claims.
+- [x] Test document failure, page failure, retry, and offline recovery behavior in the browser harness.
 
 ## 8. Sidebar, typography, LCP, and identity
 
 ### 8.1 Sidebar and responsive parity
 
-- [ ] Initialize sidebar visibility with `useState(isTauri)` so web does not briefly mount desktop sidebar content while Tauri retains its current initial open state.
-- [ ] Verify closed-sidebar Settings capture and desktop web/Tauri structural isolation.
+- [x] Initialize sidebar visibility with `useState(isTauri)` so web does not briefly mount desktop sidebar content while Tauri retains its current initial open state.
+- [x] Verify closed-sidebar Settings capture and desktop web/Tauri structural isolation.
 
 ### 8.2 Fonts
 
-- [ ] Replace the network Google Fonts stylesheet with exactly pinned local packages:
+- [x] Replace the network Google Fonts stylesheet with exactly pinned local packages:
   - `@fontsource/inter@5.3.0`
   - `@fontsource/playfair-display@5.3.0`
   - `@fontsource/jetbrains-mono@5.3.0`
   - `@fontsource/jost@5.3.0`
-- [ ] Self-host the same Inter, Playfair Display, and JetBrains Mono weights/styles as the audited mac-build implementation.
-- [ ] Self-host Jost latin normal weights 400, 500, 600, 700, 800, and 900 with `font-display: swap`; verify every referenced WOFF2 exists and re-run the source weight inventory before finalizing coverage.
-- [ ] Use the authorized default stacks: `"Futura", "Jost", "Inter", ui-sans-serif, system-ui, sans-serif` and `"Futura", "Jost", "Playfair Display", serif`. Remove Calibri; leave the mono stack unchanged.
-- [ ] Run the full 1440 px eight-surface matrix plus header, both selectors, sidebar, Settings, Send Certs, and How-To reflow sweep. Fix clipping, truncation, overflow, and undersized fixed-width controls; do not classify those defects as re-baseline candidates.
-- [ ] Record measured local-font/LCP deltas. `index.css` is shared: Apple keeps real Futura first; future Windows-desktop adoption is a separate decision and is not part of this web round.
-- [ ] These four font packages are the only project dependency additions authorized in this round.
+- [x] Self-host the same Inter, Playfair Display, and JetBrains Mono weights/styles as the audited mac-build implementation.
+- [x] Self-host Jost latin normal weights 400, 500, 600, 700, 800, and 900 with `font-display: swap`; verify every referenced WOFF2 exists and re-run the source weight inventory before finalizing coverage.
+- [x] Use the authorized default stacks: `"Futura", "Jost", "Inter", ui-sans-serif, system-ui, sans-serif` and `"Futura", "Jost", "Playfair Display", serif`. Remove Calibri; leave the mono stack unchanged.
+- [x] Run the full 1440 px eight-surface matrix plus header, both selectors, sidebar, Settings, Send Certs, and How-To reflow sweep. Fix clipping, truncation, overflow, and undersized fixed-width controls; do not classify those defects as re-baseline candidates.
+- [x] Record measured local-font/LCP deltas. `index.css` is shared: Apple keeps real Futura first; future Windows-desktop adoption is a separate decision and is not part of this web round.
+- [x] These four font packages are the only project dependency additions authorized in this round.
 
 ### 8.3 LCP asset
 
-- [ ] Preserve the idle illustration's intrinsic dimensions as 1024 by 691.
-- [ ] Add explicit intrinsic sizing/priority only where it improves layout and LCP without changing the approved desktop geometry.
-- [ ] Add a preload only if a captured performance trace demonstrates the fetch starts materially late and the preload improves the metric without waste.
+- [x] Preserve the idle illustration's intrinsic dimensions as 1024 by 691.
+- [x] Add explicit intrinsic sizing/priority only where it improves layout and LCP without changing the approved desktop geometry.
+- [x] Add a preload only if a captured performance trace demonstrates the fetch starts materially late and the preload improves the metric without waste. The trace did not justify a document preload, so none was added.
 
 ### 8.4 Metadata and business copy
 
-The suggested title `CPR Trainer Pro | Everyday Hero Academy`, description, `og:site_name`, and image alt text are proposals, not approved copy. Implement metadata only with exact wording Francisco explicitly approves; approval of a quoted proposed set verbatim counts. The current shipped strings differ: `index.html` uses `EH Academy - Instructor App` (typographic dash in the source), while Tauri window chrome is configured separately as `EH Academy - CPR Trainer Pro` (typographic dash in the source).
+Francisco approved the Revision-2 metadata set on August 3, 2026. It is implemented with title `CPR Trainer Pro | Everyday Hero Academy`, the approved description/OG description, `og:site_name`, absolute temporary Pages URL/image, dimensions and descriptive alt, favicon, noindex, and one plain media-origin preconnect.
 
-Any `index.html` title/meta edit is a shared-document change, like font loading: it also changes the Tauri WebView document title. The visible desktop window title remains governed by untouched `src-tauri/tauri.conf.json`. Record this distinction in `CONTEXT.md` and verify unchanged visible desktop chrome during cross-platform QA. Do not change business/legal wording in Send Certs or How-To without exact approval.
+The `index.html` edit is a shared-document change, like font loading: it also changes the Tauri WebView document title. The visible desktop window title remains governed by untouched `src-tauri/tauri.conf.json`; the current-branch desktop smoke verified that chrome unchanged. Francisco approved the existing Send Certs and How-To business/legal wording as-is; no copy source file changed.
+
+- [x] Implement the Francisco-approved exact metadata set and preserve noindex/no-canonical policy.
+- [x] Record and verify the shared-document/Tauri-chrome distinction.
+- [x] Record Francisco's approval of the existing Send Certs and How-To business/legal copy as-is.
 
 ### 8.5 Web-only offline-download affordance
 
-- [ ] Add typed download configuration for Windows, macOS, and iOS. Use the verified evergreen Windows URL `https://github.com/kikofrn/CPR-Trainer-Pro/releases/latest/download/CPRTrainerPro-Setup.exe`; the vanity hostname is not the installer redirect as of authorization. Keep macOS and iOS URLs null and show disabled `Coming soon` rows.
-- [ ] Add a pure, unit-tested platform detector that prefers `navigator.userAgentData.platform`, falls back to the user-agent string, distinguishes touch-capable iPadOS from macOS, and treats detection as presentation-only.
-- [ ] Add a web-only header icon button titled and labelled `Download app for offline use`. App computes its visibility; hide it whenever a course, slideshow, manual, or Send Certs content surface is open.
-- [ ] Add one shared download modal with backdrop, X, and Escape close, initial focus, focus restoration, a highlighted detected-platform action, secondary available-platform actions, and disabled `Coming soon` rows. Windows uses ordinary anchor navigation; a future iOS URL uses `openExternalUrl()`.
-- [ ] On web only, replace the Settings label with a separate `Offline Training?` button that opens the same modal. Preserve the adjacent easter-egg Info button byte-identical and preserve the current desktop `Offline Training Mode` label/behavior.
-- [ ] Add unit coverage for the detector and config, plus default Playwright coverage for header visibility, both modal entry points, close behavior, the configured Windows href, desktop isolation, and console cleanliness.
-- [ ] Declare the header icon and Settings label as intended re-baseline diffs. Record the configuration-driven, presentation-only decision and the optional future iOS Smart App Banner.
+- [x] Add typed download configuration for Windows, macOS, and iOS. Use the verified evergreen Windows URL `https://github.com/kikofrn/CPR-Trainer-Pro/releases/latest/download/CPRTrainerPro-Setup.exe`; the vanity hostname is not the installer redirect as of authorization. Keep macOS and iOS URLs null and show disabled `Coming soon` rows.
+- [x] Add a pure, unit-tested platform detector that prefers `navigator.userAgentData.platform`, falls back to the user-agent string, distinguishes touch-capable iPadOS from macOS, and treats detection as presentation-only.
+- [x] Add a web-only header icon button titled and labelled `Download app for offline use`. App computes its visibility; hide it whenever a course, slideshow, manual, or Send Certs content surface is open.
+- [x] Add one shared download modal with backdrop, X, and Escape close, initial focus, focus restoration, a highlighted detected-platform action, secondary available-platform actions, and disabled `Coming soon` rows. Windows uses ordinary anchor navigation; a future iOS URL uses `openExternalUrl()`.
+- [x] On web only, replace the Settings label with a separate `Offline Training?` button that opens the same modal. Preserve the adjacent easter-egg Info button byte-identical and preserve the current desktop `Offline Training Mode` label/behavior.
+- [x] Add unit coverage for the detector and config, plus default Playwright coverage for header visibility, both modal entry points, close behavior, the configured Windows href, desktop isolation, and console cleanliness.
+- [x] Declare the header icon and Settings label as intended re-baseline diffs. Record the configuration-driven, presentation-only decision and the optional future iOS Smart App Banner.
 
 ## 9. CSP staging, deployment evidence, and pushes
 
@@ -236,9 +240,9 @@ Any `index.html` title/meta edit is a shared-document change, like font loading:
 
 After all non-CSP-enforcement product work and the full clean battery:
 
-- [ ] Stage named files only and make all logical commits.
-- [ ] Use a report-only CSP on the preview path first; do not claim enforcement from local-only evidence.
-- [ ] Use `npx --yes wrangler@4.118.0` as a pinned tool download, not a project dependency.
+- [x] Stage named files only and make all product/harness logical commits.
+- [x] Use a report-only CSP on the preview path first; do not claim enforcement from local-only evidence.
+- [x] Use `npx --yes wrangler@4.118.0` as a pinned tool download, not a project dependency.
 - [ ] Push the complete round once as Push 1.
 - [ ] Require both web CI and gitleaks to pass on Push 1.
 - [ ] Capture hosted preview behavior and CSP reports/console evidence for the exact pushed SHA.
@@ -256,31 +260,31 @@ A third push exists only to correct CSP after Push 2 and requires Francisco's ex
 
 ### 10.1 Clean verification battery before Push 1
 
-- [ ] `npm ci`
-- [ ] TypeScript/no-emit and lint checks
-- [ ] all Vitest tests, including controller cases
-- [ ] production web build
-- [ ] media URL verification and chapter/R2 reconciliation
-- [ ] default Playwright suite including all Phase-3 specifications
-- [ ] isolated desktop content/state-machine matrix at 1440 px
-- [ ] validated same-machine eight-surface screenshot comparison
-- [ ] deterministic latency measurements
-- [ ] dependency audits split into full tree and production runtime
-- [ ] Tauri isolation review, normal-path desktop smoke, visible window-title check, and structural divergence inventory
-- [ ] source searches for direct storage, forbidden preload behavior, missing `playsInline`, forbidden machine paths, changed media/binary assets, and unexpected scope
+- [x] `npm ci`
+- [x] TypeScript/no-emit and lint checks
+- [x] all Vitest tests, including controller cases
+- [x] production web build
+- [x] media URL verification and chapter/R2 reconciliation
+- [x] default Playwright suite including all Phase-3 specifications
+- [x] isolated desktop content/state-machine matrix at 1440 px
+- [x] validated same-machine eight-surface screenshot comparison
+- [x] deterministic latency measurements
+- [x] dependency audits split into full tree and production runtime
+- [x] Tauri isolation review, normal-path desktop smoke, visible window-title check, and structural divergence inventory
+- [x] source searches for direct storage, forbidden preload behavior, missing `playsInline`, forbidden machine paths, changed media/binary assets, and unexpected scope
 - [ ] clean named-file diff and clean worktree after each final commit
 
 ### 10.2 Records duties
 
-- [ ] Append dated `DECISIONS.md` entries for canonical W12-W17 and the adjudicated section 4A/4C semantic amendments implemented here: `playbackIntent`; `failedRequest`; Replay as an explicit restart command; the 15-second readiness watchdog plus separate 10-second stall timer; `MediaError`-based failure classification with no HTTP-status claims; reconnect to ready-paused with explicit Resume; and one permanent web slideshow element.
-- [ ] Mirror these section 4A/4C amendments into the canonical plan, following the Gate-1 records-commit precedent.
-- [ ] Record in `CONTEXT.md` all shared-document effects, every authorized cross-platform safety/shared change, any Tauri structural divergence with file/line, verification evidence, remaining limitations, and the exact next action.
-- [ ] Record that `npx --yes wrangler@4.118.0` is a pinned tool download, not a project dependency; the dependency whitelist remains exactly the four font packages.
-- [ ] Keep this plan's checkboxes current after each meaningful step.
+- [x] Append dated `DECISIONS.md` entries for canonical W12-W19 and the adjudicated section 4A/4C/Sheet-C semantic amendments implemented here: `playbackIntent`; `failedRequest`; Replay as an explicit restart command; the 15-second readiness watchdog plus separate 10-second stall timer; `MediaError`-based failure classification with no HTTP-status claims; reconnect to ready-paused with explicit Resume; one permanent web slideshow element; and intent-gated metadata prefetch.
+- [x] Mirror the section 4A/4C/Sheet-C amendments into the canonical plan, following the Gate-1 records-commit precedent.
+- [x] Record in `CONTEXT.md` all shared-document effects, every authorized cross-platform safety/shared change, any Tauri structural divergence with file/line, verification evidence, remaining limitations, and the exact next action.
+- [x] Record that `npx --yes wrangler@4.118.0` is a pinned tool download, not a project dependency; the dependency whitelist remains exactly the four font packages.
+- [x] Keep this plan's checkboxes current after each meaningful step.
 
 ### 10.3 Copy and Gate-3 sequencing
 
-Claude's technical Gate-3 audit may begin on the pushed implementation tip while the business/legal copy decision is pending. No Gate-3 verdict or promotion may occur until Francisco either approves the existing copy as-is or supplies exact replacements. Any replacement lands as an authorized delta commit and is audited before the verdict.
+Francisco approved the existing Send Certs and How-To business/legal copy as-is on August 3, 2026, so the Gate-3 verdict is not copy-blocked. If Francisco revises any public wording before the verdict, it lands as an authorized copy-only delta and is audited before promotion.
 
 Completion is reported after Push 2. Gate 3 then verifies the exact pushed SHA through the full diff audit, state-machine/controller cases, slideshow visual spot-check, CSP enforcement, deterministic screenshots and latency, desktop isolation, records, and the resolved copy decision.
 
@@ -308,3 +312,15 @@ The implementation should use the smallest coherent version of this map; split a
 Codex independently checked all eight Revision 2.1 amendments against the approved Git state, current source, Gate-1 evidence inventory, package registry pin, and canonical governance. All eight are accurate and worthwhile. Amendment 2 is accepted specifically as an approval boundary: it does not itself approve replacement metadata or business/legal copy.
 
 Codex independently checked Sheet B against the authorized branch and current external endpoints. Its architecture and sequencing are accepted with the governing clarifications recorded above: Sheet B corrects the prior `dm-sans` transcription to the mac-build's actual JetBrains Mono package; the GitHub evergreen installer is the selected default because the vanity hostname is not currently an installer redirect; Send Certs is included in the hidden-content rule; and desktop retains its existing Settings label while the repurposed button/modal remains strictly web-only.
+
+## 13. Authorized Corrective Amendment Sheet C — latency gate
+
+Sheet C supersedes this plan only on latency and preload policy. Francisco authorized it on August 3, 2026 after the original cold-cache gate missed (overall median 3.220 s; worst 9.080 s at `54d0630`).
+
+- [x] Permit web-only metadata prefetch for exactly the chapter row receiving `pointerenter`, `touchstart`, or keyboard `focus`, under a separate newest-wins prefetch epoch. It may not mutate committed/pending UI state, play, or predict an adjacent/next chapter.
+- [x] Promote a matching warmed element without source reassignment; cancel/reset it for a different selection, close, unmount, course switch, or surface switch. Protect all completion and cleanup with prefetch and ownership epochs.
+- [x] Reissue one media-origin preconnect when the course-player surface opens, with no periodic keepalive.
+- [x] Record phase timing from explicit row intent through metadata readiness and from click through branded feedback/first rendered playing frame. Use CDP network timing when cross-origin Resource Timing is unavailable because the media response has no TAO grant.
+- [x] Apply the amended targets: overall median <=2.5 s; worst <=5.0 s for `moov` <=128 KB; the eight W19 heavy-`moov` files worst <=10.0 s and loading feedback <=200 ms.
+- [x] Re-measure five fresh cold-cache contexts per selected chapter on Moto G Power-class emulation, Slow 4G (180,000 B/s down, 84,375 B/s up, 562.5 ms latency), and 4x CPU throttling. The amended gate passed; exact trials and phase attribution are in `CONTEXT.md`.
+- [x] Record but do not repair the three non-fast-start slideshow videos; their lossless media-side remux is Francisco's separate scope.
