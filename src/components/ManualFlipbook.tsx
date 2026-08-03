@@ -24,6 +24,17 @@ import { isTauri } from '../media-resolver';
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
+let managedPdfWorker: Worker | null = null;
+
+const resetWebPdfWorker = () => {
+  if (isTauri || typeof Worker === 'undefined') return;
+  managedPdfWorker?.terminate();
+  managedPdfWorker = new Worker(pdfWorkerUrl, { type: 'module' });
+  pdfjs.GlobalWorkerOptions.workerPort = managedPdfWorker;
+};
+
+resetWebPdfWorker();
+
 export interface ManualFlipbookRef {
   resolveDestination: (dest: any) => Promise<void>;
   goToPage: (pageIndex: number) => void;
@@ -40,6 +51,44 @@ interface ManualFlipbookProps {
   isOnline?: boolean;
 }
 
+interface PageRenderBoundaryProps {
+  children: React.ReactNode;
+  pageNumber: number;
+  onError: (pageNumber: number, error: unknown) => void;
+  onRetry: () => void;
+}
+
+class PageRenderBoundary extends React.Component<PageRenderBoundaryProps, { error: Error | null }> {
+  declare readonly props: Readonly<PageRenderBoundaryProps>;
+  state = { error: null as Error | null };
+
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+
+  componentDidCatch(error: Error) {
+    this.props.onError(this.props.pageNumber, error);
+  }
+
+  render() {
+    if (!this.state.error) return this.props.children;
+
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center" role="alert">
+        <AlertTriangle className="text-eh-red" size={24} />
+        <p className="text-xs font-bold text-gray-700">Page {this.props.pageNumber} could not be rendered.</p>
+        <button
+          type="button"
+          onClick={this.props.onRetry}
+          className="rounded-full bg-eh-red px-4 py-2 text-[10px] font-black uppercase tracking-wider text-white"
+        >
+          Retry Page
+        </button>
+      </div>
+    );
+  }
+}
+
 const PageContent = React.forwardRef<HTMLDivElement, {
   pageNumber: number;
   width: number;
@@ -53,34 +102,40 @@ const PageContent = React.forwardRef<HTMLDivElement, {
   return (
     <div className="bg-white shadow-2xl relative overflow-hidden w-full h-full flex items-center justify-center" ref={ref} data-density="hard">
       {props.renderPDF !== false ? (
-        <Page 
-          pageNumber={props.pageNumber} 
-          width={props.width}
-          scale={props.scale}
-          className="w-full h-full flex items-center justify-center [&>.react-pdf__Page__canvas]:!w-full [&>.react-pdf__Page__canvas]:!h-full [&>.react-pdf__Page__canvas]:!object-fill"
-          renderTextLayer={false}
-          renderAnnotationLayer={false}
-          onLoadError={(error) => props.onPageError(props.pageNumber, error)}
-          onRenderError={(error) => props.onPageError(props.pageNumber, error)}
-          error={
-            <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center" role="alert">
-              <AlertTriangle className="text-eh-red" size={24} />
-              <p className="text-xs font-bold text-gray-700">Page {props.pageNumber} could not be rendered.</p>
-              <button
-                type="button"
-                onClick={props.onRetryPage}
-                className="rounded-full bg-eh-red px-4 py-2 text-[10px] font-black uppercase tracking-wider text-white"
-              >
-                Retry Page
-              </button>
-            </div>
-          }
-          loading={
-            <div className="flex items-center justify-center h-full">
-              <Loader2 className="animate-spin text-eh-red/30" />
-            </div>
-          }
-        />
+        <PageRenderBoundary
+          pageNumber={props.pageNumber}
+          onError={props.onPageError}
+          onRetry={props.onRetryPage}
+        >
+          <Page
+            pageNumber={props.pageNumber}
+            width={props.width}
+            scale={props.scale}
+            className="w-full h-full flex items-center justify-center [&>.react-pdf__Page__canvas]:!w-full [&>.react-pdf__Page__canvas]:!h-full [&>.react-pdf__Page__canvas]:!object-fill"
+            renderTextLayer={false}
+            renderAnnotationLayer={false}
+            onLoadError={(error) => props.onPageError(props.pageNumber, error)}
+            onRenderError={(error) => props.onPageError(props.pageNumber, error)}
+            error={
+              <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center" role="alert">
+                <AlertTriangle className="text-eh-red" size={24} />
+                <p className="text-xs font-bold text-gray-700">Page {props.pageNumber} could not be rendered.</p>
+                <button
+                  type="button"
+                  onClick={props.onRetryPage}
+                  className="rounded-full bg-eh-red px-4 py-2 text-[10px] font-black uppercase tracking-wider text-white"
+                >
+                  Retry Page
+                </button>
+              </div>
+            }
+            loading={
+              <div className="flex items-center justify-center h-full">
+                <Loader2 className="animate-spin text-eh-red/30" />
+              </div>
+            }
+          />
+        </PageRenderBoundary>
       ) : (
         <div className="flex items-center justify-center h-full text-eh-red/30 font-mono text-sm opacity-50">
           Loading Page {props.pageNumber}...
@@ -113,6 +168,9 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
   const [documentRetryToken, setDocumentRetryToken] = useState(0);
   const [pageRetryToken, setPageRetryToken] = useState(0);
   const [failedPage, setFailedPage] = useState<number | null>(null);
+  const documentSource = documentRetryToken === 0
+    ? pdfUrl
+    : `${pdfUrl}${pdfUrl.includes('?') ? '&' : '?'}retry=${documentRetryToken}`;
   
   const flipbookRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -173,6 +231,7 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
   };
 
   const retryDocument = () => {
+    resetWebPdfWorker();
     setDocumentError(null);
     setDocumentRetryToken(token => token + 1);
   };
@@ -433,6 +492,8 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
           </button>
           <button 
             onClick={onClose}
+            title="Close Manual"
+            aria-label="Close Manual"
             className="p-2 bg-eh-red/20 hover:bg-eh-red/30 rounded-full transition-colors text-eh-red"
           >
             <X size={20} />
@@ -457,7 +518,7 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
           >
           <Document
           key={`${pdfUrl}-${documentRetryToken}`}
-          file={pdfUrl}
+          file={documentSource}
           onLoadSuccess={onDocumentLoadSuccess}
           onLoadError={onDocumentLoadError}
           error={null}
@@ -470,7 +531,7 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
         >
           {numPages > 0 && (
             <HTMLFlipBook
-              key={`${pageWidth}x${pageHeight}`}
+              key={`${pageWidth}x${pageHeight}-${pageRetryToken}`}
               width={pageWidth}
               height={pageHeight}
               size="fixed"
@@ -502,7 +563,7 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
                 const isClose = Math.abs(index - currentPage) <= 4;
                 return (
                   <PageContent 
-                    key={`page_${index + 1}_${pageRetryToken}`}
+                    key={`page_${index + 1}`}
                     pageNumber={index + 1} 
                     width={pageWidth}
                     height={pageHeight}

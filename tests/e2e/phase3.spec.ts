@@ -266,6 +266,65 @@ test.describe('Phase 3 manual failure recovery', () => {
     await expect(page.locator('canvas').filter({ visible: true }).first()).toBeVisible({ timeout: 20_000 });
     await expect(page.getByText('Manual Flipbook Reader', { exact: true })).toBeVisible();
   });
+
+  test('page render failure offers Retry Page and preserves the reader shell', async ({ page }) => {
+    await page.addInitScript(() => {
+      const originalGetContext = HTMLCanvasElement.prototype.getContext;
+      (window as typeof window & { __failPdfCanvas?: boolean }).__failPdfCanvas = false;
+      (HTMLCanvasElement.prototype as any).getContext = function (...args: any[]) {
+        if ((window as typeof window & { __failPdfCanvas?: boolean }).__failPdfCanvas) {
+          throw new Error('Expected PDF canvas failure');
+        }
+        return originalGetContext.apply(this, args as any);
+      };
+    });
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await page.locator('[data-app-ready="true"]').waitFor();
+    await page.getByTitle('Browse Student and Instructor Handbooks').click();
+    await page.getByRole('button', { name: /Student Manual/i }).first().click();
+    await page.evaluate(() => {
+      (window as typeof window & { __failPdfCanvas?: boolean }).__failPdfCanvas = true;
+    });
+    await page.getByRole('button', { name: 'OPEN STUDENT MANUAL', exact: true }).click();
+
+    await expect(page.getByText('Manual Flipbook Reader', { exact: true })).toBeVisible();
+    const retryPage = page.getByRole('button', { name: 'Retry Page', exact: true }).first();
+    await expect(retryPage).toBeVisible({ timeout: 20_000 });
+    await page.evaluate(() => {
+      (window as typeof window & { __failPdfCanvas?: boolean }).__failPdfCanvas = false;
+    });
+    await retryPage.click();
+    await expect(page.locator('canvas').filter({ visible: true }).first()).toBeVisible({ timeout: 20_000 });
+  });
+
+  test('offline document failure gives reconnect guidance and recovers after reconnect', async ({ page, context }) => {
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await page.locator('[data-app-ready="true"]').waitFor();
+    await page.getByTitle('Browse Student and Instructor Handbooks').click();
+
+    // Cache the lazy reader bundle with a different document before simulating a
+    // disconnected browser. This isolates the student-manual request under test.
+    await page.getByRole('button', { name: /Instructor Manual/i }).first().click();
+    await page.getByRole('button', { name: 'OPEN INSTRUCTOR MANUAL', exact: true }).click();
+    await expect(page.locator('canvas').filter({ visible: true }).first()).toBeVisible({ timeout: 20_000 });
+    await page.getByRole('button', { name: 'Close Manual', exact: true }).click();
+    await page.getByTitle('Browse Student and Instructor Handbooks').click();
+    await page.getByRole('button', { name: /Student Manual/i }).first().click();
+
+    const failedManual = (url: URL) => url.href.endsWith('/student_manual.pdf');
+    await page.route(failedManual, route => route.abort('internetdisconnected'));
+    await context.setOffline(true);
+    await page.evaluate(() => window.dispatchEvent(new Event('offline')));
+    await page.getByRole('button', { name: 'OPEN STUDENT MANUAL', exact: true }).click();
+
+    const alert = page.getByRole('alert').filter({ hasText: 'Manual unavailable' });
+    await expect(alert).toContainText('You are offline. Reconnect, then retry the training manual.', { timeout: 15_000 });
+    await context.setOffline(false);
+    await page.evaluate(() => window.dispatchEvent(new Event('online')));
+    await page.unroute(failedManual);
+    await alert.getByRole('button', { name: /Retry/ }).click();
+    await expect(page.locator('canvas').filter({ visible: true }).first()).toBeVisible({ timeout: 20_000 });
+  });
 });
 
 test.describe('Phase 3 offline app download affordance', () => {
@@ -276,6 +335,8 @@ test.describe('Phase 3 offline app download affordance', () => {
 
     await page.goto('/', { waitUntil: 'domcontentloaded' });
     await page.locator('[data-app-ready="true"]').waitFor();
+    await expect(page.getByTitle('Collapse Sidebar Menu')).toHaveCount(0);
+    await expect(page.getByTitle('Expand Sidebar Menu')).toBeVisible();
     await expect(downloadButton).toBeVisible();
 
     await downloadButton.click();
