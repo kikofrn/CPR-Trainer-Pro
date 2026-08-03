@@ -12,7 +12,7 @@
 - Recovery start SHA: `3d0e99a7ea2cd56642265210ab95d9706d4fdebf`.
 - Immutable implementation candidate: `39b4bb1b881119c054feb9c576b16fd663d0f2f8`.
 - Round anchors retained for audit: `b550d6c`, `51c8cca`, `f188af9`, and HeaderNav parity anchor `898e28d`.
-- Gate 1 is not passed. Claude is the sole independent auditor for this recovery; Francisco owns P9/R8 desktop smoke.
+- Gate-1 recovery: Claude's sole independent audit PASSED at `ad2bdab` (findings D1-D6 recorded, none invalidating). Francisco's P9/R8 desktop smoke PASSED Aug 3 (streamed-playback caveat recorded below). The approved SHA is named in Claude's written gate verdict on this records commit.
 - Gate 1 creates the first approved visual reference. Historical unapproved SHAs are not visual baselines.
 - Spanish editions remain data-dormant and have no interactive route; accepted static guide prose may mention future Spanish modules.
 - Durable evidence is outside the repository under `CPR Trainer Pro Gate 1 Evidence/39b4bb1b881119c054feb9c576b16fd663d0f2f8/`.
@@ -60,11 +60,11 @@
 
 ## Smoke Test Verification (R8)
 
-R8 desktop smoke: PENDING - requires human observation (Francisco).
+R8 desktop smoke: PASSED - Aug 3, 2026, performed by Francisco on the Windows dev checkout (`npm run tauri:dev` at the audited tip). Verified: boot to home screen; splashscreen closed automatically; one CPR course chapter played in desktop (Tauri) mode. Recorded caveat, accepted by Francisco: playback was CDN-streamed (no offline media present in the dev profile), so the offline download/local-playback path was not exercised this round - accepted because that path is byte-identical to the pre-round state (auditor-verified) and the shipped Windows product lives on a separate frozen branch. Also confirmed during the smoke: the dev-only Developer Tools / Mock Updater section is `import.meta.env.DEV`-gated (Sidebar.tsx:729) and absent from production builds; the real updater check exits immediately when not in Tauri (App.tsx:174), so the web build ships no updater.
 
 ## Current state (session handoff)
 
 - C1 `c2991ae` restored runnable tests and boot parity; C2 `8081611` stabilized the four-test default Playwright suite; C3 `4d0ba41` added the isolated 16-row Gate-1 matrix.
 - C4 `b870683` made the seven-surface screenshot proof deterministic; C5 `44bcbd2` wired default E2E and governance into web CI; C6 `7c7c51d` made the external CI report retrievable; C7 `39b4bb1` reconciled canonical-plan CI policy and is the immutable implementation candidate.
 - Candidate evidence is complete and archived. The remaining machine steps are this records-only commit, a non-force push of `web-app`, and hosted CI confirmation.
-- Gate 1 remains not passed: Claude's independent audit and Francisco's P9/R8 human desktop smoke remain pending. Do not create or promote `web-production`.
+- Claude's independent audit PASSED (`ad2bdab`); Francisco's P9/R8 smoke PASSED (Aug 3, caveat above). This records-only commit closes the recovery round; Claude's verdict names the approved SHA. `web-production` is created at the approved SHA in Phase 2 (plan section 6) - not before.
