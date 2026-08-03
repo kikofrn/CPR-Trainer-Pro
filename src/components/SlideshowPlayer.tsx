@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, SkipBack, SkipForward, Play, Pause, Projector, VolumeX, Volume2, Maximize2, Lightbulb } from 'lucide-react';
-import { cdnUrl } from '../media-resolver';
+import { cdnUrl, isTauri } from '../media-resolver';
 import { INSTRUCTOR_TIPS } from '../instructor-tips';
+import { WebSlideshowMedia, type WebSlideshowControls } from './WebSlideshowMedia';
 
 interface SlideshowPlayerProps {
   activeSlideshow: any;
@@ -23,8 +24,11 @@ interface SlideshowPlayerProps {
   nextSlide: () => void;
   
   slideshowIsPlaying: boolean;
+  setSlideshowIsPlaying: (playing: boolean) => void;
   toggleSlideshowPlay: () => void;
   onSlideVideoEnded: () => void;
+  isOnline: boolean;
+  webControlsRef: React.MutableRefObject<WebSlideshowControls | null>;
   
   m: (path: string) => string;
   fileStatuses: Record<string, boolean>;
@@ -34,7 +38,8 @@ interface SlideshowPlayerProps {
  * Resolve the display URL for a slide.
  * - If the file is downloaded locally, use the local media:// protocol URL (works offline).
  * - If NOT downloaded and it's an image, use the CDN URL (loads instantly from Cloudflare).
- * - Videos always use local URL (they must be downloaded first to stream).
+ * - Desktop videos use the local media URL after the existing download gate.
+ * Web slideshow video is owned by WebSlideshowMedia and streams through mediaUrl().
  */
 function resolveSlideUrl(slide: any, m: (path: string) => string, fileStatuses: Record<string, boolean>): string {
   const clean = slide.filename?.trim().replace(/^\//, '') || '';
@@ -51,7 +56,8 @@ export function SlideshowPlayer({
   isUiVisible, slideshowContainerRef, slideVideoRef,
   isMuted, setIsMuted, volume, setVolume,
   prevSlide, nextSlide,
-  slideshowIsPlaying, toggleSlideshowPlay, onSlideVideoEnded,
+  slideshowIsPlaying, setSlideshowIsPlaying, toggleSlideshowPlay, onSlideVideoEnded,
+  isOnline, webControlsRef,
   m, fileStatuses
 }: SlideshowPlayerProps) {
   const [showTips, setShowTips] = useState(false);
@@ -78,46 +84,66 @@ export function SlideshowPlayer({
           </button>
         </div>
 
-        <AnimatePresence mode="popLayout">
-          <motion.div
-            key={`${activeSlideshow.id}-${activeSlide.id}`}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.4, ease: "easeInOut" }}
-            className="absolute inset-0 w-full h-full flex items-center justify-center z-10"
-          >
-            {activeSlide.type === 'image' ? (
-              <img 
-                src={resolveSlideUrl(activeSlide, m, fileStatuses)} 
-                alt={activeSlide.title} 
-                className="w-full h-full object-contain"
-              />
-            ) : (
-              <video
-                ref={(el) => { if (el) slideVideoRef.current = el; }}
-                src={resolveSlideUrl(activeSlide, m, fileStatuses)}
-                className="w-full h-full object-contain"
-                muted={isMuted}
-                onEnded={onSlideVideoEnded}
-              />
-            )}
-          </motion.div>
-        </AnimatePresence>
+        {isTauri ? (
+          <>
+            <AnimatePresence mode="popLayout">
+              <motion.div
+                key={`${activeSlideshow.id}-${activeSlide.id}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.4, ease: "easeInOut" }}
+                className="absolute inset-0 w-full h-full flex items-center justify-center z-10"
+              >
+                {activeSlide.type === 'image' ? (
+                  <img
+                    src={resolveSlideUrl(activeSlide, m, fileStatuses)}
+                    alt={activeSlide.title}
+                    className="w-full h-full object-contain"
+                  />
+                ) : (
+                  <video
+                    ref={(el) => { if (el) slideVideoRef.current = el; }}
+                    src={resolveSlideUrl(activeSlide, m, fileStatuses)}
+                    className="w-full h-full object-contain"
+                    muted={isMuted}
+                    playsInline
+                    onEnded={onSlideVideoEnded}
+                  />
+                )}
+              </motion.div>
+            </AnimatePresence>
 
-        {/* Preload adjacent slideshow assets in the background */}
-        <div className="hidden" aria-hidden="true">
-          {activeSlideshow.slides.map((s: any, idx: number) => {
-            if (Math.abs(idx - activeSlideIndex) <= 1 && idx !== activeSlideIndex) {
-              return s.type === 'image' ? (
-                <img key={s.id} src={resolveSlideUrl(s, m, fileStatuses)} loading="eager" alt="preload" />
-              ) : (
-                <video key={s.id} src={resolveSlideUrl(s, m, fileStatuses)} preload="auto" muted />
-              );
-            }
-            return null;
-          })}
-        </div>
+            {/* Desktop keeps its existing adjacent preload structure. */}
+            <div className="hidden" aria-hidden="true">
+              {activeSlideshow.slides.map((s: any, idx: number) => {
+                if (Math.abs(idx - activeSlideIndex) <= 1 && idx !== activeSlideIndex) {
+                  return s.type === 'image' ? (
+                    <img key={s.id} src={resolveSlideUrl(s, m, fileStatuses)} loading="eager" alt="preload" />
+                  ) : (
+                    <video key={s.id} src={resolveSlideUrl(s, m, fileStatuses)} preload="auto" muted playsInline />
+                  );
+                }
+                return null;
+              })}
+            </div>
+          </>
+        ) : (
+          <WebSlideshowMedia
+            slideshowId={activeSlideshow.id}
+            slide={activeSlide}
+            slideIndex={activeSlideIndex}
+            url={m(activeSlide.filename)}
+            videoRef={slideVideoRef}
+            controlsRef={webControlsRef}
+            muted={isMuted}
+            volume={volume}
+            isOnline={isOnline}
+            onPlayingChange={setSlideshowIsPlaying}
+            onEnded={onSlideVideoEnded}
+            onSkip={nextSlide}
+          />
+        )}
 
         {/* Instructor Tips Overlay */}
         <AnimatePresence>

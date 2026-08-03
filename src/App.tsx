@@ -24,6 +24,7 @@ import { HeaderNav } from './components/HeaderNav';
 import { Sidebar } from './components/Sidebar';
 import { VideoPlayer } from './components/VideoPlayer';
 import { SlideshowPlayer } from './components/SlideshowPlayer';
+import type { WebSlideshowControls } from './components/WebSlideshowMedia';
 import {
   MediaSelectionController,
   type MediaControllerState,
@@ -368,6 +369,7 @@ export default function App() {
   const videoRefA = useRef<HTMLVideoElement>(null);
   const videoRefB = useRef<HTMLVideoElement>(null);
   const slideVideoRef = useRef<HTMLVideoElement>(null);
+  const webSlideshowControlsRef = useRef<WebSlideshowControls | null>(null);
   const slideshowContainerRef = useRef<HTMLDivElement>(null);
   const flipbookRef = useRef<ManualFlipbookRef>(null);
 
@@ -942,6 +944,7 @@ export default function App() {
       if (saved) savedChapter = parseInt(saved, 10) || 0;
     }
     if (!isTauri) {
+      setActiveSlideshowIndex(null);
       requestWebChapter(index, savedChapter, { playbackIntent: isPlaying });
       setActiveTab('video');
       setShowCprSelector(false);
@@ -1039,7 +1042,7 @@ export default function App() {
     setIsPlaying(false);
     setActiveSlideshowIndex(index);
     setActiveSlideIndex(0);
-    setSlideshowIsPlaying(true);
+    setSlideshowIsPlaying(isTauri);
     setShowCprSelector(false);
     setShowFaSelector(false);
     setShowSidebar(true);
@@ -1066,9 +1069,9 @@ export default function App() {
     // For IMAGE slides (or already-downloaded videos): navigate immediately
     // Images load from CDN online or from local cache if already downloaded
     // Use the sidebar download button to explicitly download individual slides
-    if (slideVideoRef.current) slideVideoRef.current.pause();
+    if (isTauri && slideVideoRef.current) slideVideoRef.current.pause();
     setActiveSlideIndex(index);
-    setSlideshowIsPlaying(true);
+    setSlideshowIsPlaying(isTauri);
     setActiveTab('slideshow');
   };
 
@@ -1085,6 +1088,10 @@ export default function App() {
   };
   
   const toggleSlideshowPlay = () => {
+    if (!isTauri) {
+      webSlideshowControlsRef.current?.toggle();
+      return;
+    }
     if (slideVideoRef.current && activeSlide?.type === 'video') {
       if (slideshowIsPlaying) {
         slideVideoRef.current.pause();
@@ -1096,7 +1103,7 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (slideshowIsPlaying && slideVideoRef.current && activeSlide?.type === 'video') {
+    if (isTauri && slideshowIsPlaying && slideVideoRef.current && activeSlide?.type === 'video') {
       slideVideoRef.current.play().catch(e => console.error("Play failed", e));
     }
   }, [activeSlideIndex, activeSlideshowIndex, activeSlide, slideshowIsPlaying]);
@@ -1116,12 +1123,7 @@ export default function App() {
           togglePlay();
         } else if (activeTab === 'slideshow' && activeSlideshow && slideVideoRef.current && activeSlide?.type === 'video') {
           e.preventDefault();
-          if (slideshowIsPlaying) {
-            slideVideoRef.current.pause();
-          } else {
-            slideVideoRef.current.play().catch(console.error);
-          }
-          setSlideshowIsPlaying(!slideshowIsPlaying);
+          toggleSlideshowPlay();
         }
       } else if (e.key === 'ArrowRight') {
         if (activeTab === 'slideshow' && activeSlideshow) {
@@ -1256,7 +1258,11 @@ export default function App() {
       setIsPlaying(false);
     }
     if (activeTab !== 'slideshow') {
-      if (slideVideoRef.current) slideVideoRef.current.pause();
+      if (isTauri) {
+        if (slideVideoRef.current) slideVideoRef.current.pause();
+      } else if (slideshowIsPlaying) {
+        webSlideshowControlsRef.current?.toggle();
+      }
       setSlideshowIsPlaying(false);
     }
   }, [activeTab]);
@@ -1652,8 +1658,11 @@ export default function App() {
               prevSlide={prevSlide}
               nextSlide={nextSlide}
               slideshowIsPlaying={slideshowIsPlaying}
+              setSlideshowIsPlaying={setSlideshowIsPlaying}
               toggleSlideshowPlay={toggleSlideshowPlay}
               onSlideVideoEnded={() => setSlideshowIsPlaying(false)}
+              isOnline={isOnline}
+              webControlsRef={webSlideshowControlsRef}
               m={m}
               fileStatuses={dlState.fileStatuses}
             />

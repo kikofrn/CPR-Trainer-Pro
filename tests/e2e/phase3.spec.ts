@@ -29,6 +29,22 @@ async function selectChapter(page: Page, title: string) {
   await chapter.click();
 }
 
+async function launchCprSlideshow(page: Page) {
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
+  await page.locator('[data-app-ready="true"]').waitFor();
+  await page.getByTitle('Select CPR & AED Course Edition').click();
+  await page.getByRole('button', { name: 'START COURSE', exact: true }).click();
+  await expect(page.getByText(/^Slide 1 of \d+$/)).toBeVisible();
+  await expect(page.locator('[data-slideshow-media-state="image-ready"]')).toBeVisible({ timeout: 20_000 });
+}
+
+async function advanceToCprVideoSlide(page: Page) {
+  for (let slide = 2; slide <= 8; slide += 1) {
+    await page.getByTitle('Next Slide').click();
+    await expect(page.getByText(new RegExp(`^Slide ${slide} of \\d+$`))).toBeVisible();
+  }
+}
+
 test.describe('Phase 3 transactional chapter playback', () => {
   test('does not speculatively request the next chapter', async ({ page }) => {
     const errors = setupStrictErrors(page, []);
@@ -109,6 +125,124 @@ test.describe('Phase 3 transactional chapter playback', () => {
     releaseDelayed();
     await delayedFinished;
     await expect(page.locator('video[data-media-active="true"]')).toHaveAttribute('src', /Life%20and%20Death%20Drama\.mp4/);
+    errors.verify();
+  });
+});
+
+test.describe('Phase 3 persistent slideshow media', () => {
+  test('keeps one video element, reports truthful play state, and rejects stale video events after an image transition', async ({ page }) => {
+    test.setTimeout(45_000);
+    const errors = setupStrictErrors(page, []);
+    await launchCprSlideshow(page);
+    expect(await page.locator('video').count()).toBe(1);
+    await advanceToCprVideoSlide(page);
+    const video = page.locator('video').first();
+    await expect(page.locator('[data-slideshow-media-state="video-playing"]')).toBeVisible({ timeout: 20_000 });
+    expect(await video.evaluate((element: HTMLVideoElement) => element.paused)).toBe(false);
+
+    await page.getByTitle('Pause Video Slide').click();
+    await expect(page.locator('[data-slideshow-media-state="video-paused"]')).toBeVisible();
+    expect(await video.evaluate((element: HTMLVideoElement) => element.paused)).toBe(true);
+    await page.getByTitle('Play Video Slide').click();
+    await expect(page.locator('[data-slideshow-media-state="video-playing"]')).toBeVisible();
+
+    await page.getByTitle('Next Slide').click();
+    await expect.poll(async () => page.evaluate(() => {
+      const visibleVideo = Array.from(document.querySelectorAll('video')).some(element => getComputedStyle(element).opacity !== '0');
+      const visibleImage = Array.from(document.querySelectorAll('img:not([aria-hidden="true"])')).some(element => {
+        const style = getComputedStyle(element);
+        return element.getClientRects().length > 0 && style.opacity !== '0';
+      });
+      const loadingFrame = !!document.querySelector('[data-slideshow-media-state="image-loading"]');
+      return visibleVideo || visibleImage || loadingFrame;
+    })).toBe(true);
+    await expect(page.getByText(/^Slide 9 of \d+$/)).toBeVisible();
+    await expect(page.locator('[data-slideshow-media-state="image-ready"]')).toBeVisible({ timeout: 20_000 });
+    await video.evaluate(element => {
+      element.dispatchEvent(new Event('playing'));
+      element.dispatchEvent(new Event('error'));
+    });
+    await expect(page.getByText(/^Slide 9 of \d+$/)).toBeVisible();
+    await expect(page.locator('[data-slideshow-media-state="image-ready"]')).toBeVisible();
+    errors.verify();
+  });
+
+  test('autoplay denial waits for readiness and exposes Play', async ({ page }) => {
+    test.setTimeout(40_000);
+    const errors = setupStrictErrors(page, []);
+    await launchCprSlideshow(page);
+    await page.evaluate(() => {
+      const originalPlay = HTMLMediaElement.prototype.play;
+      (window as typeof window & { __restoreSlideshowPlay?: () => void }).__restoreSlideshowPlay = () => {
+        HTMLMediaElement.prototype.play = originalPlay;
+      };
+      HTMLMediaElement.prototype.play = function denyTargetSlide() {
+        if (this.src.includes('Life%20and%20Death%20Drama.mp4')) {
+          const error = new DOMException('User activation required.', 'NotAllowedError');
+          return Promise.reject(error);
+        }
+        return originalPlay.call(this);
+      };
+    });
+    await advanceToCprVideoSlide(page);
+    await expect(page.locator('[data-slideshow-media-state="autoplay-denied"]')).toBeVisible({ timeout: 20_000 });
+    expect(await page.locator('video').evaluate((element: HTMLVideoElement) => element.paused)).toBe(true);
+    await page.evaluate(() => {
+      (window as typeof window & { __restoreSlideshowPlay?: () => void }).__restoreSlideshowPlay?.();
+    });
+    await page.getByTitle('Play Video Slide').click();
+    await expect(page.locator('[data-slideshow-media-state="video-playing"]')).toBeVisible();
+    errors.verify();
+  });
+
+  test('terminal video failure offers Retry and Skip', async ({ page }) => {
+    test.setTimeout(55_000);
+    const errors = setupStrictErrors(page, []);
+    await launchCprSlideshow(page);
+    await page.evaluate(() => {
+      const originalLoad = HTMLMediaElement.prototype.load;
+      const originalPlay = HTMLMediaElement.prototype.play;
+      HTMLMediaElement.prototype.load = function holdTargetSlide() {
+        if (this.src.includes('Life%20and%20Death%20Drama.mp4')) return;
+        originalLoad.call(this);
+      };
+      HTMLMediaElement.prototype.play = function holdTargetPlayback() {
+        if (this.src.includes('Life%20and%20Death%20Drama.mp4')) return new Promise<void>(() => undefined);
+        return originalPlay.call(this);
+      };
+    });
+    await advanceToCprVideoSlide(page);
+    const video = page.locator('video').first();
+    await expect(page.locator('[data-slideshow-media-state="video-loading"]')).toBeVisible();
+    for (const retryDelay of [2_000, 4_000, 8_000]) {
+      await video.evaluate(element => element.dispatchEvent(new Event('error')));
+      await expect(page.locator('[data-slideshow-media-state="retrying"]')).toBeVisible();
+      await expect.poll(async () => video.getAttribute('src'), { timeout: retryDelay + 10_000 }).toContain('Life%20and%20Death%20Drama.mp4');
+    }
+    await video.evaluate(element => element.dispatchEvent(new Event('error')));
+    const alert = page.locator('[data-slideshow-media-state="failed"]').getByRole('alert');
+    await expect(alert.getByRole('button', { name: /Retry/ })).toBeVisible();
+    await expect(alert.getByRole('button', { name: /Skip/ })).toBeVisible();
+    await alert.getByRole('button', { name: /Skip/ }).click();
+    await expect(page.getByText(/^Slide 9 of \d+$/)).toBeVisible();
+    errors.verify();
+  });
+
+  test('image failure has a branded Retry and Skip recovery path', async ({ page }) => {
+    const errors = setupStrictErrors(page, [{
+      channel: 'console',
+      message: 'Failed to load resource: net::ERR_FAILED',
+      pathname: '/CPR%20AED%20Presentation%20Slides/02_EHAcademy%20-%20CPR%20AED%20Course%20Pres-Why%20should%20I%20learn%20CPR.png',
+      count: 1,
+    }]);
+    await launchCprSlideshow(page);
+    const failedImage = '02_EHAcademy%20-%20CPR%20AED%20Course%20Pres-Why%20should%20I%20learn%20CPR.png';
+    await page.route(url => url.href.includes(failedImage), route => route.abort('failed'));
+    await page.getByTitle('Next Slide').click();
+    const alert = page.locator('[data-slideshow-media-state="failed"]').getByRole('alert');
+    await expect(alert).toBeVisible({ timeout: 10_000 });
+    await alert.getByRole('button', { name: /Skip/ }).click();
+    await expect(page.getByText(/^Slide 3 of \d+$/)).toBeVisible();
     errors.verify();
   });
 });
