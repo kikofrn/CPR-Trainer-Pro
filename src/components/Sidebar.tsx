@@ -8,8 +8,7 @@ import { openExternalUrl } from '../utils/browser';
 interface SidebarProps {
   showSidebar: boolean;
   setShowSidebar: (v: boolean) => void;
-  setActiveCourseIndex: (i: number | null) => void;
-  setActiveSlideshowIndex: (i: number | null) => void;
+  onReturnHome: () => void;
   setSelectedManual: (m: any) => void;
   setActiveTab: (t: 'video'|'manual'|'slideshow'|'send-certs') => void;
   
@@ -60,7 +59,7 @@ interface SidebarProps {
 }
 
 export const Sidebar = React.memo(function Sidebar({
-  showSidebar, setShowSidebar, setActiveCourseIndex, setActiveSlideshowIndex, setSelectedManual, setActiveTab,
+  showSidebar, setShowSidebar, onReturnHome, setSelectedManual, setActiveTab,
   activeTab, activeCourse, activeSlideshow, selectedManual, manualOutline, expandedManualSections, setExpandedManualSections, flipbookRef, MANUALS,
   activeSlideIndex, expandedSections, setExpandedSections, setActiveSlideIndex, selectSlide, slideshowIsPlaying, setSlideshowIsPlaying, toggleSlideshowPlay,
   activeChapterIndex, selectChapter, isPlaying, togglePlay,
@@ -86,12 +85,7 @@ export const Sidebar = React.memo(function Sidebar({
               <div className="flex items-center justify-between gap-2 w-full">
                 <div 
                   className="flex items-center gap-4 cursor-pointer hover:opacity-80 transition-opacity"
-                  onClick={() => {
-                    setActiveCourseIndex(null);
-                    setActiveSlideshowIndex(null);
-                    setSelectedManual(null);
-                    setActiveTab('video');
-                  }}
+                  onClick={onReturnHome}
                   title="Return to Main Menu"
                 >
                   <EHLogo className="h-16 w-16" />

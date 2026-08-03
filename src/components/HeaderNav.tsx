@@ -9,6 +9,7 @@ interface HeaderNavProps {
   dlState: any;
   showSidebar: boolean;
   setShowSidebar: (v: boolean) => void;
+  onReturnHome: () => void;
   setActiveCourseIndex: (i: number | null) => void;
   activeCourseIndex: number | null;
   setActiveSlideshowIndex: (i: number | null) => void;
@@ -67,6 +68,7 @@ interface HeaderNavProps {
 export function HeaderNav({
   dlState,
   showSidebar, setShowSidebar,
+  onReturnHome,
   setActiveCourseIndex, activeCourseIndex, setActiveSlideshowIndex, activeSlideshowIndex, setSelectedManual, setActiveTab,
   lastCprView, showCprSelector, setShowCprSelector, isCprActive, cprVaEnabled, setCprVaEnabled, cprPediatric, setCprPediatric,
   lastFaView, showFaSelector, setShowFaSelector, isFaActive, faPediatric, setFaPediatric, faVaEnabled, setFaVaEnabled,
@@ -120,12 +122,7 @@ export function HeaderNav({
           
           <div 
             className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
-            onClick={() => {
-              setActiveCourseIndex(null);
-              setActiveSlideshowIndex(null);
-              setSelectedManual(null);
-              setActiveTab('video');
-            }}
+            onClick={onReturnHome}
             title="Return to Main Menu"
           >
             <EHLogo className="h-11 w-11 shrink-0 ml-1" />

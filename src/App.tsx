@@ -50,6 +50,20 @@ export function syncPresenterSubtitle(
   });
 }
 
+export function runPresenterExitGuard(
+  isPresentingExternally: boolean,
+  onBlocked: (message: string) => void,
+  onExit: () => void,
+): boolean {
+  if (isPresentingExternally) {
+    onBlocked('Stop presenting to return home');
+    return false;
+  }
+
+  onExit();
+  return true;
+}
+
 function EHLogo({ className }: { className?: string }) {
   return (
     <div className={`relative flex items-center justify-center bg-transparent overflow-hidden ${className}`}>
@@ -556,6 +570,19 @@ export default function App() {
     setShowCprSelector(false);
     setShowFaSelector(false);
     setShowManualSelector(false);
+  };
+
+  const handleReturnHome = () => {
+    runPresenterExitGuard(
+      isPresentingExternallyRef.current,
+      setPresenterError,
+      () => {
+        setActiveCourseIndex(null);
+        setActiveSlideshowIndex(null);
+        setSelectedManual(null);
+        setActiveTab('video');
+      },
+    );
   };
 
   const activeVideoId = activeCourseIndex !== null ? COURSES[activeCourseIndex]?.id : null;
@@ -1706,8 +1733,7 @@ export default function App() {
           <Sidebar
             showSidebar={showSidebar}
             setShowSidebar={setShowSidebar}
-            setActiveCourseIndex={setActiveCourseIndex}
-            setActiveSlideshowIndex={setActiveSlideshowIndex}
+            onReturnHome={handleReturnHome}
             setSelectedManual={selectManual}
             setActiveTab={setActiveTab}
             activeTab={activeTab}
@@ -1763,6 +1789,7 @@ export default function App() {
           dlState={dlState}
           showSidebar={showSidebar}
           setShowSidebar={setShowSidebar}
+          onReturnHome={handleReturnHome}
           setActiveCourseIndex={setActiveCourseIndex}
           activeCourseIndex={activeCourseIndex}
           setActiveSlideshowIndex={setActiveSlideshowIndex}
@@ -1848,20 +1875,14 @@ export default function App() {
           <div className={`w-full h-full relative z-10 ${activeTab === 'manual' && selectedManual ? 'block' : 'hidden'}`}>
             {selectedManual && (
               <ErrorBoundary
-                onReset={() => {
-                  setSelectedManual(null);
-                  setActiveTab('video');
-                }}
+                onReset={handleReturnHome}
               >
                 <ManualFlipbook 
                   key={selectedManual.id}
                   ref={flipbookRef}
                   pdfUrl={m(`/${selectedManual.filename}`)}
                   title={selectedManual.title}
-                  onClose={() => {
-                    setSelectedManual(null);
-                    setActiveTab('video');
-                  }}
+                  onClose={handleReturnHome}
                   onOutlineLoaded={(outline) => setManualOutline(outline.filter((item: any) => item.title !== 'Untitled'))}
                   showEasterEgg={easterEggLevel > 0}
                 />
