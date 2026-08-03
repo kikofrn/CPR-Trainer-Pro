@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, ChevronDown, CheckCircle2, HelpCircle, BookOpen, ChevronRight, GraduationCap, Baby, Book, Award, MonitorPlay, MonitorX, Maximize2, Minimize2, AlertCircle, FolderInput } from 'lucide-react';
+import { Menu, ChevronDown, CheckCircle2, HelpCircle, BookOpen, ChevronRight, GraduationCap, Baby, Book, Award, MonitorPlay, MonitorX, Maximize2, Minimize2, AlertCircle } from 'lucide-react';
 import { COURSES } from '../chapters';
 import { THUMBNAILS } from '../thumbnails';
 import { mediaUrl } from '../media-resolver';
@@ -61,8 +61,6 @@ interface HeaderNavProps {
   handleStartPresenting: () => void;
   handleStopPresenting: () => void;
   handleFullscreenToggle: () => void;
-  handleOpenUsbImport: () => void;
-  isUsbImportActive: boolean;
 }
 
 export function HeaderNav({
@@ -78,8 +76,7 @@ export function HeaderNav({
   handleItemClick, MANUALS,
   EHLogo, CprIcon, FirstAidIcon,
   isFullScreen, isPresentingExternally, hasExternalMonitor, isPresenterStarting, presenterError,
-  handleStartPresenting, handleStopPresenting, handleFullscreenToggle,
-  handleOpenUsbImport, isUsbImportActive
+  handleStartPresenting, handleStopPresenting, handleFullscreenToggle
 }: HeaderNavProps) {
   const pediCprCourse = COURSES.find(c => c.id === 'pediatric-cpr-aed');
   const isCprBothOnComingSoon = cprPediatric && cprVaEnabled && pediCprCourse?.isComingSoon;
@@ -560,14 +557,6 @@ export function HeaderNav({
 
         <div className="flex items-center gap-2">
           {presenterError && <AlertCircle size={20} className="text-eh-red" aria-label="Presenter error" />}
-          <button
-            onClick={handleOpenUsbImport}
-            disabled={isPresentingExternally || isUsbImportActive}
-            className="p-2 bg-eh-peach/10 text-eh-peach hover:bg-eh-peach/20 transition-colors disabled:cursor-not-allowed disabled:opacity-30"
-            title="Import Media from Folder"
-          >
-            <FolderInput size={20} />
-          </button>
           <button
             onClick={isPresentingExternally ? handleStopPresenting : handleStartPresenting}
             disabled={!hasExternalMonitor || isPresenterStarting}

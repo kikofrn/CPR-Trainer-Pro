@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
-import { runPresenterExitGuard, syncPresenterSubtitle } from './App';
+import {
+  beginDetectedUsbImport,
+  runPresenterExitGuard,
+  shouldShowUsbDriveBanner,
+  syncPresenterSubtitle,
+  type DetectedUsbDrive,
+} from './App';
 
 describe('presenter subtitle synchronization', () => {
   it('clears the viewer subtitle when captions are toggled off', () => {
@@ -57,5 +63,32 @@ describe('presenter exit guard', () => {
     expect(runPresenterExitGuard(false, onBlocked, onExit)).toBe(true);
     expect(onBlocked).not.toHaveBeenCalled();
     expect(onExit).toHaveBeenCalledOnce();
+  });
+});
+
+describe('conference USB auto-detection', () => {
+  const detectedDrive: DetectedUsbDrive = {
+    folder: '/Volumes/EHA Conference',
+    summary: {
+      appVersion: '3.0.0',
+      generatedAt: '2026-08-03T00:00:00Z',
+      fileCount: 344,
+      totalBytes: 2_351_000_000,
+    },
+  };
+
+  it('does not show the import banner during Presenter or an active import', () => {
+    expect(shouldShowUsbDriveBanner(detectedDrive, true, false)).toBe(false);
+    expect(shouldShowUsbDriveBanner(detectedDrive, false, true)).toBe(false);
+    expect(shouldShowUsbDriveBanner(detectedDrive, false, false)).toBe(true);
+  });
+
+  it('passes the detected folder and summary into the existing start-import path', () => {
+    const startImport = vi.fn();
+
+    beginDetectedUsbImport(detectedDrive, startImport);
+
+    expect(startImport).toHaveBeenCalledOnce();
+    expect(startImport).toHaveBeenCalledWith(detectedDrive.folder, detectedDrive.summary);
   });
 });

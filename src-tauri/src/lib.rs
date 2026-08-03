@@ -46,6 +46,23 @@ struct DownloadRegistry(Mutex<HashMap<String, CancellationToken>>);
 #[derive(Default)]
 struct UsbImportRegistry(Mutex<Option<CancellationToken>>);
 
+#[derive(Default)]
+struct UsbDriveDetectionState(Mutex<UsbDriveDetectionSession>);
+
+struct UsbDriveDetectionSession {
+    suppressed: bool,
+    handled_mounts: HashSet<PathBuf>,
+}
+
+impl Default for UsbDriveDetectionSession {
+    fn default() -> Self {
+        Self {
+            suppressed: true,
+            handled_mounts: HashSet::new(),
+        }
+    }
+}
+
 #[derive(Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct UsbMediaManifest {
@@ -71,6 +88,13 @@ struct UsbImportSummary {
     generated_at: String,
     file_count: usize,
     total_bytes: u64,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct UsbDriveDetected {
+    folder: String,
+    summary: UsbImportSummary,
 }
 
 #[derive(Default)]
@@ -985,10 +1009,110 @@ fn usb_import_summary(manifest: &UsbMediaManifest) -> UsbImportSummary {
     }
 }
 
+fn detect_usb_drive_at_mount(mount_point: &Path) -> Option<UsbDriveDetected> {
+    let manifest_path = mount_point.join("eha-usb-manifest.json");
+    let metadata = std::fs::metadata(manifest_path).ok()?;
+    if !metadata.is_file() {
+        return None;
+    }
+
+    let folder = mount_point.to_str()?.to_string();
+    let (_, manifest) = read_usb_manifest(&folder).ok()?;
+    Some(UsbDriveDetected {
+        folder,
+        summary: usb_import_summary(&manifest),
+    })
+}
+
+fn poll_for_usb_drives(app: &tauri::AppHandle) {
+    use sysinfo::Disks;
+
+    let disks = Disks::new_with_refreshed_list();
+    let mounted: HashSet<PathBuf> = disks
+        .list()
+        .iter()
+        .map(|disk| disk.mount_point().to_path_buf())
+        .collect();
+
+    let import_is_active = app
+        .try_state::<UsbImportRegistry>()
+        .and_then(|registry| registry.0.lock().ok().map(|active| active.is_some()))
+        .unwrap_or(true);
+    let Some(state) = app.try_state::<UsbDriveDetectionState>() else {
+        return;
+    };
+
+    let candidates = {
+        let Ok(mut session) = state.0.lock() else {
+            return;
+        };
+        session
+            .handled_mounts
+            .retain(|mount| mounted.contains(mount));
+        if session.suppressed || import_is_active {
+            return;
+        }
+        mounted
+            .iter()
+            .filter(|mount| !session.handled_mounts.contains(*mount))
+            .cloned()
+            .collect::<Vec<_>>()
+    };
+
+    for mount in candidates {
+        let Some(payload) = detect_usb_drive_at_mount(&mount) else {
+            continue;
+        };
+        let import_started_during_validation = app
+            .try_state::<UsbImportRegistry>()
+            .and_then(|registry| registry.0.lock().ok().map(|active| active.is_some()))
+            .unwrap_or(true);
+        if import_started_during_validation {
+            continue;
+        }
+        let should_emit = {
+            let Ok(mut session) = state.0.lock() else {
+                return;
+            };
+            if session.suppressed || session.handled_mounts.contains(&mount) {
+                false
+            } else {
+                session.handled_mounts.insert(mount);
+                true
+            }
+        };
+        if should_emit {
+            let _ = app.emit("usb-drive-detected", &payload);
+        }
+    }
+}
+
+fn start_usb_drive_polling(app: tauri::AppHandle) {
+    tauri::async_runtime::spawn(async move {
+        loop {
+            poll_for_usb_drives(&app);
+            tokio::time::sleep(Duration::from_secs(4)).await;
+        }
+    });
+}
+
 #[tauri::command]
 fn inspect_usb_media_folder(selected_folder: String) -> Result<UsbImportSummary, String> {
     let (_, manifest) = read_usb_manifest(&selected_folder)?;
     Ok(usb_import_summary(&manifest))
+}
+
+#[tauri::command]
+fn set_usb_drive_detection_suppressed(
+    state: tauri::State<'_, UsbDriveDetectionState>,
+    suppressed: bool,
+) -> Result<(), String> {
+    let mut session = state
+        .0
+        .lock()
+        .map_err(|_| "USB drive detection is unavailable".to_string())?;
+    session.suppressed = suppressed;
+    Ok(())
 }
 
 fn available_space_for(path: &Path) -> u64 {
@@ -1518,6 +1642,7 @@ pub fn run() {
     tauri::Builder::default()
         .manage(DownloadRegistry::default())
         .manage(UsbImportRegistry::default())
+        .manage(UsbDriveDetectionState::default())
         .manage(MediaLibrary::default())
         .manage(DisplaySleepAssertion::default())
         .plugin(tauri_plugin_opener::init())
@@ -1530,6 +1655,7 @@ pub fn run() {
             inspect_usb_media_folder,
             import_usb_media_folder,
             cancel_usb_media_import,
+            set_usb_drive_detection_suppressed,
             check_media_file_exists,
             check_media_files_status,
             close_splashscreen,
@@ -1569,6 +1695,7 @@ pub fn run() {
                 Err(error) => log::error!("{error}"),
             }
             register_power_notifications(app.handle().clone());
+            start_usb_drive_polling(app.handle().clone());
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -1720,6 +1847,49 @@ mod tests {
         };
         let result = validate_usb_manifest(&root, &manifest);
         assert!(result.is_ok(), "{result:?}");
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn detects_only_valid_root_usb_manifests() {
+        assert!(UsbDriveDetectionSession::default().suppressed);
+
+        let root = test_root("usb-detection");
+        let valid_root = root.join("valid");
+        let media_folder = valid_root.join("media").join("CPR AED Presentation Slides");
+        std::fs::create_dir_all(&media_folder).unwrap();
+        std::fs::write(media_folder.join("slide.png"), b"usb").unwrap();
+        std::fs::write(
+            valid_root.join("eha-usb-manifest.json"),
+            serde_json::json!({
+                "schemaVersion": 1,
+                "generatedAt": "2026-08-03T00:00:00Z",
+                "appVersion": "3.0.0",
+                "files": [{
+                    "key": "CPR AED Presentation Slides/slide.png",
+                    "size": 3,
+                    "etag": "etag",
+                    "sha256": "0".repeat(64),
+                }],
+            })
+            .to_string(),
+        )
+        .unwrap();
+        let valid_root = std::fs::canonicalize(valid_root).unwrap();
+        let detected = detect_usb_drive_at_mount(&valid_root).expect("valid drive is detected");
+        assert_eq!(detected.folder, valid_root.to_string_lossy());
+        assert_eq!(detected.summary.file_count, 1);
+        assert_eq!(detected.summary.total_bytes, 3);
+
+        let missing_root = root.join("missing");
+        std::fs::create_dir_all(&missing_root).unwrap();
+        assert!(detect_usb_drive_at_mount(&missing_root).is_none());
+
+        let invalid_root = root.join("invalid");
+        std::fs::create_dir_all(&invalid_root).unwrap();
+        std::fs::write(invalid_root.join("eha-usb-manifest.json"), b"not-json").unwrap();
+        assert!(detect_usb_drive_at_mount(&invalid_root).is_none());
+
         std::fs::remove_dir_all(root).unwrap();
     }
 

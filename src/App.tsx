@@ -28,6 +28,31 @@ import { canPresent, startPresenting, stopPresenting, sendToViewer } from './uti
 import { findActiveCue } from './utils/subtitle-lookup';
 import { resolveSlideUrl } from './utils/slide-url';
 
+export interface DetectedUsbDrive {
+  folder: string;
+  summary: UsbImportSummary;
+}
+
+export function shouldShowUsbDriveBanner(
+  detectedDrive: DetectedUsbDrive | null,
+  isPresentingExternally: boolean,
+  isUsbImportActive: boolean,
+): boolean {
+  return detectedDrive !== null && !isPresentingExternally && !isUsbImportActive;
+}
+
+export function beginDetectedUsbImport(
+  detectedDrive: DetectedUsbDrive,
+  startImport: (folder: string, summary: UsbImportSummary) => void | Promise<void>,
+): void {
+  void startImport(detectedDrive.folder, detectedDrive.summary);
+}
+
+function formatUsbLibrarySize(bytes: number): string {
+  if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(1)} GB`;
+  return `${Math.max(1, Math.round(bytes / 1024 ** 2))} MB`;
+}
+
 async function setDisplaySleepPrevention(active: boolean): Promise<void> {
   if (!isTauri) return;
   try {
@@ -98,6 +123,8 @@ export default function App() {
   const [usbProgress, setUsbProgress] = useState<UsbImportProgress | null>(null);
   const [usbStatus, setUsbStatus] = useState<'ready' | 'importing' | 'cancelling' | 'complete' | 'error'>('ready');
   const [usbError, setUsbError] = useState<string | null>(null);
+  const [detectedUsbDrive, setDetectedUsbDrive] = useState<DetectedUsbDrive | null>(null);
+  const [usbDetectionReady, setUsbDetectionReady] = useState(false);
   
   const [contentUpdateFiles, setContentUpdateFiles] = useState<ChangedFile[]>([]);
   const [showContentUpdatePrompt, setShowContentUpdatePrompt] = useState(false);
@@ -1237,36 +1264,46 @@ export default function App() {
     return () => unlisten?.();
   }, []);
 
-  const handleOpenUsbImport = async () => {
-    if (isPresentingExternallyRef.current || usbImportActiveRef.current) return;
-    setUsbError(null);
-    try {
-      const { open } = await import('@tauri-apps/plugin-dialog');
-      const selected = await open({
-        title: 'Choose Conference Media Library',
-        directory: true,
-        multiple: false,
-        recursive: true,
-        canCreateDirectories: false,
-        fileAccessMode: 'scoped',
-      });
-      if (!selected || Array.isArray(selected)) return;
-      const { invoke } = await import('@tauri-apps/api/core');
-      const summary = await invoke<UsbImportSummary>('inspect_usb_media_folder', { selectedFolder: selected });
-      setUsbFolder(selected);
-      setUsbSummary(summary);
-      setUsbProgress(null);
-      setUsbStatus('ready');
-    } catch (error) {
-      setUsbFolder(null);
-      setUsbSummary({ appVersion: 'Unknown', generatedAt: '', fileCount: 0, totalBytes: 0 });
-      setUsbStatus('error');
-      setUsbError(String(error));
-    }
-  };
+  useEffect(() => {
+    if (!isTauri) return;
+    let unlisten: (() => void) | undefined;
+    let cancelled = false;
+    import('@tauri-apps/api/event').then(({ listen }) =>
+      listen<DetectedUsbDrive>('usb-drive-detected', (event) => {
+        if (isPresentingExternallyRef.current || usbImportActiveRef.current) return;
+        setDetectedUsbDrive((current) => current ?? event.payload);
+      })
+    ).then((cleanup) => {
+      if (cancelled) {
+        cleanup();
+        return;
+      }
+      unlisten = cleanup;
+      setUsbDetectionReady(true);
+    }).catch(console.error);
+    return () => {
+      cancelled = true;
+      unlisten?.();
+    };
+  }, []);
 
-  const handleStartUsbImport = async () => {
-    if (!usbFolder || !usbSummary || isPresentingExternallyRef.current || usbImportActiveRef.current) return;
+  useEffect(() => {
+    if (!isTauri || !usbDetectionReady) return;
+    const suppressed = isPresentingExternally || isUsbImportActive || detectedUsbDrive !== null;
+    import('@tauri-apps/api/core').then(({ invoke }) =>
+      invoke('set_usb_drive_detection_suppressed', { suppressed })
+    ).catch((error) => console.warn('[usb] Drive detection suppression could not be updated:', error));
+  }, [detectedUsbDrive, isPresentingExternally, isUsbImportActive, usbDetectionReady]);
+
+  const handleStartUsbImport = async (
+    selectedFolder: string | null = usbFolder,
+    selectedSummary: UsbImportSummary | null = usbSummary,
+  ) => {
+    if (!selectedFolder || !selectedSummary || isPresentingExternallyRef.current || usbImportActiveRef.current) return;
+    setUsbFolder(selectedFolder);
+    setUsbSummary(selectedSummary);
+    setDetectedUsbDrive(null);
+    setUsbProgress(null);
     usbImportActiveRef.current = true;
     setIsUsbImportActive(true);
     usbCancelRequestedRef.current = false;
@@ -1275,7 +1312,7 @@ export default function App() {
     await downloadManager.setSuppressed(true);
     try {
       const { invoke } = await import('@tauri-apps/api/core');
-      await invoke<UsbImportSummary>('import_usb_media_folder', { selectedFolder: usbFolder });
+      await invoke<UsbImportSummary>('import_usb_media_folder', { selectedFolder });
       setUsbStatus('complete');
       await downloadManager.checkAllStatuses();
     } catch (error) {
@@ -1295,12 +1332,7 @@ export default function App() {
   const handleRetryUsbImport = () => {
     if (usbFolder) {
       void handleStartUsbImport();
-      return;
     }
-    setUsbSummary(null);
-    setUsbProgress(null);
-    setUsbError(null);
-    void handleOpenUsbImport();
   };
 
   const handleCancelUsbImport = async () => {
@@ -1709,6 +1741,27 @@ export default function App() {
           }}
         />
       )}
+      {shouldShowUsbDriveBanner(detectedUsbDrive, isPresentingExternally, isUsbImportActive) && detectedUsbDrive && (
+        <div className="fixed left-1/2 top-4 z-[205] flex w-[min(92vw,760px)] -translate-x-1/2 items-center justify-between gap-5 border border-eh-blue/40 bg-[#151619]/95 px-5 py-4 shadow-2xl backdrop-blur-sm">
+          <p className="text-sm font-medium leading-6 text-white">
+            Conference USB drive detected — Import {formatUsbLibrarySize(detectedUsbDrive.summary.totalBytes)} course library for offline use?
+          </p>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              onClick={() => beginDetectedUsbImport(detectedUsbDrive, handleStartUsbImport)}
+              className="bg-eh-blue px-4 py-2 text-sm font-bold text-white hover:bg-eh-blue-light"
+            >
+              Import
+            </button>
+            <button
+              onClick={() => setDetectedUsbDrive(null)}
+              className="border border-white/15 px-4 py-2 text-sm font-bold text-white/75 hover:bg-white/5"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
       {usbSummary && (
         <UsbImportModal
           summary={usbSummary}
@@ -1834,8 +1887,6 @@ export default function App() {
           handleStartPresenting={handleStartPresenting}
           handleStopPresenting={handleStopPresenting}
           handleFullscreenToggle={handleFullscreenToggle}
-          handleOpenUsbImport={handleOpenUsbImport}
-          isUsbImportActive={isUsbImportActive}
         />}
         {/* Player Section */}
         <div className="flex-1 relative bg-black overflow-hidden h-full flex items-center justify-center">
