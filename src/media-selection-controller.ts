@@ -474,7 +474,7 @@ export class MediaSelectionController {
     const owner = this.owners[slot];
     if (!owner) return;
     const stalled = () => {
-      if (this.owners[slot] !== owner || this.state.activeSlot !== slot || !this.state.playbackIntent) return;
+      if (this.pending || this.state.failedRequest || this.owners[slot] !== owner || this.state.activeSlot !== slot || !this.state.playbackIntent) return;
       this.patchState({ playbackState: 'stalled' });
       this.clearStallTimer();
       this.stallTimer = this.setTimer(() => {
@@ -484,7 +484,7 @@ export class MediaSelectionController {
       }, this.stallTimeoutMs);
     };
     const recovered = () => {
-      if (this.owners[slot] !== owner || this.state.activeSlot !== slot) return;
+      if (this.pending || this.state.failedRequest || this.owners[slot] !== owner || this.state.activeSlot !== slot) return;
       this.clearStallTimer();
       if (!element.paused && this.state.playbackIntent) this.patchState({ playbackState: 'playing' });
     };

@@ -24,6 +24,22 @@ import { HeaderNav } from './components/HeaderNav';
 import { Sidebar } from './components/Sidebar';
 import { VideoPlayer } from './components/VideoPlayer';
 import { SlideshowPlayer } from './components/SlideshowPlayer';
+import {
+  MediaSelectionController,
+  type MediaControllerState,
+  type MediaSelection,
+} from './media-selection-controller';
+
+const EMPTY_WEB_MEDIA_STATE: MediaControllerState = {
+  committedSelection: null,
+  pendingSelection: null,
+  failedRequest: null,
+  playbackIntent: false,
+  playbackState: 'idle',
+  resumeRequired: false,
+  generation: 0,
+  activeSlot: 'A',
+};
 
 function EHLogo({ className }: { className?: string }) {
   return (
@@ -320,6 +336,15 @@ export default function App() {
 
   // Subtitle & Double-Buffering States/Refs
   const [activePlayer, setActivePlayer] = useState<'A' | 'B'>('A');
+  const [webMediaState, setWebMediaState] = useState<MediaControllerState>(EMPTY_WEB_MEDIA_STATE);
+  const [webMediaRequest, setWebMediaRequest] = useState<{
+    requestId: number;
+    selection: MediaSelection;
+    playbackIntent: boolean;
+    replay: boolean;
+  } | null>(null);
+  const webMediaRequestIdRef = useRef(0);
+  const webMediaControllerRef = useRef<MediaSelectionController | null>(null);
   
   // Real-time volume updates for active players
   useEffect(() => {
@@ -467,6 +492,29 @@ export default function App() {
   }, []);
   const activeCourse = activeCourseIndex !== null ? COURSES[activeCourseIndex] : null;
   const activeChapter = activeCourse ? activeCourse.chapters[activeChapterIndex] : null;
+  const webDisplaySelection = !isTauri
+    ? webMediaState.pendingSelection ?? webMediaState.failedRequest?.selection ?? webMediaRequest?.selection ?? null
+    : null;
+  const webDisplayCourse = webDisplaySelection ? COURSES[webDisplaySelection.courseIndex] : null;
+  const webDisplayChapter = webDisplayCourse?.chapters[webDisplaySelection?.chapterIndex ?? -1] ?? null;
+  const videoDisplayCourse = activeCourse ?? webDisplayCourse;
+  const videoDisplayChapter = activeChapter ?? webDisplayChapter;
+  const videoDisplayChapterIndex = activeCourse ? activeChapterIndex : (webDisplaySelection?.chapterIndex ?? 0);
+  const webPendingChapter = webMediaState.pendingSelection
+    ? {
+        courseId: webMediaState.pendingSelection.courseId,
+        chapterId: webMediaState.pendingSelection.chapterId,
+        title: COURSES[webMediaState.pendingSelection.courseIndex]?.chapters[webMediaState.pendingSelection.chapterIndex]?.title ?? 'Requested chapter',
+      }
+    : null;
+  const webFailedChapter = webMediaState.failedRequest
+    ? {
+        courseId: webMediaState.failedRequest.selection.courseId,
+        chapterId: webMediaState.failedRequest.selection.chapterId,
+        title: COURSES[webMediaState.failedRequest.selection.courseIndex]?.chapters[webMediaState.failedRequest.selection.chapterIndex]?.title ?? 'Requested chapter',
+        offline: webMediaState.failedRequest.failure.kind === 'offline',
+      }
+    : null;
   
   
   
@@ -638,7 +686,7 @@ export default function App() {
 
   // Manage double-buffered preloading for Video Players A & B
   useEffect(() => {
-    if (!activeChapter) return;
+    if (!isTauri || !activeChapter) return;
 
     const getUrl = (chapter: any, downloaded: boolean) => {
       const url = m(chapter.filename);
@@ -686,6 +734,8 @@ export default function App() {
     const inactive = activePlayer === 'A' ? videoRefB.current : videoRefA.current;
 
     videoRef.current = active;
+
+    if (!isTauri) return;
 
     let activeInterval: any = null;
     let inactiveInterval: any = null;
@@ -760,12 +810,112 @@ export default function App() {
     }
   };
 
-  const selectChapter = (index: number) => {
+  const resetWebChapterPlayback = () => {
+    if (isTauri) return;
+    webMediaControllerRef.current?.dispose();
+    webMediaControllerRef.current = null;
+    setWebMediaState(EMPTY_WEB_MEDIA_STATE);
+    setWebMediaRequest(null);
+    setActivePlayer('A');
+    setIsPlaying(false);
+    videoRef.current = null;
+  };
+
+  const setActiveCourseWithCleanup = (index: number | null) => {
+    if (index === null) resetWebChapterPlayback();
+    setActiveCourseIndex(index);
+  };
+
+  const requestWebChapter = (
+    courseIndex: number,
+    chapterIndex: number,
+    options: { playbackIntent?: boolean; replay?: boolean } = {},
+  ) => {
+    const course = COURSES[courseIndex];
+    const chapter = course?.chapters[chapterIndex];
+    if (!course || !chapter?.filename) return;
+    const requestId = ++webMediaRequestIdRef.current;
+    setWebMediaRequest({
+      requestId,
+      selection: {
+        key: `${course.id}:${chapter.id}`,
+        url: m(chapter.filename),
+        courseId: course.id,
+        chapterId: chapter.id,
+        courseIndex,
+        chapterIndex,
+      },
+      playbackIntent: options.playbackIntent ?? isPlaying,
+      replay: options.replay ?? false,
+    });
+  };
+
+  useEffect(() => {
+    if (isTauri || !webMediaRequest || !videoRefA.current || !videoRefB.current) return;
+    if (!webMediaControllerRef.current) {
+      webMediaControllerRef.current = new MediaSelectionController({
+        elements: { A: videoRefA.current, B: videoRefB.current },
+        targetVolume: volume,
+        muted: isMuted,
+        playbackRate,
+        isOnline: () => navigator.onLine,
+        onStateChange: state => {
+          setWebMediaState(state);
+          setIsPlaying(state.playbackIntent && state.committedSelection !== null);
+        },
+        onCommit: (selection, slot) => {
+          videoRef.current = slot === 'A' ? videoRefA.current : videoRefB.current;
+          setActivePlayer(slot);
+          setActiveCourseIndex(selection.courseIndex);
+          setActiveChapterIndex(selection.chapterIndex);
+          saveProgress(selection.courseIndex, selection.chapterIndex);
+          setProgress(0);
+          setActiveCue(null);
+          setWebMediaRequest(null);
+        },
+      });
+    }
+    const result = webMediaControllerRef.current.request(webMediaRequest.selection, {
+      playbackIntent: webMediaRequest.playbackIntent,
+      replay: webMediaRequest.replay,
+    });
+    if (result !== 'started') setWebMediaRequest(null);
+  }, [webMediaRequest]);
+
+  useEffect(() => {
+    if (isTauri) return;
+    webMediaControllerRef.current?.updatePlaybackSettings({ volume, muted: isMuted, playbackRate });
+  }, [volume, isMuted, playbackRate]);
+
+  useEffect(() => {
+    if (isTauri) return;
+    webMediaControllerRef.current?.setOnline(isOnline);
+  }, [isOnline]);
+
+  useEffect(() => () => {
+    webMediaControllerRef.current?.dispose();
+    webMediaControllerRef.current = null;
+  }, []);
+
+  const selectChapter = (
+    index: number,
+    options: { playbackIntent?: boolean; replay?: boolean } = {},
+  ) => {
     if (activeCourseIndex === null || !COURSES[activeCourseIndex]) return;
     const chapter = COURSES[activeCourseIndex].chapters[index];
     if (!chapter) return;
 
-    if (isTauri && chapter.filename) {
+    if (!isTauri) {
+      requestWebChapter(activeCourseIndex, index, options);
+      setShowNextOverlay(false);
+      setActiveTab('video');
+      setShowCprSelector(false);
+      setShowFaSelector(false);
+      if (window.innerWidth < 1024) setShowSidebar(false);
+      return;
+    }
+
+    if (chapter.filename) {
       const clean = chapter.filename.trim().replace(/^\//, '');
       if (!dlState.fileStatuses[clean]) {
         setDownloadingChapterIndex(index);
@@ -786,13 +936,22 @@ export default function App() {
   };
 
   const switchCourse = (index: number) => {
-    setActivePlayer('A');
-    setActiveCourseIndex(index);
     let savedChapter = 0;
     if (COURSES[index]) {
       const saved = safeStorage.getItem(`course_progress_${COURSES[index].id}`);
       if (saved) savedChapter = parseInt(saved, 10) || 0;
     }
+    if (!isTauri) {
+      requestWebChapter(index, savedChapter, { playbackIntent: isPlaying });
+      setActiveTab('video');
+      setShowCprSelector(false);
+      setShowFaSelector(false);
+      setShowNextOverlay(false);
+      setShowSidebar(true);
+      return;
+    }
+    setActivePlayer('A');
+    setActiveCourseIndex(index);
     setActiveChapterIndex(savedChapter);
     setIsPlaying(false);
     setShowCprSelector(false);
@@ -808,9 +967,10 @@ export default function App() {
   };
 
   const handleEnded = () => {
+    if (!isTauri) webMediaControllerRef.current?.pause();
     setIsPlaying(false);
     if (isContinuousPlay && activeCourse && activeChapterIndex < activeCourse.chapters.length - 1) {
-      handleNext();
+      handleNext(true);
     } else {
       setShowNextOverlay(true);
     }
@@ -837,6 +997,15 @@ export default function App() {
   };
 
   const togglePlay = () => {
+    if (!isTauri) {
+      const controller = webMediaControllerRef.current;
+      if (!controller) return;
+      if (isPlaying) controller.pause();
+      else void controller.resume().then(started => {
+        if (started) setActiveTab('video');
+      });
+      return;
+    }
     if (videoRef.current) {
       if (isPlaying) {
         videoRef.current.pause();
@@ -852,9 +1021,9 @@ export default function App() {
     }
   };
 
-  const handleNext = () => {
+  const handleNext = (playbackIntent = isPlaying) => {
     if (activeCourse && activeChapterIndex < activeCourse.chapters.length - 1) {
-      selectChapter(activeChapterIndex + 1);
+      selectChapter(activeChapterIndex + 1, { playbackIntent });
     }
   };
 
@@ -865,6 +1034,8 @@ export default function App() {
   };
 
   const switchSlideshow = (index: number) => {
+    resetWebChapterPlayback();
+    setActiveCourseIndex(null);
     setIsPlaying(false);
     setActiveSlideshowIndex(index);
     setActiveSlideIndex(0);
@@ -942,12 +1113,7 @@ export default function App() {
       if (e.key === ' ') {
         if (activeTab === 'video' && activeCourse && videoRef.current) {
           e.preventDefault();
-          if (isPlaying) {
-            videoRef.current.pause();
-            setIsPlaying(false);
-          } else {
-            videoRef.current.play().then(() => setIsPlaying(true)).catch(console.error);
-          }
+          togglePlay();
         } else if (activeTab === 'slideshow' && activeSlideshow && slideVideoRef.current && activeSlide?.type === 'video') {
           e.preventDefault();
           if (slideshowIsPlaying) {
@@ -1081,8 +1247,12 @@ export default function App() {
   // Prevent video background play & dropdown menu flickering when tab changes
   useEffect(() => {
     if (activeTab !== 'video') {
-      if (videoRefA.current) videoRefA.current.pause();
-      if (videoRefB.current) videoRefB.current.pause();
+      if (isTauri) {
+        if (videoRefA.current) videoRefA.current.pause();
+        if (videoRefB.current) videoRefB.current.pause();
+      } else {
+        webMediaControllerRef.current?.pause();
+      }
       setIsPlaying(false);
     }
     if (activeTab !== 'slideshow') {
@@ -1167,12 +1337,12 @@ export default function App() {
           <Sidebar
             showSidebar={showSidebar}
             setShowSidebar={setShowSidebar}
-            setActiveCourseIndex={setActiveCourseIndex}
+            setActiveCourseIndex={setActiveCourseWithCleanup}
             setActiveSlideshowIndex={setActiveSlideshowIndex}
             setSelectedManual={selectManual}
             setActiveTab={setActiveTab}
             activeTab={activeTab}
-            activeCourse={activeCourse}
+            activeCourse={activeCourse ?? webDisplayCourse}
             activeSlideshow={activeSlideshow}
             selectedManual={selectedManual}
             manualOutline={manualOutline}
@@ -1188,10 +1358,13 @@ export default function App() {
             slideshowIsPlaying={slideshowIsPlaying}
             setSlideshowIsPlaying={setSlideshowIsPlaying}
             toggleSlideshowPlay={toggleSlideshowPlay}
-            activeChapterIndex={activeChapterIndex}
+            activeChapterIndex={activeCourse ? activeChapterIndex : -1}
             selectChapter={selectChapter}
             isPlaying={isPlaying}
             togglePlay={togglePlay}
+            pendingChapter={webPendingChapter}
+            failedChapter={webFailedChapter}
+            retryFailedChapter={() => webMediaControllerRef.current?.retry()}
             isTauri={isTauri}
             dlState={dlState}
             easterEggLevel={easterEggLevel}
@@ -1220,7 +1393,7 @@ export default function App() {
           dlState={dlState}
           showSidebar={showSidebar}
           setShowSidebar={setShowSidebar}
-          setActiveCourseIndex={setActiveCourseIndex}
+          setActiveCourseIndex={setActiveCourseWithCleanup}
           activeCourseIndex={activeCourseIndex}
           setActiveSlideshowIndex={setActiveSlideshowIndex}
           activeSlideshowIndex={activeSlideshowIndex}
@@ -1419,12 +1592,12 @@ export default function App() {
           })()}
 
           {/* Video Tab Container */}
-          <div className={`w-full h-full relative z-10 flex items-center justify-center ${activeTab === 'video' && activeCourse ? '' : 'hidden'}`}>
+          <div className={`w-full h-full relative z-10 flex items-center justify-center ${activeTab === 'video' && videoDisplayCourse ? '' : 'hidden'}`}>
             <VideoPlayer
-              activeCourse={activeCourse}
-              activeChapter={activeChapter}
-              activeChapterIndex={activeChapterIndex}
-              setActiveCourseIndex={setActiveCourseIndex}
+              activeCourse={videoDisplayCourse}
+              activeChapter={videoDisplayChapter}
+              activeChapterIndex={videoDisplayChapterIndex}
+              setActiveCourseIndex={setActiveCourseWithCleanup}
               selectChapter={selectChapter}
               isUiVisible={isUiVisible}
               videoContainerRef={videoContainerRef}
@@ -1450,6 +1623,16 @@ export default function App() {
               togglePlay={togglePlay}
               playbackRate={playbackRate}
               setPlaybackRate={setPlaybackRate}
+              mediaState={isTauri ? undefined : webMediaState}
+              pendingChapterTitle={webPendingChapter?.title}
+              failedChapterTitle={webFailedChapter?.title}
+              retryFailedChapter={() => webMediaControllerRef.current?.retry()}
+              resumeChapter={() => { void webMediaControllerRef.current?.resume(); }}
+              replayChapter={() => {
+                if (activeCourseIndex !== null) {
+                  selectChapter(activeChapterIndex, { playbackIntent: true, replay: true });
+                }
+              }}
             />
           </div>
           {/* Slideshow Tab Container */}

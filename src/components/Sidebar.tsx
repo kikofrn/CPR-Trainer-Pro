@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, ChevronDown, CheckCircle2, Download, Play, Pause, Clock, MonitorPlay, Settings, Info, HelpCircle, AlertCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, CheckCircle2, Download, Play, Pause, Clock, MonitorPlay, Settings, Info, HelpCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { mediaUrl as m } from '../media-resolver';
 import { formatSpeed } from '../download-manager';
 import { openExternalUrl } from '../utils/browser';
@@ -35,6 +35,9 @@ interface SidebarProps {
   selectChapter: (i: number) => void;
   isPlaying: boolean;
   togglePlay: () => void;
+  pendingChapter: { courseId: string; chapterId: string; title: string } | null;
+  failedChapter: { courseId: string; chapterId: string; title: string; offline: boolean } | null;
+  retryFailedChapter: () => void;
   
   isTauri: boolean;
   dlState: any;
@@ -66,6 +69,7 @@ export const Sidebar = React.memo(function Sidebar({
   activeTab, activeCourse, activeSlideshow, selectedManual, manualOutline, expandedManualSections, setExpandedManualSections, flipbookRef, MANUALS,
   activeSlideIndex, expandedSections, setExpandedSections, setActiveSlideIndex, selectSlide, slideshowIsPlaying, setSlideshowIsPlaying, toggleSlideshowPlay,
   activeChapterIndex, selectChapter, isPlaying, togglePlay,
+  pendingChapter, failedChapter, retryFailedChapter,
   isTauri, dlState, easterEggLevel, downloadManager,
   isSettingsExpanded, setIsSettingsExpanded, isContinuousPlay, setIsContinuousPlay,
   handleInfoClick, handleInfoPointerDown, handleInfoPointerUp,
@@ -155,6 +159,30 @@ export const Sidebar = React.memo(function Sidebar({
                     </h2>
                   </div>
                 )}
+              </div>
+            )}
+
+            {activeTab === 'video' && pendingChapter && (
+              <div className="mx-3 mt-3 rounded-lg border border-eh-blue/30 bg-eh-blue/10 px-3 py-2" role="status">
+                <div className="flex items-center gap-2 text-eh-blue-light">
+                  <Loader2 size={14} className="animate-spin shrink-0" />
+                  <span className="text-[10px] font-black uppercase tracking-wider">Loading chapter</span>
+                </div>
+                <p className="mt-1 truncate text-xs font-bold text-eh-peach">{pendingChapter.title}</p>
+              </div>
+            )}
+
+            {activeTab === 'video' && failedChapter && (
+              <div className="mx-3 mt-3 rounded-lg border border-eh-red/30 bg-eh-red/10 px-3 py-2" role="alert">
+                <p className="text-[10px] font-black uppercase tracking-wider text-eh-red">
+                  {failedChapter.offline ? 'Offline' : 'Chapter unavailable'}
+                </p>
+                <div className="mt-1 flex items-center justify-between gap-2">
+                  <p className="truncate text-xs font-bold text-eh-peach">{failedChapter.title}</p>
+                  <button onClick={retryFailedChapter} className="text-[10px] font-black uppercase tracking-wider text-eh-blue hover:text-eh-blue-light cursor-pointer">
+                    Retry
+                  </button>
+                </div>
               </div>
             )}
 
@@ -396,6 +424,8 @@ export const Sidebar = React.memo(function Sidebar({
               activeCourse ? (
                 activeCourse.chapters.map((chapter: any, index: number) => {
                   const isActiveChapter = activeChapterIndex === index;
+                  const isPendingChapter = pendingChapter?.courseId === activeCourse.id && pendingChapter.chapterId === chapter.id;
+                  const isFailedChapter = failedChapter?.courseId === activeCourse.id && failedChapter.chapterId === chapter.id;
                   const isExpanded = expandedSections[chapter.id];
 
                   if (chapter.parentSectionId && !expandedSections[chapter.parentSectionId]) {
@@ -406,7 +436,11 @@ export const Sidebar = React.memo(function Sidebar({
                     <div key={chapter.id} className={`${chapter.parentSectionId ? 'pl-4 pr-0' : ''}`}>
                       <div
                         className={`w-full text-left p-3 rounded-lg group transition-all duration-300 flex items-center gap-4 ${
-                          isActiveChapter
+                          isPendingChapter
+                            ? 'bg-eh-blue/10 border border-eh-blue/30 shadow-inner'
+                            : isFailedChapter
+                              ? 'bg-eh-red/10 border border-eh-red/30 shadow-inner'
+                              : isActiveChapter
                             ? 'bg-eh-red/10 border border-eh-red/30 shadow-inner' 
                             : 'hover:bg-eh-peach/5 border border-transparent'
                         }`}
@@ -419,7 +453,7 @@ export const Sidebar = React.memo(function Sidebar({
                               : 'border-eh-blue text-eh-blue group-hover:border-eh-blue-light group-hover:text-eh-blue-light'
                           }`}
                         >
-                          {index + 1}
+                          {isPendingChapter ? <Loader2 size={12} className="animate-spin" /> : index + 1}
                         </button>
                         
                         <button 
@@ -429,13 +463,25 @@ export const Sidebar = React.memo(function Sidebar({
                           <h3 className={`text-base font-bold truncate ${isActiveChapter ? 'text-eh-peach' : 'text-eh-peach/60 group-hover:text-eh-peach/80'}`}>
                             {chapter.title}
                           </h3>
+                          {isPendingChapter && <span className="ml-2 text-[9px] font-black uppercase tracking-wider text-eh-blue">Loading</span>}
+                          {isFailedChapter && <span className="ml-2 text-[9px] font-black uppercase tracking-wider text-eh-red">Failed</span>}
                           <span className="text-xs text-eh-blue/60 font-mono ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 shrink-0">
                             {chapter.duration}
                           </span>
                         </button>
                         
                         {/* If this is a header, show expand/collapse chevron instead of playing indicator, unless it IS playing */}
-                        {chapter.isSectionHeader ? (
+                        {isFailedChapter ? (
+                          <button
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              retryFailedChapter();
+                            }}
+                            className="rounded-full border border-eh-red/30 px-2 py-1 text-[9px] font-black uppercase tracking-wider text-eh-red hover:bg-eh-red/10 cursor-pointer"
+                          >
+                            Retry
+                          </button>
+                        ) : chapter.isSectionHeader ? (
                           <button
                             onClick={(e) => {
                               e.stopPropagation();

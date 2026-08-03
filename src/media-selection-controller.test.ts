@@ -350,6 +350,23 @@ describe('MediaSelectionController', () => {
     expect(log.lastIndexOf('B.pause')).toBeLessThan(log.lastIndexOf('A.volume:1'));
   });
 
+  it('does not let old-player progress overwrite pending or failed request state', async () => {
+    const { controller, A, B } = createHarness({ retryDelaysMs: [1, 1, 1] });
+    controller.request(selection('a'), { playbackIntent: true });
+    await ready(B, true);
+    controller.request(selection('b'), { playbackIntent: true });
+    B.emit('timeupdate');
+    expect(controller.getState().playbackState).toBe('loading');
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      A.emit('error');
+      await vi.advanceTimersByTimeAsync(1);
+    }
+    A.emit('error');
+    expect(controller.getState().playbackState).toBe('failed');
+    B.emit('timeupdate');
+    expect(controller.getState().playbackState).toBe('failed');
+  });
+
   it('classifies failures only from observable MediaError data', () => {
     const media = new FakeMedia('A');
     media.error = { code: 3 };

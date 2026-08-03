@@ -1,6 +1,8 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Clock, CheckCircle2, SkipForward, SkipBack, Play, Pause, VolumeX, Volume2, Maximize2 } from 'lucide-react';
+import { X, Clock, CheckCircle2, SkipForward, SkipBack, Play, Pause, VolumeX, Volume2, Maximize2, Loader2, AlertTriangle, WifiOff } from 'lucide-react';
+import type { MediaControllerState } from '../media-selection-controller';
+import { safeStorage } from '../utils/safe-storage';
 
 interface VideoPlayerProps {
   activeCourse: any;
@@ -41,6 +43,12 @@ interface VideoPlayerProps {
   
   playbackRate: number;
   setPlaybackRate: (v: number) => void;
+  mediaState?: MediaControllerState;
+  pendingChapterTitle?: string;
+  failedChapterTitle?: string;
+  retryFailedChapter?: () => void;
+  resumeChapter?: () => void;
+  replayChapter?: () => void;
 }
 
 export const VideoPlayer = React.memo(function VideoPlayer({
@@ -51,7 +59,9 @@ export const VideoPlayer = React.memo(function VideoPlayer({
   showSubtitles, setShowSubtitles, activeCue,
   showNextOverlay, handleNext, handlePrev,
   progress, setProgress, isPlaying, togglePlay,
-  playbackRate, setPlaybackRate
+  playbackRate, setPlaybackRate,
+  mediaState, pendingChapterTitle, failedChapterTitle,
+  retryFailedChapter, resumeChapter, replayChapter,
 }: VideoPlayerProps) {
   if (!activeCourse) return null;
 
@@ -105,6 +115,8 @@ export const VideoPlayer = React.memo(function VideoPlayer({
           {/* Video Player A */}
           <video
             ref={videoRefA}
+            data-media-slot="A"
+            data-media-active={activePlayer === 'A'}
             className={`absolute inset-0 w-full h-full object-contain bg-black ${
               activePlayer === 'A' 
                 ? 'opacity-100 z-10 pointer-events-auto' 
@@ -130,6 +142,8 @@ export const VideoPlayer = React.memo(function VideoPlayer({
           {/* Video Player B */}
           <video
             ref={videoRefB}
+            data-media-slot="B"
+            data-media-active={activePlayer === 'B'}
             className={`absolute inset-0 w-full h-full object-contain bg-black ${
               activePlayer === 'B' 
                 ? 'opacity-100 z-10 pointer-events-auto' 
@@ -152,6 +166,66 @@ export const VideoPlayer = React.memo(function VideoPlayer({
               console.warn('[VideoPlayer] Video B load/playback error:', e);
             }}
           />
+        </div>
+      )}
+
+      {mediaState?.pendingSelection && (
+        <div
+          className={`absolute z-40 flex items-center gap-3 rounded-xl border border-eh-blue/30 bg-black/85 px-5 py-4 shadow-2xl backdrop-blur-md ${
+            mediaState.committedSelection ? 'left-6 top-6 max-w-sm' : 'inset-0 justify-center rounded-none border-0'
+          }`}
+          role="status"
+          aria-live="polite"
+          data-media-state={mediaState.playbackState}
+        >
+          <Loader2 className="h-6 w-6 shrink-0 animate-spin text-eh-blue" />
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-eh-blue-light">
+              {mediaState.playbackState === 'retrying' ? 'Retrying media' : 'Loading chapter'}
+            </p>
+            <p className="mt-1 text-sm font-bold text-eh-peach">{pendingChapterTitle ?? 'Requested chapter'}</p>
+          </div>
+        </div>
+      )}
+
+      {mediaState?.failedRequest && (
+        <div
+          className={`absolute z-40 rounded-xl border border-eh-red/30 bg-black/90 p-5 shadow-2xl backdrop-blur-md ${
+            mediaState.committedSelection ? 'left-6 top-6 max-w-md' : 'inset-0 flex items-center justify-center rounded-none border-0'
+          }`}
+          role="alert"
+          data-media-state={mediaState.playbackState}
+        >
+          <div className="flex max-w-md items-start gap-4">
+            {mediaState.failedRequest.failure.kind === 'offline'
+              ? <WifiOff className="mt-0.5 h-6 w-6 shrink-0 text-eh-blue" />
+              : <AlertTriangle className="mt-0.5 h-6 w-6 shrink-0 text-eh-red" />}
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-eh-red">
+                {mediaState.failedRequest.failure.kind === 'offline' ? 'You are offline' : 'Chapter unavailable'}
+              </p>
+              <p className="mt-1 text-sm font-bold text-eh-peach">{failedChapterTitle ?? 'Requested chapter'}</p>
+              <p className="mt-2 text-xs leading-relaxed text-eh-peach/60">{mediaState.failedRequest.failure.message}</p>
+              <button
+                onClick={retryFailedChapter}
+                className="mt-4 rounded-full bg-eh-red px-5 py-2 text-xs font-black uppercase tracking-wider text-white hover:bg-eh-red-dark cursor-pointer"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {mediaState?.resumeRequired && !mediaState.pendingSelection && !mediaState.failedRequest && (
+        <div className="absolute left-6 top-6 z-40 rounded-xl border border-eh-blue/30 bg-black/85 p-4 shadow-2xl backdrop-blur-md" role="status">
+          <p className="text-xs font-bold text-eh-peach">Playback is ready and paused.</p>
+          <button
+            onClick={resumeChapter}
+            className="mt-3 rounded-full bg-eh-blue px-5 py-2 text-xs font-black uppercase tracking-wider text-white hover:bg-eh-blue-light cursor-pointer"
+          >
+            Resume
+          </button>
         </div>
       )}
 
@@ -195,7 +269,7 @@ export const VideoPlayer = React.memo(function VideoPlayer({
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center mt-4">
                 <button 
-                  onClick={() => selectChapter(activeChapterIndex)}
+                  onClick={() => replayChapter ? replayChapter() : selectChapter(activeChapterIndex)}
                   className="px-8 py-3 bg-eh-peach/5 hover:bg-eh-peach/10 border border-eh-peach/10 rounded-full text-sm font-semibold transition-all text-eh-peach cursor-pointer"
                 >
                   Replay Section
@@ -324,7 +398,7 @@ export const VideoPlayer = React.memo(function VideoPlayer({
                 onClick={() => {
                   const nextVal = !showSubtitles;
                   setShowSubtitles(nextVal);
-                  localStorage.setItem('eh_show_subtitles', String(nextVal));
+                  safeStorage.setItem('eh_show_subtitles', String(nextVal));
                 }}
                 className={`p-3 hover:bg-eh-peach/10 rounded-full transition-all flex items-center justify-center cursor-pointer ${showSubtitles ? 'text-eh-red' : 'text-eh-peach/80'}`}
                 title={showSubtitles ? "Disable Subtitles" : "Enable Subtitles"}

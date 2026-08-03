@@ -29,7 +29,7 @@ test.describe('App Integration', () => {
     await expect(startCprCourse).toBeVisible();
     await startCprCourse.click();
 
-    const video = page.locator('video:not([src*="CPR-Dummies"]):not([src*="WakeUp"])').first();
+    const video = page.locator('video[data-media-active="true"]').first();
     await video.waitFor({ state: 'attached' });
 
     const isPaused = await video.evaluate((vid: HTMLVideoElement) => vid.paused);
