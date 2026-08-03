@@ -38,6 +38,18 @@ async function setDisplaySleepPrevention(active: boolean): Promise<void> {
   }
 }
 
+export function syncPresenterSubtitle(
+  isPresentingExternally: boolean,
+  showSubtitles: boolean,
+  activeCue: Pick<SubtitleCue, 'text'> | null,
+  sender: typeof sendToViewer = sendToViewer,
+): void {
+  if (!isPresentingExternally) return;
+  void sender('presentation:subtitle', {
+    text: showSubtitles ? (activeCue?.text || '') : '',
+  });
+}
+
 function EHLogo({ className }: { className?: string }) {
   return (
     <div className={`relative flex items-center justify-center bg-transparent overflow-hidden ${className}`}>
@@ -1279,9 +1291,8 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (!isPresentingExternally) return;
-    sendToViewer('presentation:subtitle', { text: activeCue?.text || '' });
-  }, [activeCue, isPresentingExternally]);
+    syncPresenterSubtitle(isPresentingExternally, showSubtitles, activeCue);
+  }, [activeCue, isPresentingExternally, showSubtitles]);
 
   useEffect(() => {
     if (isPresentingExternally)

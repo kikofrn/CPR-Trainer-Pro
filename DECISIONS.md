@@ -79,3 +79,6 @@
 - Rust USB snapshot updates and JavaScript `snapshot-store` updates are separate unsynchronized read-modify-write paths. They remain safe only while downloads stay suppressed for the entire USB import; future changes must preserve that mutual-exclusion invariant or add shared serialization.
 - The Phase 2 Sidebar `AnimatePresence mode="wait"` change and the UI-visibility reset when window fullscreen exits are benign supporting UI changes outside the headline feature set.
 - Deferred follow-up remains explicit: batch USB snapshot I/O before any roughly 10,000-file catalog, add a deferred queue if presentation-time download requests must be retained, unify ManualFlipbook element fullscreen with window fullscreen, expand If-Range/USB-copy/sleep-assertion tests in Phase 3, and handle LICENSE/gitleaks only under separate authorization.
+
+## 2026-08-03
+- Hardware Drill 3-A found that the local subtitle toggle did not reach the external Presenter viewer: the subtitle effect emitted every active cue without consulting `showSubtitles`. Phase 2.2 sends an empty subtitle string whenever captions are disabled and re-emits the active cue when they are enabled; the viewer already clears its text and visibility state for an empty string.
