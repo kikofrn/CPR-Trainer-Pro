@@ -251,8 +251,8 @@ After all non-CSP-enforcement product work and the full clean battery:
 
 - [x] Derive the narrow enforcing policy from hosted evidence. It must retain the canonical directives including `form-action 'self'` and `frame-src 'none'`, and only the required media/font/image/connect/script/style sources.
 - [x] Flip from report-only to enforcing CSP, add the hosted evidence record, rerun the complete relevant local smoke, and commit.
-- [ ] Push exactly once as Push 2.
-- [ ] Require both web CI and gitleaks to pass and perform an enforcing-CSP hosted smoke.
+- [x] Push exactly once as Push 2.
+- [x] Require both web CI and gitleaks to pass and perform an enforcing-CSP hosted smoke.
 
 A third push exists only to correct CSP after Push 2 and requires Francisco's explicit authorization. No other pushes are permitted in this round.
 
