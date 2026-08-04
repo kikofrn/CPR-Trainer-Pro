@@ -44,6 +44,7 @@ export default defineConfig({
       testMatch: [
         'tests/e2e/app.spec.ts',
         'tests/e2e/phase3.spec.ts',
+        'tests/e2e/phase4.spec.ts',
       ],
       use: {
         ...devices['Desktop Chrome'],
