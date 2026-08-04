@@ -89,6 +89,14 @@ export function runPresenterExitGuard(
   return true;
 }
 
+export function closeManualSurface(
+  setSelectedManual: (manual: null) => void,
+  setActiveTab: (tab: 'video') => void,
+): void {
+  setSelectedManual(null);
+  setActiveTab('video');
+}
+
 function EHLogo({ className }: { className?: string }) {
   return (
     <div className={`relative flex items-center justify-center bg-transparent overflow-hidden ${className}`}>
@@ -610,6 +618,11 @@ export default function App() {
         setActiveTab('video');
       },
     );
+  };
+
+  const handleCloseManual = () => {
+    // Manuals are instructor-only; close and error recovery must remain available during Presenter.
+    closeManualSurface(setSelectedManual, setActiveTab);
   };
 
   const activeVideoId = activeCourseIndex !== null ? COURSES[activeCourseIndex]?.id : null;
@@ -1926,14 +1939,14 @@ export default function App() {
           <div className={`w-full h-full relative z-10 ${activeTab === 'manual' && selectedManual ? 'block' : 'hidden'}`}>
             {selectedManual && (
               <ErrorBoundary
-                onReset={handleReturnHome}
+                onReset={handleCloseManual}
               >
                 <ManualFlipbook 
                   key={selectedManual.id}
                   ref={flipbookRef}
                   pdfUrl={m(`/${selectedManual.filename}`)}
                   title={selectedManual.title}
-                  onClose={handleReturnHome}
+                  onClose={handleCloseManual}
                   onOutlineLoaded={(outline) => setManualOutline(outline.filter((item: any) => item.title !== 'Untitled'))}
                   showEasterEgg={easterEggLevel > 0}
                 />

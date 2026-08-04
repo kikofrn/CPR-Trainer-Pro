@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   beginDetectedUsbImport,
+  closeManualSurface,
   runPresenterExitGuard,
   shouldShowUsbDriveBanner,
   syncPresenterSubtitle,
@@ -63,6 +64,44 @@ describe('presenter exit guard', () => {
     expect(runPresenterExitGuard(false, onBlocked, onExit)).toBe(true);
     expect(onBlocked).not.toHaveBeenCalled();
     expect(onExit).toHaveBeenCalledOnce();
+  });
+});
+
+describe('manual close and recovery', () => {
+  it('clears only the manual and preserves course and slideshow selection', () => {
+    const activeCourseIndex = 2;
+    const activeSlideshowIndex = 1;
+    let selectedManual: string | null = 'adult-cpr';
+    let activeTab: 'video' | 'manual' = 'manual';
+
+    closeManualSurface(
+      (manual) => { selectedManual = manual; },
+      (tab) => { activeTab = tab; },
+    );
+
+    expect({ activeCourseIndex, activeSlideshowIndex, selectedManual, activeTab }).toEqual({
+      activeCourseIndex: 2,
+      activeSlideshowIndex: 1,
+      selectedManual: null,
+      activeTab: 'video',
+    });
+  });
+
+  it('remains available during Presenter without setting an error banner', () => {
+    const isPresentingExternally = true;
+    let selectedManual: string | null = 'student-manual';
+    let activeTab: 'video' | 'manual' = 'manual';
+    const setPresenterError = vi.fn();
+
+    closeManualSurface(
+      (manual) => { selectedManual = manual; },
+      (tab) => { activeTab = tab; },
+    );
+
+    expect(isPresentingExternally).toBe(true);
+    expect(selectedManual).toBeNull();
+    expect(activeTab).toBe('video');
+    expect(setPresenterError).not.toHaveBeenCalled();
   });
 });
 
