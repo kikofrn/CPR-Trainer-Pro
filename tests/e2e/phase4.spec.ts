@@ -278,7 +278,7 @@ test.describe('Phase 4 managed history', () => {
 
     await page.getByTestId('mobile-bottom-nav').getByRole('button', { name: 'Certs', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'EH Academy Portal' })).toBeVisible();
-    await page.getByRole('button', { name: 'View Step-by-Step Roster Guide' }).click();
+    await page.getByRole('button', { name: 'View Step-by-Step Roster Guide' }).click({ noWaitAfter: true });
     await expect(page.getByRole('dialog', { name: 'EH Academy Training Guides' })).toBeVisible();
     expect(await state(page)).toMatchObject({ ehKind: 'guide', ehDepth: 2 });
     await page.evaluate(() => history.back());

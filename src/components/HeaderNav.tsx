@@ -243,13 +243,13 @@ export function HeaderNav({
                         <div className="w-full flex flex-col gap-3">
                           <div className="flex items-center justify-between w-full">
                             <span className="text-[13px] font-bold tracking-wide text-white/90">Pediatric Focused?</span>
-                            <button type="button" role="switch" aria-label="Pediatric focused CPR course" aria-checked={cprPediatric} onClick={() => setCprPediatric(!cprPediatric)} className={`shrink-0 relative w-10 h-5 rounded-full transition-colors duration-300 cursor-pointer ${cprPediatric ? 'bg-[#ff4b4b]' : 'bg-[#333]'}`}>
+                            <button type="button" aria-label="Pediatric focused CPR course" onClick={() => setCprPediatric(!cprPediatric)} className={`shrink-0 relative w-10 h-5 rounded-full transition-colors duration-300 cursor-pointer ${cprPediatric ? 'bg-[#ff4b4b]' : 'bg-[#333]'}`}>
                               <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-300 ${cprPediatric ? 'translate-x-5' : 'translate-x-0.5'}`} />
                             </button>
                           </div>
                           <div className="flex items-center justify-between w-full">
                             <span className="text-[13px] font-bold tracking-wide text-white/90">Enable Virtual Assistant?</span>
-                            <button type="button" role="switch" aria-label="Enable CPR virtual assistant" aria-checked={cprVaEnabled} onClick={() => setCprVaEnabled(!cprVaEnabled)} className={`shrink-0 relative w-10 h-5 rounded-full transition-colors duration-300 cursor-pointer ${cprVaEnabled ? 'bg-[#ff4b4b]' : 'bg-[#333]'}`}>
+                            <button type="button" aria-label="Enable CPR virtual assistant" onClick={() => setCprVaEnabled(!cprVaEnabled)} className={`shrink-0 relative w-10 h-5 rounded-full transition-colors duration-300 cursor-pointer ${cprVaEnabled ? 'bg-[#ff4b4b]' : 'bg-[#333]'}`}>
                               <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-300 ${cprVaEnabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
                             </button>
                           </div>
@@ -366,13 +366,13 @@ export function HeaderNav({
                         <div className="w-full flex flex-col gap-3">
                           <div className="flex items-center justify-between w-full">
                             <span className="text-[13px] text-white/90 font-bold tracking-wide">Pediatric Focused?</span>
-                            <button type="button" role="switch" aria-label="Pediatric focused First Aid course" aria-checked={faPediatric} onClick={() => setFaPediatric(!faPediatric)} className={`shrink-0 relative w-10 h-5 rounded-full transition-colors duration-300 cursor-pointer ${faPediatric ? 'bg-[#ff4b4b]' : 'bg-[#333]'}`}>
+                            <button type="button" aria-label="Pediatric focused First Aid course" onClick={() => setFaPediatric(!faPediatric)} className={`shrink-0 relative w-10 h-5 rounded-full transition-colors duration-300 cursor-pointer ${faPediatric ? 'bg-[#ff4b4b]' : 'bg-[#333]'}`}>
                               <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-300 ${faPediatric ? 'translate-x-5' : 'translate-x-0.5'}`} />
                             </button>
                           </div>
                           <div className="flex items-center justify-between w-full">
                             <span className="text-[13px] font-bold tracking-wide text-white/90">Enable Virtual Assistant?</span>
-                            <button type="button" role="switch" aria-label="Enable First Aid virtual assistant" aria-checked={faVaEnabled} onClick={() => setFaVaEnabled(!faVaEnabled)} className={`shrink-0 relative w-10 h-5 rounded-full transition-colors duration-300 cursor-pointer ${faVaEnabled ? 'bg-[#ff4b4b]' : 'bg-[#333]'}`}>
+                            <button type="button" aria-label="Enable First Aid virtual assistant" onClick={() => setFaVaEnabled(!faVaEnabled)} className={`shrink-0 relative w-10 h-5 rounded-full transition-colors duration-300 cursor-pointer ${faVaEnabled ? 'bg-[#ff4b4b]' : 'bg-[#333]'}`}>
                               <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-300 ${faVaEnabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
                             </button>
                           </div>
