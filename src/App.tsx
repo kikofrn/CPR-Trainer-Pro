@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, lazy, Suspense } from 'react';
+import { useState, useRef, useEffect, useCallback, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, 
@@ -20,12 +20,21 @@ import { THUMBNAIL_KEYS } from './thumbnails';
 import { UpdatePrompt } from './components/UpdatePrompt';
 const SendCertsPage = lazy(() => import('./components/SendCertsPage').then(m => ({ default: m.SendCertsPage })));
 const HowToGuideModal = lazy(() => import('./components/HowToGuideModal').then(m => ({ default: m.HowToGuideModal })));
+const MobileShell = lazy(() => import('./components/mobile/MobileShell'));
 import { HeaderNav } from './components/HeaderNav';
 import { Sidebar } from './components/Sidebar';
 import { VideoPlayer } from './components/VideoPlayer';
 import { SlideshowPlayer } from './components/SlideshowPlayer';
 import type { WebSlideshowControls } from './components/WebSlideshowMedia';
 import { DownloadAppModal } from './components/DownloadAppModal';
+import { findSelectionIndex, resolveCourseSelection, type CourseSelection } from './course-selection-model';
+import {
+  MobileHistoryCoordinator,
+  type CoordinatorSnapshot,
+  type EhContent,
+  type NavigationEvent,
+} from './mobile-history';
+import { openExternalUrl } from './utils/browser';
 import {
   MediaSelectionController,
   type MediaControllerState,
@@ -41,6 +50,15 @@ const EMPTY_WEB_MEDIA_STATE: MediaControllerState = {
   resumeRequired: false,
   generation: 0,
   activeSlot: 'A',
+};
+
+type ActivationOrigin = 'desktop' | 'mobile';
+
+const EMPTY_MOBILE_HISTORY: CoordinatorSnapshot = {
+  state: null,
+  stack: [],
+  phase: 'desktop-inactive',
+  busy: false,
 };
 
 function EHLogo({ className }: { className?: string }) {
@@ -59,6 +77,40 @@ function EHLogo({ className }: { className?: string }) {
 
 export default function App() {
   const [mediaReady, setMediaReady] = useState(false);
+  const [isMobileWeb, setIsMobileWeb] = useState(() => !isTauri && window.matchMedia('(max-width: 1023px)').matches);
+  const mobileNavigationRef = useRef<(event: NavigationEvent) => void>(() => undefined);
+  const mobileCoordinatorRef = useRef<MobileHistoryCoordinator | null>(null);
+  if (!isTauri && !mobileCoordinatorRef.current) {
+    mobileCoordinatorRef.current = new MobileHistoryCoordinator(
+      window.history,
+      event => mobileNavigationRef.current(event),
+    );
+  }
+  const [mobileHistory, setMobileHistory] = useState<CoordinatorSnapshot>(EMPTY_MOBILE_HISTORY);
+  const [mobileOverlayExitBarrier, setMobileOverlayExitBarrier] = useState(false);
+
+  useEffect(() => {
+    if (isTauri) return;
+    const query = window.matchMedia('(max-width: 1023px)');
+    const onChange = (event: MediaQueryListEvent) => setIsMobileWeb(event.matches);
+    query.addEventListener('change', onChange);
+    return () => query.removeEventListener('change', onChange);
+  }, []);
+
+  useEffect(() => {
+    if (isTauri || !mobileCoordinatorRef.current) return;
+    const coordinator = mobileCoordinatorRef.current;
+    const generation = coordinator.setup();
+    const unsubscribe = coordinator.subscribe(setMobileHistory);
+    const onPopState = (event: PopStateEvent) => coordinator.handlePop(event.state);
+    window.addEventListener('popstate', onPopState);
+    coordinator.bootstrap(isMobileWeb);
+    return () => {
+      window.removeEventListener('popstate', onPopState);
+      unsubscribe();
+      coordinator.cleanup(generation);
+    };
+  }, []);
   
   // Updater State
   const [updateAvailable, setUpdateAvailable] = useState<any>(null);
@@ -361,6 +413,7 @@ export default function App() {
     return saved === null ? true : saved === 'true';
   });
   const [isUiVisible, setIsUiVisible] = useState(true);
+  const [isNativeFullscreen, setIsNativeFullscreen] = useState(false);
   const [subtitleCues, setSubtitleCues] = useState<SubtitleCue[]>([]);
   const [activeCue, setActiveCue] = useState<SubtitleCue | null>(null);
   const [lastCprView, setLastCprView] = useState<'video' | 'slideshow' | null>(null);
@@ -374,6 +427,7 @@ export default function App() {
   const webSlideshowControlsRef = useRef<WebSlideshowControls | null>(null);
   const slideshowContainerRef = useRef<HTMLDivElement>(null);
   const flipbookRef = useRef<ManualFlipbookRef>(null);
+  const lastTouchActivityRef = useRef(0);
 
   useEffect(() => {
     if (videoRefA.current) {
@@ -408,7 +462,7 @@ export default function App() {
           setShowNextOverlay(false);
           setIsPlaying(true);
           setActiveTab('video');
-          if (window.innerWidth < 1024) setShowSidebar(false);
+          if (isTauri && window.innerWidth < 1024) setShowSidebar(false);
         }
       }
     }
@@ -472,7 +526,7 @@ export default function App() {
   }, []);
 
   // Shared function to handle manual selection & auto-download
-  const selectManual = (manual: any) => {
+  const selectManual = (manual: any, origin: ActivationOrigin = 'desktop') => {
     if (manual && isTauri && manual.filename) {
       const clean = manual.filename.trim().replace(/^\//, '');
       if (!dlState.fileStatuses[clean]) {
@@ -483,7 +537,7 @@ export default function App() {
       }
     }
     setSelectedManual(manual);
-    if (manual) setShowSidebar(true);
+    if (manual && origin === 'desktop') setShowSidebar(true);
   };
 
   // First-launch download prompt
@@ -532,7 +586,7 @@ export default function App() {
     && !showHowTo;
   const activeSlide = activeSlideshow ? activeSlideshow.slides[activeSlideIndex] : null;
 
-  const handleItemClick = (type: string, index: number) => {
+  const handleItemClick = (type: 'video' | 'slideshow', index: number, origin: ActivationOrigin = 'desktop') => {
     let isCpr = false;
     if (type === 'video') {
       const id = COURSES[index]?.id;
@@ -546,19 +600,21 @@ export default function App() {
     else setLastFaView(type as 'video' | 'slideshow');
 
     if (type === 'video') {
-      switchCourse(index);
+      switchCourse(index, { origin });
       setActiveTab('video');
     } else {
-      switchSlideshow(index);
+      switchSlideshow(index, origin);
       setActiveTab('slideshow');
     }
-    setShowSidebar(true);
-    setShowCprSelector(false);
-    setShowFaSelector(false);
-    setShowManualSelector(false);
+    if (origin === 'desktop') {
+      setShowSidebar(true);
+      setShowCprSelector(false);
+      setShowFaSelector(false);
+      setShowManualSelector(false);
+    }
   };
 
-  const activeVideoId = activeCourseIndex !== null ? COURSES[activeCourseIndex]?.id : null;
+  const activeVideoId = videoDisplayCourse?.id ?? null;
   const activeSlideshowId = activeSlideshowIndex !== null ? SLIDESHOWS[activeSlideshowIndex]?.id : null;
 
   const isCprActive = 
@@ -936,7 +992,7 @@ export default function App() {
 
   const selectChapter = (
     index: number,
-    options: { playbackIntent?: boolean; replay?: boolean } = {},
+    options: { playbackIntent?: boolean; replay?: boolean; origin?: ActivationOrigin; source?: 'ui' | 'history' } = {},
   ) => {
     if (activeCourseIndex === null || !COURSES[activeCourseIndex]) return;
     const chapter = COURSES[activeCourseIndex].chapters[index];
@@ -948,7 +1004,10 @@ export default function App() {
       setActiveTab('video');
       setShowCprSelector(false);
       setShowFaSelector(false);
-      if (window.innerWidth < 1024) setShowSidebar(false);
+      if ((options.origin ?? 'desktop') === 'desktop' && isMobileWeb) setShowSidebar(false);
+      if (isMobileWeb && options.source !== 'history') {
+        mobileCoordinatorRef.current?.replaceContent({ kind: 'video', targetId: COURSES[activeCourseIndex].id, itemId: chapter.id });
+      }
       return;
     }
 
@@ -969,23 +1028,27 @@ export default function App() {
     setShowNextOverlay(false);
     setIsPlaying(true);
     setActiveTab('video'); // Switch view tab to show the playing video
-    if (window.innerWidth < 1024) setShowSidebar(false);
+    if (isTauri && window.innerWidth < 1024) setShowSidebar(false);
   };
 
-  const switchCourse = (index: number) => {
-    let savedChapter = 0;
+  const switchCourse = (
+    index: number,
+    options: { origin?: ActivationOrigin; chapterIndex?: number; playbackIntent?: boolean; source?: 'ui' | 'history' } = {},
+  ) => {
+    let savedChapter = options.chapterIndex ?? 0;
     if (COURSES[index]) {
       const saved = safeStorage.getItem(`course_progress_${COURSES[index].id}`);
-      if (saved) savedChapter = parseInt(saved, 10) || 0;
+      if (options.chapterIndex === undefined && saved) savedChapter = parseInt(saved, 10) || 0;
+      if (!COURSES[index].chapters[savedChapter]) savedChapter = 0;
     }
     if (!isTauri) {
       setActiveSlideshowIndex(null);
-      requestWebChapter(index, savedChapter, { playbackIntent: isPlaying });
+      requestWebChapter(index, savedChapter, { playbackIntent: options.playbackIntent ?? isPlaying });
       setActiveTab('video');
       setShowCprSelector(false);
       setShowFaSelector(false);
       setShowNextOverlay(false);
-      setShowSidebar(true);
+      if ((options.origin ?? 'desktop') === 'desktop') setShowSidebar(true);
       return;
     }
     setActivePlayer('A');
@@ -995,7 +1058,7 @@ export default function App() {
     setShowCprSelector(false);
     setShowFaSelector(false);
     setShowNextOverlay(false);
-    setShowSidebar(true);
+    if ((options.origin ?? 'desktop') === 'desktop') setShowSidebar(true);
     // Auto-download course media
     if (isTauri && COURSES[index]) {
       const courseId = COURSES[index].id;
@@ -1061,17 +1124,17 @@ export default function App() {
 
   const handleNext = (playbackIntent = isPlaying) => {
     if (activeCourse && activeChapterIndex < activeCourse.chapters.length - 1) {
-      selectChapter(activeChapterIndex + 1, { playbackIntent });
+      selectChapter(activeChapterIndex + 1, { playbackIntent, origin: isMobileWeb ? 'mobile' : 'desktop' });
     }
   };
 
   const handlePrev = () => {
     if (activeChapterIndex > 0) {
-      selectChapter(activeChapterIndex - 1);
+      selectChapter(activeChapterIndex - 1, { origin: isMobileWeb ? 'mobile' : 'desktop' });
     }
   };
 
-  const switchSlideshow = (index: number) => {
+  const switchSlideshow = (index: number, origin: ActivationOrigin = 'desktop') => {
     resetWebChapterPlayback();
     setActiveCourseIndex(null);
     setIsPlaying(false);
@@ -1080,10 +1143,10 @@ export default function App() {
     setSlideshowIsPlaying(isTauri);
     setShowCprSelector(false);
     setShowFaSelector(false);
-    setShowSidebar(true);
+    if (origin === 'desktop') setShowSidebar(true);
   };
 
-  const selectSlide = (index: number) => {
+  const selectSlide = (index: number, options: { source?: 'ui' | 'history' } = {}) => {
     if (!activeSlideshow) return;
     const slide = activeSlideshow.slides[index];
     if (!slide) return;
@@ -1108,6 +1171,9 @@ export default function App() {
     setActiveSlideIndex(index);
     setSlideshowIsPlaying(isTauri);
     setActiveTab('slideshow');
+    if (isMobileWeb && options.source !== 'history') {
+      mobileCoordinatorRef.current?.replaceContent({ kind: 'slideshow', targetId: activeSlideshow.id, itemId: slide.id });
+    }
   };
 
   const nextSlide = () => {
@@ -1137,6 +1203,152 @@ export default function App() {
     }
   };
 
+  const currentMobileContent: EhContent | null = activeTab === 'video' && videoDisplayCourse && videoDisplayChapter
+    ? { kind: 'video', targetId: videoDisplayCourse.id, itemId: videoDisplayChapter.id }
+    : activeTab === 'slideshow' && activeSlideshow && activeSlide
+      ? { kind: 'slideshow', targetId: activeSlideshow.id, itemId: activeSlide.id }
+      : activeTab === 'manual' && selectedManual
+        ? { kind: 'manual', targetId: selectedManual.id }
+        : activeTab === 'send-certs'
+          ? { kind: 'certs' }
+          : null;
+
+  const teardownMobileContent = () => {
+    if (slideVideoRef.current) slideVideoRef.current.pause();
+    resetWebChapterPlayback();
+    setActiveCourseIndex(null);
+    setActiveSlideshowIndex(null);
+    setSelectedManual(null);
+    setActiveTab('video');
+    setShowNextOverlay(false);
+  };
+
+  const restoreMobileContent = (event: NavigationEvent) => {
+    if (event.teardown && !event.state?.ehContent) {
+      teardownMobileContent();
+      return;
+    }
+    const chain = mobileCoordinatorRef.current?.snapshot().stack ?? [];
+    const content = event.state?.ehContent
+      ?? [...chain].reverse().find(state => state.ehKind === 'player')?.ehContent
+      ?? null;
+    if (!content) return;
+
+    if (content.kind === 'video') {
+      const courseIndex = COURSES.findIndex(course => course.id === content.targetId);
+      const chapterIndex = courseIndex >= 0
+        ? COURSES[courseIndex].chapters.findIndex(chapter => chapter.id === content.itemId)
+        : -1;
+      if (courseIndex < 0 || chapterIndex < 0) {
+        mobileCoordinatorRef.current?.home();
+        return;
+      }
+      if (activeTab === 'video' && videoDisplayCourse?.id === content.targetId && videoDisplayChapter?.id === content.itemId) return;
+      switchCourse(courseIndex, { origin: 'mobile', chapterIndex, playbackIntent: false, source: 'history' });
+      return;
+    }
+    if (content.kind === 'slideshow') {
+      const slideshowIndex = SLIDESHOWS.findIndex(slideshow => slideshow.id === content.targetId);
+      const slideIndex = slideshowIndex >= 0
+        ? SLIDESHOWS[slideshowIndex].slides.findIndex(slide => slide.id === content.itemId)
+        : -1;
+      if (slideshowIndex < 0 || slideIndex < 0) {
+        mobileCoordinatorRef.current?.home();
+        return;
+      }
+      if (activeTab === 'slideshow' && activeSlideshow?.id === content.targetId && activeSlide?.id === content.itemId) return;
+      switchSlideshow(slideshowIndex, 'mobile');
+      setActiveSlideIndex(slideIndex);
+      setSlideshowIsPlaying(false);
+      setActiveTab('slideshow');
+      return;
+    }
+    if (content.kind === 'manual') {
+      const manual = MANUALS.find(item => item.id === content.targetId);
+      if (!manual) {
+        mobileCoordinatorRef.current?.home();
+        return;
+      }
+      if (activeTab === 'manual' && selectedManual?.id === content.targetId) return;
+      selectManual(manual, 'mobile');
+      setActiveTab('manual');
+      return;
+    }
+    if (activeTab !== 'send-certs') setActiveTab('send-certs');
+  };
+  mobileNavigationRef.current = restoreMobileContent;
+
+  useEffect(() => {
+    if (isTauri || !mobileCoordinatorRef.current) return;
+    mobileCoordinatorRef.current.setDesiredMobile(isMobileWeb, currentMobileContent);
+  }, [isMobileWeb]);
+
+  const mobileTopKind = mobileHistory.state?.ehKind;
+  const mobileSheetClassOpen = isMobileWeb && (mobileTopKind === 'nav' || mobileTopKind === 'download' || mobileTopKind === 'guide');
+  const mobileOverlayBlocking = isMobileWeb && (mobileSheetClassOpen || mobileOverlayExitBarrier);
+  const mobileTopKindRef = useRef(mobileTopKind);
+  const mobileModalTriggerRef = useRef<HTMLElement | null>(null);
+  mobileTopKindRef.current = mobileTopKind;
+  useEffect(() => {
+    if (mobileSheetClassOpen) setMobileOverlayExitBarrier(true);
+    else if (!isMobileWeb) setMobileOverlayExitBarrier(false);
+  }, [isMobileWeb, mobileSheetClassOpen]);
+  const releaseMobileOverlayBarrier = useCallback(() => {
+    const kind = mobileTopKindRef.current;
+    if (kind !== 'nav' && kind !== 'download' && kind !== 'guide') setMobileOverlayExitBarrier(false);
+    const trigger = mobileModalTriggerRef.current;
+    if (!trigger) return;
+    mobileModalTriggerRef.current = null;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const active = document.activeElement;
+      const valid = active instanceof HTMLElement
+        && active !== document.body
+        && active.isConnected
+        && !active.closest('[inert], [aria-hidden="true"]');
+      if (!valid && trigger.isConnected && !trigger.closest('[inert], [aria-hidden="true"]')) trigger.focus();
+    }));
+  }, []);
+  useEffect(() => {
+    if (!isMobileWeb) {
+      setShowDownloadApp(false);
+      setShowHowTo(false);
+      return;
+    }
+    setShowDownloadApp(mobileTopKind === 'download');
+    setShowHowTo(mobileTopKind === 'guide');
+  }, [isMobileWeb, mobileTopKind]);
+
+  const openDownloadApp = useCallback(() => {
+    if (isMobileWeb) {
+      mobileModalTriggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      mobileCoordinatorRef.current?.openDownload();
+    }
+    else setShowDownloadApp(true);
+  }, [isMobileWeb]);
+
+  const openGuide = useCallback(() => {
+    setActiveGuidePath('menu');
+    setPortalStep(1);
+    if (isMobileWeb) {
+      mobileModalTriggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      mobileCoordinatorRef.current?.openGuide();
+    }
+    else setShowHowTo(true);
+  }, [isMobileWeb]);
+
+  const closeTopMobileLayer = useCallback(() => {
+    mobileCoordinatorRef.current?.closeTop();
+  }, []);
+
+  const closeActiveContent = useCallback(() => {
+    if (document.fullscreenElement) {
+      void document.exitFullscreen().catch(console.error);
+      return;
+    }
+    if (isMobileWeb) mobileCoordinatorRef.current?.closeTop(true);
+    else teardownMobileContent();
+  }, [isMobileWeb]);
+
   useEffect(() => {
     if (isTauri && slideshowIsPlaying && slideVideoRef.current && activeSlide?.type === 'video') {
       slideVideoRef.current.play().catch(e => console.error("Play failed", e));
@@ -1150,6 +1362,14 @@ export default function App() {
       // Don't intercept keyboard shortcuts when user is typing in an input
       const tag = (e.target as HTMLElement).tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+      if (mobileOverlayBlocking) {
+        if (e.key === 'Escape' && !document.fullscreenElement) {
+          e.preventDefault();
+          mobileCoordinatorRef.current?.closeTop();
+        }
+        return;
+      }
 
       // Spacebar to play/pause video
       if (e.key === ' ') {
@@ -1206,6 +1426,7 @@ export default function App() {
     };
 
     const handleFullscreenChange = () => {
+      setIsNativeFullscreen(Boolean(document.fullscreenElement));
       if (!document.fullscreenElement) {
         setIsUiVisible(true);
       }
@@ -1217,13 +1438,14 @@ export default function App() {
       window.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
     };
-  }, [activeTab, activeSlideshow, activeSlideIndex, activeCourse, activeSlide, isPlaying, slideshowIsPlaying, activeChapterIndex]);
+  }, [activeTab, activeSlideshow, activeSlideIndex, activeCourse, activeSlide, isPlaying, slideshowIsPlaying, activeChapterIndex, mobileOverlayBlocking]);
 
   // UI Fade effect
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
     
-    const handleActivity = () => {
+    const handleActivity = (event?: Event) => {
+      if (event?.type === 'mousemove' && Date.now() - lastTouchActivityRef.current < 800) return;
       setIsUiVisible(true);
       clearTimeout(timer);
       if (isPlaying || slideshowIsPlaying) {
@@ -1233,7 +1455,20 @@ export default function App() {
       }
     };
 
-    if ((activeTab === 'video' && !isPlaying) || (activeTab === 'slideshow' && !slideshowIsPlaying)) {
+    const handlePointerUp = (event: PointerEvent) => {
+      if (!isMobileWeb || (event.pointerType !== 'touch' && event.pointerType !== 'pen')) return;
+      if ((event.target as HTMLElement).closest('button, input, a, [role="button"]')) return;
+      lastTouchActivityRef.current = Date.now();
+      clearTimeout(timer);
+      setIsUiVisible(visible => !visible);
+    };
+
+    if (mobileOverlayBlocking) {
+      setIsUiVisible(true);
+      return;
+    }
+
+    if ((activeTab === 'video' && (!isPlaying || webMediaState.pendingSelection || webMediaState.failedRequest || webMediaState.resumeRequired || showNextOverlay)) || (activeTab === 'slideshow' && !slideshowIsPlaying)) {
       setIsUiVisible(true);
       return;
     }
@@ -1245,27 +1480,31 @@ export default function App() {
     
     if (container1) {
       container1.addEventListener('mousemove', handleActivity);
-      container1.addEventListener('click', handleActivity);
+      container1.addEventListener('pointerup', handlePointerUp);
+      if (!isMobileWeb) container1.addEventListener('click', handleActivity);
     }
     if (container2) {
       container2.addEventListener('mousemove', handleActivity);
-      container2.addEventListener('click', handleActivity);
+      container2.addEventListener('pointerup', handlePointerUp);
+      if (!isMobileWeb) container2.addEventListener('click', handleActivity);
     }
     window.addEventListener('mousemove', handleActivity);
 
     return () => {
       if (container1) {
         container1.removeEventListener('mousemove', handleActivity);
-        container1.removeEventListener('click', handleActivity);
+        container1.removeEventListener('pointerup', handlePointerUp);
+        if (!isMobileWeb) container1.removeEventListener('click', handleActivity);
       }
       if (container2) {
         container2.removeEventListener('mousemove', handleActivity);
-        container2.removeEventListener('click', handleActivity);
+        container2.removeEventListener('pointerup', handlePointerUp);
+        if (!isMobileWeb) container2.removeEventListener('click', handleActivity);
       }
       window.removeEventListener('mousemove', handleActivity);
       clearTimeout(timer);
     };
-  }, [isPlaying, slideshowIsPlaying, activeTab]);
+  }, [isPlaying, slideshowIsPlaying, activeTab, isMobileWeb, mobileOverlayBlocking, webMediaState.pendingSelection, webMediaState.failedRequest, webMediaState.resumeRequired, showNextOverlay]);
 
   // Close all dropdowns when clicking outside the header area
   useEffect(() => {
@@ -1302,11 +1541,67 @@ export default function App() {
     }
   }, [activeTab]);
 
+  const cprSelection = resolveCourseSelection({
+    family: 'cpr',
+    pediatric: cprPediatric,
+    virtualAssistant: cprVaEnabled,
+    courses: COURSES,
+    slideshows: SLIDESHOWS,
+  });
+  const faSelection = resolveCourseSelection({
+    family: 'first-aid',
+    pediatric: faPediatric,
+    virtualAssistant: faVaEnabled,
+    courses: COURSES,
+    slideshows: SLIDESHOWS,
+  });
+  const activeMobileFamily = activeTab === 'manual' && selectedManual
+    ? 'manuals'
+    : activeTab === 'send-certs'
+      ? 'certs'
+      : isCprActive
+        ? 'cpr'
+        : isFaActive
+          ? 'first-aid'
+          : null;
+  const mobileSectionTitle = activeTab === 'video'
+    ? videoDisplayCourse?.title ?? 'CPR Trainer Pro'
+    : activeTab === 'slideshow'
+      ? activeSlideshow?.title ?? 'CPR Trainer Pro'
+      : activeTab === 'manual'
+        ? selectedManual?.title ?? 'Training Manuals'
+        : 'Send Certs';
+  const mobileHasContent = Boolean(currentMobileContent);
+  const mobileImmersive = isNativeFullscreen
+    || (!isUiVisible && ((activeTab === 'video' && isPlaying) || (activeTab === 'slideshow' && slideshowIsPlaying)));
+
+  const startMobileCourse = (selection: CourseSelection) => {
+    if (!selection.available) return;
+    const index = findSelectionIndex(selection, COURSES, SLIDESHOWS);
+    if (index === null) return;
+    if (selection.kind === 'video') {
+      const course = COURSES[index];
+      const saved = Number.parseInt(safeStorage.getItem(`course_progress_${course.id}`) ?? '0', 10);
+      const chapter = course.chapters[Number.isInteger(saved) && course.chapters[saved] ? saved : 0];
+      if (chapter) mobileCoordinatorRef.current?.startContent({ kind: 'video', targetId: course.id, itemId: chapter.id });
+    } else {
+      const slideshow = SLIDESHOWS[index];
+      const slide = slideshow?.slides[0];
+      if (slide) mobileCoordinatorRef.current?.startContent({ kind: 'slideshow', targetId: slideshow.id, itemId: slide.id });
+    }
+  };
+
+  const requestMobileHome = () => {
+    if (document.fullscreenElement) void document.exitFullscreen().catch(console.error);
+    else mobileCoordinatorRef.current?.home();
+  };
+  const mobileShellMounted = !isTauri && (isMobileWeb || mobileHistory.phase !== 'desktop-inactive');
+
   return (
-    <div className="flex h-screen bg-black text-eh-peach overflow-hidden medical-gradient relative">
-      <AnimatePresence>
+    <div className={`flex bg-black text-eh-peach overflow-hidden medical-gradient relative ${isTauri ? 'h-screen' : 'web-app-shell'}`} data-mobile-web={isMobileWeb ? 'true' : undefined}>
+      <AnimatePresence onExitComplete={releaseMobileOverlayBarrier}>
         {!isTauri && showDownloadApp && (
-          <DownloadAppModal onClose={() => setShowDownloadApp(false)} />
+          <DownloadAppModal onClose={() => isMobileWeb ? closeTopMobileLayer() : setShowDownloadApp(false)} />
         )}
       </AnimatePresence>
       {showContentUpdatePrompt && (
@@ -1379,7 +1674,7 @@ export default function App() {
 
       {/* Sidebar Navigation */}
       <AnimatePresence>
-        {showSidebar && (
+        {!isMobileWeb && showSidebar && (
           <Sidebar
             showSidebar={showSidebar}
             setShowSidebar={setShowSidebar}
@@ -1429,15 +1724,15 @@ export default function App() {
             setPortalStep={setPortalStep}
             updateAvailable={updateAvailable}
             setUpdateAvailable={setUpdateAvailable}
-            onOpenDownloadApp={() => setShowDownloadApp(true)}
+            onOpenDownloadApp={openDownloadApp}
             EHLogo={EHLogo}
           />
         )}
       </AnimatePresence>
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col relative min-w-0 h-full">
+      <main className="flex-1 flex flex-col relative min-w-0 h-full" inert={mobileOverlayBlocking ? true : undefined} aria-hidden={mobileOverlayBlocking ? true : undefined}>
         {/* Top Header */}
-        <HeaderNav
+        {!isMobileWeb && <HeaderNav
           dlState={dlState}
           showSidebar={showSidebar}
           setShowSidebar={setShowSidebar}
@@ -1476,13 +1771,13 @@ export default function App() {
           isUpdateMinimized={isUpdateMinimized}
           setIsUpdateMinimized={setIsUpdateMinimized}
           showDownloadAffordance={showDownloadAffordance}
-          onOpenDownloadApp={() => setShowDownloadApp(true)}
+          onOpenDownloadApp={openDownloadApp}
           handleItemClick={handleItemClick}
           MANUALS={MANUALS}
           EHLogo={EHLogo}
           CprIcon={CprIcon}
           FirstAidIcon={FirstAidIcon}
-        />
+        />}
         {/* Player Section */}
         <div className="flex-1 relative bg-black overflow-hidden h-full flex items-center justify-center">
           
@@ -1509,28 +1804,28 @@ export default function App() {
 
 
           {/* Send Certs Tab Container */}
-          <div className={`w-full h-full relative z-10 bg-black ${activeTab === 'send-certs' ? '' : 'hidden'}`}>
+          <div className={`w-full h-full relative z-10 bg-black ${isMobileWeb ? 'mobile-certs-host' : ''} ${activeTab === 'send-certs' ? '' : 'hidden'}`}>
             {activeTab === 'send-certs' && (
               <Suspense fallback={<div className="flex w-full h-full items-center justify-center text-white/50"><Loader2 className="animate-spin w-8 h-8" /></div>}>
                 <SendCertsPage 
                 isOnline={isOnline}
                 setIsOnline={setIsOnline}
-                onReturnToMenu={() => setActiveTab('video')}
-                onOpenGuide={() => {
-                  setShowHowTo(true);
-                  setActiveGuidePath('menu');
-                }}
+                onReturnToMenu={() => isMobileWeb ? closeActiveContent() : setActiveTab('video')}
+                onOpenGuide={openGuide}
               />
               </Suspense>
             )}
           </div>
           {/* Manual Tab Container */}
-          <div className={`w-full h-full relative z-10 ${activeTab === 'manual' && selectedManual ? 'block' : 'hidden'}`}>
+          <div className={`w-full h-full relative z-10 ${isMobileWeb ? 'mobile-manual-host' : ''} ${activeTab === 'manual' && selectedManual ? 'block' : 'hidden'}`}>
             {selectedManual && (
               <ErrorBoundary
                 onReset={() => {
-                  setSelectedManual(null);
-                  setActiveTab('video');
+                  if (isMobileWeb) closeActiveContent();
+                  else {
+                    setSelectedManual(null);
+                    setActiveTab('video');
+                  }
                 }}
               >
                 <ManualFlipbook 
@@ -1539,8 +1834,11 @@ export default function App() {
                   pdfUrl={m(`/${selectedManual.filename}`)}
                   title={selectedManual.title}
                   onClose={() => {
-                    setSelectedManual(null);
-                    setActiveTab('video');
+                    if (isMobileWeb) closeActiveContent();
+                    else {
+                      setSelectedManual(null);
+                      setActiveTab('video');
+                    }
                   }}
                   onOutlineLoaded={(outline) => setManualOutline(outline.filter((item: any) => item.title !== 'Untitled'))}
                   showEasterEgg={easterEggLevel > 0}
@@ -1655,7 +1953,8 @@ export default function App() {
               activeCourse={videoDisplayCourse}
               activeChapter={videoDisplayChapter}
               activeChapterIndex={videoDisplayChapterIndex}
-              setActiveCourseIndex={setActiveCourseWithCleanup}
+              onClose={closeActiveContent}
+              isMobileWeb={isMobileWeb}
               selectChapter={selectChapter}
               isUiVisible={isUiVisible}
               videoContainerRef={videoContainerRef}
@@ -1694,12 +1993,15 @@ export default function App() {
             />
           </div>
           {/* Slideshow Tab Container */}
-          <div className={`w-full h-full relative z-10 ${activeTab === 'slideshow' && activeSlideshow ? '' : 'hidden'}`}>
+          <div className={`w-full h-full relative z-10 ${isMobileWeb ? 'mobile-slideshow-host' : ''} ${activeTab === 'slideshow' && activeSlideshow ? '' : 'hidden'}`}>
             <SlideshowPlayer
               activeSlideshow={activeSlideshow}
               activeSlide={activeSlide}
               activeSlideIndex={activeSlideIndex}
-              setActiveSlideshowIndex={setActiveSlideshowIndex}
+              setActiveSlideshowIndex={(index) => {
+                if (index === null && isMobileWeb) closeActiveContent();
+                else setActiveSlideshowIndex(index);
+              }}
               isUiVisible={isUiVisible}
               slideshowContainerRef={slideshowContainerRef}
               slideVideoRef={slideVideoRef}
@@ -1721,15 +2023,80 @@ export default function App() {
           </div>
         </div>
       </main>
+      {mobileShellMounted && (
+        <div hidden={!isMobileWeb} inert={!isMobileWeb ? true : undefined}>
+        <Suspense fallback={<div className="pointer-events-none fixed inset-x-0 bottom-0 z-[70] h-16 border-t border-white/10 bg-black/95" aria-busy="true" data-testid="mobile-shell-loading" />}>
+          <MobileShell
+            history={mobileHistory}
+            immersive={mobileImmersive}
+            hasContent={mobileHasContent}
+            sectionTitle={mobileSectionTitle}
+            activeFamily={activeMobileFamily}
+            showDownloadAffordance={showDownloadAffordance}
+            cprSelection={cprSelection}
+            faSelection={faSelection}
+            cprPediatric={cprPediatric}
+            cprVaEnabled={cprVaEnabled}
+            faPediatric={faPediatric}
+            faVaEnabled={faVaEnabled}
+            setCprPediatric={setCprPediatric}
+            setCprVaEnabled={setCprVaEnabled}
+            setFaPediatric={setFaPediatric}
+            setFaVaEnabled={setFaVaEnabled}
+            courses={COURSES}
+            slideshows={SLIDESHOWS}
+            manuals={MANUALS}
+            activeTab={activeTab}
+            displayCourse={videoDisplayCourse}
+            activeSlideshow={activeSlideshow}
+            selectedManual={selectedManual}
+            activeChapterIndex={videoDisplayChapterIndex}
+            activeSlideIndex={activeSlideIndex}
+            previewManualIndex={previewManualIndex}
+            setPreviewManualIndex={setPreviewManualIndex}
+            manualOutline={manualOutline}
+            pendingChapter={webPendingChapter}
+            failedChapter={webFailedChapter}
+            onRetryChapter={() => webMediaControllerRef.current?.retry()}
+            onPrefetchChapter={prefetchWebChapter}
+            onOpenView={view => mobileCoordinatorRef.current?.openNavigation(view)}
+            onStartCourse={startMobileCourse}
+            onSelectItem={content => mobileCoordinatorRef.current?.startContent(content)}
+            onOpenManual={manualId => {
+              if (MANUALS.some(manual => manual.id === manualId)) {
+                mobileCoordinatorRef.current?.startContent({ kind: 'manual', targetId: manualId });
+              }
+            }}
+            onManualDestination={destination => flipbookRef.current?.resolveDestination(destination)}
+            onOpenCerts={() => mobileCoordinatorRef.current?.startContent({ kind: 'certs' })}
+            onOpenDownload={openDownloadApp}
+            onOpenGuide={openGuide}
+            onOpenOnboarding={family => void openExternalUrl(family === 'cpr'
+              ? 'https://ehacademy.hflip.co/InstructorOnboardingCPRAED'
+              : 'https://ehacademy.hflip.co/InstructorOnboardingFirstAid')}
+            onHome={requestMobileHome}
+            onCloseTop={closeTopMobileLayer}
+            continuousPlay={isContinuousPlay}
+            setContinuousPlay={setIsContinuousPlay}
+            overlayExitBarrier={mobileOverlayExitBarrier}
+            onNavigationExitComplete={releaseMobileOverlayBarrier}
+          />
+        </Suspense>
+        </div>
+      )}
       {/* How-To Guide Modal */}
       <Suspense fallback={null}>
       <HowToGuideModal
         showHowTo={showHowTo}
-        setShowHowTo={setShowHowTo}
+        setShowHowTo={show => {
+          if (!show && isMobileWeb) closeTopMobileLayer();
+          else setShowHowTo(show);
+        }}
         activeGuidePath={activeGuidePath}
         setActiveGuidePath={setActiveGuidePath}
         portalStep={portalStep}
         setPortalStep={setPortalStep}
+        onExitComplete={releaseMobileOverlayBarrier}
       />
       </Suspense>
 

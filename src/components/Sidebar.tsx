@@ -576,9 +576,18 @@ export const Sidebar = React.memo(function Sidebar({
                     <div className="space-y-4 mt-1">
                       {/* CPR & AED Instructor Course Card */}
                       <div 
-                        className="p-4 rounded-xl border border-transparent bg-white/[0.02] hover:bg-white/[0.05] hover:border-eh-peach/20 transition-all cursor-pointer group/card"
+                        role="button"
+                        tabIndex={0}
+                        aria-label="Open CPR and AED Onboarding Course in browser"
+                        className="phase4-coarse-target p-4 rounded-xl border border-transparent bg-white/[0.02] hover:bg-white/[0.05] hover:border-eh-peach/20 transition-all cursor-pointer group/card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-eh-blue"
                         onClick={() => {
                           openExternalUrl('https://ehacademy.hflip.co/InstructorOnboardingCPRAED');
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            openExternalUrl('https://ehacademy.hflip.co/InstructorOnboardingCPRAED');
+                          }
                         }}
                       >
                         <img 
@@ -596,9 +605,18 @@ export const Sidebar = React.memo(function Sidebar({
 
                       {/* First Aid Instructor Course Card */}
                       <div 
-                        className="p-4 rounded-xl border border-transparent bg-white/[0.02] hover:bg-white/[0.05] hover:border-eh-peach/20 transition-all cursor-pointer group/card"
+                        role="button"
+                        tabIndex={0}
+                        aria-label="Open First Aid Onboarding Course in browser"
+                        className="phase4-coarse-target p-4 rounded-xl border border-transparent bg-white/[0.02] hover:bg-white/[0.05] hover:border-eh-peach/20 transition-all cursor-pointer group/card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-eh-blue"
                         onClick={() => {
                           openExternalUrl('https://ehacademy.hflip.co/InstructorOnboardingFirstAid');
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            openExternalUrl('https://ehacademy.hflip.co/InstructorOnboardingFirstAid');
+                          }
                         }}
                       >
                         <img 
@@ -653,6 +671,10 @@ export const Sidebar = React.memo(function Sidebar({
                         <span className="text-sm font-bold uppercase tracking-widest text-white">Continuous Play</span>
                       </div>
                       <button 
+                        type="button"
+                        role="switch"
+                        aria-label="Continuous Play"
+                        aria-checked={isContinuousPlay}
                         onClick={() => setIsContinuousPlay(!isContinuousPlay)}
                         className={`w-12 h-6 rounded-full relative transition-colors duration-300 cursor-pointer ${isContinuousPlay ? 'bg-white/30' : 'bg-white/10'}`}
                       >

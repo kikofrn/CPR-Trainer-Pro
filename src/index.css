@@ -153,3 +153,105 @@
 .medical-gradient {
   background: radial-gradient(circle at top right, rgba(200, 16, 46, 0.05) 0%, transparent 40%);
 }
+
+.web-app-shell {
+  height: 100vh;
+  height: 100dvh;
+}
+
+.mobile-header {
+  min-height: calc(4rem + env(safe-area-inset-top, 0px));
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.mobile-bottom-rail {
+  min-height: calc(4rem + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  transition: transform 200ms ease, opacity 200ms ease;
+}
+
+.mobile-sheet-scroll {
+  overscroll-behavior: contain;
+  padding-left: max(1rem, env(safe-area-inset-left, 0px));
+  padding-right: max(1rem, env(safe-area-inset-right, 0px));
+}
+
+.mobile-video-controls {
+  bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
+  padding-right: max(0.75rem, env(safe-area-inset-right, 0px));
+  padding-bottom: 0.25rem;
+  padding-left: max(0.75rem, env(safe-area-inset-left, 0px));
+}
+
+.mobile-subtitles {
+  bottom: calc(15.5rem + env(safe-area-inset-bottom, 0px));
+  padding-right: max(1rem, env(safe-area-inset-right, 0px));
+  padding-left: max(1rem, env(safe-area-inset-left, 0px));
+}
+
+.mobile-manual-host,
+.mobile-certs-host {
+  padding-top: calc(4rem + env(safe-area-inset-top, 0px));
+}
+
+.mobile-video-stage > .absolute.top-6.right-6,
+.mobile-slideshow-host > div > div > .absolute.top-6.right-6 {
+  top: calc(4.5rem + env(safe-area-inset-top, 0px));
+}
+
+.mobile-slideshow-host > div > div > .absolute.bottom-0 {
+  bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
+  padding: 4rem max(0.75rem, env(safe-area-inset-right, 0px)) 0.5rem max(0.75rem, env(safe-area-inset-left, 0px));
+}
+
+@media (max-width: 1023px) and (orientation: portrait) {
+  .mobile-video-stage video[data-media-slot] {
+    top: 50%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    transform: translateY(-50%);
+  }
+}
+
+@media (any-pointer: coarse) {
+  .mobile-header-actions .mobile-coarse-target {
+    display: flex;
+    min-width: 44px;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .mobile-manual-host button[title="Close Manual"] {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .mobile-coarse-target,
+  .phase4-coarse-target {
+    position: relative;
+  }
+
+  .mobile-coarse-target::after,
+  .phase4-coarse-target::after {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    content: "";
+    transform: translate(-50%, -50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-header,
+  .mobile-bottom-rail,
+  .mobile-video-controls,
+  .mobile-video-stage * {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

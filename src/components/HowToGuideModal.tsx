@@ -9,6 +9,7 @@ interface HowToGuideModalProps {
   setActiveGuidePath: (path: 'menu' | 'app' | 'teaching' | 'portal') => void;
   portalStep: number;
   setPortalStep: React.Dispatch<React.SetStateAction<number>>;
+  onExitComplete?: () => void;
 }
 
 export function HowToGuideModal({
@@ -17,10 +18,11 @@ export function HowToGuideModal({
   activeGuidePath,
   setActiveGuidePath,
   portalStep,
-  setPortalStep
+  setPortalStep,
+  onExitComplete,
 }: HowToGuideModalProps) {
   return (
-    <AnimatePresence>
+    <AnimatePresence onExitComplete={onExitComplete}>
       {showHowTo && (
         <motion.div
           initial={{ opacity: 0 }}
@@ -36,6 +38,9 @@ export function HowToGuideModal({
             transition={{ type: "spring", duration: 0.5 }}
             className="max-w-5xl w-full max-h-[88vh] bg-[#111111] border border-white/10 rounded-[32px] overflow-hidden flex flex-col shadow-2xl relative"
             onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="how-to-guide-title"
           >
             {/* Top Red Ambient Line */}
             <div className="h-1.5 w-full bg-gradient-to-r from-eh-red via-eh-red/60 to-eh-blue/40 shrink-0" />
@@ -57,7 +62,7 @@ export function HowToGuideModal({
                   <BookOpen size={20} className="text-eh-red" />
                 </div>
                 <div>
-                  <h2 className="text-xl md:text-2xl font-black text-eh-peach tracking-tight leading-none mb-1">
+                  <h2 id="how-to-guide-title" className="text-xl md:text-2xl font-black text-eh-peach tracking-tight leading-none mb-1">
                     {activeGuidePath === 'menu' && "EH Academy Training Guides"}
                     {activeGuidePath === 'app' && "Guide to Using the App"}
                     {activeGuidePath === 'teaching' && "Guide to Teaching a Course"}
@@ -73,6 +78,7 @@ export function HowToGuideModal({
               </div>
               <button
                 onClick={() => setShowHowTo(false)}
+                aria-label="Close guide"
                 className="p-2 bg-white/5 hover:bg-eh-red/20 hover:text-eh-red text-eh-peach/60 rounded-full transition-all duration-300 cursor-pointer"
               >
                 <X size={20} />
@@ -102,8 +108,17 @@ export function HowToGuideModal({
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {/* Option 1: App Guide */}
                     <div 
+                      role="button"
+                      tabIndex={0}
+                      aria-label="Open Guide to Using the App"
                       onClick={() => setActiveGuidePath('app')}
-                      className="bg-gradient-to-b from-[#181818] to-[#121212] border border-white/5 hover:border-eh-red/35 rounded-3xl p-6 flex flex-col items-center text-center space-y-4 hover:shadow-[0_0_30px_rgba(245,57,78,0.1)] transition-all duration-300 group cursor-pointer active:scale-98"
+                      onKeyDown={event => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          setActiveGuidePath('app');
+                        }
+                      }}
+                      className="phase4-coarse-target bg-gradient-to-b from-[#181818] to-[#121212] border border-white/5 hover:border-eh-red/35 rounded-3xl p-6 flex flex-col items-center text-center space-y-4 hover:shadow-[0_0_30px_rgba(245,57,78,0.1)] transition-all duration-300 group cursor-pointer active:scale-98 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-eh-blue"
                     >
                       <div className="w-14 h-14 bg-eh-red/10 rounded-2xl border border-eh-red/20 flex items-center justify-center text-eh-red group-hover:scale-105 group-hover:bg-eh-red/20 transition-all duration-300">
                         <HelpCircle size={28} />
@@ -125,8 +140,17 @@ export function HowToGuideModal({
 
                     {/* Option 2: Teaching Guide */}
                     <div 
+                      role="button"
+                      tabIndex={0}
+                      aria-label="Open Guide to Teaching"
                       onClick={() => setActiveGuidePath('teaching')}
-                      className="bg-gradient-to-b from-[#181818] to-[#121212] border border-white/5 hover:border-eh-peach/30 rounded-3xl p-6 flex flex-col items-center text-center space-y-4 hover:shadow-[0_0_30px_rgba(255,213,184,0.08)] transition-all duration-300 group cursor-pointer active:scale-98"
+                      onKeyDown={event => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          setActiveGuidePath('teaching');
+                        }
+                      }}
+                      className="phase4-coarse-target bg-gradient-to-b from-[#181818] to-[#121212] border border-white/5 hover:border-eh-peach/30 rounded-3xl p-6 flex flex-col items-center text-center space-y-4 hover:shadow-[0_0_30px_rgba(255,213,184,0.08)] transition-all duration-300 group cursor-pointer active:scale-98 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-eh-blue"
                     >
                       <div className="w-14 h-14 bg-eh-peach/10 rounded-2xl border border-eh-peach/20 flex items-center justify-center text-eh-peach group-hover:scale-105 group-hover:bg-eh-peach/20 transition-all duration-300">
                         <Projector size={28} />
@@ -148,11 +172,21 @@ export function HowToGuideModal({
 
                     {/* Option 3: Portal Guide */}
                     <div 
+                      role="button"
+                      tabIndex={0}
+                      aria-label="Open Guide to Issuing Certs"
                       onClick={() => {
                         setActiveGuidePath('portal');
                         setPortalStep(1);
                       }}
-                      className="bg-gradient-to-b from-[#181818] to-[#121212] border border-white/5 hover:border-eh-blue/35 rounded-3xl p-6 flex flex-col items-center text-center space-y-4 hover:shadow-[0_0_30px_rgba(62,184,255,0.08)] transition-all duration-300 group cursor-pointer active:scale-98"
+                      onKeyDown={event => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          setActiveGuidePath('portal');
+                          setPortalStep(1);
+                        }
+                      }}
+                      className="phase4-coarse-target bg-gradient-to-b from-[#181818] to-[#121212] border border-white/5 hover:border-eh-blue/35 rounded-3xl p-6 flex flex-col items-center text-center space-y-4 hover:shadow-[0_0_30px_rgba(62,184,255,0.08)] transition-all duration-300 group cursor-pointer active:scale-98 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-eh-blue"
                     >
                       <div className="w-14 h-14 bg-eh-blue/10 rounded-2xl border border-eh-blue/20 flex items-center justify-center text-eh-blue-light group-hover:scale-105 group-hover:bg-eh-blue/20 transition-all duration-300">
                         <Award size={28} />

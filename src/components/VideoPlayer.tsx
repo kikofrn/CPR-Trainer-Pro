@@ -8,7 +8,8 @@ interface VideoPlayerProps {
   activeCourse: any;
   activeChapter: any;
   activeChapterIndex: number;
-  setActiveCourseIndex: (i: number | null) => void;
+  onClose: () => void;
+  isMobileWeb: boolean;
   selectChapter: (i: number) => void;
   
   isUiVisible: boolean;
@@ -52,7 +53,7 @@ interface VideoPlayerProps {
 }
 
 export const VideoPlayer = React.memo(function VideoPlayer({
-  activeCourse, activeChapter, activeChapterIndex, setActiveCourseIndex, selectChapter,
+  activeCourse, activeChapter, activeChapterIndex, onClose, isMobileWeb, selectChapter,
   isUiVisible, videoContainerRef, videoRefA, videoRefB, activePlayer, videoRef,
   isMuted, setIsMuted, volume, setVolume,
   handleEnded, handleTimeUpdate,
@@ -69,8 +70,9 @@ export const VideoPlayer = React.memo(function VideoPlayer({
     return (
       <div className="flex flex-col items-center justify-center text-center p-12 w-full h-full bg-black/80">
         <button 
-          onClick={() => setActiveCourseIndex(null)}
-          className="absolute top-6 right-6 p-3 bg-eh-red/20 hover:bg-eh-red/30 rounded-full transition-colors text-eh-red z-50 cursor-pointer"
+          onClick={onClose}
+          aria-label="Close course"
+          className={`absolute top-6 right-6 p-3 bg-eh-red/20 hover:bg-eh-red/30 rounded-full transition-colors text-eh-red z-50 cursor-pointer ${isMobileWeb ? 'mobile-coarse-target' : ''}`}
         >
           <X size={24} />
         </button>
@@ -92,7 +94,7 @@ export const VideoPlayer = React.memo(function VideoPlayer({
   }
 
   return (
-    <div ref={videoContainerRef} className={`w-full h-full relative bg-black ${!isUiVisible ? 'cursor-none' : ''}`}>
+    <div ref={videoContainerRef} className={`w-full h-full relative bg-black ${isMobileWeb ? 'mobile-video-stage' : ''} ${!isUiVisible ? 'cursor-none' : ''}`}>
       {/* Close Video Button */}
       <div className={`absolute top-6 right-6 z-50 flex items-center gap-4 transition-opacity duration-500 ${!isUiVisible ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
         <button 
@@ -101,10 +103,11 @@ export const VideoPlayer = React.memo(function VideoPlayer({
             if (document.fullscreenElement) {
               document.exitFullscreen().catch(console.error);
             } else {
-              setActiveCourseIndex(null);
+              onClose();
             }
           }}
-          className="p-3 bg-eh-red/20 hover:bg-eh-red/30 rounded-full transition-colors text-eh-red shadow-lg backdrop-blur-md cursor-pointer"
+          aria-label="Close course"
+          className={`p-3 bg-eh-red/20 hover:bg-eh-red/30 rounded-full transition-colors text-eh-red shadow-lg backdrop-blur-md cursor-pointer ${isMobileWeb ? 'mobile-coarse-target' : ''}`}
         >
           <X size={24} />
         </button>
@@ -231,7 +234,7 @@ export const VideoPlayer = React.memo(function VideoPlayer({
 
       {/* Premium High-Contrast Subtitle Overlay */}
       {showSubtitles && activeCue && (
-        <div className="absolute bottom-28 left-1/2 transform -translate-x-1/2 z-30 w-full max-w-2xl px-4 pointer-events-none flex justify-center">
+        <div className={`absolute left-1/2 transform -translate-x-1/2 z-30 w-full max-w-2xl px-4 pointer-events-none flex justify-center ${isMobileWeb ? 'mobile-subtitles' : 'bottom-28'}`}>
           <p 
             className="text-white text-sm sm:text-base font-bold tracking-wide select-none leading-snug text-center drop-shadow-lg"
             style={{
@@ -290,6 +293,79 @@ export const VideoPlayer = React.memo(function VideoPlayer({
       </AnimatePresence>
 
       {/* Player Controls Bar */}
+      {isMobileWeb ? (
+        <div
+          className={`mobile-video-controls absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-black via-black/85 to-transparent px-3 pt-16 transition-opacity duration-200 ${!isUiVisible ? 'pointer-events-none opacity-0' : 'opacity-100'}`}
+          onPointerDown={event => event.stopPropagation()}
+          onClick={event => event.stopPropagation()}
+          data-testid="mobile-video-controls"
+        >
+          <label className="block min-h-11 w-full py-4">
+            <span className="sr-only">Video progress</span>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              step="0.1"
+              value={progress}
+              disabled={!Number.isFinite(videoRef.current?.duration) || videoRef.current.duration <= 0}
+              aria-label="Video progress"
+              onChange={event => {
+                const value = Number(event.currentTarget.value);
+                const duration = videoRef.current?.duration;
+                if (videoRef.current && Number.isFinite(duration) && duration > 0) {
+                  videoRef.current.currentTime = (value / 100) * duration;
+                  setProgress(value);
+                }
+              }}
+              className="h-2 w-full cursor-pointer appearance-none rounded-full bg-white/20 accent-eh-red disabled:cursor-not-allowed disabled:opacity-40"
+            />
+          </label>
+          <div className="grid grid-cols-3 items-center justify-items-center gap-4">
+            <button type="button" onClick={handlePrev} disabled={activeChapterIndex === 0} aria-label="Previous section" className="mobile-coarse-target rounded-full text-eh-peach/80 disabled:opacity-20 focus-visible:outline-2 focus-visible:outline-eh-blue">
+              <SkipBack size={28} />
+            </button>
+            <button type="button" onClick={togglePlay} aria-label={isPlaying ? 'Pause narration' : 'Play narration'} className="flex h-16 w-16 items-center justify-center rounded-full bg-eh-peach text-black shadow-2xl focus-visible:outline-2 focus-visible:outline-eh-blue">
+              {isPlaying ? <Pause size={31} fill="currentColor" /> : <Play size={31} fill="currentColor" className="ml-1" />}
+            </button>
+            <button type="button" onClick={handleNext} disabled={activeChapterIndex === activeCourse.chapters.length - 1} aria-label="Next section" className="mobile-coarse-target rounded-full text-eh-peach/80 disabled:opacity-20 focus-visible:outline-2 focus-visible:outline-eh-blue">
+              <SkipForward size={28} />
+            </button>
+          </div>
+          <div className="mt-2 grid grid-cols-4 items-center justify-items-center border-t border-white/10 pt-1">
+            <button
+              type="button"
+              onClick={() => {
+                if (volume === 0 || isMuted) {
+                  setIsMuted(false);
+                  if (volume === 0) setVolume(1);
+                } else setIsMuted(true);
+              }}
+              aria-label={isMuted || volume === 0 ? 'Unmute sound' : 'Mute sound'}
+              className="mobile-coarse-target rounded-full text-eh-peach/80 focus-visible:outline-2 focus-visible:outline-eh-blue"
+            >
+              {isMuted || volume === 0 ? <VolumeX size={22} /> : <Volume2 size={22} />}
+            </button>
+            <button type="button" onClick={() => {
+              const rates = [1, 1.25, 1.5, 2];
+              setPlaybackRate(rates[(rates.indexOf(playbackRate) + 1) % rates.length]);
+            }} aria-label={`Playback speed ${playbackRate} times`} className="mobile-coarse-target rounded-full font-mono text-xs font-black text-eh-peach/80 focus-visible:outline-2 focus-visible:outline-eh-blue">{playbackRate}x</button>
+            <button type="button" onClick={() => {
+              const next = !showSubtitles;
+              setShowSubtitles(next);
+              safeStorage.setItem('eh_show_subtitles', String(next));
+            }} aria-label={showSubtitles ? 'Disable subtitles' : 'Enable subtitles'} aria-pressed={showSubtitles} className={`mobile-coarse-target rounded-full focus-visible:outline-2 focus-visible:outline-eh-blue ${showSubtitles ? 'text-eh-red' : 'text-eh-peach/80'}`}>
+              <span className="rounded border-2 px-1.5 py-0.5 text-[10px] font-black">CC</span>
+            </button>
+            <button type="button" onClick={() => {
+              if (!document.fullscreenElement && videoContainerRef.current) void videoContainerRef.current.requestFullscreen().catch(console.error);
+              else if (document.fullscreenElement) void document.exitFullscreen().catch(console.error);
+            }} aria-label="Toggle fullscreen view" className="mobile-coarse-target rounded-full text-eh-peach/80 focus-visible:outline-2 focus-visible:outline-eh-blue">
+              <Maximize2 size={22} />
+            </button>
+          </div>
+        </div>
+      ) : (
       <div className={`absolute bottom-0 left-0 right-0 p-8 pt-20 bg-gradient-to-t from-black via-black/60 to-transparent z-20 pointer-events-none transition-opacity duration-500 ${!isUiVisible ? 'opacity-0' : 'opacity-100'}`}>
         <div className="max-w-4xl mx-auto pointer-events-auto">
           {/* Progress Slider */}
@@ -427,6 +503,7 @@ export const VideoPlayer = React.memo(function VideoPlayer({
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 });
