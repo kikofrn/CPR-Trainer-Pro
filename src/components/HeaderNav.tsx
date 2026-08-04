@@ -1,9 +1,10 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, ChevronDown, CheckCircle2, HelpCircle, BookOpen, ChevronRight, GraduationCap, Baby, Book, Award, Heart, Download } from 'lucide-react';
-import { COURSES } from '../chapters';
+import { COURSES, SLIDESHOWS } from '../chapters';
 import { THUMBNAILS } from '../thumbnails';
 import { mediaUrl } from '../media-resolver';
+import { findSelectionIndex, resolveCourseSelection, type CourseSelection } from '../course-selection-model';
 
 interface HeaderNavProps {
   dlState: any;
@@ -74,11 +75,27 @@ export function HeaderNav({
   handleItemClick, MANUALS,
   EHLogo, CprIcon, FirstAidIcon
 }: HeaderNavProps) {
-  const pediCprCourse = COURSES.find(c => c.id === 'pediatric-cpr-aed');
-  const isCprBothOnComingSoon = cprPediatric && cprVaEnabled && pediCprCourse?.isComingSoon;
+  const cprSelection = resolveCourseSelection({
+    family: 'cpr',
+    pediatric: cprPediatric,
+    virtualAssistant: cprVaEnabled,
+    courses: COURSES,
+    slideshows: SLIDESHOWS,
+  });
+  const faSelection = resolveCourseSelection({
+    family: 'first-aid',
+    pediatric: faPediatric,
+    virtualAssistant: faVaEnabled,
+    courses: COURSES,
+    slideshows: SLIDESHOWS,
+  });
 
-  const pediFaCourse = COURSES.find(c => c.id === 'pediatric-first-aid');
-  const isFaBothOnComingSoon = faPediatric && faVaEnabled && pediFaCourse?.isComingSoon;
+  const launchSelection = (selection: CourseSelection) => {
+    if (!selection.available) return;
+    const index = findSelectionIndex(selection, COURSES, SLIDESHOWS);
+    if (index === null) return;
+    handleItemClick(selection.kind, index);
+  };
 
   const getThumbSrc = (key: string) => {
     const thumb = THUMBNAILS[key];
@@ -211,9 +228,9 @@ export function HeaderNav({
                         <div className="w-full aspect-video rounded-2xl overflow-hidden border border-white/10 relative bg-black/40">
                           <AnimatePresence mode="popLayout">
                             <motion.img 
-                              key={cprPediatric && cprVaEnabled ? 'cpr-both' : cprPediatric ? 'cpr-pedi' : cprVaEnabled ? 'cpr-va' : 'cpr-std'}
-                              src={getThumbSrc(cprPediatric && cprVaEnabled ? 'cpr-both' : cprPediatric ? 'cpr-pedi' : cprVaEnabled ? 'cpr-va' : 'cpr-std')}
-                              onError={(e) => { e.currentTarget.src = getThumbFallback(cprPediatric && cprVaEnabled ? 'cpr-both' : cprPediatric ? 'cpr-pedi' : cprVaEnabled ? 'cpr-va' : 'cpr-std'); }}
+                              key={cprSelection.thumbnailVariant}
+                              src={getThumbSrc(cprSelection.thumbnailVariant)}
+                              onError={(e) => { e.currentTarget.src = getThumbFallback(cprSelection.thumbnailVariant); }}
                               alt="CPR AED Course Cover" 
                               className="w-full h-full object-cover absolute inset-0"
                               initial={{ opacity: 0, scale: 0.98, filter: 'blur(4px)' }}
@@ -226,13 +243,13 @@ export function HeaderNav({
                         <div className="w-full flex flex-col gap-3">
                           <div className="flex items-center justify-between w-full">
                             <span className="text-[13px] font-bold tracking-wide text-white/90">Pediatric Focused?</span>
-                            <button onClick={() => setCprPediatric(!cprPediatric)} className={`shrink-0 relative w-10 h-5 rounded-full transition-colors duration-300 cursor-pointer ${cprPediatric ? 'bg-[#ff4b4b]' : 'bg-[#333]'}`}>
+                            <button type="button" role="switch" aria-label="Pediatric focused CPR course" aria-checked={cprPediatric} onClick={() => setCprPediatric(!cprPediatric)} className={`shrink-0 relative w-10 h-5 rounded-full transition-colors duration-300 cursor-pointer ${cprPediatric ? 'bg-[#ff4b4b]' : 'bg-[#333]'}`}>
                               <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-300 ${cprPediatric ? 'translate-x-5' : 'translate-x-0.5'}`} />
                             </button>
                           </div>
                           <div className="flex items-center justify-between w-full">
                             <span className="text-[13px] font-bold tracking-wide text-white/90">Enable Virtual Assistant?</span>
-                            <button onClick={() => setCprVaEnabled(!cprVaEnabled)} className={`shrink-0 relative w-10 h-5 rounded-full transition-colors duration-300 cursor-pointer ${cprVaEnabled ? 'bg-[#ff4b4b]' : 'bg-[#333]'}`}>
+                            <button type="button" role="switch" aria-label="Enable CPR virtual assistant" aria-checked={cprVaEnabled} onClick={() => setCprVaEnabled(!cprVaEnabled)} className={`shrink-0 relative w-10 h-5 rounded-full transition-colors duration-300 cursor-pointer ${cprVaEnabled ? 'bg-[#ff4b4b]' : 'bg-[#333]'}`}>
                               <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-300 ${cprVaEnabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
                             </button>
                           </div>
@@ -241,26 +258,16 @@ export function HeaderNav({
                           <button className="text-xs font-bold tracking-wider text-white/70 hover:text-white transition-colors flex items-center gap-1 mx-auto cursor-pointer"><HelpCircle size={12} /><span>What is this?</span></button>
                           <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-[#1a1a1a] border border-white/10 rounded-xl text-[10px] text-[#aaa] w-48 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">When enabled, a virtual assistant narrates each section of the course automatically, allowing hands-free teaching. Pediatric Focused provides child & infant specific certification.</div>
                         </div>
-                        {isCprBothOnComingSoon && (
-                          <p className="text-xs text-white/60 italic text-center w-full px-2 mt-2 leading-snug">To launch the Pediatric course, disable the Virtual Assistant.</p>
+                        {!cprSelection.available && (
+                          <p className="text-xs text-white/60 italic text-center w-full px-2 mt-2 leading-snug">{cprSelection.unavailableReason}</p>
                         )}
                       </div>
                     </div>
                     <button 
-                      onClick={() => { 
-                        if (cprPediatric && cprVaEnabled) { 
-                          handleItemClick('video', COURSES.findIndex(c => c.id === 'pediatric-cpr-aed')); 
-                        } else if (cprPediatric) { 
-                          handleItemClick('slideshow', 5); 
-                        } else if (cprVaEnabled) { 
-                          handleItemClick('video', 0); 
-                        } else { 
-                          handleItemClick('slideshow', 0); 
-                        } 
-                      }} 
-                      disabled={isCprBothOnComingSoon}
-                      className={`w-full mt-5 py-3 font-black text-sm uppercase tracking-wider rounded-2xl transition-all duration-300 ${isCprBothOnComingSoon ? 'bg-[#333] text-white/40 cursor-not-allowed shadow-none' : 'bg-[#ff4b4b] hover:bg-[#ff3333] text-white cursor-pointer active:scale-[0.98] shadow-[0_0_20px_rgba(255,75,75,0.3)]'}`}>
-                      {isCprBothOnComingSoon ? 'COMING SOON' : 'START COURSE'}
+                      onClick={() => launchSelection(cprSelection)}
+                      disabled={!cprSelection.available}
+                      className={`w-full mt-5 py-3 font-black text-sm uppercase tracking-wider rounded-2xl transition-all duration-300 ${!cprSelection.available ? 'bg-[#333] text-white/40 cursor-not-allowed shadow-none' : 'bg-[#ff4b4b] hover:bg-[#ff3333] text-white cursor-pointer active:scale-[0.98] shadow-[0_0_20px_rgba(255,75,75,0.3)]'}`}>
+                      {!cprSelection.available ? 'COMING SOON' : 'START COURSE'}
                     </button>
                   </div>
                 </motion.div>
@@ -344,9 +351,9 @@ export function HeaderNav({
                         <div className="w-full aspect-video rounded-2xl overflow-hidden border border-white/10 relative bg-black/40">
                           <AnimatePresence mode="popLayout">
                             <motion.img 
-                              key={faPediatric && faVaEnabled ? 'fa-both' : faPediatric ? 'fa-pedi' : faVaEnabled ? 'fa-va' : 'fa-std'}
-                              src={getThumbSrc(faPediatric && faVaEnabled ? 'fa-both' : faPediatric ? 'fa-pedi' : faVaEnabled ? 'fa-va' : 'fa-std')}
-                              onError={(e) => { e.currentTarget.src = getThumbFallback(faPediatric && faVaEnabled ? 'fa-both' : faPediatric ? 'fa-pedi' : faVaEnabled ? 'fa-va' : 'fa-std'); }}
+                              key={faSelection.thumbnailVariant}
+                              src={getThumbSrc(faSelection.thumbnailVariant)}
+                              onError={(e) => { e.currentTarget.src = getThumbFallback(faSelection.thumbnailVariant); }}
                               alt="First Aid Course Cover" 
                               className="w-full h-full object-cover absolute inset-0"
                               initial={{ opacity: 0, scale: 0.98, filter: 'blur(4px)' }}
@@ -359,13 +366,13 @@ export function HeaderNav({
                         <div className="w-full flex flex-col gap-3">
                           <div className="flex items-center justify-between w-full">
                             <span className="text-[13px] text-white/90 font-bold tracking-wide">Pediatric Focused?</span>
-                            <button onClick={() => setFaPediatric(!faPediatric)} className={`shrink-0 relative w-10 h-5 rounded-full transition-colors duration-300 cursor-pointer ${faPediatric ? 'bg-[#ff4b4b]' : 'bg-[#333]'}`}>
+                            <button type="button" role="switch" aria-label="Pediatric focused First Aid course" aria-checked={faPediatric} onClick={() => setFaPediatric(!faPediatric)} className={`shrink-0 relative w-10 h-5 rounded-full transition-colors duration-300 cursor-pointer ${faPediatric ? 'bg-[#ff4b4b]' : 'bg-[#333]'}`}>
                               <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-300 ${faPediatric ? 'translate-x-5' : 'translate-x-0.5'}`} />
                             </button>
                           </div>
                           <div className="flex items-center justify-between w-full">
                             <span className="text-[13px] font-bold tracking-wide text-white/90">Enable Virtual Assistant?</span>
-                            <button onClick={() => setFaVaEnabled(!faVaEnabled)} className={`shrink-0 relative w-10 h-5 rounded-full transition-colors duration-300 cursor-pointer ${faVaEnabled ? 'bg-[#ff4b4b]' : 'bg-[#333]'}`}>
+                            <button type="button" role="switch" aria-label="Enable First Aid virtual assistant" aria-checked={faVaEnabled} onClick={() => setFaVaEnabled(!faVaEnabled)} className={`shrink-0 relative w-10 h-5 rounded-full transition-colors duration-300 cursor-pointer ${faVaEnabled ? 'bg-[#ff4b4b]' : 'bg-[#333]'}`}>
                               <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-300 ${faVaEnabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
                             </button>
                           </div>
@@ -374,26 +381,16 @@ export function HeaderNav({
                           <button className="text-xs font-bold tracking-wider text-white/70 hover:text-white transition-colors flex items-center gap-1 mx-auto cursor-pointer"><HelpCircle size={12} /><span>What is this?</span></button>
                           <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-[#1a1a1a] border border-white/10 rounded-xl text-[10px] text-[#aaa] w-48 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">When enabled, a virtual assistant narrates each section of the course automatically, allowing hands-free teaching.</div>
                         </div>
-                        {isFaBothOnComingSoon && (
-                          <p className="text-xs text-white/60 italic text-center w-full px-2 mt-2 leading-snug">To launch the Pediatric course, disable the Virtual Assistant.</p>
+                        {!faSelection.available && (
+                          <p className="text-xs text-white/60 italic text-center w-full px-2 mt-2 leading-snug">{faSelection.unavailableReason}</p>
                         )}
                       </div>
                     </div>
                     <button 
-                      onClick={() => { 
-                        if (faPediatric && faVaEnabled) { 
-                          handleItemClick('video', COURSES.findIndex(c => c.id === 'pediatric-first-aid')); 
-                        } else if (faPediatric) { 
-                          handleItemClick('slideshow', 4); 
-                        } else if (faVaEnabled) { 
-                          handleItemClick('video', 1); 
-                        } else { 
-                          handleItemClick('slideshow', 1); 
-                        } 
-                      }} 
-                      disabled={isFaBothOnComingSoon}
-                      className={`w-full mt-5 py-3 font-black text-sm uppercase tracking-wider rounded-2xl transition-all duration-300 ${isFaBothOnComingSoon ? 'bg-[#333] text-white/40 cursor-not-allowed shadow-none' : 'bg-[#ff4b4b] hover:bg-[#ff3333] text-white cursor-pointer active:scale-[0.98] shadow-[0_0_20px_rgba(255,75,75,0.3)]'}`}>
-                      {isFaBothOnComingSoon ? 'COMING SOON' : 'START COURSE'}
+                      onClick={() => launchSelection(faSelection)}
+                      disabled={!faSelection.available}
+                      className={`w-full mt-5 py-3 font-black text-sm uppercase tracking-wider rounded-2xl transition-all duration-300 ${!faSelection.available ? 'bg-[#333] text-white/40 cursor-not-allowed shadow-none' : 'bg-[#ff4b4b] hover:bg-[#ff3333] text-white cursor-pointer active:scale-[0.98] shadow-[0_0_20px_rgba(255,75,75,0.3)]'}`}>
+                      {!faSelection.available ? 'COMING SOON' : 'START COURSE'}
                     </button>
                   </div>
                 </motion.div>
