@@ -192,3 +192,21 @@ R8 desktop smoke: PASSED - Aug 3, 2026, performed by Francisco on the Windows de
 ### Corrective handoff
 
 - The corrective remains one non-force push to `web-app`; `web-production` is prohibited. Web App CI and gitleaks must both pass at the exact pushed SHA before that SHA becomes the Gate-4 candidate. Any post-push failure returns to STOP-AND-ASK; no additional corrective push is implied or authorized.
+
+## Phase 4 Corrective B — mobile toggle knob positioning — August 5, 2026
+
+### Diagnosis and implementation
+
+- Francisco's iPhone early-look at `acb8b813fbdaa68d8437cf3a3ed3c0fac94fe019` exposed the shared mobile switch knob drifting beyond its track. Claude's adjudication correctly identified that the absolutely positioned knob had no horizontal anchor, so its static-position origin could vary by browser. The focused geometry regression then exposed a second contributing issue: the nominal 48 px track was permitted to flex-shrink to about 34.9 px in the course row, which made the 24 px checked translation overflow even after explicit anchoring.
+- `src/components/mobile/MobileShell.tsx` now keeps the track at a non-shrinking 48 px and positions its 16 px knob with `left-1`, `translate-x-0` when off, and `translate-x-6` when on. Both stable endpoints therefore have a 4 px outer inset. All three existing switch uses share this component; markup, labels, colors, interaction, state ownership, and behavior are otherwise unchanged.
+- `tests/e2e/phase4.spec.ts` adds one representative two-state bounding-box regression. It asserts that the knob remains inside the track in both states and that the off-state left inset equals the on-state right inset within one CSS pixel. The check deterministically finishes only the existing CSS transition through the Web Animations API before measuring; it adds no timer, product wait, strict-error exception, or error allowlist.
+
+### Verification and reachability audit
+
+- TypeScript/lint passed; Vitest passed 90/90 across 11 files; the production build passed; and the complete default CI-mode Playwright suite passed 36/36 in one worker under the unchanged strict console/page/unhandled-rejection harness. The focused geometry regression also passed independently.
+- The final main entry `main-BvvER3jW.js` is 679,284 raw bytes and 191,116 gzip bytes by the established Node-zlib procedure, leaving 1,606 bytes below the hard 192,722-byte Phase-4 cap.
+- The content diff from base `acb8b813fbdaa68d8437cf3a3ed3c0fac94fe019` is limited to the authorized shared mobile switch, its single regression, and these two records. `src/App.tsx` remains unchanged: `isMobileWeb` is non-Tauri and exactly `max-width: 1023px`; the lazy `MobileShell` is mounted only for that mobile path or its managed exit history and is wrapped in `hidden={!isMobileWeb}` plus `inert` while inactive. At >=1024 px App renders the desktop HeaderNav/Sidebar path and cannot render this switch. The eight >=1024 px visual surfaces are therefore unreachable from this mobile-only component delta, so Corrective B requires no desktop visual recapture.
+
+### Corrective handoff
+
+- Exactly one non-force push to `web-app` is authorized; `web-production` remains untouched at `b6d905dd57372b9c86e0d96d4412157dc845a86c`. Web App CI and gitleaks must both pass at the exact pushed SHA before it becomes the Gate-4 candidate. Any post-push failure returns to STOP-AND-ASK; no additional push is authorized.

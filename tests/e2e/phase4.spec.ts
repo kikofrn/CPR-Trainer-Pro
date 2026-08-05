@@ -189,6 +189,34 @@ test.describe('Phase 4 mobile ownership and selection', () => {
       await closeSheet(page);
     }
   });
+
+  test('keeps the mobile switch knob inside its track with symmetric insets in both states', async ({ page }) => {
+    await bootMobile(page);
+    await openView(page, 'CPR & AED');
+    const control = page.getByRole('switch', { name: 'Pediatric Focused', exact: true });
+    const edgeInsets: number[] = [];
+
+    for (const checked of [false, true]) {
+      await setSwitch(page, 'Pediatric Focused', checked);
+      const geometry = await control.evaluate((track) => {
+        const knob = track.firstElementChild;
+        if (!(knob instanceof HTMLElement)) throw new Error('Switch knob is missing');
+        knob.getAnimations().forEach(animation => animation.finish());
+        const trackBox = track.getBoundingClientRect();
+        const knobBox = knob.getBoundingClientRect();
+        return {
+          leftInset: knobBox.left - trackBox.left,
+          rightInset: trackBox.right - knobBox.right,
+        };
+      });
+
+      expect(geometry.leftInset).toBeGreaterThanOrEqual(0);
+      expect(geometry.rightInset).toBeGreaterThanOrEqual(0);
+      edgeInsets.push(checked ? geometry.rightInset : geometry.leftInset);
+    }
+
+    expect(Math.abs(edgeInsets[0] - edgeInsets[1])).toBeLessThanOrEqual(1);
+  });
 });
 
 test.describe('Phase 4 managed history', () => {

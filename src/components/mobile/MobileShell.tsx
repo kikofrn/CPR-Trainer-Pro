@@ -485,8 +485,8 @@ function Toggle({ label, checked, onChange }: { label: string; checked: boolean;
   return (
     <div className="flex min-h-14 items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-4">
       <span className="text-sm font-bold text-eh-peach">{label}</span>
-      <button type="button" role="switch" aria-checked={checked} aria-label={label} onClick={() => onChange(!checked)} className={`mobile-coarse-target relative h-6 w-12 rounded-full focus-visible:outline-2 focus-visible:outline-eh-blue ${checked ? 'bg-eh-red' : 'bg-white/15'}`}>
-        <span className={`absolute top-1 h-4 w-4 rounded-full bg-white transition-transform ${checked ? 'translate-x-6' : 'translate-x-1'}`} />
+      <button type="button" role="switch" aria-checked={checked} aria-label={label} onClick={() => onChange(!checked)} className={`mobile-coarse-target relative h-6 w-12 shrink-0 rounded-full focus-visible:outline-2 focus-visible:outline-eh-blue ${checked ? 'bg-eh-red' : 'bg-white/15'}`}>
+        <span className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform ${checked ? 'translate-x-6' : 'translate-x-0'}`} />
       </button>
     </div>
   );
