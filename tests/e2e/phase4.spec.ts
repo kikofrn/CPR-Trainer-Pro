@@ -1,4 +1,4 @@
-import { expect, Page, test } from '@playwright/test';
+import { expect, Page, Route, test } from '@playwright/test';
 
 import { setupStrictErrors, type ExpectedError } from './helpers/strict-errors';
 
@@ -68,6 +68,35 @@ async function startCprVideo(page: Page) {
   await page.getByRole('button', { name: 'Start course', exact: true }).click();
   await expect(page.getByTestId('mobile-video-controls')).toBeVisible();
   await expect(page.getByTestId('mobile-navigation-sheet')).toHaveCount(0);
+}
+
+function holdInstructorManualRequests(count = 1) {
+  const markRequested: Array<() => void> = [];
+  const releaseRequest: Array<() => void> = [];
+  const markSettled: Array<() => void> = [];
+  const requested = Array.from({ length: count }, (_, index) => new Promise<void>(resolve => { markRequested[index] = resolve; }));
+  const released = Array.from({ length: count }, (_, index) => new Promise<void>(resolve => { releaseRequest[index] = resolve; }));
+  const settled = Array.from({ length: count }, (_, index) => new Promise<void>(resolve => { markSettled[index] = resolve; }));
+  let requestIndex = 0;
+  const handler = async (route: Route) => {
+    const ownedIndex = requestIndex++;
+    if (ownedIndex >= count) {
+      await route.continue().catch(() => undefined);
+      return;
+    }
+
+    markRequested[ownedIndex]();
+    await released[ownedIndex];
+    await route.continue().catch(() => undefined);
+    markSettled[ownedIndex]();
+  };
+
+  return {
+    handler,
+    release: (index = 0) => releaseRequest[index](),
+    requested,
+    settleStarted: () => Promise.all(settled.slice(0, Math.min(requestIndex, count))),
+  };
 }
 
 test.describe('Phase 4 mobile ownership and selection', () => {
@@ -380,6 +409,71 @@ test.describe('Phase 4 overlays, players, and layout', () => {
     await expect(page.getByRole('heading', { name: 'EH Academy Portal' })).toBeVisible();
     await page.getByRole('button', { name: /Return to menu/i }).click();
     await expect.poll(async () => (await state(page)).ehDepth).toBe(0);
+  });
+
+  test('fast-closes an in-flight manual without an unhandled rejection', async ({ page }) => {
+    const heldManual = holdInstructorManualRequests();
+    await page.route('**/instructor_manual.pdf', heldManual.handler);
+
+    try {
+      await bootMobile(page);
+      await openView(page, 'Manuals');
+      await page.getByRole('button', { name: 'Open manual', exact: true }).click();
+      await heldManual.requested[0];
+      await expect(page.locator('canvas').filter({ visible: true })).toHaveCount(0);
+      await page.getByRole('button', { name: 'Close Manual' }).click();
+      await expect.poll(async () => (await state(page)).ehDepth).toBe(0);
+    } finally {
+      heldManual.release();
+      await heldManual.settleStarted();
+      await page.unroute('**/instructor_manual.pdf', heldManual.handler);
+    }
+  });
+
+  test('fast-closes an in-flight manual restored through Forward without an unhandled rejection', async ({ page }) => {
+    const heldManual = holdInstructorManualRequests(2);
+    await page.route('**/instructor_manual.pdf', heldManual.handler);
+
+    try {
+      await bootMobile(page);
+      await openView(page, 'Manuals');
+      await page.getByRole('button', { name: 'Open manual', exact: true }).click();
+      await heldManual.requested[0];
+      await expect(page.locator('canvas').filter({ visible: true })).toHaveCount(0);
+      await page.getByRole('button', { name: 'Close Manual' }).click();
+      await expect.poll(async () => (await state(page)).ehDepth).toBe(0);
+      await page.evaluate(() => history.forward());
+      await heldManual.requested[1];
+      await expect(page.locator('canvas').filter({ visible: true })).toHaveCount(0);
+      await page.getByRole('button', { name: 'Close Manual' }).click();
+      await expect.poll(async () => (await state(page)).ehDepth).toBe(0);
+    } finally {
+      heldManual.release(0);
+      heldManual.release(1);
+      await heldManual.settleStarted();
+      await page.unroute('**/instructor_manual.pdf', heldManual.handler);
+    }
+  });
+
+  test('retries a failed manual without an unhandled teardown rejection', async ({ page }) => {
+    strictExpectedErrors.push({
+      channel: 'console',
+      message: 'Failed to load resource: net::ERR_FAILED',
+      pathname: '/instructor_manual.pdf',
+      count: 1,
+    });
+    const failedManual = (url: URL) => url.href.endsWith('/instructor_manual.pdf');
+    await page.route(failedManual, route => route.abort('failed'));
+
+    await bootMobile(page);
+    await openView(page, 'Manuals');
+    await page.getByRole('button', { name: 'Open manual', exact: true }).click();
+    const alert = page.getByRole('alert').filter({ hasText: 'Manual unavailable' });
+    await expect(alert).toBeVisible({ timeout: 15_000 });
+
+    await page.unroute(failedManual);
+    await alert.getByRole('button', { name: /Retry/ }).click();
+    await expect(page.locator('canvas').filter({ visible: true }).first()).toBeVisible({ timeout: 20_000 });
   });
 
   test('isolates stage shortcuts under a sheet and suppresses synthetic mouse activity after a touch toggle', async ({ page }) => {

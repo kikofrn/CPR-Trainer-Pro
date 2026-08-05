@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Document, Page, pdfjs } from 'react-pdf';
+import { Page, pdfjs } from 'react-pdf';
+import type { PDFDocumentLoadingTask, PDFDocumentProxy } from 'pdfjs-dist';
 import HTMLFlipBook from 'react-pageflip';
 import { 
   X, 
@@ -96,6 +97,7 @@ const PageContent = React.forwardRef<HTMLDivElement, {
   scale: number;
   showEasterEgg?: boolean;
   renderPDF?: boolean;
+  pdfDocument: PDFDocumentProxy;
   onPageError: (pageNumber: number, error: unknown) => void;
   onRetryPage: () => void;
 }>((props, ref) => {
@@ -108,6 +110,7 @@ const PageContent = React.forwardRef<HTMLDivElement, {
           onRetry={props.onRetryPage}
         >
           <Page
+            pdf={props.pdfDocument}
             pageNumber={props.pageNumber}
             width={props.width}
             scale={props.scale}
@@ -161,10 +164,12 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
   const [outline, setOutline] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [jumpPage, setJumpPage] = useState('');
-  const pdfRef = useRef<any>(null);
+  const pdfRef = useRef<PDFDocumentProxy | null>(null);
   const [searchResults, setSearchResults] = useState<{page: number, text: string}[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [documentError, setDocumentError] = useState<string | null>(null);
+  const [pdfDocument, setPdfDocument] = useState<PDFDocumentProxy | null>(null);
+  const loadingTaskRef = useRef<PDFDocumentLoadingTask | null>(null);
   const [documentRetryToken, setDocumentRetryToken] = useState(0);
   const [pageRetryToken, setPageRetryToken] = useState(0);
   const [failedPage, setFailedPage] = useState<number | null>(null);
@@ -211,24 +216,63 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
     }
   }));
 
-  async function onDocumentLoadSuccess(pdf: any) {
-    setDocumentError(null);
-    setNumPages(pdf.numPages);
-    pdfRef.current = pdf;
-    try {
-      const outlineData = await pdf.getOutline();
-      setOutline(outlineData || []);
-      if (onOutlineLoaded) onOutlineLoaded(outlineData || []);
-    } catch (err) {
-      console.error("Error loading outline:", err);
-    }
-  }
-
   const onDocumentLoadError = () => {
     setDocumentError(isOnline
       ? 'The training manual could not be loaded. Your previous view has been kept where the browser allows it.'
       : 'You are offline. Reconnect, then retry the training manual.');
   };
+
+  useEffect(() => {
+    let teardownRequested = false;
+    const loadingTask: PDFDocumentLoadingTask = pdfjs.getDocument(documentSource);
+    loadingTaskRef.current = loadingTask;
+    pdfRef.current = null;
+    setPdfDocument(null);
+    setNumPages(0);
+    setOutline([]);
+    setDocumentError(null);
+
+    const ownedLoadPromise = (async () => {
+      try {
+        const pdf = await loadingTask.promise;
+        if (teardownRequested) return;
+
+        pdfRef.current = pdf;
+        setPdfDocument(pdf);
+        setNumPages(pdf.numPages);
+        setDocumentError(null);
+
+        try {
+          const outlineData = await pdf.getOutline();
+          if (teardownRequested) return;
+          setOutline(outlineData || []);
+          onOutlineLoaded?.(outlineData || []);
+        } catch (error) {
+          if (!teardownRequested) console.error('Error loading outline:', error);
+        }
+      } catch {
+        if (!teardownRequested) onDocumentLoadError();
+      }
+    })();
+
+    return () => {
+      teardownRequested = true;
+      if (loadingTaskRef.current === loadingTask) loadingTaskRef.current = null;
+      pdfRef.current = null;
+
+      // React cancels child page/render effects after this parent cleanup. Give
+      // those cancellations the rest of this turn, let PDF.js settle its owned
+      // load path, and only then terminate the document worker. Calling destroy
+      // while PDF.js is still establishing the document causes a separate
+      // internal worker promise to reject outside destroy()'s returned promise.
+      queueMicrotask(async () => {
+        await ownedLoadPromise;
+        await loadingTask.destroy().catch(() => undefined);
+      });
+    };
+    // The document source is the lifecycle identity; callback changes must not reload it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [documentSource]);
 
   const retryDocument = () => {
     resetWebPdfWorker();
@@ -516,20 +560,13 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
               transformOrigin: zoomScale > 1 ? `${mousePos.x}% ${mousePos.y}%` : 'center center'
             }}
           >
-          <Document
-          key={`${pdfUrl}-${documentRetryToken}`}
-          file={documentSource}
-          onLoadSuccess={onDocumentLoadSuccess}
-          onLoadError={onDocumentLoadError}
-          error={null}
-          loading={
+          {!pdfDocument && !documentError && (
             <div className="flex flex-col items-center gap-4">
               <video src="/CPR-Dummies.mp4" autoPlay loop muted playsInline className="w-32 h-32 object-cover rounded-2xl shadow-2xl" />
               <p className="text-white/40 text-xs font-mono uppercase tracking-[0.2em] font-bold">Loading Training Manual...</p>
             </div>
-          }
-        >
-          {numPages > 0 && (
+          )}
+          {pdfDocument && numPages > 0 && (
             <HTMLFlipBook
               key={`${pageWidth}x${pageHeight}-${pageRetryToken}`}
               width={pageWidth}
@@ -564,6 +601,7 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
                 return (
                   <PageContent 
                     key={`page_${index + 1}`}
+                    pdfDocument={pdfDocument}
                     pageNumber={index + 1} 
                     width={pageWidth}
                     height={pageHeight}
@@ -577,7 +615,6 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
               })}
             </HTMLFlipBook>
           )}
-        </Document>
           </div>
 
           {documentError && (
