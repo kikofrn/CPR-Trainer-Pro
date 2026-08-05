@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
 import {
   beginDetectedUsbImport,
@@ -102,6 +103,19 @@ describe('manual close and recovery', () => {
     expect(selectedManual).toBeNull();
     expect(activeTab).toBe('video');
     expect(setPresenterError).not.toHaveBeenCalled();
+  });
+
+  // STOPGAP source-level guard, not a real component test.
+  // The A1/A2 regression lived in JSX wiring, which no pure-function test can observe,
+  // and this branch has no DOM harness (no jsdom / @testing-library/react) to render with.
+  // Adding one days before the conference freeze was judged the riskier trade.
+  // Replace this with a component-level test post-conference.
+  it('wires the manual surface to the narrow close handler, not the full home reset', () => {
+    const src = readFileSync('src/App.tsx', 'utf8');
+    expect(src).toContain('onClose={handleCloseManual}');
+    expect(src).toContain('onReset={handleCloseManual}');
+    expect(src).not.toContain('onClose={handleReturnHome}');
+    expect(src).not.toContain('onReset={handleReturnHome}');
   });
 });
 
