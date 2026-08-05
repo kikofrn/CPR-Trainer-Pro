@@ -30,7 +30,6 @@ tokio = { version = "1", features = ["fs", "io-util", "macros", "time"] }
 futures-util = "0.3"
 sysinfo = { version = "0.36.1", default-features = false, features = ["disk"] }
 tauri-plugin-opener = "2"
-tauri-plugin-dialog = "2"
 tokio-util = "0.7"
 
 [target.'cfg(target_os = "macos")'.dependencies]

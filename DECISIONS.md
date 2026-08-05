@@ -90,3 +90,4 @@
 
 ## 2026-08-05
 - Per `docs/plans/CPR_Trainer_Pro_macOS_Phase3_Prompt.md`, `mac-build` now carries the repository LICENSE plus gitleaks CI and pre-commit configuration byte-identical to commit `78ff12a`. The workflow scans full Git history on every push to every branch; the local hook remains subject to the checked-in pre-commit configuration and must never be bypassed.
+- The Tauri dialog plugin registration, Rust dependency, and `dialog:allow-open` capability are removed together as dead release weight after Phase 2.2 replaced the manual USB folder picker with mounted-drive auto-detection.

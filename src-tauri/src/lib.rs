@@ -1646,7 +1646,6 @@ pub fn run() {
         .manage(MediaLibrary::default())
         .manage(DisplaySleepAssertion::default())
         .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             get_media_storage_status,
             read_subtitle_file,
