@@ -416,12 +416,12 @@ export function HeaderNav({
               className={`hidden sm:flex flex-col items-start px-4 ${selectedManual ? 'pb-2' : 'pb-4'} border-b-2 transition-colors ${activeTab === 'manual' ? 'border-eh-red' : 'border-transparent hover:border-eh-peach/20 opacity-50 hover:opacity-100'}`}
               title="Browse Student and Instructor Handbooks"
             >
-              <div className="flex items-center gap-2">
-                <BookOpen size={20} className={activeTab === 'manual' ? 'text-eh-red' : 'text-eh-peach'} />
+              <div className="flex w-full min-w-0 items-center gap-2">
+                <BookOpen size={20} className={`shrink-0 ${activeTab === 'manual' ? 'text-eh-red' : 'text-eh-peach'}`} />
                 {selectedManual ? (
                   <>
-                    <h2 className="font-serif text-xl font-bold leading-tight text-eh-peach tracking-tight">{selectedManual.title}</h2>
-                    <ChevronDown size={16} className={`text-eh-red transition-transform ${showManualSelector ? 'rotate-180' : ''}`} />
+                    <h2 className="min-w-0 flex-1 truncate font-serif text-xl font-bold leading-tight text-eh-peach tracking-tight">{selectedManual.title}</h2>
+                    <ChevronDown size={16} className={`shrink-0 text-eh-red transition-transform ${showManualSelector ? 'rotate-180' : ''}`} />
                   </>
                 ) : (
                   <>
