@@ -310,7 +310,7 @@ export default function App() {
   const [activeCourseIndex, setActiveCourseIndex] = useState<number | null>(null);
   const [activeChapterIndex, setActiveChapterIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [showSidebar, setShowSidebar] = useState(true);
+  const [showSidebar, setShowSidebar] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(1);
   const volumeRef = useRef(volume);
