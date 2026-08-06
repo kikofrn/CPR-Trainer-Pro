@@ -245,10 +245,7 @@ export class MediaSelectionController {
     if (settings.volume !== undefined) this.targetVolume = settings.volume;
     if (settings.muted !== undefined) this.muted = settings.muted;
     if (settings.playbackRate !== undefined) this.playbackRate = settings.playbackRate;
-    const active = this.elements[this.state.activeSlot];
-    active.muted = this.muted;
-    active.volume = this.muted ? 0 : this.targetVolume;
-    active.playbackRate = this.playbackRate;
+    this.applyActivePlaybackSettings(this.state.activeSlot);
     if (this.pending) this.prepareElement(this.elements[this.pending.slot]);
   }
 
@@ -325,7 +322,7 @@ export class MediaSelectionController {
 
   async resume(): Promise<boolean> {
     const element = this.elements[this.state.activeSlot];
-    this.prepareElement(element);
+    this.applyActivePlaybackSettings(this.state.activeSlot);
     try {
       await element.play();
       if (this.disposed) return false;
@@ -458,16 +455,12 @@ export class MediaSelectionController {
     const oldSource = oldElement.src;
 
     oldElement.pause();
-    if (request.playResolved && !request.playDenied && !request.forceResume) {
-      newElement.muted = this.muted;
-      newElement.volume = this.muted ? 0 : this.targetVolume;
-    } else {
-      newElement.pause();
-    }
-
-    this.pending = null;
     const denied = request.playDenied;
     const playing = request.playResolved && !denied && !request.forceResume;
+    if (!playing) newElement.pause();
+    this.applyActivePlaybackSettings(request.slot);
+
+    this.pending = null;
     this.state = {
       ...this.state,
       committedSelection: { ...request.selection },
@@ -487,6 +480,7 @@ export class MediaSelectionController {
       const timer = this.setTimer(() => {
         this.cleanupTimers.delete(timer);
         if (this.owners[oldSlot] === oldOwner && oldElement.src === oldSource) this.resetSlot(oldSlot, oldOwner);
+        this.applyActivePlaybackSettings(request.slot, request.owner);
       }, this.crossfadeMs);
       this.cleanupTimers.add(timer);
     }
@@ -644,6 +638,24 @@ export class MediaSelectionController {
     element.muted = this.muted;
     element.volume = 0;
     element.playbackRate = this.playbackRate;
+  }
+
+  private applyActivePlaybackSettings(slot: MediaSlot, expectedOwner?: Ownership): boolean {
+    const element = this.elements[slot];
+    if (
+      expectedOwner
+      && (
+        this.state.activeSlot !== slot
+        || this.owners[slot] !== expectedOwner
+        || element.src !== expectedOwner.source
+      )
+    ) {
+      return false;
+    }
+    element.muted = this.muted;
+    element.volume = this.muted ? 0 : this.targetVolume;
+    element.playbackRate = this.playbackRate;
+    return true;
   }
 
   private createOwner(generation: number, slot: MediaSlot, source: string): Ownership {

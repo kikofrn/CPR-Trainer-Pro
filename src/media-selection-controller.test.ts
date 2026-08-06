@@ -409,6 +409,65 @@ describe('MediaSelectionController', () => {
     expect(log.lastIndexOf('B.pause')).toBeLessThan(log.lastIndexOf('A.volume:1'));
   });
 
+  it('restores current active settings before resuming a paused commit', async () => {
+    const { controller, B, log } = createHarness({ targetVolume: 0.65, playbackRate: 1.5 });
+    await commitPaused(controller, B, selection('a'));
+    B.volume = 0;
+    B.muted = true;
+    B.playbackRate = 1;
+    log.length = 0;
+
+    await expect(controller.resume()).resolves.toBe(true);
+
+    expect(B).toMatchObject({ volume: 0.65, muted: false, playbackRate: 1.5, paused: false });
+    expect(log.indexOf('B.volume:0.65')).toBeLessThan(log.indexOf('B.play'));
+  });
+
+  it('commits a playing chapter with the latest nonzero settings', async () => {
+    const { controller, A, B } = createHarness({ targetVolume: 0.8 });
+    controller.request(selection('a'), { playbackIntent: true });
+    await ready(B, true);
+    controller.request(selection('b', 0, 1), { playbackIntent: true });
+    controller.updatePlaybackSettings({ volume: 0.45, muted: false, playbackRate: 1.25 });
+
+    expect(A.volume).toBe(0);
+    await ready(A, true);
+
+    expect(B.paused).toBe(true);
+    expect(A).toMatchObject({ volume: 0.45, muted: false, playbackRate: 1.25, paused: false });
+  });
+
+  it('updates active settings immediately while keeping a pending destination transition-safe', async () => {
+    const { controller, A, B } = createHarness();
+    controller.request(selection('a'), { playbackIntent: true });
+    await ready(B, true);
+    controller.request(selection('b', 0, 1), { playbackIntent: true });
+
+    controller.updatePlaybackSettings({ volume: 0.35, muted: false, playbackRate: 1.5 });
+
+    expect(B).toMatchObject({ volume: 0.35, muted: false, playbackRate: 1.5 });
+    expect(A).toMatchObject({ volume: 0, muted: false, playbackRate: 1.5 });
+    await ready(A, true);
+    expect(A).toMatchObject({ volume: 0.35, muted: false, playbackRate: 1.5 });
+  });
+
+  it('does not reapply settings to a destination after its ownership becomes stale', async () => {
+    const { controller, A, B, log } = createHarness({ crossfadeMs: 500 });
+    controller.request(selection('a'), { playbackIntent: true });
+    await ready(B, true);
+    controller.request(selection('b', 0, 1), { playbackIntent: true });
+    await ready(A, true);
+    controller.request(selection('c', 0, 2), { playbackIntent: true });
+    await ready(B, true);
+    A.volume = 0;
+    log.length = 0;
+
+    await vi.advanceTimersByTimeAsync(500);
+
+    expect(controller.getState()).toMatchObject({ committedSelection: { key: 'c' }, activeSlot: 'B' });
+    expect(log).not.toContain('A.volume:1');
+  });
+
   it('does not let old-player progress overwrite pending or failed request state', async () => {
     const { controller, A, B } = createHarness({ retryDelaysMs: [1, 1, 1] });
     controller.request(selection('a'), { playbackIntent: true });
