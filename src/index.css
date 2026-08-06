@@ -194,6 +194,10 @@
   padding-top: calc(4rem + env(safe-area-inset-top, 0px));
 }
 
+.mobile-manual-host {
+  padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
+}
+
 .mobile-video-stage > .absolute.top-6.right-6,
 .mobile-slideshow-host > div > div > .absolute.top-6.right-6 {
   top: calc(4.5rem + env(safe-area-inset-top, 0px));

@@ -161,6 +161,23 @@ test.describe('Phase 5 manual fallback', () => {
     await expect(viewer.locator('canvas')).toHaveCount(1);
     await expect(page.getByRole('slider', { name: 'Manual page progress' })).toHaveAttribute('aria-valuenow', '1');
 
+    const railBox = await page.getByTestId('mobile-bottom-nav').boundingBox();
+    expect(railBox).not.toBeNull();
+    for (const control of [
+      page.getByRole('button', { name: 'Previous manual page' }),
+      page.getByRole('slider', { name: 'Manual page progress' }),
+      page.getByLabel(/Manual page 1 of .*Enter a page number/),
+      page.getByRole('button', { name: 'Next manual page' }),
+    ]) {
+      const box = await control.boundingBox();
+      expect(box).not.toBeNull();
+      expect(box!.y + box!.height).toBeLessThanOrEqual(railBox!.y);
+    }
+    await page.getByRole('button', { name: 'Next manual page' }).click();
+    await expect(page.getByRole('slider', { name: 'Manual page progress' })).toHaveAttribute('aria-valuenow', '2');
+    await page.getByRole('button', { name: 'Previous manual page' }).click();
+    await expect(page.getByRole('slider', { name: 'Manual page progress' })).toHaveAttribute('aria-valuenow', '1');
+
     await page.getByRole('button', { name: 'Magnify manual page' }).click();
     await expect(page.getByRole('button', { name: 'Reset manual zoom' })).toHaveAttribute('aria-pressed', 'true');
     const zoomed = await viewer.evaluate(element => ({ scrollWidth: element.scrollWidth, clientWidth: element.clientWidth, touchAction: getComputedStyle(element).touchAction }));
