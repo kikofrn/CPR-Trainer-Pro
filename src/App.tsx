@@ -1340,14 +1340,24 @@ export default function App() {
     mobileCoordinatorRef.current?.closeTop();
   }, []);
 
+  const exitStandardFullscreen = useCallback(async () => {
+    if (!document.fullscreenElement) return false;
+    try {
+      await document.exitFullscreen();
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
+
   const closeActiveContent = useCallback(() => {
     if (document.fullscreenElement) {
-      void document.exitFullscreen().catch(console.error);
+      void exitStandardFullscreen();
       return;
     }
     if (isMobileWeb) mobileCoordinatorRef.current?.closeTop(true);
     else teardownMobileContent();
-  }, [isMobileWeb]);
+  }, [exitStandardFullscreen, isMobileWeb]);
 
   useEffect(() => {
     if (isTauri && slideshowIsPlaying && slideVideoRef.current && activeSlide?.type === 'video') {
@@ -1364,7 +1374,7 @@ export default function App() {
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
 
       if (mobileOverlayBlocking) {
-        if (e.key === 'Escape' && !document.fullscreenElement) {
+        if (e.key === 'Escape' && !isNativeFullscreen) {
           e.preventDefault();
           mobileCoordinatorRef.current?.closeTop();
         }
@@ -1406,7 +1416,7 @@ export default function App() {
         }
       } else if (e.key === 'Escape') {
         if (document.fullscreenElement) {
-          document.exitFullscreen().catch(console.error);
+          void exitStandardFullscreen();
         }
         if (isTauri) {
           import('@tauri-apps/api/window').then(({ getCurrentWindow }) => {
@@ -1431,14 +1441,30 @@ export default function App() {
         setIsUiVisible(true);
       }
     };
+    const handleLegacyFullscreenBegin = () => {
+      setIsNativeFullscreen(true);
+    };
+    const handleLegacyFullscreenEnd = () => {
+      setIsNativeFullscreen(false);
+      setIsUiVisible(true);
+    };
+    const courseVideos = [videoRefA.current, videoRefB.current].filter((video): video is HTMLVideoElement => video !== null);
 
     window.addEventListener('keydown', handleKeyDown);
     document.addEventListener('fullscreenchange', handleFullscreenChange);
+    courseVideos.forEach(video => {
+      video.addEventListener('webkitbeginfullscreen', handleLegacyFullscreenBegin);
+      video.addEventListener('webkitendfullscreen', handleLegacyFullscreenEnd);
+    });
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      courseVideos.forEach(video => {
+        video.removeEventListener('webkitbeginfullscreen', handleLegacyFullscreenBegin);
+        video.removeEventListener('webkitendfullscreen', handleLegacyFullscreenEnd);
+      });
     };
-  }, [activeTab, activeSlideshow, activeSlideIndex, activeCourse, activeSlide, isPlaying, slideshowIsPlaying, activeChapterIndex, mobileOverlayBlocking]);
+  }, [activeTab, activeSlideshow, activeSlideIndex, activeCourse, activeSlide, isPlaying, slideshowIsPlaying, activeChapterIndex, activePlayer, exitStandardFullscreen, isNativeFullscreen, mobileOverlayBlocking]);
 
   // UI Fade effect
   useEffect(() => {
@@ -1592,7 +1618,7 @@ export default function App() {
   };
 
   const requestMobileHome = () => {
-    if (document.fullscreenElement) void document.exitFullscreen().catch(console.error);
+    if (document.fullscreenElement) void exitStandardFullscreen();
     else mobileCoordinatorRef.current?.home();
   };
   const mobileShellMounted = !isTauri && (isMobileWeb || mobileHistory.phase !== 'desktop-inactive');
@@ -1998,6 +2024,7 @@ export default function App() {
               activeSlideshow={activeSlideshow}
               activeSlide={activeSlide}
               activeSlideIndex={activeSlideIndex}
+              isMobileWeb={isMobileWeb}
               setActiveSlideshowIndex={(index) => {
                 if (index === null && isMobileWeb) closeActiveContent();
                 else setActiveSlideshowIndex(index);
@@ -2096,6 +2123,7 @@ export default function App() {
         setActiveGuidePath={setActiveGuidePath}
         portalStep={portalStep}
         setPortalStep={setPortalStep}
+        isMobileWeb={isMobileWeb}
         onExitComplete={releaseMobileOverlayBarrier}
       />
       </Suspense>

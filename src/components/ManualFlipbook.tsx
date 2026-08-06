@@ -161,6 +161,8 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
   const [containerWidth, setContainerWidth] = useState(0);
   const [containerHeight, setContainerHeight] = useState(0);
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [standardFullscreenAvailable, setStandardFullscreenAvailable] = useState(isTauri);
+  const [fullscreenFailed, setFullscreenFailed] = useState(false);
   const [outline, setOutline] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [jumpPage, setJumpPage] = useState('');
@@ -179,6 +181,8 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
   
   const flipbookRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const mobileViewportRef = useRef<HTMLDivElement>(null);
+  const mobileSwipeRef = useRef<{ pointerId: number; x: number; y: number } | null>(null);
   const progressBarRef = useRef<HTMLDivElement>(null);
   const [hoverPage, setHoverPage] = useState<number | null>(null);
   const [hoverX, setHoverX] = useState<number>(0);
@@ -206,14 +210,8 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
   React.useImperativeHandle(ref, () => ({
     resolveDestination,
     goToPage,
-    flipNext: () => {
-      const pageFlip = flipbookRef.current?.pageFlip();
-      if (pageFlip) pageFlip.flipNext();
-    },
-    flipPrev: () => {
-      const pageFlip = flipbookRef.current?.pageFlip();
-      if (pageFlip) pageFlip.flipPrev();
-    }
+    flipNext,
+    flipPrev,
   }));
 
   const onDocumentLoadError = () => {
@@ -309,16 +307,25 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
   };
 
   const goToPage = (pageIndex: number) => {
-    if (flipbookRef.current) {
-      const safeIndex = Math.max(0, Math.min(pageIndex, numPages - 1));
-      // Use turnToPage instead of flip to avoid multi-page animation glitches
-      // And rely on onFlip to sync currentPage to avoid race conditions.
-      const pageFlip = flipbookRef.current.pageFlip();
-      if (pageFlip) {
-        pageFlip.turnToPage(safeIndex);
-      }
-    }
+    const safeIndex = Math.max(0, Math.min(pageIndex, numPages - 1));
+    setCurrentPage(safeIndex);
+    setZoomScale(1);
+    setMousePos({ x: 50, y: 50 });
+    mobileViewportRef.current?.scrollTo({ left: 0, top: 0 });
+    if (containerWidth < 768) return;
+    // Use turnToPage instead of flip to avoid multi-page animation glitches.
+    flipbookRef.current?.pageFlip()?.turnToPage(safeIndex);
   };
+
+  function flipNext() {
+    if (containerWidth < 768) goToPage(currentPage + 1);
+    else flipbookRef.current?.pageFlip()?.flipNext();
+  }
+
+  function flipPrev() {
+    if (containerWidth < 768) goToPage(currentPage - 1);
+    else flipbookRef.current?.pageFlip()?.flipPrev();
+  }
 
   const handlePageJump = (e: React.FormEvent) => {
     e.preventDefault();
@@ -383,6 +390,32 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
       });
     }
   };
+
+  const resetMobileViewport = () => {
+    setZoomScale(1);
+    setMousePos({ x: 50, y: 50 });
+    mobileViewportRef.current?.scrollTo({ left: 0, top: 0, behavior: 'smooth' });
+  };
+
+  const handleMobilePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!event.isPrimary || zoomScale > 1) return;
+    const target = event.target as HTMLElement;
+    if (target.closest('button, a, input, select, textarea')) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    if (event.clientX - rect.left < 24 || rect.right - event.clientX < 24) return;
+    mobileSwipeRef.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY };
+  };
+
+  const handleMobilePointerEnd = (event: React.PointerEvent<HTMLDivElement>) => {
+    const start = mobileSwipeRef.current;
+    mobileSwipeRef.current = null;
+    if (!start || start.pointerId !== event.pointerId || zoomScale > 1) return;
+    const dx = event.clientX - start.x;
+    const dy = event.clientY - start.y;
+    if (Math.abs(dx) < 48 || Math.abs(dx) < 1.25 * Math.abs(dy)) return;
+    if (dx < 0) flipNext();
+    else flipPrev();
+  };
   
   const toggleFullScreen = async () => {
     if (isTauri) {
@@ -392,10 +425,21 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
       await win.setFullscreen(!isFs);
       setIsFullScreen(!isFs);
     } else {
-      if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(console.error);
-      } else {
-        document.exitFullscreen().catch(console.error);
+      if (document.fullscreenElement) {
+        try {
+          await document.exitFullscreen();
+        } catch {
+          // Keep the reader mounted; fullscreenchange remains authoritative.
+        }
+        return;
+      }
+      const target = containerRef.current;
+      if (!target || typeof target.requestFullscreen !== 'function') return;
+      try {
+        await target.requestFullscreen();
+      } catch {
+        setFullscreenFailed(true);
+        setStandardFullscreenAvailable(false);
       }
     }
   };
@@ -403,9 +447,7 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
   // Sync isFullScreen state with actual fullscreen changes (handles Escape, F11, App.tsx global hotkeys)
   useEffect(() => {
     const handleFullscreenChange = () => {
-      if (!document.fullscreenElement) {
-        setIsFullScreen(false);
-      }
+      setIsFullScreen(document.fullscreenElement === containerRef.current);
     };
 
     // For Tauri native fullscreen, listen to window resize as a proxy
@@ -426,6 +468,12 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
       window.removeEventListener('resize', handleTauriFullscreenSync);
     };
   }, []);
+
+  useEffect(() => {
+    if (isTauri) return;
+    setFullscreenFailed(false);
+    setStandardFullscreenAvailable(typeof containerRef.current?.requestFullscreen === 'function');
+  }, [pdfUrl]);
 
   const isMobile = containerWidth < 768;
   
@@ -455,6 +503,7 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
   return (
     <div 
       ref={containerRef}
+      data-manual-reader-root
       className={`w-full h-full bg-black flex flex-col ${isFullScreen ? 'fixed inset-0 z-[9999]' : ''}`}
     >
       {/* Toolbar */}
@@ -521,8 +570,11 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
 
           <div className="flex items-center gap-2 bg-white/5 p-1 rounded-full border border-white/5">
             <button 
-              onClick={() => setZoomScale(prev => prev > 1 ? 1 : 2.2)} 
-              className={`px-4 py-2 rounded-full transition-colors flex items-center gap-2 ${zoomScale > 1 ? 'bg-eh-red text-white shadow-[0_0_15px_rgba(255,75,75,0.4)]' : 'hover:bg-white/10 text-white/60 hover:text-white'}`}
+              type="button"
+              onClick={() => zoomScale > 1 ? resetMobileViewport() : setZoomScale(2.2)}
+              aria-label={zoomScale > 1 ? 'Reset manual zoom' : 'Magnify manual page'}
+              aria-pressed={zoomScale > 1}
+              className={`mobile-coarse-target px-4 py-2 rounded-full transition-colors flex items-center gap-2 focus-visible:outline-2 focus-visible:outline-eh-blue ${zoomScale > 1 ? 'bg-eh-red text-white shadow-[0_0_15px_rgba(255,75,75,0.4)]' : 'hover:bg-white/10 text-white/60 hover:text-white'}`}
             >
               <Search size={16} />
               <span className="text-[10px] font-bold tracking-widest uppercase">Magnify</span>
@@ -531,9 +583,9 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
         </div>
 
         <div className="flex items-center gap-3">
-          <button onClick={toggleFullScreen} className="p-2 hover:bg-white/10 rounded-full transition-colors text-white/60 hover:text-white">
+          {(isTauri || (standardFullscreenAvailable && !fullscreenFailed)) && <button type="button" onClick={() => { void toggleFullScreen(); }} aria-label="Toggle manual fullscreen" className="mobile-coarse-target p-2 hover:bg-white/10 rounded-full transition-colors text-white/60 hover:text-white focus-visible:outline-2 focus-visible:outline-eh-blue">
             <Maximize2 size={20} />
-          </button>
+          </button>}
           <button 
             onClick={onClose}
             title="Close Manual"
@@ -553,20 +605,53 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
           onWheel={handleWheel}
           style={{ cursor: zoomScale > 1 ? 'zoom-in' : 'default' }}
         >
-          <div
-            className="transition-transform duration-75 ease-out flex items-center justify-center w-full h-full"
-            style={{ 
-              transform: `scale(${zoomScale})`,
-              transformOrigin: zoomScale > 1 ? `${mousePos.x}% ${mousePos.y}%` : 'center center'
-            }}
-          >
           {!pdfDocument && !documentError && (
             <div className="flex flex-col items-center gap-4">
               <video src="/CPR-Dummies.mp4" autoPlay loop muted playsInline className="w-32 h-32 object-cover rounded-2xl shadow-2xl" />
               <p className="text-white/40 text-xs font-mono uppercase tracking-[0.2em] font-bold">Loading Training Manual...</p>
             </div>
           )}
-          {pdfDocument && numPages > 0 && (
+          {pdfDocument && numPages > 0 && isMobile && (
+            <div
+              ref={mobileViewportRef}
+              data-manual-viewer="windowed"
+              data-current-page={currentPage + 1}
+              className={`h-full w-full overflow-auto overscroll-contain ${zoomScale === 1 ? 'flex items-center justify-center' : ''}`}
+              style={{
+                WebkitOverflowScrolling: 'touch',
+                touchAction: zoomScale > 1 ? 'pan-x pan-y pinch-zoom' : 'pan-y pinch-zoom',
+              }}
+              onPointerDown={handleMobilePointerDown}
+              onPointerUp={handleMobilePointerEnd}
+              onPointerCancel={() => { mobileSwipeRef.current = null; }}
+            >
+              <div
+                data-pdf-page-host
+                className="shrink-0"
+                style={{ width: pageWidth * zoomScale, height: pageHeight * zoomScale }}
+              >
+                <PageContent
+                  key={`mobile_page_${currentPage + 1}_${pageRetryToken}`}
+                  pdfDocument={pdfDocument}
+                  pageNumber={currentPage + 1}
+                  width={pageWidth}
+                  height={pageHeight}
+                  scale={zoomScale}
+                  showEasterEgg={showEasterEgg}
+                  onPageError={onPageError}
+                  onRetryPage={retryPage}
+                />
+              </div>
+            </div>
+          )}
+          {pdfDocument && numPages > 0 && !isMobile && (
+            <div
+              className="transition-transform duration-75 ease-out flex items-center justify-center w-full h-full"
+              style={{
+                transform: `scale(${zoomScale})`,
+                transformOrigin: zoomScale > 1 ? `${mousePos.x}% ${mousePos.y}%` : 'center center'
+              }}
+            >
             <HTMLFlipBook
               key={`${pageWidth}x${pageHeight}-${pageRetryToken}`}
               width={pageWidth}
@@ -614,8 +699,8 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
                 );
               })}
             </HTMLFlipBook>
+            </div>
           )}
-          </div>
 
           {documentError && (
             <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/80 p-8 backdrop-blur-sm" role="alert">
@@ -656,19 +741,36 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
       </div>
 
       {/* Footer / Progress */}
-      <div className="h-20 flex items-center justify-center px-12 z-50 bg-black/80 backdrop-blur-md border-t border-white/5">
-        <div className="w-full max-w-2xl px-8 flex items-center gap-4">
-          <button 
+      <div className="h-20 flex items-center justify-center px-2 sm:px-12 z-50 bg-black/80 backdrop-blur-md border-t border-white/5">
+        <div className="w-full max-w-2xl px-0 sm:px-8 flex items-center gap-2 sm:gap-4">
+          <button
+            type="button"
             disabled={currentPage === 0}
-            onClick={() => flipbookRef.current?.pageFlip()?.flipPrev()}
-            className="text-white/40 hover:text-white disabled:opacity-20 transition-colors p-2"
+            onClick={flipPrev}
+            aria-label="Previous manual page"
+            className="mobile-coarse-target text-white/40 hover:text-white disabled:opacity-20 transition-colors p-2"
           >
             <ChevronLeft size={20} />
           </button>
           
-          <span className="text-[9px] font-mono text-eh-red w-8 text-center">
-            {Math.min(currentPage + 1, numPages).toString().padStart(2, '0')}
-          </span>
+          {isMobile ? (
+            <form onSubmit={handlePageJump} className="w-11 shrink-0">
+              <label className="sr-only" htmlFor="manual-page-jump">Go to manual page</label>
+              <input
+                id="manual-page-jump"
+                inputMode="numeric"
+                value={jumpPage}
+                onChange={event => setJumpPage(event.target.value.replace(/\D/g, ''))}
+                placeholder={Math.min(currentPage + 1, numPages).toString()}
+                aria-label={`Manual page ${Math.min(currentPage + 1, numPages)} of ${numPages}. Enter a page number.`}
+                className="h-11 w-11 rounded-lg border border-white/10 bg-white/5 text-center font-mono text-xs text-eh-red focus-visible:outline-2 focus-visible:outline-eh-blue"
+              />
+            </form>
+          ) : (
+            <span className="text-[9px] font-mono text-eh-red w-8 text-center">
+              {Math.min(currentPage + 1, numPages).toString().padStart(2, '0')}
+            </span>
+          )}
           
           <div 
             ref={progressBarRef}
@@ -683,14 +785,29 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
             }}
             onMouseLeave={() => setHoverPage(null)}
             onClick={(e) => {
-              if (!progressBarRef.current || numPages === 0 || !flipbookRef.current) return;
+              if (!progressBarRef.current || numPages === 0) return;
               const rect = progressBarRef.current.getBoundingClientRect();
               const x = e.clientX - rect.left;
               const percentage = Math.max(0, Math.min(1, x / rect.width));
               const targetPage = Math.floor(percentage * numPages);
               // Ensure we flip to an even page if in double page mode so it aligns correctly
               const adjustedPage = (!isMobile && targetPage % 2 !== 0) ? targetPage - 1 : targetPage;
-              flipbookRef.current.pageFlip().flip(Math.max(0, adjustedPage));
+              goToPage(Math.max(0, adjustedPage));
+            }}
+            role="slider"
+            tabIndex={0}
+            aria-label="Manual page progress"
+            aria-valuemin={1}
+            aria-valuemax={Math.max(1, numPages)}
+            aria-valuenow={Math.min(currentPage + 1, Math.max(1, numPages))}
+            onKeyDown={event => {
+              if (event.key === 'ArrowLeft') {
+                event.preventDefault();
+                flipPrev();
+              } else if (event.key === 'ArrowRight') {
+                event.preventDefault();
+                flipNext();
+              }
             }}
           >
             <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden relative">
@@ -716,10 +833,12 @@ const ManualFlipbook = React.forwardRef<ManualFlipbookRef, ManualFlipbookProps>(
             {numPages.toString().padStart(2, '0')}
           </span>
           
-          <button 
+          <button
+            type="button"
             disabled={currentPage >= numPages - (isMobile ? 1 : 2)}
-            onClick={() => flipbookRef.current?.pageFlip()?.flipNext()}
-            className="text-white/40 hover:text-white disabled:opacity-20 transition-colors p-2"
+            onClick={flipNext}
+            aria-label="Next manual page"
+            className="mobile-coarse-target text-white/40 hover:text-white disabled:opacity-20 transition-colors p-2"
           >
             <ChevronRight size={20} />
           </button>

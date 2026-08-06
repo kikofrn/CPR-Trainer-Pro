@@ -2,7 +2,13 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Clock, CheckCircle2, SkipForward, SkipBack, Play, Pause, VolumeX, Volume2, Maximize2, Loader2, AlertTriangle, WifiOff } from 'lucide-react';
 import type { MediaControllerState } from '../media-selection-controller';
+import { isTauri } from '../media-resolver';
 import { safeStorage } from '../utils/safe-storage';
+
+type LegacyFullscreenVideo = HTMLVideoElement & {
+  webkitEnterFullscreen?: () => void;
+  webkitSupportsFullscreen?: boolean;
+};
 
 interface VideoPlayerProps {
   activeCourse: any;
@@ -64,6 +70,75 @@ export const VideoPlayer = React.memo(function VideoPlayer({
   mediaState, pendingChapterTitle, failedChapterTitle,
   retryFailedChapter, resumeChapter, replayChapter,
 }: VideoPlayerProps) {
+  const [fullscreenCapability, setFullscreenCapability] = React.useState({ standard: false, legacy: false });
+  const [fullscreenFailed, setFullscreenFailed] = React.useState(false);
+
+  React.useEffect(() => {
+    setFullscreenFailed(false);
+    const activeVideo = (activePlayer === 'A' ? videoRefA.current : videoRefB.current) as LegacyFullscreenVideo | null;
+    const updateCapability = () => {
+      setFullscreenCapability({
+        standard: typeof videoContainerRef.current?.requestFullscreen === 'function',
+        legacy: Boolean(
+          activeVideo
+          && activeVideo.readyState >= 1
+          && typeof activeVideo.webkitEnterFullscreen === 'function'
+          && activeVideo.webkitSupportsFullscreen !== false
+        ),
+      });
+    };
+    updateCapability();
+    activeVideo?.addEventListener('loadedmetadata', updateCapability);
+    activeVideo?.addEventListener('emptied', updateCapability);
+    return () => {
+      activeVideo?.removeEventListener('loadedmetadata', updateCapability);
+      activeVideo?.removeEventListener('emptied', updateCapability);
+    };
+  }, [activeCourse?.id, activeChapter?.id, activePlayer, videoContainerRef, videoRefA, videoRefB]);
+
+  const exitFullscreen = async () => {
+    if (!document.fullscreenElement) return;
+    if (isTauri) {
+      await document.exitFullscreen().catch(console.error);
+      return;
+    }
+    try {
+      await document.exitFullscreen();
+    } catch {
+      // The fullscreenchange event is authoritative; keep content mounted on failure.
+    }
+  };
+
+  const toggleFullscreen = async () => {
+    if (document.fullscreenElement) {
+      await exitFullscreen();
+      return;
+    }
+    const target = videoContainerRef.current;
+    if (fullscreenCapability.standard && target) {
+      if (isTauri) {
+        await target.requestFullscreen().catch(console.error);
+        return;
+      }
+      try {
+        await target.requestFullscreen();
+      } catch {
+        setFullscreenFailed(true);
+      }
+      return;
+    }
+    if (fullscreenCapability.legacy) {
+      const activeVideo = (activePlayer === 'A' ? videoRefA.current : videoRefB.current) as LegacyFullscreenVideo | null;
+      try {
+        activeVideo?.webkitEnterFullscreen?.();
+      } catch {
+        setFullscreenFailed(true);
+      }
+    }
+  };
+
+  const fullscreenAvailable = isTauri || (!fullscreenFailed && (fullscreenCapability.standard || fullscreenCapability.legacy));
+
   if (!activeCourse) return null;
 
   if (activeCourse.isComingSoon) {
@@ -101,7 +176,7 @@ export const VideoPlayer = React.memo(function VideoPlayer({
           onClick={(e) => {
             e.stopPropagation();
             if (document.fullscreenElement) {
-              document.exitFullscreen().catch(console.error);
+              void exitFullscreen();
             } else {
               onClose();
             }
@@ -357,12 +432,9 @@ export const VideoPlayer = React.memo(function VideoPlayer({
             }} aria-label={showSubtitles ? 'Disable subtitles' : 'Enable subtitles'} aria-pressed={showSubtitles} className={`mobile-coarse-target rounded-full focus-visible:outline-2 focus-visible:outline-eh-blue ${showSubtitles ? 'text-eh-red' : 'text-eh-peach/80'}`}>
               <span className="rounded border-2 px-1.5 py-0.5 text-[10px] font-black">CC</span>
             </button>
-            <button type="button" onClick={() => {
-              if (!document.fullscreenElement && videoContainerRef.current) void videoContainerRef.current.requestFullscreen().catch(console.error);
-              else if (document.fullscreenElement) void document.exitFullscreen().catch(console.error);
-            }} aria-label="Toggle fullscreen view" className="mobile-coarse-target rounded-full text-eh-peach/80 focus-visible:outline-2 focus-visible:outline-eh-blue">
+            {fullscreenAvailable && <button type="button" onClick={() => { void toggleFullscreen(); }} aria-label="Toggle fullscreen view" className="mobile-coarse-target rounded-full text-eh-peach/80 focus-visible:outline-2 focus-visible:outline-eh-blue">
               <Maximize2 size={22} />
-            </button>
+            </button>}
           </div>
         </div>
       ) : (
@@ -485,20 +557,14 @@ export const VideoPlayer = React.memo(function VideoPlayer({
                   CC
                 </span>
               </button>
-              <button 
-                onClick={() => {
-                  if (!document.fullscreenElement && videoContainerRef.current) {
-                    videoContainerRef.current.requestFullscreen()
-                      .catch((err: any) => console.error(err));
-                  } else if (document.fullscreenElement) {
-                    document.exitFullscreen().catch(console.error);
-                  }
-                }}
+              {fullscreenAvailable && <button
+                onClick={() => { void toggleFullscreen(); }}
                 className="p-3 hover:bg-eh-peach/10 rounded-full text-eh-peach/80 transition-all cursor-pointer"
                 title="Toggle Fullscreen View"
+                aria-label="Toggle fullscreen view"
               >
                 <Maximize2 size={24} />
-              </button>
+              </button>}
             </div>
           </div>
         </div>

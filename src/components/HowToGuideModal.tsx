@@ -9,6 +9,7 @@ interface HowToGuideModalProps {
   setActiveGuidePath: (path: 'menu' | 'app' | 'teaching' | 'portal') => void;
   portalStep: number;
   setPortalStep: React.Dispatch<React.SetStateAction<number>>;
+  isMobileWeb: boolean;
   onExitComplete?: () => void;
 }
 
@@ -19,6 +20,7 @@ export function HowToGuideModal({
   setActiveGuidePath,
   portalStep,
   setPortalStep,
+  isMobileWeb,
   onExitComplete,
 }: HowToGuideModalProps) {
   return (
@@ -28,7 +30,7 @@ export function HowToGuideModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="absolute inset-0 bg-black/85 backdrop-blur-md z-[100] flex items-center justify-center p-6"
+          className={`absolute inset-0 bg-black/85 backdrop-blur-md z-[100] flex items-center justify-center ${isMobileWeb ? 'p-2' : 'p-6'}`}
           onClick={() => setShowHowTo(false)}
         >
           <motion.div
@@ -36,7 +38,7 @@ export function HowToGuideModal({
             animate={{ scale: 1, y: 0, opacity: 1 }}
             exit={{ scale: 0.95, y: 20, opacity: 0 }}
             transition={{ type: "spring", duration: 0.5 }}
-            className="max-w-5xl w-full max-h-[88vh] bg-[#111111] border border-white/10 rounded-[32px] overflow-hidden flex flex-col shadow-2xl relative"
+            className={`max-w-5xl w-full bg-[#111111] border border-white/10 overflow-hidden flex flex-col shadow-2xl relative ${isMobileWeb ? 'max-h-[calc(100dvh-1rem)] rounded-2xl' : 'max-h-[88vh] rounded-[32px]'}`}
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
@@ -46,12 +48,12 @@ export function HowToGuideModal({
             <div className="h-1.5 w-full bg-gradient-to-r from-eh-red via-eh-red/60 to-eh-blue/40 shrink-0" />
             
             {/* Header */}
-            <div className="p-8 border-b border-white/5 flex items-center justify-between shrink-0">
+            <div className={`${isMobileWeb ? 'p-4' : 'p-8'} border-b border-white/5 flex items-center justify-between gap-2 shrink-0`}>
               <div className="flex items-center gap-3">
                 {activeGuidePath !== 'menu' && (
                   <button
                     onClick={() => setActiveGuidePath('menu')}
-                    className="mr-2 px-3 py-1.5 bg-white/5 hover:bg-white/10 text-eh-peach/85 hover:text-eh-peach rounded-full transition-all duration-300 flex items-center gap-1 text-xs font-black tracking-wider border border-white/5 cursor-pointer active:scale-95"
+                    className={`${isMobileWeb ? 'mobile-coarse-target' : ''} mr-2 px-3 py-1.5 bg-white/5 hover:bg-white/10 text-eh-peach/85 hover:text-eh-peach rounded-full transition-all duration-300 flex items-center gap-1 text-xs font-black tracking-wider border border-white/5 cursor-pointer active:scale-95 focus-visible:outline-2 focus-visible:outline-eh-blue`}
                     title="Back to Main Menu"
                   >
                     <ChevronLeft size={16} />
@@ -79,14 +81,14 @@ export function HowToGuideModal({
               <button
                 onClick={() => setShowHowTo(false)}
                 aria-label="Close guide"
-                className="p-2 bg-white/5 hover:bg-eh-red/20 hover:text-eh-red text-eh-peach/60 rounded-full transition-all duration-300 cursor-pointer"
+                className={`${isMobileWeb ? 'mobile-coarse-target' : ''} p-2 bg-white/5 hover:bg-eh-red/20 hover:text-eh-red text-eh-peach/60 rounded-full transition-all duration-300 cursor-pointer focus-visible:outline-2 focus-visible:outline-eh-blue`}
               >
                 <X size={20} />
               </button>
             </div>
 
             {/* Guide Contents */}
-            <div className="flex-1 overflow-y-auto p-8">
+            <div className={`flex-1 min-w-0 overflow-x-hidden overflow-y-auto ${isMobileWeb ? 'p-4' : 'p-8'}`} style={{ WebkitOverflowScrolling: 'touch' }}>
               {activeGuidePath === 'menu' && (
                 <div className="space-y-8">
                   {/* Welcome banner */}
@@ -287,7 +289,9 @@ export function HowToGuideModal({
                       <ul className="text-sm text-eh-peach/75 space-y-2 pl-2">
                         <li className="flex items-center gap-2">
                           <div className="w-1.5 h-1.5 rounded-full bg-eh-red shrink-0" />
-                          <span>Toggle <strong className="text-eh-peach">Continuous Play</strong> ON in the bottom left of the sidebar.</span>
+                          <span>{isMobileWeb
+                            ? 'Continuous Play can be turned on in the course menu or in Settings (the gear icon at the top of the screen).'
+                            : <>Toggle <strong className="text-eh-peach">Continuous Play</strong> ON in the bottom left of the sidebar.</>}</span>
                         </li>
                         <li className="flex items-center gap-2">
                           <div className="w-1.5 h-1.5 rounded-full bg-eh-red shrink-0" />
@@ -479,7 +483,7 @@ export function HowToGuideModal({
                         <button
                           key={s.step}
                           onClick={() => setPortalStep(s.step)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-bold font-mono transition-all duration-300 cursor-pointer ${
+                          className={`${isMobileWeb ? 'mobile-coarse-target' : ''} px-3 py-1.5 rounded-lg text-xs font-bold font-mono transition-all duration-300 cursor-pointer focus-visible:outline-2 focus-visible:outline-eh-blue ${
                             portalStep === s.step
                               ? 'bg-eh-blue text-white border border-eh-blue shadow-[0_0_10px_rgba(62,184,255,0.25)]'
                               : 'bg-black/30 text-eh-peach/40 border border-white/5 hover:border-white/20'
@@ -569,7 +573,7 @@ export function HowToGuideModal({
                             <button
                               onClick={() => setPortalStep(prev => Math.max(1, prev - 1))}
                               disabled={portalStep === 1}
-                              className="px-4 py-2 bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:pointer-events-none rounded-xl text-xs font-bold text-eh-peach flex items-center gap-1.5 transition-all border border-white/5 cursor-pointer"
+                              className={`${isMobileWeb ? 'mobile-coarse-target min-h-11' : ''} px-4 py-2 bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:pointer-events-none rounded-xl text-xs font-bold text-eh-peach flex items-center gap-1.5 transition-all border border-white/5 cursor-pointer focus-visible:outline-2 focus-visible:outline-eh-blue`}
                             >
                               <ChevronLeft size={14} />
                               <span>Previous</span>
@@ -577,7 +581,7 @@ export function HowToGuideModal({
                             <button
                               onClick={() => setPortalStep(prev => Math.min(6, prev + 1))}
                               disabled={portalStep === 6}
-                              className="px-4 py-2 bg-eh-blue hover:bg-eh-blue-light disabled:opacity-30 disabled:pointer-events-none rounded-xl text-xs font-bold text-white flex items-center gap-1.5 transition-all cursor-pointer"
+                              className={`${isMobileWeb ? 'mobile-coarse-target min-h-11' : ''} px-4 py-2 bg-eh-blue hover:bg-eh-blue-light disabled:opacity-30 disabled:pointer-events-none rounded-xl text-xs font-bold text-white flex items-center gap-1.5 transition-all cursor-pointer focus-visible:outline-2 focus-visible:outline-eh-blue`}
                             >
                               <span>Next Step</span>
                               <ChevronRight size={14} />
@@ -609,13 +613,13 @@ export function HowToGuideModal({
             </div>
 
             {/* Footer */}
-            <div className="p-6 bg-black/40 border-t border-white/5 flex items-center justify-between shrink-0">
+            <div className={`${isMobileWeb ? 'p-3 flex-wrap gap-3' : 'p-6'} bg-black/40 border-t border-white/5 flex items-center justify-between shrink-0`}>
               <div className="flex items-center gap-3">
                 <span className="text-[10px] text-eh-peach/30 uppercase tracking-widest font-bold">CPR Trainer Pro v1.0.0</span>
                 {activeGuidePath !== 'menu' && (
                   <button
                     onClick={() => setActiveGuidePath('menu')}
-                    className="px-4 py-1.5 bg-white/5 hover:bg-white/10 text-eh-peach/60 hover:text-eh-peach border border-white/5 hover:border-white/10 rounded-full text-[10px] uppercase font-mono font-bold tracking-wider transition-all cursor-pointer"
+                    className={`${isMobileWeb ? 'mobile-coarse-target min-h-11' : ''} px-4 py-1.5 bg-white/5 hover:bg-white/10 text-eh-peach/60 hover:text-eh-peach border border-white/5 hover:border-white/10 rounded-full text-[10px] uppercase font-mono font-bold tracking-wider transition-all cursor-pointer focus-visible:outline-2 focus-visible:outline-eh-blue`}
                   >
                     Main Menu
                   </button>
@@ -623,7 +627,7 @@ export function HowToGuideModal({
               </div>
               <button
                 onClick={() => setShowHowTo(false)}
-                className="px-6 py-2.5 bg-eh-red hover:bg-eh-red-dark text-eh-peach font-bold rounded-full text-xs shadow-xl active:scale-95 transition-all cursor-pointer"
+                className={`${isMobileWeb ? 'mobile-coarse-target min-h-11' : ''} px-6 py-2.5 bg-eh-red hover:bg-eh-red-dark text-eh-peach font-bold rounded-full text-xs shadow-xl active:scale-95 transition-all cursor-pointer focus-visible:outline-2 focus-visible:outline-eh-blue`}
               >
                 Close Guide
               </button>

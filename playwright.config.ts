@@ -45,6 +45,7 @@ export default defineConfig({
         'tests/e2e/app.spec.ts',
         'tests/e2e/phase3.spec.ts',
         'tests/e2e/phase4.spec.ts',
+        'tests/e2e/phase5.spec.ts',
       ],
       use: {
         ...devices['Desktop Chrome'],

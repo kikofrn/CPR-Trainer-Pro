@@ -365,6 +365,7 @@ function CoursePanel({ family, selection, ...props }: { family: 'cpr' | 'first-a
     return (
       <div className="space-y-3" data-testid={`${family}-active-list`}>
         <p className="px-1 text-xs font-bold text-eh-peach/55">{target.title}</p>
+        <Toggle label="Continuous Play" checked={props.continuousPlay} onChange={props.setContinuousPlay} />
         {items.map((item: any, index: number) => {
           const pending = selection.kind === 'video' && props.pendingChapter?.courseId === target.id && props.pendingChapter.chapterId === item.id;
           const failed = selection.kind === 'video' && props.failedChapter?.courseId === target.id && props.failedChapter.chapterId === item.id;
@@ -414,6 +415,7 @@ function CoursePanel({ family, selection, ...props }: { family: 'cpr' | 'first-a
         <Toggle label="Pediatric Focused" checked={pediatric} onChange={setPediatric} />
         <Toggle label="Virtual Assistant" checked={va} onChange={setVa} />
       </div>
+      <Toggle label="Continuous Play" checked={props.continuousPlay} onChange={props.setContinuousPlay} />
       <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
         <h3 className="text-lg font-black text-eh-peach">{target?.title ?? (isCpr ? 'CPR & AED' : 'First Aid')}</h3>
         {!selection.available && <p className="mt-2 text-sm text-eh-red/80">{selection.unavailableReason}</p>}

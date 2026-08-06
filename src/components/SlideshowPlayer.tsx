@@ -1,15 +1,18 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, SkipBack, SkipForward, Play, Pause, Projector, VolumeX, Volume2, Maximize2, Lightbulb } from 'lucide-react';
 import { cdnUrl, isTauri } from '../media-resolver';
 import { INSTRUCTOR_TIPS } from '../instructor-tips';
 import { WebSlideshowMedia, type WebSlideshowControls } from './WebSlideshowMedia';
 
+const MobileSlideshowControls = React.lazy(() => import('./mobile/MobileSlideshowControls'));
+
 interface SlideshowPlayerProps {
   activeSlideshow: any;
   activeSlide: any;
   activeSlideIndex: number;
   setActiveSlideshowIndex: (i: number | null) => void;
+  isMobileWeb: boolean;
   
   isUiVisible: boolean;
   slideshowContainerRef: React.RefObject<any>;
@@ -53,6 +56,7 @@ function resolveSlideUrl(slide: any, m: (path: string) => string, fileStatuses: 
 
 export function SlideshowPlayer({
   activeSlideshow, activeSlide, activeSlideIndex, setActiveSlideshowIndex,
+  isMobileWeb,
   isUiVisible, slideshowContainerRef, slideVideoRef,
   isMuted, setIsMuted, volume, setVolume,
   prevSlide, nextSlide,
@@ -61,23 +65,118 @@ export function SlideshowPlayer({
   m, fileStatuses
 }: SlideshowPlayerProps) {
   const [showTips, setShowTips] = useState(false);
+  const [fullscreenAvailable, setFullscreenAvailable] = useState(isTauri);
+  const [fullscreenFailed, setFullscreenFailed] = useState(false);
+  const activePointersRef = useRef(new Set<number>());
+  const swipeRef = useRef<{
+    pointerId: number;
+    x: number;
+    y: number;
+    lock: 'pending' | 'horizontal' | 'vertical';
+  } | null>(null);
+
+  useEffect(() => {
+    setFullscreenFailed(false);
+    setFullscreenAvailable(isTauri || typeof slideshowContainerRef.current?.requestFullscreen === 'function');
+  }, [activeSlideshow?.id, slideshowContainerRef]);
+
+  const exitFullscreen = async () => {
+    if (!document.fullscreenElement) return;
+    if (isTauri) {
+      await document.exitFullscreen().catch(console.error);
+      return;
+    }
+    try {
+      await document.exitFullscreen();
+    } catch {
+      // Fullscreen events remain authoritative; a failed exit must not close the slideshow.
+    }
+  };
+
+  const toggleFullscreen = async () => {
+    if (document.fullscreenElement) {
+      await exitFullscreen();
+      return;
+    }
+    const target = slideshowContainerRef.current;
+    if (!target || typeof target.requestFullscreen !== 'function') return;
+    if (isTauri) {
+      await target.requestFullscreen().catch(console.error);
+      return;
+    }
+    try {
+      await target.requestFullscreen();
+    } catch {
+      setFullscreenFailed(true);
+      setFullscreenAvailable(false);
+    }
+  };
+
+  const closeSlideshow = () => {
+    if (document.fullscreenElement) {
+      void exitFullscreen();
+      return;
+    }
+    slideVideoRef.current?.pause();
+    setActiveSlideshowIndex(null);
+  };
+
+  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!isMobileWeb || showTips) return;
+    activePointersRef.current.add(event.pointerId);
+    if (activePointersRef.current.size > 1) {
+      swipeRef.current = null;
+      return;
+    }
+    if (!event.isPrimary) return;
+    const target = event.target as HTMLElement;
+    if (target.closest('button, a, input, select, textarea, [role="slider"], [data-swipe-exempt]')) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    if (event.clientX - rect.left < 24 || rect.right - event.clientX < 24) return;
+    swipeRef.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, lock: 'pending' };
+  };
+
+  const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const swipe = swipeRef.current;
+    if (!swipe || swipe.pointerId !== event.pointerId || activePointersRef.current.size !== 1) return;
+    const dx = event.clientX - swipe.x;
+    const dy = event.clientY - swipe.y;
+    if (swipe.lock === 'pending' && Math.hypot(dx, dy) >= 12) {
+      swipe.lock = Math.abs(dx) >= 1.25 * Math.abs(dy) ? 'horizontal' : 'vertical';
+    }
+    if (swipe.lock === 'horizontal' && event.cancelable) event.preventDefault();
+  };
+
+  const finishPointer = (event: React.PointerEvent<HTMLDivElement>, canceled = false) => {
+    activePointersRef.current.delete(event.pointerId);
+    const swipe = swipeRef.current;
+    swipeRef.current = null;
+    if (canceled || !swipe || swipe.pointerId !== event.pointerId || swipe.lock !== 'horizontal') return;
+    const dx = event.clientX - swipe.x;
+    const dy = event.clientY - swipe.y;
+    if (Math.abs(dx) < 48 || Math.abs(dx) < 1.25 * Math.abs(dy)) return;
+    if (dx < 0) nextSlide();
+    else prevSlide();
+  };
 
   if (!activeSlideshow || !activeSlide) return null;
 
   return (
-    <div ref={slideshowContainerRef} className="w-full h-full relative z-10">
+    <div
+      ref={slideshowContainerRef}
+      data-testid="slideshow-player"
+      className="w-full h-full relative z-10"
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={event => finishPointer(event)}
+      onPointerCancel={event => finishPointer(event, true)}
+    >
       <div className={`w-full h-full relative bg-black flex flex-col items-center justify-center ${!isUiVisible ? 'cursor-none' : ''}`}>
         <div className={`absolute top-6 right-6 z-50 flex items-center gap-4 transition-opacity duration-500 ${!isUiVisible || showTips ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
           <button 
-            onClick={() => {
-              if (document.fullscreenElement) {
-                document.exitFullscreen().catch(console.error);
-              } else {
-                if (slideVideoRef.current) slideVideoRef.current.pause();
-                setActiveSlideshowIndex(null);
-              }
-            }}
-            className="p-3 bg-eh-red/20 hover:bg-eh-red/30 rounded-full transition-colors text-eh-red shadow-lg backdrop-blur-md cursor-pointer"
+            onClick={closeSlideshow}
+            aria-label="Close slideshow"
+            className="mobile-coarse-target p-3 bg-eh-red/20 hover:bg-eh-red/30 rounded-full transition-colors text-eh-red shadow-lg backdrop-blur-md cursor-pointer focus-visible:outline-2 focus-visible:outline-eh-blue"
             title="Close Slideshow"
           >
             <X size={24} />
@@ -153,7 +252,9 @@ export function SlideshowPlayer({
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
               transition={{ duration: 0.3 }}
+              data-swipe-exempt
               className={`absolute top-0 right-0 w-full md:w-1/3 max-w-md h-full bg-black/70 backdrop-blur-xl border-l border-white/10 p-8 pt-24 overflow-y-auto z-40 transition-opacity duration-500 ${!isUiVisible ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+              style={{ WebkitOverflowScrolling: 'touch' }}
             >
               <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/10">
                 <div className="flex items-center gap-3">
@@ -162,7 +263,8 @@ export function SlideshowPlayer({
                 </div>
                 <button
                   onClick={() => setShowTips(false)}
-                  className="p-2 hover:bg-white/10 rounded-full transition-colors text-white/60 hover:text-white cursor-pointer"
+                  aria-label="Close instructor tips"
+                  className="mobile-coarse-target p-2 hover:bg-white/10 rounded-full transition-colors text-white/60 hover:text-white cursor-pointer focus-visible:outline-2 focus-visible:outline-eh-blue"
                   title="Close Tips"
                 >
                   <X size={20} />
@@ -203,6 +305,29 @@ export function SlideshowPlayer({
         </AnimatePresence>
 
         {/* Controls Overlay */}
+        {isMobileWeb ? (
+          <React.Suspense fallback={null}>
+            <MobileSlideshowControls
+              visible={isUiVisible}
+              title={activeSlide.title}
+              index={activeSlideIndex}
+              count={activeSlideshow.slides.length}
+              isVideo={activeSlide.type === 'video'}
+              isPlaying={slideshowIsPlaying}
+              isMuted={isMuted}
+              volume={volume}
+              showTips={showTips}
+              fullscreenAvailable={fullscreenAvailable && !fullscreenFailed}
+              onPrevious={prevSlide}
+              onNext={nextSlide}
+              onTogglePlay={toggleSlideshowPlay}
+              onToggleTips={() => setShowTips(!showTips)}
+              setIsMuted={setIsMuted}
+              setVolume={setVolume}
+              onToggleFullscreen={toggleFullscreen}
+            />
+          </React.Suspense>
+        ) : (
         <div className={`absolute bottom-0 left-0 right-0 p-8 pt-20 bg-gradient-to-t from-black via-black/60 to-transparent z-20 pointer-events-none transition-opacity duration-500 ${!isUiVisible ? 'opacity-0' : 'opacity-100'}`}>
           <div className="max-w-4xl mx-auto pointer-events-auto">
             <div className="flex items-center justify-between">
@@ -299,23 +424,19 @@ export function SlideshowPlayer({
                     </div>
                   </div>
                 )}
-                <button 
-                  onClick={() => {
-                    if (!document.fullscreenElement) {
-                      slideshowContainerRef.current?.requestFullscreen().catch(console.error);
-                    } else {
-                      document.exitFullscreen().catch(console.error);
-                    }
-                  }}
+                {(isTauri || (fullscreenAvailable && !fullscreenFailed)) && <button
+                  onClick={() => { void toggleFullscreen(); }}
                   className="p-3 hover:bg-eh-peach/10 rounded-full text-eh-peach/80 transition-all cursor-pointer"
                   title="Toggle Fullscreen View"
+                  aria-label="Toggle slideshow fullscreen"
                 >
                   <Maximize2 size={24} />
-                </button>
+                </button>}
               </div>
             </div>
           </div>
         </div>
+        )}
       </div>
     </div>
   );

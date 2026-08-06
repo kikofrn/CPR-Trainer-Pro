@@ -18,8 +18,8 @@ export function SendCertsPage({
   return (
     <>
       {isOnline ? (
-        <div className="w-full h-full bg-black/80 backdrop-blur-md overflow-y-auto pt-16 pb-16 px-4">
-          <div className="max-w-5xl w-full mx-auto bg-[#131313]/90 border border-white/10 rounded-[32px] p-8 md:p-12 shadow-2xl relative overflow-hidden">
+        <div className="w-full h-full bg-black/80 backdrop-blur-md overflow-y-auto pt-4 sm:pt-16 pb-24 sm:pb-16 px-3 sm:px-4" style={{ WebkitOverflowScrolling: 'touch' }}>
+          <div className="max-w-5xl w-full mx-auto bg-[#131313]/90 border border-white/10 rounded-[24px] sm:rounded-[32px] p-5 pt-16 sm:p-8 md:p-12 shadow-2xl relative overflow-hidden">
             {/* Decorative glowing red accent top border */}
             <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-eh-red to-eh-red/40" />
             
@@ -30,13 +30,14 @@ export function SendCertsPage({
             {/* Close button */}
             <button 
               onClick={onReturnToMenu}
-              className="absolute top-6 right-6 p-2 text-white/40 hover:text-white hover:bg-white/10 rounded-full transition-colors cursor-pointer z-50"
+              aria-label="Close Send Certs"
+              className="mobile-coarse-target absolute top-4 right-4 sm:top-6 sm:right-6 p-2 text-white/40 hover:text-white hover:bg-white/10 rounded-full transition-colors cursor-pointer z-50 focus-visible:outline-2 focus-visible:outline-eh-blue"
               title="Return to Main Menu"
             >
               <X size={24} />
             </button>
 
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_0.8fr] gap-12 items-start mt-4">
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_0.8fr] gap-7 sm:gap-12 items-start mt-4">
               {/* Left Column: Info & Actions */}
               <div className="flex flex-col items-start justify-start">
                 <div className="w-14 h-14 bg-eh-red/10 rounded-full flex items-center justify-center mb-6 relative border border-eh-red/20 shadow-[0_0_15px_rgba(245,57,78,0.15)]">
@@ -70,7 +71,7 @@ export function SendCertsPage({
                 
                 <button 
                   onClick={openPortal}
-                  className="px-8 py-3.5 bg-eh-red hover:bg-eh-red-dark text-eh-peach font-black rounded-full text-sm shadow-2xl shadow-eh-red/30 transition-all flex items-center justify-center gap-3 group active:scale-95 cursor-pointer"
+                  className="min-h-11 w-full sm:w-auto px-5 sm:px-8 py-3.5 bg-eh-red hover:bg-eh-red-dark text-eh-peach font-black rounded-full text-sm shadow-2xl shadow-eh-red/30 transition-all flex items-center justify-center gap-3 group active:scale-95 cursor-pointer focus-visible:outline-2 focus-visible:outline-eh-blue"
                 >
                   <span>Open Instructor Portal</span>
                   <ExternalLink size={16} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
@@ -84,7 +85,7 @@ export function SendCertsPage({
                   
                   <button
                     onClick={onOpenGuide}
-                    className="text-[11px] text-eh-blue hover:text-eh-blue-light hover:underline font-bold transition-colors cursor-pointer bg-transparent border-none p-0 flex items-center gap-1.5 w-fit"
+                    className="mobile-coarse-target min-h-11 text-[11px] text-eh-blue hover:text-eh-blue-light hover:underline font-bold transition-colors cursor-pointer bg-transparent border-none p-0 flex items-center gap-1.5 w-fit focus-visible:outline-2 focus-visible:outline-eh-blue"
                   >
                     <BookOpen size={12} />
                     <span>View Step-by-Step Roster Guide</span>
@@ -100,8 +101,10 @@ export function SendCertsPage({
                   {/* Standard Card */}
                   <div className="flex flex-col gap-2">
                     <span className="text-sm font-bold text-eh-blue-light">CPR AED & FIRST AID FOR ALL AGES</span>
-                    <div 
-                      className="relative group rounded-xl overflow-hidden border border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.4)] transition-all duration-300 hover:border-eh-blue-light/30 hover:shadow-[0_4px_30px_rgba(74,158,255,0.15)] cursor-pointer"
+                    <button
+                      type="button"
+                      aria-label="Open portal for CPR AED and First Aid certification cards"
+                      className="relative group w-full rounded-xl overflow-hidden border border-white/10 bg-transparent p-0 text-left shadow-[0_4px_24px_rgba(0,0,0,0.4)] transition-all duration-300 hover:border-eh-blue-light/30 hover:shadow-[0_4px_30px_rgba(74,158,255,0.15)] cursor-pointer focus-visible:outline-2 focus-visible:outline-eh-blue"
                       onClick={openPortal}
                     >
                       <img 
@@ -109,17 +112,19 @@ export function SendCertsPage({
                         alt="Sample CPR Certification" 
                         className="w-full h-auto object-cover"
                       />
-                    </div>
+                    </button>
                   </div>
                   
                   {/* Pediatric Card */}
                   <div className="flex flex-col gap-2">
-                    <div className="flex items-baseline gap-1.5 whitespace-nowrap">
+                    <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-1">
                       <span className="text-sm font-bold text-eh-red">PEDIATRIC SPECIFIC</span>
                       <span className="text-[11px] text-eh-red/80 italic">- Perfect for Childcare Facilities!</span>
                     </div>
-                    <div 
-                      className="relative group rounded-xl overflow-hidden border border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.4)] transition-all duration-300 hover:border-eh-red/30 hover:shadow-[0_4px_30px_rgba(245,57,78,0.15)] cursor-pointer"
+                    <button
+                      type="button"
+                      aria-label="Open portal for pediatric certification cards"
+                      className="relative group w-full rounded-xl overflow-hidden border border-white/10 bg-transparent p-0 text-left shadow-[0_4px_24px_rgba(0,0,0,0.4)] transition-all duration-300 hover:border-eh-red/30 hover:shadow-[0_4px_30px_rgba(245,57,78,0.15)] cursor-pointer focus-visible:outline-2 focus-visible:outline-eh-blue"
                       onClick={openPortal}
                     >
                       <img 
@@ -127,7 +132,7 @@ export function SendCertsPage({
                         alt="Sample Pediatric Certification" 
                         className="w-full h-auto object-cover"
                       />
-                    </div>
+                    </button>
                   </div>
                 </div>
 
@@ -141,10 +146,11 @@ export function SendCertsPage({
           </div>
         </div>
       ) : (
-        <div className="w-full h-full bg-black/85 overflow-y-auto pt-16 pb-16 px-4">
-          <div className="max-w-3xl w-full mx-auto bg-[#131313] border border-white/10 rounded-[24px] p-8 md:p-12 shadow-2xl relative overflow-hidden flex flex-col items-center justify-start">
+        <div className="w-full h-full bg-black/85 overflow-y-auto pt-4 sm:pt-16 pb-24 sm:pb-16 px-3 sm:px-4" style={{ WebkitOverflowScrolling: 'touch' }}>
+          <div className="max-w-3xl w-full mx-auto bg-[#131313] border border-white/10 rounded-[24px] p-5 pt-16 sm:p-8 md:p-12 shadow-2xl relative overflow-hidden flex flex-col items-center justify-start">
             {/* Decorative top red bar */}
             <div className="absolute top-0 left-0 right-0 h-1.5 bg-eh-red" />
+            <button type="button" onClick={onReturnToMenu} aria-label="Close Send Certs" className="mobile-coarse-target absolute right-4 top-4 rounded-full p-2 text-white/45 hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-eh-blue"><X size={24} /></button>
             
             <div className="w-20 h-20 bg-eh-red/10 rounded-full flex items-center justify-center mx-auto mb-6">
               <Info size={36} className="text-eh-red" />
@@ -168,10 +174,11 @@ export function SendCertsPage({
             
             <button 
               onClick={() => setIsOnline(navigator.onLine)}
-              className="px-8 py-3.5 bg-eh-peach hover:bg-white text-black font-bold rounded-full text-sm shadow-xl transition-all active:scale-95 cursor-pointer mb-6"
+              className="min-h-11 w-full sm:w-auto px-8 py-3.5 bg-eh-peach hover:bg-white text-black font-bold rounded-full text-sm shadow-xl transition-all active:scale-95 cursor-pointer mb-3 focus-visible:outline-2 focus-visible:outline-eh-blue"
             >
               Retry Connection
             </button>
+            <button type="button" onClick={onOpenGuide} className="mobile-coarse-target mb-6 flex min-h-11 items-center gap-2 text-sm font-bold text-eh-blue hover:underline focus-visible:outline-2 focus-visible:outline-eh-blue"><BookOpen size={16} /> View Step-by-Step Roster Guide</button>
 
             {/* Sample Certification Cards (Offline) */}
             <div className="mt-4 mb-4 flex flex-col items-center gap-4 w-full">
