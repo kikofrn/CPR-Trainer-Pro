@@ -85,7 +85,7 @@ export function SendCertsPage({
                   
                   <button
                     onClick={onOpenGuide}
-                    className="mobile-coarse-target min-h-11 text-[11px] text-eh-blue hover:text-eh-blue-light hover:underline font-bold transition-colors cursor-pointer bg-transparent border-none p-0 flex items-center gap-1.5 w-fit focus-visible:outline-2 focus-visible:outline-eh-blue"
+                    className="mobile-coarse-target min-h-11 sm:min-h-0 text-[11px] text-eh-blue hover:text-eh-blue-light hover:underline font-bold transition-colors cursor-pointer bg-transparent border-none p-0 flex items-center gap-1.5 w-fit focus-visible:outline-2 focus-visible:outline-eh-blue"
                   >
                     <BookOpen size={12} />
                     <span>View Step-by-Step Roster Guide</span>
