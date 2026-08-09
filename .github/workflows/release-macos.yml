@@ -236,14 +236,15 @@ jobs:
         run: |
           set -euo pipefail
 
-          CERT_PATH="$(mktemp "${RUNNER_TEMP:-/tmp}/phase4-cert.XXXXXX")"
+          CERT_DIR="$(mktemp -d "${RUNNER_TEMP:-/tmp}/phase4-cert.XXXXXX")"
+          CERT_PATH="$CERT_DIR/cert.p12"
           keychain_path="${RUNNER_TEMP:-/tmp}/phase4-preflight-$(uuidgen).keychain-db"
           keychain_password="$(uuidgen)"
           export CERT_PATH
 
           cleanup() {
             security delete-keychain "$keychain_path" >/dev/null 2>&1 || true
-            rm -f "$CERT_PATH"
+            rm -rf "$CERT_DIR"
           }
           trap cleanup EXIT
 
