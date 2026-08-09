@@ -1,0 +1,11 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "bundle": {
+    "createUpdaterArtifacts": false,
+    "macOS": {
+      "entitlements": "entitlements.dmg.plist",
+      "hardenedRuntime": true,
+      "signingIdentity": "Developer ID Application"
+    }
+  }
+}

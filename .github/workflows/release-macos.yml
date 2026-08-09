@@ -1,0 +1,652 @@
+name: Release macOS DMG
+
+on:
+  push:
+    tags:
+      - 'mac-v*'
+
+concurrency:
+  group: release-macos-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  dmg:
+    name: Universal signed + notarized DMG
+    runs-on: macos-15
+    timeout-minutes: 240
+    permissions:
+      contents: write
+      actions: read
+    defaults:
+      run:
+        shell: bash
+    env:
+      EXPECTED_TEAM_ID: 8ZGSY5NJPJ
+      UNIVERSAL_OUT_DIR: src-tauri/target/universal-apple-darwin/release
+      REF_NAME: ${{ github.ref_name }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 20.20.2
+
+      - name: Gate - pinned Node.js and npm
+        run: |
+          set -euo pipefail
+          actual_node="$(node --version)"
+          actual_npm="$(npm --version)"
+          if [ "$actual_node" != "v20.20.2" ] || [ "$actual_npm" != "10.8.2" ]; then
+            echo "::error::Expected Node v20.20.2 with npm 10.8.2; got Node $actual_node with npm $actual_npm."
+            exit 1
+          fi
+          echo "Node $actual_node with npm $actual_npm"
+
+      - name: Guard - tag grammar, version parity, release contract
+        id: ref_guard
+        run: |
+          set -euo pipefail
+
+          package_version="$(node -p "require('./package.json').version")"
+          tauri_version="$(node -p "require('./src-tauri/tauri.conf.json').version")"
+          bundle_id="$(node -p "require('./src-tauri/tauri.conf.json').identifier")"
+          min_macos="$(node -p "require('./src-tauri/tauri.conf.json').bundle.macOS.minimumSystemVersion")"
+
+          if [ "$package_version" != "$tauri_version" ]; then
+            echo "::error::package.json version ($package_version) does not match tauri.conf.json version ($tauri_version)."
+            exit 1
+          fi
+
+          if [ "$GITHUB_REF_TYPE" != "tag" ]; then
+            echo "::error::This workflow only accepts release tags; got $GITHUB_REF_TYPE '$REF_NAME'."
+            exit 1
+          fi
+          if [[ ! "$REF_NAME" =~ ^mac-v([0-9]+\.[0-9]+\.[0-9]+)(-rc[0-9]+)?$ ]]; then
+            echo "::error::Tag must be exactly mac-vX.Y.Z or mac-vX.Y.Z-rcN; got '$REF_NAME'."
+            exit 1
+          fi
+
+          release_version="${BASH_REMATCH[1]}"
+          if [ "$release_version" != "$tauri_version" ]; then
+            echo "::error::Tag version $release_version does not match the app version $tauri_version. Bump the app or fix the tag."
+            exit 1
+          fi
+          if [ -n "${BASH_REMATCH[2]:-}" ]; then
+            channel=candidate
+          else
+            channel=final
+          fi
+
+          echo "channel=$channel" >> "$GITHUB_OUTPUT"
+          {
+            echo "RELEASE_VERSION=$release_version"
+            echo "EXPECTED_BUNDLE_ID=$bundle_id"
+            echo "EXPECTED_MIN_MACOS=$min_macos"
+          } >> "$GITHUB_ENV"
+
+          echo "channel=$channel version=$release_version bundle_id=$bundle_id min_macos=$min_macos"
+
+      - name: Gate - final-tag GitHub CLI capabilities
+        if: ${{ steps.ref_guard.outputs.channel == 'final' }}
+        run: |
+          set -euo pipefail
+          if ! command -v gh >/dev/null 2>&1; then
+            echo "::error::GitHub CLI (gh) is not installed on this runner."
+            exit 1
+          fi
+
+          gh_version_output="$(gh --version)"
+          gh_version_line="$(printf '%s\n' "$gh_version_output" | sed -n '1p')"
+          api_help="$(gh api --help)"
+          missing=0
+          for flag in --paginate --slurp; do
+            if ! grep -Fq -- "$flag" <<< "$api_help"; then
+              echo "::error::Installed GitHub CLI is missing required 'gh api $flag' support."
+              missing=$((missing + 1))
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            echo "::error::The installed GitHub CLI cannot satisfy the paginated release guards. Both flags are required; --slurp first shipped in gh 2.48.0."
+            exit 1
+          fi
+
+          printf 'GH_VERSION_LINE=%s\n' "$gh_version_line" >> "$GITHUB_ENV"
+          echo "$gh_version_line; gh api supports --paginate and --slurp"
+
+      - name: Guard - commit must be contained in mac-build
+        run: |
+          set -euo pipefail
+          if ! git show-ref --verify --quiet refs/remotes/origin/mac-build; then
+            echo "::error::Checkout did not provide refs/remotes/origin/mac-build even though fetch-depth is 0."
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor HEAD origin/mac-build; then
+            echo "::error::HEAD $(git rev-parse HEAD) is not contained in origin/mac-build. Releases are only built from mac-build."
+            exit 1
+          fi
+          echo "HEAD $(git rev-parse HEAD) is contained in origin/mac-build"
+
+      - name: Guard - final tag requires a successful same-commit candidate
+        if: ${{ steps.ref_guard.outputs.channel == 'final' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          head_sha="$(git rev-parse HEAD)"
+          version_re="${RELEASE_VERSION//./\\.}"
+          candidates="$(git tag -l "mac-v${RELEASE_VERSION}-rc*")"
+          matched=""
+          matched_run_id=""
+
+          while IFS= read -r candidate; do
+            [ -n "$candidate" ] || continue
+            if [[ ! "$candidate" =~ ^mac-v${version_re}-rc[0-9]+$ ]]; then
+              echo "skipping '$candidate': not a valid candidate tag"
+              continue
+            fi
+            if [ "$(git rev-list -n 1 "$candidate")" != "$head_sha" ]; then
+              echo "skipping '$candidate': points at a different commit"
+              continue
+            fi
+
+            runs_json="$(gh api \
+              --method GET \
+              --paginate \
+              --slurp \
+              -f branch="$candidate" \
+              -f event=push \
+              -F per_page=100 \
+              "repos/$GITHUB_REPOSITORY/actions/workflows/release-macos.yml/runs")"
+            run_id="$(printf '%s' "$runs_json" | jq -r --arg s "$head_sha" --arg b "$candidate" \
+              '[.[] | .workflow_runs[] | select(.head_sha == $s and .head_branch == $b and .event == "push" and .status == "completed" and .conclusion == "success") | .id] | first // empty')"
+            if [ -n "$run_id" ]; then
+              matched="$candidate"
+              matched_run_id="$run_id"
+              break
+            fi
+            echo "skipping '$candidate': no successful release-macos run recorded at $head_sha"
+          done <<< "$candidates"
+
+          if [ -z "$matched" ]; then
+            echo "::error::Final tag $REF_NAME points at $head_sha, but no mac-v${RELEASE_VERSION}-rcN tag at that commit has a completed successful release-macos run. Tag the exact commit as a candidate, wait for it to pass, complete hardware QA, and only then create the final tag."
+            echo "candidate tags seen for this version:"
+            printf '%s\n' "$candidates"
+            exit 1
+          fi
+          echo "final tag matches candidate $matched at $head_sha; successful candidate run id $matched_run_id"
+
+      - name: Guard - no release already exists for this tag
+        if: ${{ steps.ref_guard.outputs.channel == 'final' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          releases_json="$(gh api \
+            --method GET \
+            --paginate \
+            --slurp \
+            -F per_page=100 \
+            "repos/$GITHUB_REPOSITORY/releases")"
+          existing="$(printf '%s' "$releases_json" | jq -r --arg t "$REF_NAME" \
+            '[flatten[] | select(.tag_name == $t)] | length')"
+          if [ "$existing" -ne 0 ]; then
+            echo "::error::A GitHub Release, including a possible draft, already exists for $REF_NAME. Delete it deliberately or use a new tag; refusing to spend another signed build."
+            exit 1
+          fi
+          echo "no existing release for $REF_NAME"
+
+      - name: Guard - all five APPLE secrets are present
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          missing=0
+          for name in APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_ID APPLE_PASSWORD APPLE_TEAM_ID; do
+            value="${!name:-}"
+            if [ -z "$value" ]; then
+              echo "::error::Required repository secret $name is missing or empty."
+              missing=1
+            else
+              echo "$name is present"
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+          if [ "$APPLE_TEAM_ID" != "$EXPECTED_TEAM_ID" ]; then
+            echo "::error::APPLE_TEAM_ID does not match the expected team. Check for a wrong value or stray whitespace."
+            exit 1
+          fi
+          echo "APPLE_TEAM_ID matches the expected team"
+
+      - name: Guard - p12 contains a usable Developer ID identity for this team
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          CERT_PATH="$(mktemp "${RUNNER_TEMP:-/tmp}/phase4-cert.XXXXXX")"
+          keychain_path="${RUNNER_TEMP:-/tmp}/phase4-preflight-$(uuidgen).keychain-db"
+          keychain_password="$(uuidgen)"
+          export CERT_PATH
+
+          cleanup() {
+            security delete-keychain "$keychain_path" >/dev/null 2>&1 || true
+            rm -f "$CERT_PATH"
+          }
+          trap cleanup EXIT
+
+          node <<'NODE'
+          const fs = require("fs");
+          const raw = process.env.APPLE_CERTIFICATE || "";
+          // Match tauri-macos-sign 2.3.4: remove ASCII whitespace, then require
+          // canonical padded standard base64. Buffer.from alone is permissive.
+          const cleaned = raw.replace(/[ \t\n\v\f\r]/g, "");
+          const canonical = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
+          if (!canonical.test(cleaned)) {
+            throw new Error("APPLE_CERTIFICATE is not canonical standard base64 after removing ASCII whitespace");
+          }
+          const decoded = Buffer.from(cleaned, "base64");
+          if (decoded.length === 0 || decoded.toString("base64") !== cleaned) {
+            throw new Error("APPLE_CERTIFICATE failed strict standard-base64 validation");
+          }
+          fs.writeFileSync(process.env.CERT_PATH, decoded, { mode: 0o600 });
+          NODE
+
+          security create-keychain -p "$keychain_password" "$keychain_path"
+          security unlock-keychain -p "$keychain_password" "$keychain_path"
+          security import "$CERT_PATH" -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign -k "$keychain_path"
+
+          identities="$(security find-identity -v "$keychain_path")"
+          echo "valid identities in the p12:"
+          printf '%s\n' "$identities"
+
+          if ! awk -v team="($EXPECTED_TEAM_ID)" '
+            index($0, "Developer ID Application:") && index($0, team) { found=1 }
+            END { exit !found }
+          ' <<< "$identities"; then
+            echo "::error::APPLE_CERTIFICATE contains no valid Developer ID Application identity for team $EXPECTED_TEAM_ID with an accessible private key. Re-export that identity and private key, encode the p12, and update the secret."
+            exit 1
+          fi
+          echo "a Developer ID Application identity for $EXPECTED_TEAM_ID is present"
+
+          for prefix in "iOS Distribution" "Apple Distribution" "Mac App Distribution" "Apple Development" "iOS App Development" "Mac Development"; do
+            count="$(security find-certificate -p -a -c "$prefix:" "$keychain_path" 2>/dev/null | grep -c 'BEGIN CERTIFICATE' || true)"
+            if [ "$count" -gt 0 ]; then
+              echo "::warning::The p12 also contains $count certificate(s) matching '$prefix:'. Tauri recognises this class and sorts all recognised certificates before selecting the first. If a later Authority gate reports the wrong certificate, re-export the p12 with only the intended Developer ID Application identity."
+            fi
+          done
+
+      - name: Guard - notarization credentials authenticate
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          xcrun notarytool history \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" \
+            --output-format json >/dev/null
+          echo "Apple notarization credentials authenticate successfully"
+
+      - name: Install pinned Rust with both Apple targets
+        uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable on 2026-08-08
+        with:
+          toolchain: 1.97.1
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+      - name: Gate - pinned Rust
+        run: |
+          set -euo pipefail
+          actual="$(rustc --version)"
+          case "$actual" in
+            "rustc 1.97.1 "*)
+              ;;
+            *)
+              echo "::error::Expected rustc 1.97.1, got '$actual'."
+              exit 1
+              ;;
+          esac
+          installed_targets="$(rustup target list --installed)"
+          for target in aarch64-apple-darwin x86_64-apple-darwin; do
+            if ! grep -Fxq "$target" <<< "$installed_targets"; then
+              echo "::error::Pinned Rust toolchain is missing target $target."
+              exit 1
+            fi
+          done
+          echo "$actual"
+
+      - name: Record runner and toolchain
+        run: |
+          set -euo pipefail
+          if [ -n "${GH_VERSION_LINE:-}" ]; then
+            gh_version_line="$GH_VERSION_LINE"
+          elif command -v gh >/dev/null 2>&1; then
+            if gh_version_output="$(gh --version 2>&1)"; then
+              gh_version_line="$(printf '%s\n' "$gh_version_output" | sed -n '1p')"
+            else
+              gh_version_line="installed but version command failed (not required for candidate tags)"
+            fi
+          else
+            gh_version_line="not installed (not required for candidate tags)"
+          fi
+          {
+            echo "runner  ${ImageOS:-unknown} image ${ImageVersion:-unknown}"
+            echo "host    $(uname -m)"
+            echo "os      $(sw_vers -productName) $(sw_vers -productVersion) ($(sw_vers -buildVersion))"
+            echo "node    $(node --version)"
+            echo "npm     $(npm --version)"
+            echo "rustc   $(rustc --version)"
+            echo "cargo   $(cargo --version)"
+            echo "jq      $(jq --version)"
+            echo "gh      $gh_version_line"
+            echo "xcode   $(xcodebuild -version | tr '\n' ' ')"
+            rustup target list --installed
+          } | tee toolchain.txt
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Gate - pinned Tauri CLI
+        run: |
+          set -euo pipefail
+          actual="$(./node_modules/.bin/tauri --version)"
+          if [ "$actual" != "tauri-cli 2.11.1" ]; then
+            echo "::error::Expected 'tauri-cli 2.11.1', got '$actual'. This workflow is verified against that exact implementation."
+            exit 1
+          fi
+          echo "$actual"
+
+      - name: Build frontend and universal binary - no Apple secrets
+        run: |
+          set -euo pipefail
+          ./node_modules/.bin/tauri build \
+            --ci \
+            --verbose \
+            --no-bundle \
+            --target universal-apple-darwin \
+            --config src-tauri/tauri.release.conf.json
+
+      - name: Bundle universal DMG - sign and notarize the app
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          ./node_modules/.bin/tauri bundle \
+            --ci \
+            --target universal-apple-darwin \
+            --config src-tauri/tauri.release.conf.json
+
+      - name: Locate the one universal DMG
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          dmgs=("$UNIVERSAL_OUT_DIR"/bundle/dmg/*.dmg)
+          if [ "${#dmgs[@]}" -ne 1 ]; then
+            echo "::error::Expected exactly one DMG in $UNIVERSAL_OUT_DIR/bundle/dmg, found ${#dmgs[@]}."
+            ls -la "$UNIVERSAL_OUT_DIR/bundle/dmg" || true
+            exit 1
+          fi
+          dmg="${dmgs[0]}"
+          base="$(basename "$dmg")"
+          expected="_${RELEASE_VERSION}_universal.dmg"
+          case "$base" in
+            *"$expected")
+              ;;
+            *)
+              echo "::error::DMG is named '$base'; a universal build of $RELEASE_VERSION must end with '$expected'. Refusing to start another notarization cycle."
+              exit 1
+              ;;
+          esac
+          echo "DMG_PATH=$dmg" >> "$GITHUB_ENV"
+          echo "Found DMG: $dmg"
+
+      - name: Gate - DMG signature before notarization
+        run: |
+          set -euo pipefail
+          echo "== codesign verify: DMG before stapling =="
+          codesign --verify --strict --verbose=2 "$DMG_PATH"
+          echo "== codesign display: DMG =="
+          codesign -dvvv "$DMG_PATH" > codesign-dmg.txt 2>&1
+          cat codesign-dmg.txt
+          if ! grep -Fq 'Authority=Developer ID Application:' codesign-dmg.txt; then
+            echo "::error::The DMG is not signed by a Developer ID Application certificate."
+            exit 1
+          fi
+          if ! grep -Fq "TeamIdentifier=$EXPECTED_TEAM_ID" codesign-dmg.txt; then
+            echo "::error::The DMG TeamIdentifier is not $EXPECTED_TEAM_ID."
+            exit 1
+          fi
+
+      - name: Notarize, inspect, and staple the DMG
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          echo "Submitting $DMG_PATH to Apple's notary service"
+
+          set +e
+          xcrun notarytool submit "$DMG_PATH" \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" \
+            --output-format json \
+            --wait \
+            --timeout 90m > notarytool-submit.json
+          submit_rc=$?
+          set -e
+
+          cat notarytool-submit.json || true
+          submission_id="$(jq -r '.id // empty' notarytool-submit.json 2>/dev/null || true)"
+          status="$(jq -r '.status // empty' notarytool-submit.json 2>/dev/null || true)"
+          echo "notarization submission '$submission_id' finished with status '$status' (exit $submit_rc)"
+
+          fetch_log() {
+            xcrun notarytool log "$1" \
+              --apple-id "$APPLE_ID" \
+              --password "$APPLE_PASSWORD" \
+              --team-id "$APPLE_TEAM_ID" \
+              notarytool-dmg-log.json
+          }
+
+          if [ "$submit_rc" -ne 0 ] || [ "$status" != "Accepted" ] || [ -z "$submission_id" ]; then
+            echo "::error::DMG notarization was not accepted (exit $submit_rc, status '$status')."
+            if [ -n "$submission_id" ]; then
+              fetch_log "$submission_id" || true
+              cat notarytool-dmg-log.json 2>/dev/null || true
+            fi
+            exit 1
+          fi
+
+          fetch_log "$submission_id"
+          cat notarytool-dmg-log.json
+          if ! jq -e . notarytool-dmg-log.json >/dev/null 2>&1; then
+            echo "::error::The notary log for $submission_id is not valid JSON."
+            exit 1
+          fi
+
+          error_issues="$(jq '[(.issues // [])[] | select(((.severity // "") | ascii_downcase) == "error")] | length' notarytool-dmg-log.json)"
+          other_issues="$(jq '[(.issues // [])[] | select(((.severity // "") | ascii_downcase) != "error")] | length' notarytool-dmg-log.json)"
+          if [ "$error_issues" -ne 0 ]; then
+            echo "::error::Notarization was accepted but its log contains $error_issues error-severity issue(s). Adjudicate before release."
+            exit 1
+          fi
+          if [ "$other_issues" -ne 0 ]; then
+            echo "::warning::Notarization was accepted with $other_issues non-error issue(s); inspect notarytool-dmg-log.json in the artifact."
+          fi
+
+          xcrun stapler staple -v "$DMG_PATH"
+
+      - name: Gate - notarized DMG is valid and Gatekeeper-accepted
+        run: |
+          set -euo pipefail
+          echo "== hdiutil verify =="
+          hdiutil verify "$DMG_PATH"
+          echo "== stapler validate: DMG =="
+          xcrun stapler validate "$DMG_PATH"
+          echo "== spctl assess: DMG =="
+          spctl -a -t open --context context:primary-signature -vv "$DMG_PATH"
+
+      - name: Gate - app inside the DMG
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          mount_point="$(mktemp -d)"
+          cleanup() {
+            hdiutil detach "$mount_point" -quiet || true
+            rmdir "$mount_point" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+
+          hdiutil attach "$DMG_PATH" -nobrowse -readonly -mountpoint "$mount_point"
+          apps=("$mount_point"/*.app)
+          if [ "${#apps[@]}" -ne 1 ]; then
+            echo "::error::Expected exactly one top-level .app on the DMG, found ${#apps[@]}."
+            ls -la "$mount_point"
+            exit 1
+          fi
+          app="${apps[0]}"
+          echo "Verifying $app"
+
+          echo "== codesign verify: app =="
+          codesign --verify --deep --strict --verbose=2 "$app"
+
+          echo "== codesign display: app =="
+          codesign -dvvv "$app" > codesign-app.txt 2>&1
+          cat codesign-app.txt
+          if ! grep -Fq 'Authority=Developer ID Application:' codesign-app.txt; then
+            echo "::error::The app is not signed by a Developer ID Application certificate."
+            exit 1
+          fi
+          if ! grep -Fq "TeamIdentifier=$EXPECTED_TEAM_ID" codesign-app.txt; then
+            echo "::error::The app TeamIdentifier is not $EXPECTED_TEAM_ID."
+            exit 1
+          fi
+          if ! grep -Eq 'flags=.*[(,]runtime([,)]|$)' codesign-app.txt; then
+            echo "::error::The app CodeDirectory does not carry the hardened-runtime flag."
+            exit 1
+          fi
+
+          echo "== release contract from Info.plist =="
+          plist="$app/Contents/Info.plist"
+          bundle_id="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$plist")"
+          short_version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$plist")"
+          bundle_version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$plist")"
+          min_macos="$(/usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' "$plist")"
+          echo "bundle_id=$bundle_id short_version=$short_version bundle_version=$bundle_version min_macos=$min_macos"
+
+          if [ "$bundle_id" != "$EXPECTED_BUNDLE_ID" ]; then
+            echo "::error::Bundle identifier is '$bundle_id'; expected '$EXPECTED_BUNDLE_ID'."
+            exit 1
+          fi
+          if [ "$short_version" != "$RELEASE_VERSION" ]; then
+            echo "::error::CFBundleShortVersionString is '$short_version'; expected '$RELEASE_VERSION'."
+            exit 1
+          fi
+          if [ "$bundle_version" != "$RELEASE_VERSION" ]; then
+            echo "::error::CFBundleVersion is '$bundle_version'; expected '$RELEASE_VERSION'."
+            exit 1
+          fi
+          if [ "$min_macos" != "$EXPECTED_MIN_MACOS" ]; then
+            echo "::error::LSMinimumSystemVersion is '$min_macos'; expected '$EXPECTED_MIN_MACOS'. The explicit config merge may have changed bundle.macOS unexpectedly."
+            exit 1
+          fi
+
+          echo "== entitlements: output must be readable and App Sandbox must be absent =="
+          if ! codesign --display --entitlements - "$app" > entitlements-app.txt 2> entitlements-app-stderr.txt; then
+            echo "::error::codesign could not read the app's entitlements."
+            cat entitlements-app-stderr.txt || true
+            exit 1
+          fi
+          cat entitlements-app-stderr.txt || true
+          cat entitlements-app.txt
+          if [ ! -s entitlements-app.txt ]; then
+            echo "::error::codesign returned success but no entitlement representation. The expected empty plist is still represented as [Dict]; empty output cannot prove the app is unsandboxed."
+            exit 1
+          fi
+          if grep -Fiq 'invalid entitlements blob' entitlements-app-stderr.txt; then
+            echo "::error::codesign reported an invalid entitlement blob; the OS may ignore it and the release contract cannot be proven."
+            exit 1
+          fi
+          if grep -Fq 'com.apple.security.app-sandbox' entitlements-app.txt; then
+            echo "::error::The direct-download app carries the App Sandbox entitlement. It must use entitlements.dmg.plist, not the App Store overlay."
+            exit 1
+          fi
+
+          if [ -e "$app/Contents/embedded.provisionprofile" ]; then
+            echo "::error::This Phase 4 app unexpectedly embeds a provisioning profile. The approved configuration has an empty entitlement plist and no restricted entitlement requiring a Developer ID profile; stop and determine what changed."
+            exit 1
+          fi
+          echo "no embedded provisioning profile, as required by this app's current release contract"
+
+          echo "== spctl assess: app =="
+          spctl -a -t exec -vvv "$app"
+
+          echo "== stapler validate: app =="
+          xcrun stapler validate "$app"
+
+          echo "== lipo architectures =="
+          executable="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$plist")"
+          archs="$(lipo -archs "$app/Contents/MacOS/$executable")"
+          echo "archs: $archs"
+          case " $archs " in
+            *" x86_64 "*) ;;
+            *) echo "::error::Universal binary is missing x86_64."; exit 1 ;;
+          esac
+          case " $archs " in
+            *" arm64 "*) ;;
+            *) echo "::error::Universal binary is missing arm64."; exit 1 ;;
+          esac
+          echo "Universal binary contains arm64 and x86_64"
+
+      - name: Stage DMG and evidence
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/evidence
+          cp "$DMG_PATH" artifacts/
+          cp toolchain.txt codesign-dmg.txt codesign-app.txt entitlements-app.txt entitlements-app-stderr.txt notarytool-submit.json notarytool-dmg-log.json artifacts/evidence/
+          cd artifacts
+          shasum -a 256 ./*.dmg | tee SHA256SUMS.txt
+          shasum -a 256 -c SHA256SUMS.txt
+
+      - name: Upload DMG artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: cpr-trainer-pro-macos-universal-dmg
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Create draft GitHub Release - final tags only
+        if: ${{ steps.ref_guard.outputs.channel == 'final' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          gh release create "$REF_NAME" \
+            artifacts/*.dmg \
+            artifacts/SHA256SUMS.txt \
+            --repo "$GITHUB_REPOSITORY" \
+            --verify-tag \
+            --draft \
+            --title "CPR Trainer Pro $REF_NAME (macOS)" \
+            --notes "Universal (arm64 + x86_64) Developer ID signed, notarized and stapled DMG. DRAFT - do not publish until final-DMG hardware smoke has passed and publication is separately authorized."
