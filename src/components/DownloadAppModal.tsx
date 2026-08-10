@@ -3,7 +3,6 @@ import { Download, Laptop, MonitorDown, Smartphone, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 import { APP_DOWNLOADS, type DownloadPlatform } from '../config/downloads';
-import { openExternalUrl } from '../utils/browser';
 import { detectDownloadPlatform } from '../utils/platform-detect';
 
 interface DownloadAppModalProps {
@@ -67,7 +66,7 @@ export function DownloadAppModal({ onClose }: DownloadAppModalProps) {
         initial={{ opacity: 0, scale: 0.95, y: 12 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 12 }}
-        className="w-full max-w-lg overflow-hidden rounded-3xl border border-eh-peach/20 bg-[#0a0a0a]/95 shadow-[0_0_50px_rgba(0,0,0,0.8)]"
+        className="max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-3xl border border-eh-peach/20 bg-[#0a0a0a]/95 shadow-[0_0_50px_rgba(0,0,0,0.8)]"
       >
         <div className="relative border-b border-white/10 p-8 pb-6 text-center">
           <button
@@ -119,7 +118,7 @@ export function DownloadAppModal({ onClose }: DownloadAppModalProps) {
                     )}
                   </div>
                   <p className="mt-0.5 text-xs text-white/40">
-                    {option.url ? 'Desktop app with offline training access' : 'App release in progress'}
+                    {option.subtitle}
                   </p>
                 </div>
 
@@ -131,26 +130,17 @@ export function DownloadAppModal({ onClose }: DownloadAppModalProps) {
                   >
                     Coming soon
                   </button>
-                ) : option.platform === 'ios' ? (
-                  <button
-                    ref={isPrimary ? element => { primaryActionRef.current = element; } : undefined}
-                    type="button"
-                    onClick={() => void openExternalUrl(option.url!)}
-                    className={`shrink-0 rounded-xl px-4 py-2 text-xs font-black transition-colors cursor-pointer ${
-                      isPrimary ? 'bg-eh-red text-white hover:bg-eh-red-dark' : 'border border-white/15 text-white hover:bg-white/10'
-                    }`}
-                  >
-                    Download for {option.label}
-                  </button>
                 ) : (
                   <a
                     ref={isPrimary ? element => { primaryActionRef.current = element; } : undefined}
                     href={option.url}
+                    target={option.openInNewTab ? '_blank' : undefined}
+                    rel={option.openInNewTab ? 'noopener noreferrer' : undefined}
                     className={`shrink-0 rounded-xl px-4 py-2 text-xs font-black transition-colors ${
                       isPrimary ? 'bg-eh-red text-white hover:bg-eh-red-dark' : 'border border-white/15 text-white hover:bg-white/10'
                     }`}
                   >
-                    Download for {option.label}
+                    {option.actionLabel}
                   </a>
                 )}
               </div>

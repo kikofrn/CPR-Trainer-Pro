@@ -401,7 +401,9 @@ test.describe('Phase 3 offline app download affordance', () => {
   test('opens from the header and Settings while remaining hidden during course content', async ({ page }) => {
     const errors = setupStrictErrors(page, []);
     const downloadButton = page.getByTitle('Download app for offline use');
-    const expectedWindowsUrl = 'https://github.com/kikofrn/CPR-Trainer-Pro/releases/latest/download/CPRTrainerPro-Setup.exe';
+    const expectedWindowsUrl = 'https://windownload.ehacademy.com';
+    const expectedMacUrl = 'https://macdownload.ehacademy.com';
+    const expectedIosUrl = 'https://apps.apple.com/us/app/cpr-trainer-pro/id6776328690';
 
     await page.goto('/', { waitUntil: 'domcontentloaded' });
     await page.locator('[data-app-ready="true"]').waitFor();
@@ -413,7 +415,14 @@ test.describe('Phase 3 offline app download affordance', () => {
     const headerDialog = page.getByRole('dialog', { name: 'Download the app for offline use' });
     await expect(headerDialog).toBeVisible();
     await expect(headerDialog.getByRole('link', { name: 'Download for Windows' })).toHaveAttribute('href', expectedWindowsUrl);
-    await expect(headerDialog.getByRole('button', { name: 'Coming soon' })).toHaveCount(2);
+    await expect(headerDialog.getByRole('link', { name: 'Download for Mac' })).toHaveAttribute('href', expectedMacUrl);
+    const iosDownload = headerDialog.getByRole('link', { name: 'Download on the App Store' });
+    await expect(iosDownload).toHaveAttribute('href', expectedIosUrl);
+    await expect(iosDownload).toHaveAttribute('target', '_blank');
+    await expect(iosDownload).toHaveAttribute('rel', 'noopener noreferrer');
+    await expect(headerDialog.getByText('Desktop app with offline training access')).toHaveCount(2);
+    await expect(headerDialog.getByText('Mobile app with offline training access')).toHaveCount(1);
+    await expect(headerDialog.getByRole('button', { name: 'Coming soon' })).toHaveCount(0);
     await page.getByTestId('download-app-backdrop').click({ position: { x: 5, y: 5 } });
     await expect(headerDialog).toBeHidden();
     await expect(downloadButton).toBeFocused();
